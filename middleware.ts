@@ -15,9 +15,7 @@ export default authMiddleware({
     "/api/users/:userId",
   ],
   beforeAuth: (req) => {
-    console.log(`Request URL: ${req.url}`);
     if (req.url.startsWith("/api/users/")) {
-      console.log("Bypassing Clerk authentication for:", req.url);
       return false;
     }
     return undefined;
