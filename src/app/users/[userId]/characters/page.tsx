@@ -5,10 +5,16 @@ interface CharactersPageParams {
   userId: string;
 }
 
-export default async function CharactersPage({ params }: { params: CharactersPageParams }) {
+export default async function CharactersPage({
+  params,
+}: {
+  params: CharactersPageParams;
+}) {
   const userId = params.userId;
 
-  const res = await fetch(`http://localhost:3000/api/users/${userId}`);
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`
+  );
   if (!res.ok) {
     throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
   }
