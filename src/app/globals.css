@@ -4,8 +4,8 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --background-start-rgb: 26, 32, 44;
+  --background-end-rgb: 26, 32, 44;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,11 +17,101 @@
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  @apply bg-gray-900 text-white;
+}
+
+@media (min-width: 768px) {
+  .custom-table-width {
+    width: 70% !important;
+  }
+}
+
+.custom-table-width {
+  width: 70% !important;
+  margin: 0 auto !important;
+}
+
+.table-container-bg {
+  background-color: rgb(var(--background-start-rgb)) !important;
+}
+
+.header-text-color {
+  color: rgb(var(--foreground-rgb)) !important;
+}
+
+.MuiTable-root {
+  border-radius: 1rem !important;
+}
+
+.albion {
+  background-color: #97233f;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.midgard {
+  background-color: #004170;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.hibernia {
+  background-color: #00674b;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.text-shadow-md {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-container {
+  position: relative;
+  width: 70%;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 1.5s ease;
+}
+
+.carousel-slide {
+  min-height: 200px;
+  flex: 0 0 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fff;
+}
+
+.carousel-slide a {
+  flex: 0 0 100%;
+}
+
+.carousel-text {
+  font-size: 1.5rem;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.carousel-icon {
+  font-size: 4rem;
+}
+
+.carousel-controls {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+}
+
+.carousel-dot {
+  width: 15px;
+  height: 15px;
+  background-color: #ddd;
+  border-radius: 50%;
+  margin: 0 5px;
+  transition: background-color 0.3s ease;
+}
+
+.carousel-dot.active {
+  background-color: #4f46e5;
 }
