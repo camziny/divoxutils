@@ -60,7 +60,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <Link href="/search">
                   <div className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer">
                     <SearchIcon className="mr-1" />
-                    Search Characters
+                    Search Users
                   </div>
                 </Link>
               </>
