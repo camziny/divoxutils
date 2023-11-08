@@ -38,34 +38,33 @@ const AboutPage = () => {
           <p className="text-base sm:text-lg leading-relaxed">
             When daocutils was no longer available, it left a noticeable gap for
             many avid Dark Age of Camelot enthusiasts who needed a way to keep
-            track of their characters. That's where the idea for divoxutils came
-            in. I set out to create a new hub where players can easily manage
-            their character's progress and celebrate their triumphs (rr12+
-            dings). Divoxutils is all about enhancing your gameplay by keeping
-            you connected to your characters' journeys in a user-friendly and
-            engaging way.
+            track of their characters. That&apos;s where the idea for divoxutils
+            came in. I set out to create a new hub where players can easily
+            manage their character&apos;s progress and celebrate their triumphs
+            (rr12+ dings). Divoxutils is all about enhancing your gameplay by
+            keeping you connected to your characters&apos; journeys in a
+            user-friendly and engaging way.
           </p>
 
           <p className="text-base sm:text-lg leading-relaxed">
             The journey of divoxutils is ongoing, and the horizon is brimming
             with potential new features. Your input and insights are invaluable
             to the ongoing development of divoxutils. I warmly welcome your
-            suggestions and feedback—please don't hesitate to reach out with
-            your thoughts via Discord, available through the link below.
+            suggestions and feedback—please don&apos;t hesitate to reach out
+            with your thoughts via Discord, available through the link below.
           </p>
           <p className="text-base sm:text-lg leading-relaxed">
             Building and enhancing divoxutils is a labor of love and dedication.
-            If you'd like to support the development of future features,
+            If you&apos;d like to support the development of future features,
             consider contributing through the PayPal link below.
           </p>
           <p className="text-base sm:text-lg leading-relaxed">
-            Your support doesn't end with financial contributions. Join the
+            Your support doesn&apos;t end with financial contributions. Join the
             conversation and the community on Twitch. Follow along, jump into my
             streams to chat live, and be a part of the divoxutils story as it
             unfolds.
           </p>
         </section>
-
         <div className="text-center mt-8 p-4">
           {links.map((item, index) => (
             <a
