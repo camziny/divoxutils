@@ -8,7 +8,7 @@ type OtherCharacterListProps = {
 };
 
 async function fetchCharactersForUser(userId?: string) {
-  const apiUrl = `http://localhost:3000/api/userCharactersByUserId/${userId}`;
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
   const response = await fetch(apiUrl);
   const data = await response.json();
 

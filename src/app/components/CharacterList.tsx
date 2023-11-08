@@ -18,7 +18,7 @@ type CharacterTileProps = {
 type RealmType = 1 | 2 | 3;
 
 async function fetchCharactersForUser(userId: number) {
-  const apiUrl = `http://localhost:3000/api/userCharactersByUserId/${userId}`;
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
   const response = await fetch(apiUrl);
   const data = await response.json();
 
@@ -53,7 +53,7 @@ async function fetchCharacterData(webId: string) {
 }
 
 async function searchUsersByName(name: any) {
-  const apiUrl = `http://localhost:3000/api/searchUsers?name=${name}`;
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/searchUsers?name=${name}`;
   const response = await fetch(apiUrl);
   const data = await response.json();
 

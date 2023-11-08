@@ -39,7 +39,7 @@ function CharacterSearchAndAdd() {
 
   const fetchCharacters = async (name: string, cluster: string) => {
     const response = await fetch(
-      `http://localhost:3000/api/characters/search?name=${name}&cluster=${cluster}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/characters/search?name=${name}&cluster=${cluster}`,
       {}
     );
     return response.json();
