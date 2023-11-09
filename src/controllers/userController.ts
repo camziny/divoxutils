@@ -1,8 +1,7 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import * as yup from "yup";
 import bcrypt from "bcrypt";
-
-const prisma = new PrismaClient();
+import prisma from "../../prisma/prismaClient";
 
 const accountSchema = yup
   .object()

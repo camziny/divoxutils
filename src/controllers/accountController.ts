@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "../../prisma/prismaClient";
 import * as yup from "yup";
-
-const prisma = new PrismaClient();
 
 const accountSchema = yup.object().shape({
   userId: yup

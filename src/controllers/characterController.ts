@@ -1,7 +1,6 @@
-import { PrismaClient, Prisma } from "@prisma/client";
+import prisma from "../../prisma/prismaClient";
 import * as yup from "yup";
 import axios from "axios";
-const prisma = new PrismaClient();
 
 const characterSchema = yup.object().shape({
   name: yup.string().required(),
