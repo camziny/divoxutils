@@ -1,9 +1,7 @@
 import { NextApiResponse, NextApiRequest } from "next";
 import * as characterController from "../../../src/controllers/characterController";
 import { getAuth } from "@clerk/nextjs/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../../../prisma/prismaClient";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const authDetails = getAuth(req);
