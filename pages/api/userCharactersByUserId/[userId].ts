@@ -9,8 +9,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  console.log("Database URL:", process.env.DATABASE_URL);
-
   switch (req.method) {
     case "GET":
       try {
