@@ -4,11 +4,6 @@ import { createUserFromClerk } from "../../../src/controllers/userController";
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === "POST") {
     const clerkData = req.body;
-
-    console.log(
-      "Received data from Clerk:",
-      JSON.stringify(clerkData, null, 2)
-    );
     const primaryEmailObj = clerkData.data.email_addresses.find(
       (emailObj: any) => emailObj.id === clerkData.data.primary_email_address_id
     );
