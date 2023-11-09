@@ -10,6 +10,7 @@ const handler = async (req: AuthenticatedRequest, res: NextApiResponse) => {
     return;
   }
   const userId = req.user?.clerkUserId;
+  console.log("Database URL:", process.env.DATABASE_URL);
 
   if (["POST", "DELETE"].includes(req.method)) {
     if (!userId) {
@@ -42,7 +43,6 @@ const handler = async (req: AuthenticatedRequest, res: NextApiResponse) => {
       break;
     case "POST":
       try {
-        console.log("Received character data:", req.body);
         const authDetails = getAuth(req);
         const clerkUserId = authDetails.userId;
 
