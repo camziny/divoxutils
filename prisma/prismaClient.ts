@@ -10,6 +10,6 @@ prisma.$use(async (params, next) => {
   return next(params);
 });
 
-console.log("db url:", process.env.DATABASE_URL);
+console.log("DB url:", process.env.DATABASE_URL);
 
 export default prisma;
