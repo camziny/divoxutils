@@ -1,7 +1,7 @@
 import { authMiddleware } from "@clerk/nextjs";
 
 export default authMiddleware({
-  debug: true,
+  debug: false,
   publicRoutes: [
     "/",
     "/about",
@@ -15,9 +15,7 @@ export default authMiddleware({
     "/api/users/:userId",
   ],
   beforeAuth: (req) => {
-    console.log("Incoming request URL:", req.url);
     if (req.url.startsWith("/api/users/")) {
-      console.log("Bypassing auth for /api/users/");
       return false;
     }
     return undefined;

@@ -80,7 +80,6 @@ async function getDetailedCharacters(userId: any, search: any) {
       return { ...char, detailedCharacter: detailedData };
     })
   );
-
   return detailedCharacters;
 }
 
@@ -108,10 +107,16 @@ export default async function CharacterList({
     detailedCharacters.sort((a, b) => {
       const realmA = a.detailedCharacter.realm as RealmType;
       const realmB = b.detailedCharacter.realm as RealmType;
-      if (sortOrder[realmA] && sortOrder[realmB]) {
+      const realmPointsA =
+        a.detailedCharacter.realm_war_stats?.current?.realm_points || 0;
+      const realmPointsB =
+        b.detailedCharacter.realm_war_stats?.current?.realm_points || 0;
+
+      if (sortOrder[realmA] !== sortOrder[realmB]) {
         return sortOrder[realmA] - sortOrder[realmB];
+      } else {
+        return realmPointsB - realmPointsA;
       }
-      return 0;
     });
   } else {
     userError = (
