@@ -75,11 +75,16 @@ export default async function OtherCharacterList({
     detailedCharacters.sort((a, b) => {
       const realmA = a.detailedCharacter.realm as RealmType;
       const realmB = b.detailedCharacter.realm as RealmType;
+      const realmPointsA =
+        a.detailedCharacter.realm_war_stats?.current?.realm_points || 0;
+      const realmPointsB =
+        b.detailedCharacter.realm_war_stats?.current?.realm_points || 0;
 
-      if (sortOrder[realmA] && sortOrder[realmB]) {
+      if (sortOrder[realmA] !== sortOrder[realmB]) {
         return sortOrder[realmA] - sortOrder[realmB];
+      } else {
+        return realmPointsB - realmPointsA;
       }
-      return 0;
     });
   } else {
     return <p>User ID is not provided. Unable to fetch characters.</p>;
