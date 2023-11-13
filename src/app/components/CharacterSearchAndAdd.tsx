@@ -61,46 +61,46 @@ function CharacterSearchAndAdd() {
     }
   };
 
-  const saveCharacters = async () => {
-    setIsFetching(true);
-    const requestBody = {
-      webIds: selectedCharacters.map((character) => character.character_web_id),
-    };
-
-    console.log("Sending POST request with webIds:", requestBody.webIds);
-
-    try {
-      const response = await fetch("/api/characters", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log(
-        "POST Response Status:",
-        response.status,
-        response.statusText
-      );
-
-      const data = await response.json();
-
-      console.log("POST Response Data:", data);
-
-      if (!response.ok) {
-        throw new Error(data.error);
-      }
-      setSnackbarOpen(true);
-      setAddedCount(selectedCharacters.length);
-      setSelectedCharacters([]);
-    } catch (error) {
-      console.error("Error saving characters:", error);
-      console.log("POST Request Error:", error);
-    } finally {
-      setIsFetching(false);
-    }
+const saveCharacters = async () => {
+  setIsFetching(true);
+  const requestBody = {
+    webIds: selectedCharacters.map((character) => character.character_web_id),
   };
+
+  console.log("Sending POST request with webIds:", requestBody.webIds);
+
+  try {
+    const response = await fetch("/api/characters", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log(
+      "POST Response Status:",
+      response.status,
+      response.statusText
+    );
+
+    const data = await response.json();
+
+    console.log("POST Response Data:", data);
+
+    if (!response.ok) {
+      throw new Error(data.error);
+    }
+    setSnackbarOpen(true);
+    setAddedCount(selectedCharacters.length);
+    setSelectedCharacters([]);
+  } catch (error) {
+    console.error("Error saving characters:", error);
+    console.log("POST Request Error:", error);
+  } finally {
+    setIsFetching(false);
+  }
+};
 
   const handleAddToList = async () => {
     const numSelected = selectedCharacters.length;
