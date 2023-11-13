@@ -30,26 +30,42 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       break;
     case "POST":
       try {
-        console.log("POST Request Body:", req.body);
+        console.log("POST Request received:", req.method, req.url, req.body);
+
         if (!Array.isArray(req.body.webIds)) {
+          console.error("Error: Expected an array of webIds.");
           throw new Error("Expected an array of webIds.");
         }
-        console.log(`Attempting to find user with ID: ${user.id}`);
+
+        console.log(
+          `Attempting to find user with clerkUserId: ${user.clerkUserId}`
+        );
         const foundUser = await prisma.user.findUnique({
-          where: { id: user.id },
+          where: { clerkUserId: user.clerkUserId },
         });
         console.log("Found User:", foundUser);
+
+        if (!foundUser) {
+          console.log(`No user found with clerkUserId: ${user.clerkUserId}`);
+          return res
+            .status(404)
+            .json({ error: "User not found in our database." });
+        }
+
+        console.log(`Adding characters to user list:`, req.body.webIds);
         const characters = await characterController.addCharactersToUserList(
           req.body.webIds,
-          user.id
+          foundUser.id
         );
+        console.log("Characters added:", characters);
+
         res.status(201).json(characters);
       } catch (error) {
-        console.error("Error adding characters to user list", error);
+        console.error("Error during POST request processing:", error);
         handleError(res, error);
       }
-
       break;
+
     default:
       res.setHeader("Allow", ["GET", "POST"]);
       res.status(405).end(`Method ${req.method} Not Allowed`);
