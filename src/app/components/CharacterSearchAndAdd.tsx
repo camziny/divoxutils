@@ -66,7 +66,8 @@ function CharacterSearchAndAdd() {
     const requestBody = {
       webIds: selectedCharacters.map((character) => character.character_web_id),
     };
-    console.log("Sending POST request with webIds:", webIds);
+
+    console.log("Sending POST request with webIds:", requestBody.webIds);
 
     try {
       const response = await fetch("/api/characters", {
@@ -74,11 +75,7 @@ function CharacterSearchAndAdd() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          webIds: selectedCharacters.map(
-            (character) => character.character_web_id
-          ),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       console.log(

@@ -127,6 +127,7 @@ export const getUserByName = async (name: string) => {
 };
 
 export const createUserFromClerk = async (data: any) => {
+  console.log("Creating user with data:", data);
   try {
     await userSchema.validate(data);
 
@@ -137,19 +138,22 @@ export const createUserFromClerk = async (data: any) => {
         clerkUserId: data.clerkUserId,
       },
     });
-
     return createdUser;
   } catch (error) {
     if (error instanceof yup.ValidationError) {
-      throw new Error(`Validation error: ${error.message}`);
-    }
-    if (
+      console.error(`Validation error: ${error.message}`, error);
+    } else if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      throw new Error("This email is already in use.");
+      console.error("This email is already in use.", error);
+    } else {
+      console.error(
+        "An unexpected error occurred in createUserFromClerk:",
+        error
+      );
     }
-    throw new Error("An unexpected error occurred.");
+    throw error;
   }
 };
 
