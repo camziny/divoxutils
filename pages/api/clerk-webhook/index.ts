@@ -2,6 +2,8 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { createUserFromClerk } from "../../../src/controllers/userController";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
+  console.log("Webhook received data:", req.body);
+
   if (req.method === "POST") {
     const clerkData = req.body;
     const primaryEmailObj = clerkData.data.email_addresses.find(
@@ -22,9 +24,11 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       clerkUserId: clerkData.data.id,
     };
 
+    console.log("Processed user data for creation:", userData);
+
     try {
       const user = await createUserFromClerk(userData);
-
+      console.log("User creation response:", user);
       res
         .status(200)
         .json({ success: true, message: "User created successfully" });
