@@ -63,9 +63,9 @@ function CharacterSearchAndAdd() {
 
   const saveCharacters = async () => {
     setIsFetching(true);
-    const requestBody = {
-      webIds: selectedCharacters.map((character) => character.character_web_id),
-    };
+    const webIds = selectedCharacters.map(
+      (character) => character.character_web_id
+    );
     console.log("Sending POST request with webIds:", webIds);
 
     try {
@@ -74,11 +74,7 @@ function CharacterSearchAndAdd() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          webIds: selectedCharacters.map(
-            (character) => character.character_web_id
-          ),
-        }),
+        body: JSON.stringify({ webIds }),
       });
 
       console.log(
@@ -88,12 +84,12 @@ function CharacterSearchAndAdd() {
       );
 
       const data = await response.json();
-
       console.log("POST Response Data:", data);
 
       if (!response.ok) {
         throw new Error(data.error);
       }
+
       setSnackbarOpen(true);
       setAddedCount(selectedCharacters.length);
       setSelectedCharacters([]);
