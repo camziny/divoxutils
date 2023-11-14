@@ -149,12 +149,6 @@ const CharacterTile: React.FC<{
   currentUserId: string;
   ownerId: string;
 }> = ({ webId, initialCharacter, currentUserId, ownerId }) => {
-  console.log("CharacterTile Props:", {
-    webId,
-    initialCharacter,
-    currentUserId,
-    ownerId,
-  });
   const router = useRouter();
   const [character, setCharacter] = useState<CharacterInfo | null>(null);
   const [open, setOpen] = useState(false);
@@ -174,7 +168,6 @@ const CharacterTile: React.FC<{
           throw new Error(`Failed to fetch character data for webId: ${webId}`);
         }
         const data = await response.json();
-        console.log("Fetched character data for webId " + webId + ":", data);
         setCharacter(data);
       } catch (error) {
         console.error(
@@ -186,10 +179,6 @@ const CharacterTile: React.FC<{
 
     fetchData();
   }, [webId]);
-
-  useEffect(() => {
-    console.log(`Character state updated for webId ${webId}:`, character);
-  }, [character]);
 
   const handleDelete = async (
     event: React.MouseEvent,
@@ -281,7 +270,7 @@ const CharacterTile: React.FC<{
         <TableCell className="px-1 py-1">
           {showDeleteIcon && isOwner && (
             <IconButton
-              size="small"
+              size="large"
               onClick={(e) => handleDelete(e, character.character_web_id)}
               style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
             >

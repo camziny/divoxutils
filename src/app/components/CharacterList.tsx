@@ -19,14 +19,10 @@ type RealmType = 1 | 2 | 3;
 
 async function fetchCharactersForUser(userId: number) {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
-  console.log(`Fetching characters for user ID: ${userId}, URL: ${apiUrl}`);
 
   try {
     const response = await fetch(apiUrl);
     const data = await response.json();
-
-    console.log("Fetch Response Status:", response.status, response.statusText);
-    console.log("Fetch Response Data:", data);
 
     if (!response.ok) {
       throw new Error(`Fetch response error: ${JSON.stringify(data)}`);
@@ -45,18 +41,10 @@ async function fetchCharactersForUser(userId: number) {
 
 async function fetchCharacterData(webId: string) {
   const apiUrl = `https://api.camelotherald.com/character/info/${webId}`;
-  console.log(`Fetching character data for webId: ${webId}, URL: ${apiUrl}`);
 
   try {
     const response = await fetch(apiUrl);
     const data = await response.json();
-
-    console.log(
-      "Character Data Fetch Response Status:",
-      response.status,
-      response.statusText
-    );
-    console.log("Character Data Fetch Response:", data);
     if (!response.ok) {
       throw new Error(
         `Failed to fetch data for character with webId: ${webId}`
@@ -87,7 +75,6 @@ async function searchUsersByName(name: any) {
 
 async function getDetailedCharacters(userId: any, search: any) {
   let characters = await fetchCharactersForUser(userId);
-  console.log(`Fetched characters for user:`, characters);
   if (search) {
     characters = characters.filter((char) =>
       char.character.name.toLowerCase().includes(search.toLowerCase())
@@ -124,7 +111,6 @@ export default async function CharacterList({
 
   if (effectiveUserId) {
     detailedCharacters = await getDetailedCharacters(effectiveUserId, search);
-    console.log("Detailed Characters:", detailedCharacters);
     detailedCharacters.sort((a, b) => {
       const realmA = a.detailedCharacter.realm as RealmType;
       const realmB = b.detailedCharacter.realm as RealmType;
@@ -144,11 +130,6 @@ export default async function CharacterList({
       <p>User is not authenticated. Please log in to view characters.</p>
     );
   }
-
-  console.log(
-    "Rendering CharacterTiles for:",
-    detailedCharacters.map((item) => item.character.webId)
-  );
 
   return (
     <div className="flex flex-col items-center w-full max-w-6xl mx-auto">

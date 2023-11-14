@@ -36,6 +36,9 @@ function CharacterSearchAndAdd() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [addedCount, setAddedCount] = useState<number>(0);
   const [hasSearched, setHasSearched] = useState(false);
+  const [charactersAdded, setCharactersAdded] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [invalidSearchAttempted, setInvalidSearchAttempted] = useState(false);
 
   const fetchCharacters = async (name: string, cluster: string) => {
     const response = await fetch(
@@ -44,10 +47,17 @@ function CharacterSearchAndAdd() {
     );
     return response.json();
   };
+
   const handleSearch = async () => {
+    if (name.length < 3) {
+      setInvalidSearchAttempted(true);
+      setSearchResults([]);
+      return;
+    }
+    setInvalidSearchAttempted(false);
+    setHasSearched(true);
+    setIsFetching(true);
     try {
-      setHasSearched(true);
-      setIsFetching(true);
       const results = await fetchCharacters(name, cluster);
       if (results && results.results) {
         setSearchResults(results.results);
@@ -61,46 +71,36 @@ function CharacterSearchAndAdd() {
     }
   };
 
-const saveCharacters = async () => {
-  setIsFetching(true);
-  const requestBody = {
-    webIds: selectedCharacters.map((character) => character.character_web_id),
-  };
+  const saveCharacters = async () => {
+    setIsFetching(true);
+    const requestBody = {
+      webIds: selectedCharacters.map((character) => character.character_web_id),
+    };
 
-  console.log("Sending POST request with webIds:", requestBody.webIds);
+    try {
+      const response = await fetch("/api/characters", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
 
-  try {
-    const response = await fetch("/api/characters", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
+      const data = await response.json();
 
-    console.log(
-      "POST Response Status:",
-      response.status,
-      response.statusText
-    );
-
-    const data = await response.json();
-
-    console.log("POST Response Data:", data);
-
-    if (!response.ok) {
-      throw new Error(data.error);
+      if (!response.ok) {
+        throw new Error(data.error);
+      }
+      setSnackbarOpen(true);
+      setAddedCount(selectedCharacters.length);
+      setSelectedCharacters([]);
+      setCharactersAdded(true);
+    } catch (error) {
+      console.error("Error saving characters:", error);
+    } finally {
+      setIsFetching(false);
     }
-    setSnackbarOpen(true);
-    setAddedCount(selectedCharacters.length);
-    setSelectedCharacters([]);
-  } catch (error) {
-    console.error("Error saving characters:", error);
-    console.log("POST Request Error:", error);
-  } finally {
-    setIsFetching(false);
-  }
-};
+  };
 
   const handleAddToList = async () => {
     const numSelected = selectedCharacters.length;
@@ -111,6 +111,9 @@ const saveCharacters = async () => {
       setSnackbarOpen(true);
       setSelectedCharacters([]);
       setSearchResults([]);
+      setName("");
+      setHasSearched(false);
+      setInvalidSearchAttempted(false);
       router.refresh();
     } catch (error) {
       console.error("Failed to add to list:", error);
@@ -245,9 +248,18 @@ const saveCharacters = async () => {
           <CircularProgress className="text-indigo-500" />
         </div>
       )}
-      {!isFetching && hasSearched && searchResults.length === 0 && (
-        <div className="mt-4 text-white text-center">No Results Found</div>
+      {invalidSearchAttempted && (
+        <div className="mt-4 text-white text-center">
+          Please enter at least 3 characters to perform a search
+        </div>
       )}
+      {!isFetching &&
+        hasSearched &&
+        searchResults.length === 0 &&
+        !charactersAdded && (
+          <div className="mt-4 text-white text-center">No Results Found</div>
+        )}
+
       <div className="p-2">
         <ul>
           {searchResults.map((character) => {
