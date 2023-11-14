@@ -72,7 +72,7 @@ const MobileCharacterTile: React.FC<{
   useEffect(() => {
     async function fetchData() {
       const response = await fetch(
-        `http://api.camelotherald.com/character/info/${webId}`
+        `https://api.camelotherald.com/character/info/${webId}`
       );
       const data = await response.json();
       setCharacter(data);

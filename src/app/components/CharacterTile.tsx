@@ -168,7 +168,7 @@ const CharacterTile: React.FC<{
     async function fetchData() {
       try {
         const response = await fetch(
-          `http://api.camelotherald.com/character/info/${webId}`
+          `https://api.camelotherald.com/character/info/${webId}`
         );
         if (!response.ok) {
           throw new Error(`Failed to fetch character data for webId: ${webId}`);
@@ -183,6 +183,7 @@ const CharacterTile: React.FC<{
         );
       }
     }
+
     fetchData();
   }, [webId]);
 
