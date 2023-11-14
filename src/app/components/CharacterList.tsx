@@ -145,6 +145,11 @@ export default async function CharacterList({
     );
   }
 
+  console.log(
+    "Rendering CharacterTiles for:",
+    detailedCharacters.map((item) => item.character.webId)
+  );
+
   return (
     <div className="flex flex-col items-center w-full max-w-6xl mx-auto">
       <div className="hidden sm:block w-full overflow-x-auto p-0 border border-white rounded-lg">
