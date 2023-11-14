@@ -51,8 +51,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({
     }
   }, [initialToken]);
 
-  console.log("UserProvider is rendering");
-
   return (
     <UserContext.Provider value={{ user, setUser }}>
       {children}
@@ -62,7 +60,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({
 
 export const useUser = (): UserContextType => {
   const context = useContext(UserContext);
-  console.log("Context value:", context);
   if (!context) {
     throw new Error("useUser must be used within a UserProvider");
   }

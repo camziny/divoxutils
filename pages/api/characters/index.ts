@@ -30,27 +30,19 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       break;
     case "POST":
       try {
-        console.log("POST Request received:", req.method, req.url, req.body);
         if (!Array.isArray(req.body.webIds)) {
           throw new Error("Expected an array of webIds.");
         }
-
-        console.log(`Attempting to find user with ID: ${user.id}`);
         const foundUser = await prisma.user.findUnique({
           where: { id: user.id },
         });
-        console.log("Found User:", foundUser);
-
         if (!foundUser) {
           throw new Error(`No user found with ID: ${user.id}`);
         }
-
-        console.log("Adding characters to user list:", req.body.webIds);
         const characters = await characterController.addCharactersToUserList(
           req.body.webIds,
           user.id
         );
-        console.log("Characters added:", characters);
         res.status(201).json(characters);
       } catch (error) {
         console.error("Error in POST request handling:", error);

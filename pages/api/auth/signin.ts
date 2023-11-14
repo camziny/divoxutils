@@ -7,9 +7,7 @@ const handleLoginUser = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === "POST") {
     try {
       const user = await loginUser(req.body);
-      console.log("User from DB:", user);
       const token = generateToken(user);
-      console.log("Generated Token:", token);
       setCookie(res, "authToken", token);
       res.status(200).json({ message: "Login Successful", token });
     } catch (error) {
