@@ -1,9 +1,11 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { createUserFromClerk } from "../../../src/controllers/userController";
+import {
+  createUserFromClerk,
+  updateUserFromClerk,
+} from "../../../src/controllers/userController";
+import prisma from "../../../prisma/prismaClient";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  console.log("Webhook received data:", req.body);
-
   if (req.method === "POST") {
     const clerkData = req.body;
     const primaryEmailObj = clerkData.data.email_addresses.find(
@@ -24,18 +26,31 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       clerkUserId: clerkData.data.id,
     };
 
-    console.log("Processed user data for creation:", userData);
+    let existingUser;
 
     try {
-      const user = await createUserFromClerk(userData);
-      console.log("User creation response:", user);
-      res
-        .status(200)
-        .json({ success: true, message: "User created successfully" });
+      existingUser = await prisma.user.findUnique({
+        where: { clerkUserId: clerkData.data.id },
+      });
+      if (existingUser) {
+        const updatedUser = await updateUserFromClerk(clerkData.data.id, {
+          name,
+        });
+        res
+          .status(200)
+          .json({ success: true, message: "User updated successfully" });
+      } else {
+        const user = await createUserFromClerk(userData);
+        res
+          .status(200)
+          .json({ success: true, message: "User created successfully" });
+      }
     } catch (error) {
       const anyError = error as any;
       console.error(
-        "Error creating user in database from Clerk webhook:",
+        `Error ${
+          existingUser ? "updating" : "creating"
+        } user in database from Clerk webhook:`,
         anyError.message
       );
       res.status(500).json({ success: false, message: anyError.message });
