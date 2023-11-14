@@ -199,3 +199,17 @@ export const updateUserFromClerk = async (clerkUserId: string, data: any) => {
     throw error;
   }
 };
+
+export const getUsersByPartialName = async (name: string) => {
+  return await prisma.user.findMany({
+    where: {
+      name: {
+        contains: name,
+        mode: "insensitive",
+      },
+    },
+    include: {
+      account: true,
+    },
+  });
+};

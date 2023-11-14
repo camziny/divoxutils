@@ -1,15 +1,26 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as userController from "../../../src/controllers/userController";
 import { getUserByClerkUserId } from "../../../src/controllers/userController";
+import { clerkClient } from "@clerk/nextjs";
+
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { clerkUserId, id } = req.query;
 
   switch (req.method) {
     case "GET":
       try {
-        const user = await getUserByClerkUserId(clerkUserId as string);
+        const user = await userController.getUserByClerkUserId(
+          clerkUserId as string
+        );
         if (user) {
-          res.status(200).json(user);
+          const clerkUser = await clerkClient.users.getUser(
+            clerkUserId as string
+          );
+          const combinedUserData = {
+            ...user,
+            username: clerkUser.username,
+          };
+          res.status(200).json(combinedUserData);
         } else {
           res.status(404).json({ message: "User not found" });
         }
@@ -33,7 +44,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         }
       }
       break;
-
     case "DELETE":
       try {
         await userController.deleteUser(Number(id));

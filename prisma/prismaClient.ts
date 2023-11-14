@@ -7,7 +7,6 @@ const prisma = new PrismaClient({
 prisma.$use(async (params, next) => {
   try {
     const result = await next(params);
-    console.log("Result:", result);
     return result;
   } catch (error) {
     console.error("Query Error:", error);

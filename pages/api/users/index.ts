@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import * as userController from "../../../src/controllers/userController";
 import { generateToken } from "@/utils/auth";
 import { setCookie } from "@/utils/cookies";
+import { getUsersByPartialName } from "../../../src/controllers/userController";
 
 export const handleGetUsers = async (
   req: NextApiRequest,
@@ -12,7 +13,7 @@ export const handleGetUsers = async (
       try {
         const name = req.query.name;
         if (name && typeof name === "string") {
-          const users = await userController.getUserByName(name);
+          const users = await getUsersByPartialName(name);
           res.status(200).json(users);
         } else {
           const users = await userController.getUsers();
