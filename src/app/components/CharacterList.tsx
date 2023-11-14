@@ -19,30 +19,52 @@ type RealmType = 1 | 2 | 3;
 
 async function fetchCharactersForUser(userId: number) {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
-  const response = await fetch(apiUrl);
-  const data = await response.json();
+  console.log(`Fetching characters for user ID: ${userId}, URL: ${apiUrl}`);
 
-  if (!response.ok) {
-    console.error("Fetch response error:", data);
-  }
+  try {
+    const response = await fetch(apiUrl);
+    const data = await response.json();
 
-  if (!Array.isArray(data)) {
-    console.error("Fetched data is not an array:", data);
+    console.log("Fetch Response Status:", response.status, response.statusText);
+    console.log("Fetch Response Data:", data);
+
+    if (!response.ok) {
+      throw new Error(`Fetch response error: ${JSON.stringify(data)}`);
+    }
+
+    if (!Array.isArray(data)) {
+      throw new Error(`Fetched data is not an array: ${JSON.stringify(data)}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in fetchCharactersForUser:", error);
     return [];
   }
-  return data;
 }
 
 async function fetchCharacterData(webId: string) {
   const apiUrl = `https://api.camelotherald.com/character/info/${webId}`;
+  console.log(`Fetching character data for webId: ${webId}, URL: ${apiUrl}`);
+
   try {
     const response = await fetch(apiUrl);
+    const data = await response.json();
+
+    console.log(
+      "Character Data Fetch Response Status:",
+      response.status,
+      response.statusText
+    );
+    console.log("Character Data Fetch Response:", data);
+
     if (!response.ok) {
       throw new Error(
         `Failed to fetch data for character with webId: ${webId}`
       );
     }
-    return await response.json();
+
+    return data;
   } catch (error) {
     console.error(
       `Error fetching data for character with webId: ${webId}:`,
