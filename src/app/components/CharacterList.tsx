@@ -57,13 +57,11 @@ async function fetchCharacterData(webId: string) {
       response.statusText
     );
     console.log("Character Data Fetch Response:", data);
-
     if (!response.ok) {
       throw new Error(
         `Failed to fetch data for character with webId: ${webId}`
       );
     }
-
     return data;
   } catch (error) {
     console.error(
@@ -89,7 +87,7 @@ async function searchUsersByName(name: any) {
 
 async function getDetailedCharacters(userId: any, search: any) {
   let characters = await fetchCharactersForUser(userId);
-
+  console.log(`Fetched characters for user:`, characters);
   if (search) {
     characters = characters.filter((char) =>
       char.character.name.toLowerCase().includes(search.toLowerCase())
