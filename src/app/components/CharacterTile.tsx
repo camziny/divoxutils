@@ -166,15 +166,23 @@ const CharacterTile: React.FC<{
 
   useEffect(() => {
     async function fetchData() {
-      const response = await fetch(
-        `http://api.camelotherald.com/character/info/${webId}`
-      );
-      const data = await response.json();
-      console.log("Fetched character data:", data);
-      setCharacter(data);
-      console.log("Character State:", data);
+      try {
+        const response = await fetch(
+          `http://api.camelotherald.com/character/info/${webId}`
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to fetch character data for webId: ${webId}`);
+        }
+        const data = await response.json();
+        console.log("Fetched character data for webId " + webId + ":", data);
+        setCharacter(data);
+      } catch (error) {
+        console.error(
+          `Error fetching character data for webId ${webId}:`,
+          error
+        );
+      }
     }
-
     fetchData();
   }, [webId]);
 
