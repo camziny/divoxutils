@@ -124,6 +124,7 @@ export default async function CharacterList({
 
   if (effectiveUserId) {
     detailedCharacters = await getDetailedCharacters(effectiveUserId, search);
+    console.log("Detailed Characters:", detailedCharacters);
     detailedCharacters.sort((a, b) => {
       const realmA = a.detailedCharacter.realm as RealmType;
       const realmB = b.detailedCharacter.realm as RealmType;
