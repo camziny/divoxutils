@@ -149,6 +149,12 @@ const CharacterTile: React.FC<{
   currentUserId: string;
   ownerId: string;
 }> = ({ webId, initialCharacter, currentUserId, ownerId }) => {
+  console.log("CharacterTile Props:", {
+    webId,
+    initialCharacter,
+    currentUserId,
+    ownerId,
+  });
   const router = useRouter();
   const [character, setCharacter] = useState<CharacterInfo | null>(null);
   const [open, setOpen] = useState(false);
@@ -166,6 +172,7 @@ const CharacterTile: React.FC<{
       const data = await response.json();
       console.log("Fetched character data:", data);
       setCharacter(data);
+      console.log("Character State:", data);
     }
 
     fetchData();
