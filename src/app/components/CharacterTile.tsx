@@ -164,6 +164,7 @@ const CharacterTile: React.FC<{
         `http://api.camelotherald.com/character/info/${webId}`
       );
       const data = await response.json();
+      console.log("Fetched character data:", data);
       setCharacter(data);
     }
 
