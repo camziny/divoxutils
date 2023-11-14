@@ -178,6 +178,10 @@ const CharacterTile: React.FC<{
     fetchData();
   }, [webId]);
 
+  useEffect(() => {
+    console.log(`Character state updated for webId ${webId}:`, character);
+  }, [character]);
+
   const handleDelete = async (
     event: React.MouseEvent,
     characterWebId: string
