@@ -115,3 +115,11 @@ body {
 .carousel-dot.active {
   background-color: #4f46e5;
 }
+
+.scrollbar-visible::-webkit-scrollbar {
+  display: block;
+}
+
+.scrollbar-visible {
+  scrollbar-width: auto;
+}

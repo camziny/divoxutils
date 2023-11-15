@@ -6,7 +6,12 @@ import Navbar from "./navbar";
 import { ClerkProvider } from "@clerk/nextjs";
 import Footer from "./footer";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "800"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "divoxutils",
