@@ -86,9 +86,10 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                   className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
                   onClick={() => setIsUpdateUsernameModalOpen(true)}
                 >
-                  <span className="mr-1">{userName}</span>
-
-                  <EditIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer" />
+                  <span className="mr-1 font-semibold">{userName}</span>
+                  {userName && (
+                    <EditIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer" />
+                  )}
                 </div>
                 <UpdateUsernameModal
                   isOpen={isUpdateUsernameModalOpen}
