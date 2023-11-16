@@ -6,6 +6,8 @@ import { useAuth } from "@clerk/nextjs";
 import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import CircularProgress from "@mui/material/CircularProgress";
+import InfoIcon from "@mui/icons-material/Info";
+import { Tooltip } from "@mui/material";
 
 type CharacterType = {
   character_web_id: string;
@@ -210,8 +212,29 @@ function CharacterSearchAndAdd() {
   return (
     <div className="bg-gray-900 p-4 rounded-lg">
       <div className="flex justify-between mb-2">
-        <div className="text-white font-semibold text-lg">Add Characters</div>
+        <div className="flex items-center text-white font-semibold text-lg">
+          <span>Add Characters</span>
+          <Tooltip
+            title="If you attempt to add a character that's already in your list, we'll recognize it and prevent duplication. No need to worry about duplicates!"
+            arrow
+            placement="top"
+            sx={{
+              tooltip: {
+                bgColor: "#1A202C",
+                color: "white",
+                fontSize: "0.875rem",
+                border: "1px solid #5A67D8",
+              },
+              arrow: {
+                color: "#1A202C",
+              },
+            }}
+          >
+            <InfoIcon className="text-indigo-400 ml-1" />
+          </Tooltip>
+        </div>
       </div>
+
       <div className="flex flex-wrap items-center mb-2 space-x-2">
         <input
           value={name}

@@ -47,7 +47,7 @@ const AboutPage = () => {
           </p>
 
           <p className="text-base sm:text-lg leading-relaxed">
-            The journey of divoxutils is ongoing, and the horizon is brimming
+            The evolution of divoxutils is ongoing, and the horizon is brimming
             with potential new features. Your input and insights are invaluable
             to the ongoing development of divoxutils. I warmly welcome your
             suggestions and feedback—please don&apos;t hesitate to reach out
