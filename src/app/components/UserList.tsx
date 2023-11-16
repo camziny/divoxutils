@@ -59,6 +59,7 @@ const UserList: React.FC = () => {
         <div className="flex justify-center mb-4 overflow-x-auto">
           {alphabet.map((letter) => (
             <a
+              key={letter}
               href={`#group-${letter}`}
               className="text-indigo-500 hover:text-indigo-400 mx-1"
             >
