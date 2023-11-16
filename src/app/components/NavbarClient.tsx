@@ -1,11 +1,15 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import HomeIcon from "@mui/icons-material/Home";
 import SearchIcon from "@mui/icons-material/Search";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import { UserButton } from "@clerk/nextjs";
+import UpdateUsernameModal from "./UpdateUserNameModal";
+import { useUser } from "@clerk/nextjs";
+import EditIcon from "@mui/icons-material/Edit";
+import useFetchUser from "./FetchUser";
 
 type NavbarClientProps = {
   isUserSignedIn: boolean;
@@ -13,6 +17,21 @@ type NavbarClientProps = {
 
 const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUpdateUsernameModalOpen, setIsUpdateUsernameModalOpen] =
+    useState(false);
+  const { user } = useUser();
+  const { userData, isLoading } = useFetchUser(user?.id || " ");
+  const [userName, setUserName] = useState<string | null>(null);
+
+  const handleUsernameUpdated = (newUsername: string) => {
+    setUserName(newUsername);
+  };
+
+  useEffect(() => {
+    if (user) {
+      setUserName(user.username);
+    }
+  }, [user]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -59,10 +78,23 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 </Link>
                 <Link href="/search">
                   <div className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer">
-                    <SearchIcon className="mr-1" />
                     Search Users
+                    <SearchIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
                   </div>
                 </Link>
+                <div
+                  className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+                  onClick={() => setIsUpdateUsernameModalOpen(true)}
+                >
+                  <span className="mr-1">{userName}</span>
+
+                  <EditIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer" />
+                </div>
+                <UpdateUsernameModal
+                  isOpen={isUpdateUsernameModalOpen}
+                  onClose={() => setIsUpdateUsernameModalOpen(false)}
+                  onUserNameUpdated={handleUsernameUpdated}
+                />
               </>
             )}
             {!isUserSignedIn && (

@@ -4,9 +4,13 @@ import {
   updateUserFromClerk,
 } from "../../../src/controllers/userController";
 import prisma from "../../../prisma/prismaClient";
+import { clerkClient } from "@clerk/nextjs";
+import type { WebhookEvent } from "@clerk/clerk-sdk-node";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === "POST") {
+    const evt = req.body.evt as WebhookEvent;
+    console.log("Webhook event received:", evt);
     const clerkData = req.body;
     const primaryEmailObj = clerkData.data.email_addresses.find(
       (emailObj: any) => emailObj.id === clerkData.data.primary_email_address_id
@@ -16,6 +20,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const lastName = clerkData.data.last_name;
     const username = clerkData.data.username;
     const emailPrefix = primaryEmailObj?.email_address.split("@")[0];
+    const clerkUserId = clerkData.data.id;
 
     const name =
       `${firstName || ""} ${lastName || ""}`.trim() || username || emailPrefix;
@@ -29,12 +34,15 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     let existingUser;
 
     try {
-      existingUser = await prisma.user.findUnique({
-        where: { clerkUserId: clerkData.data.id },
+      console.log("Checking for existing user in database");
+      const existingUser = await prisma.user.findUnique({
+        where: { clerkUserId },
       });
+
       if (existingUser) {
-        const updatedUser = await updateUserFromClerk(clerkData.data.id, {
-          name,
+        await prisma.user.update({
+          where: { clerkUserId },
+          data: { name: username },
         });
         res
           .status(200)

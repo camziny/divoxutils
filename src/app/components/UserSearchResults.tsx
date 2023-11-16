@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CircularProgress from "@mui/material/CircularProgress";
+import UserList from "./UserList";
+import CancelIcon from "@mui/icons-material/Cancel";
 
 type User = {
   id: number;
@@ -39,6 +41,13 @@ export default function UserSearch() {
     }
   };
 
+  const cancelSearch = () => {
+    setQuery("");
+    setSearchResults([]);
+    setSearchPerformed(false);
+    setIsLoading(false);
+  };
+
   return (
     <div className="flex flex-col items-center justify-center my-10 bg-gray-900">
       <form
@@ -59,6 +68,15 @@ export default function UserSearch() {
           Search
         </button>
       </form>
+      {searchPerformed && (
+        <button
+          onClick={cancelSearch}
+          className="flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 border border-indigo-700 rounded shadow mb-4 rounded-full"
+        >
+          <CancelIcon className="mr-2" />
+          <span>Cancel</span>
+        </button>
+      )}
       <div className="w-full max-w-xs">
         {isLoading ? (
           <div className="flex justify-center items-center">
@@ -76,6 +94,7 @@ export default function UserSearch() {
           <p className="text-gray-500">No users found</p>
         ) : null}
       </div>
+      <UserList />
     </div>
   );
 }

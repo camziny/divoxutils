@@ -177,10 +177,13 @@ export const getUserByClerkUserId = async (clerkUserId: string) => {
 
 export const updateUserFromClerk = async (clerkUserId: string, data: any) => {
   try {
+    console.log("Updating user with ID:", clerkUserId, "Data:", data);
     const updatedUser = await prisma.user.update({
       where: { clerkUserId },
       data,
     });
+    console.log("Updated User:", updatedUser);
+
     return updatedUser;
   } catch (error) {
     if (error instanceof yup.ValidationError) {
