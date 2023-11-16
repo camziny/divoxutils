@@ -8,6 +8,7 @@ import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import CircularProgress from "@mui/material/CircularProgress";
 import InfoIcon from "@mui/icons-material/Info";
 import { Tooltip } from "@mui/material";
+import { revalidatePath } from "next/cache";
 
 type CharacterType = {
   character_web_id: string;
@@ -93,6 +94,7 @@ function CharacterSearchAndAdd() {
       if (!response.ok) {
         throw new Error(data.error);
       }
+      revalidatePath(`/characters/${userId}`);
       setSnackbarOpen(true);
       setAddedCount(selectedCharacters.length);
       setSelectedCharacters([]);
