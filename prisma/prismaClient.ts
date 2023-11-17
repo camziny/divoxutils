@@ -1,9 +1,24 @@
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.DATABASE_URL } },
-  log: ["query", "info", "warn", "error"],
-});
+let prisma;
+
+if (process.env.NODE_ENV === "production") {
+  prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL + "?connection_limit=10",
+      },
+    },
+    log: ["query", "info", "warn", "error"],
+  });
+} else {
+  if (!global.prisma) {
+    global.prisma = new PrismaClient({
+      log: ["query", "info", "warn", "error"],
+    });
+  }
+  prisma = global.prisma;
+}
 
 prisma.$use(async (params, next) => {
   try {
