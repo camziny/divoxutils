@@ -8,6 +8,7 @@ export const handleGetUsers = async (
   req: NextApiRequest,
   res: NextApiResponse
 ) => {
+  console.log(`Incoming request: ${req.method} ${req.url}`);
   switch (req.method) {
     case "GET":
       try {
