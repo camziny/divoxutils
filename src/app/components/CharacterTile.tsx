@@ -197,9 +197,8 @@ const CharacterTile: React.FC<{
         `/api/userCharacters/${userId}/${characterId}`,
         { method: "DELETE" }
       );
-
       const data = await response.json();
-
+      router.push(`/users/${userId}/characters`);
       alert(data.message);
       router.refresh();
     } catch (error: unknown) {

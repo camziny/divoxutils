@@ -94,7 +94,7 @@ function CharacterSearchAndAdd() {
       if (!response.ok) {
         throw new Error(data.error);
       }
-      revalidatePath(`/characters/${userId}`);
+      router.push(`/users/${userId}/characters`);
       setSnackbarOpen(true);
       setAddedCount(selectedCharacters.length);
       setSelectedCharacters([]);

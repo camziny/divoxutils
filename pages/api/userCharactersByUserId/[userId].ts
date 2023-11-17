@@ -16,6 +16,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           await userCharacterController.getUserCharactersByUserId(userId);
         if (userCharacters && userCharacters.length) {
           res.status(200).json(userCharacters);
+          res.status(200).json({ message: "Route reached" });
         } else {
           res
             .status(404)
@@ -23,13 +24,13 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         }
       } catch (error) {
         if (error instanceof Error) {
+          console.error("Error in /api/userCharactersByUserId:", error);
           res.status(500).json({ message: error.message });
         } else {
           res.status(500).json({ message: "An unknown error occurred" });
         }
       }
       break;
-
     default:
       res.setHeader("Allow", ["GET"]);
       res.status(405).end(`Method ${req.method} Not Allowed`);

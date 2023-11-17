@@ -9,8 +9,6 @@ import type { WebhookEvent } from "@clerk/clerk-sdk-node";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === "POST") {
-    const evt = req.body.evt as WebhookEvent;
-    console.log("Webhook event received:", evt);
     const clerkData = req.body;
     const primaryEmailObj = clerkData.data.email_addresses.find(
       (emailObj: any) => emailObj.id === clerkData.data.primary_email_address_id
@@ -34,7 +32,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     let existingUser;
 
     try {
-      console.log("Checking for existing user in database");
       const existingUser = await prisma.user.findUnique({
         where: { clerkUserId },
       });
