@@ -15,8 +15,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         const userCharacters =
           await userCharacterController.getUserCharactersByUserId(userId);
         if (userCharacters && userCharacters.length) {
-          res.status(200).json(userCharacters);
-          res.status(200).json({ message: "Route reached" });
+          res.status(200).json({ userCharacters, message: "Route reached" });
         } else {
           res
             .status(404)
