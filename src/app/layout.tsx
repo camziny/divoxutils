@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import Navbar from "./navbar";
 import { ClerkProvider } from "@clerk/nextjs";
 import Footer from "./footer";
+import Head from "next/head";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,6 +28,23 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
+        <Head>
+          <title>divoxutils</title>
+          <meta
+            name="description"
+            content="divoxutils is a hub for Dark Age of Camelot players. Join us to track your progress, share your milestones, and shape the future of this evolving platform."
+          />
+          <meta property="og:title" content="divoxutils" />
+          <meta
+            property="og:description"
+            content="divoxutils is a hub for Dark Age of Camelot players. Join us to track your progress, share your milestones, and shape the future of this evolving platform."
+          />
+          <meta property="og:image" content="/wh-big.png" />
+          <meta property="og:url" content="https://divoxutils.com" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:image" content="/wh-big.png" />
+          <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        </Head>
         <body className={inter.className}>
           <Navbar />
           {children}

@@ -153,7 +153,7 @@ export default async function CharacterList({
               {detailedCharacters.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center py-4 text-white">
-                    No characters available
+                    No characters available. Try Refreshing.
                   </td>
                 </tr>
               ) : (
