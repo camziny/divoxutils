@@ -220,7 +220,7 @@ function CharacterSearchAndAdd() {
           <Tooltip
             title="If you attempt to add a character that's already in your list, we'll recognize it and prevent duplication. No need to worry about duplicates!"
             arrow
-            placement="top"
+            placement="right"
             sx={{
               tooltip: {
                 bgColor: "#1A202C",
