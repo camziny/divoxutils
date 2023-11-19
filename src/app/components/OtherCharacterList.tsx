@@ -17,11 +17,14 @@ async function fetchCharactersForUser(userId: number) {
     if (!response.ok) {
       throw new Error(`Fetch response error: ${JSON.stringify(data)}`);
     }
+    if (Array.isArray(data)) {
+      return data;
+    }
     if (data.userCharacters && Array.isArray(data.userCharacters)) {
       return data.userCharacters;
     } else {
       throw new Error(
-        "Invalid data structure: Expected 'userCharacters' array"
+        "Invalid data structure: Expected an array of user characters"
       );
     }
   } catch (error) {
