@@ -1,5 +1,5 @@
 import React from "react";
-import UserSearchResults from "@/app/components/UserSearchResults"; // Adjusted name
+import UserSearchResults from "@/app/components/UserSearchResults";
 
 const SearchPage = () => {
   return (

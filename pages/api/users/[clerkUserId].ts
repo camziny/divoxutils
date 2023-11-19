@@ -4,7 +4,6 @@ import { getUserByClerkUserId } from "../../../src/controllers/userController";
 import { clerkClient } from "@clerk/nextjs";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  console.log(`Incoming request: ${req.method} ${req.url}`);
   const { clerkUserId, id } = req.query;
 
   switch (req.method) {
