@@ -7,21 +7,27 @@ type OtherCharacterListProps = {
   userId?: string;
 };
 
-async function fetchCharactersForUser(userId?: string) {
+async function fetchCharactersForUser(userId: number) {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
-  const response = await fetch(apiUrl);
-  const data = await response.json();
 
-  if (!response.ok) {
-    console.error("Fetch response error:", data);
-  }
+  try {
+    const response = await fetch(apiUrl);
+    const data = await response.json();
 
-  if (!Array.isArray(data)) {
-    console.error("Fetched data is not an array:", data);
+    if (!response.ok) {
+      throw new Error(`Fetch response error: ${JSON.stringify(data)}`);
+    }
+    if (data.userCharacters && Array.isArray(data.userCharacters)) {
+      return data.userCharacters;
+    } else {
+      throw new Error(
+        "Invalid data structure: Expected 'userCharacters' array"
+      );
+    }
+  } catch (error) {
+    console.error("Error in fetchCharactersForUser:", error);
     return [];
   }
-
-  return data;
 }
 
 async function fetchCharacterData(webId?: string) {
@@ -43,17 +49,15 @@ async function fetchCharacterData(webId?: string) {
   }
 }
 
-async function getDetailedCharacters(userId?: string) {
+async function getDetailedCharacters(userId?: any) {
   const characters = await fetchCharactersForUser(userId);
-
   const detailedCharacters = await Promise.all(
-    characters.map(async (char) => {
+    characters.map(async (char: any) => {
       const ownerId = char.userId;
       const detailedData = await fetchCharacterData(char.character.webId);
       return { ...char, detailedCharacter: detailedData, ownerId: ownerId };
     })
   );
-
   return detailedCharacters;
 }
 

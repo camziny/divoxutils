@@ -15,6 +15,17 @@ type CharacterTileProps = {
   ownerId: string;
 };
 
+interface FetchedCharacter {
+  character: {
+    id: number;
+    webId: string;
+    name: string;
+    // Include other properties as needed
+  };
+  userId: string;
+  // Include other properties as needed
+}
+
 type RealmType = 1 | 2 | 3;
 
 async function fetchCharactersForUser(userId: number) {
@@ -27,12 +38,13 @@ async function fetchCharactersForUser(userId: number) {
     if (!response.ok) {
       throw new Error(`Fetch response error: ${JSON.stringify(data)}`);
     }
-
-    if (!Array.isArray(data)) {
-      throw new Error(`Fetched data is not an array: ${JSON.stringify(data)}`);
+    if (data.userCharacters && Array.isArray(data.userCharacters)) {
+      return data.userCharacters;
+    } else {
+      throw new Error(
+        "Invalid data structure: Expected 'userCharacters' array"
+      );
     }
-
-    return data;
   } catch (error) {
     console.error("Error in fetchCharactersForUser:", error);
     return [];
@@ -76,13 +88,13 @@ async function searchUsersByName(name: any) {
 async function getDetailedCharacters(userId: any, search: any) {
   let characters = await fetchCharactersForUser(userId);
   if (search) {
-    characters = characters.filter((char) =>
+    characters = characters.filter((char: any) =>
       char.character.name.toLowerCase().includes(search.toLowerCase())
     );
   }
 
   const detailedCharacters = await Promise.all(
-    characters.map(async (char) => {
+    characters.map(async (char: any) => {
       const detailedData = await fetchCharacterData(char.character.webId);
       return { ...char, detailedCharacter: detailedData };
     })
