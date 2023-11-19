@@ -20,10 +20,8 @@ interface FetchedCharacter {
     id: number;
     webId: string;
     name: string;
-    // Include other properties as needed
   };
   userId: string;
-  // Include other properties as needed
 }
 
 type RealmType = 1 | 2 | 3;
