@@ -6,6 +6,7 @@ import CharacterDetails from "./CharacterDetails";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { Snackbar } from "@mui/material";
 
 type KillStats = {
   kills: number;
@@ -153,6 +154,8 @@ const CharacterTile: React.FC<{
   const [character, setCharacter] = useState<CharacterInfo | null>(null);
   const [open, setOpen] = useState(false);
   const { userId } = useAuth();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   const isOwner = userId === ownerId;
 
@@ -192,6 +195,7 @@ const CharacterTile: React.FC<{
       "Are you sure you want to delete this character?"
     );
     if (!isConfirmed) return;
+
     try {
       const response = await fetch(
         `/api/userCharacters/${userId}/${characterId}`,
@@ -199,12 +203,15 @@ const CharacterTile: React.FC<{
       );
       const data = await response.json();
       router.push(`/users/${userId}/characters`);
-      alert(data.message);
       router.refresh();
+
+      setSnackbarMessage(data.message);
+      setSnackbarOpen(true);
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Error in handleDelete:", error);
-        alert(error.message);
+        setSnackbarMessage(error.message);
+        setSnackbarOpen(true);
       }
     }
   };
@@ -290,6 +297,12 @@ const CharacterTile: React.FC<{
           </TableCell>
         </TableRow>
       )}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+      />
     </>
   );
 };

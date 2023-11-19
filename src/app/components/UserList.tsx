@@ -1,5 +1,7 @@
 import React from "react";
 import Link from "next/link";
+import CircularProgress from "@mui/material/CircularProgress";
+import { useState, useEffect } from "react";
 
 type User = {
   id: number;
@@ -37,17 +39,33 @@ async function fetchUsers(): Promise<GroupedUsers> {
 }
 
 const UserList: React.FC = () => {
-  const [groupedUsers, setGroupedUsers] = React.useState<GroupedUsers>({});
+  const [groupedUsers, setGroupedUsers] = useState<GroupedUsers>({});
+  const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const getUsers = async () => {
-      const users = await fetchUsers();
-      setGroupedUsers(users);
+      setIsLoading(true);
+      try {
+        const users = await fetchUsers();
+        setGroupedUsers(users);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     getUsers();
   }, []);
 
   const alphabet = Object.keys(groupedUsers).sort();
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center mt-10">
+        <CircularProgress style={{ color: "#6366F1" }} />
+      </div>
+    );
+  }
 
   if (alphabet.length === 0) {
     return <div>No users available</div>;
