@@ -202,9 +202,8 @@ const CharacterTile: React.FC<{
         { method: "DELETE" }
       );
       const data = await response.json();
-      router.push(`/users/${userId}/characters`);
+      // router.push(`/users/${userId}/characters`);
       router.refresh();
-
       setSnackbarMessage(data.message);
       setSnackbarOpen(true);
     } catch (error: unknown) {
@@ -231,6 +230,10 @@ const CharacterTile: React.FC<{
     character.realm_war_stats?.current?.player_kills[opponentRealms[0]];
   const secondOpponentStats =
     character.realm_war_stats?.current?.player_kills[opponentRealms[1]];
+
+  const refreshPage = () => {
+    router.refresh();
+  };
 
   return (
     <>

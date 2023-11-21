@@ -8,7 +8,7 @@ import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import CircularProgress from "@mui/material/CircularProgress";
 import InfoIcon from "@mui/icons-material/Info";
 import { Tooltip } from "@mui/material";
-import { revalidatePath } from "next/cache";
+import ClickAwayListener from "@mui/material/ClickAwayListener";
 
 type CharacterType = {
   character_web_id: string;
@@ -42,6 +42,15 @@ function CharacterSearchAndAdd() {
   const [charactersAdded, setCharactersAdded] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [invalidSearchAttempted, setInvalidSearchAttempted] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const handleTooltipToggle = () => {
+    setOpen(!open);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
 
   const fetchCharacters = async (name: string, cluster: string) => {
     const response = await fetch(
@@ -95,7 +104,7 @@ function CharacterSearchAndAdd() {
         throw new Error(data.error);
       }
       router.refresh();
-      router.push(`/users/${userId}/characters`);
+      // router.push(`/users/${userId}/characters`);
       setSnackbarOpen(true);
       setAddedCount(selectedCharacters.length);
       setSelectedCharacters([]);
@@ -217,27 +226,34 @@ function CharacterSearchAndAdd() {
       <div className="flex justify-between mb-2">
         <div className="flex items-center text-white font-semibold text-lg">
           <span>Add Characters</span>
-          <Tooltip
-            title="If you attempt to add a character that's already in your list, we'll recognize it and prevent duplication. No need to worry about duplicates!"
-            arrow
-            placement="right"
-            sx={{
-              tooltip: {
-                bgColor: "#1A202C",
-                color: "white",
-                fontSize: "0.875rem",
-                border: "1px solid #5A67D8",
-              },
-              arrow: {
-                color: "#1A202C",
-              },
-            }}
-          >
-            <InfoIcon className="text-indigo-400 ml-1" />
-          </Tooltip>
+          <ClickAwayListener onClickAway={handleClose}>
+            <Tooltip
+              title="If you attempt to add a character that's already in your list, we'll recognize it and prevent duplication. No need to worry about duplicates!"
+              arrow
+              open={open}
+              placement="right"
+              sx={{
+                tooltip: {
+                  bgColor: "#1A202C",
+                  color: "white",
+                  fontSize: "0.875rem",
+                  border: "1px solid #5A67D8",
+                },
+                arrow: {
+                  color: "#1A202C",
+                },
+              }}
+            >
+              <InfoIcon
+                className="text-indigo-400 ml-1"
+                onClick={handleTooltipToggle}
+                onMouseEnter={() => setOpen(true)}
+                onMouseLeave={() => setOpen(false)}
+              />
+            </Tooltip>
+          </ClickAwayListener>
         </div>
       </div>
-
       <div className="flex flex-wrap items-center mb-2 space-x-2">
         <input
           value={name}

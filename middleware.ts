@@ -14,6 +14,8 @@ export default authMiddleware({
     "/api/characterDetails/",
     "/api/users/:userId",
     "/api/users",
+    "/search",
+    "/users/(.*)/characters",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
