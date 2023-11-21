@@ -2,6 +2,9 @@ import React from "react";
 import OtherCharacterList from "@/app/components/OtherCharacterList";
 import InfoIcon from "@mui/icons-material/Info";
 import { Tooltip } from "@mui/material";
+import { PageReload } from "@/app/components/PageReload";
+import { Suspense } from "react";
+import { CircularProgress } from "@mui/material";
 
 interface CharactersPageParams {
   userId: string;
@@ -28,27 +31,16 @@ export default async function CharactersPage({
         <h1 className="text-3xl font-bold text-indigo-400 mb-2 text-center">
           {userData.name}
         </h1>
-        <div className="mb-6 text-center">
-          <Tooltip
-            title="If the list of characters doesn't seem updated, try refreshing the page."
-            arrow
-            placement="right"
-            sx={{
-              tooltip: {
-                bgColor: "#1A202C",
-                color: "white",
-                fontSize: "0.875rem",
-                border: "1px solid #5A67D8",
-              },
-              arrow: {
-                color: "#1A202C",
-              },
-            }}
-          >
-            <InfoIcon className="text-indigo-400 ml-1" />
-          </Tooltip>
-        </div>
-        <OtherCharacterList userId={userId} />
+        <PageReload />
+        <Suspense
+          fallback={
+            <div className="mt-4 flex justify-center">
+              <CircularProgress className="text-indigo-500" />
+            </div>
+          }
+        >
+          <OtherCharacterList userId={userId} />
+        </Suspense>
       </div>
     </div>
   );
