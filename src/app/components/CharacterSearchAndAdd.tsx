@@ -231,7 +231,7 @@ function CharacterSearchAndAdd() {
               title="If you attempt to add a character that's already in your list, we'll recognize it and prevent duplication. No need to worry about duplicates!"
               arrow
               open={open}
-              placement="right"
+              placement="bottom"
               sx={{
                 tooltip: {
                   bgColor: "#1A202C",
