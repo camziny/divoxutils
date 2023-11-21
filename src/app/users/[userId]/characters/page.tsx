@@ -28,7 +28,7 @@ export default async function CharactersPage({
   return (
     <div className="p-4 md:p-8 lg:p-12">
       <div className="max-w-screen-lg mx-auto">
-        <h1 className="text-3xl font-bold text-indigo-400 mb-2 text-center">
+        <h1 className="text-3xl font-bold text-indigo-400 mb-4 text-center">
           {userData.name}
         </h1>
         <PageReload />

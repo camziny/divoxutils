@@ -65,14 +65,20 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
         >
           <div className="flex flex-col md:flex-row md:space-x-4 mt-4 md:mt-0">
             <Link href="/about">
-              <div className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer">
+              <div
+                onClick={closeMenu}
+                className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+              >
                 About
               </div>
             </Link>
             {isUserSignedIn && (
               <>
                 <Link href="/user-characters">
-                  <div className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer">
+                  <div
+                    onClick={closeMenu}
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
                     My Characters
                   </div>
                 </Link>
@@ -95,19 +101,28 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
             {!isUserSignedIn && (
               <>
                 <Link href="/sign-in">
-                  <div className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer">
+                  <div
+                    onClick={closeMenu}
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
                     Sign In
                   </div>
                 </Link>
                 <Link href="/sign-up">
-                  <div className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer">
+                  <div
+                    onClick={closeMenu}
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
                     Register
                   </div>
                 </Link>
               </>
             )}
             <Link href="/search">
-              <div className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer">
+              <div
+                onClick={closeMenu}
+                className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+              >
                 Search Users
                 <SearchIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
               </div>
