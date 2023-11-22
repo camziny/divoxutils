@@ -13,6 +13,7 @@ import {
   formatRealmRankWithLevel,
 } from "@/utils/character";
 import { useMediaQuery } from "react-responsive";
+import MobileCharacterTileSkeleton from "./MobileCharacterTileSkeleton";
 
 type KillStats = {
   kills: number;
@@ -117,7 +118,7 @@ const MobileCharacterTile: React.FC<{
     return realms.filter((r) => r !== currentRealm);
   };
 
-  if (!character) return <td colSpan={7}>Loading...</td>;
+  if (!character) return <MobileCharacterTileSkeleton />;
 
   const realm = getRealmNameAndColor(character.realm);
   const opponentRealms = getOpponentRealms(character.realm);

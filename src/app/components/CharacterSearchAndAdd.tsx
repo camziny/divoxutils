@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useTransition, useEffect } from "react";
+import React, { useState, useTransition } from "react";
 import { Snackbar } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";

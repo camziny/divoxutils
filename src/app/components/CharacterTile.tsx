@@ -7,6 +7,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Snackbar } from "@mui/material";
+import CharacterTileSkeleton from "./CharacterTileSkeleton";
 
 type KillStats = {
   kills: number;
@@ -202,7 +203,6 @@ const CharacterTile: React.FC<{
         { method: "DELETE" }
       );
       const data = await response.json();
-      // router.push(`/users/${userId}/characters`);
       router.refresh();
       setSnackbarMessage(data.message);
       setSnackbarOpen(true);
@@ -221,7 +221,7 @@ const CharacterTile: React.FC<{
     return realms.filter((r) => r !== currentRealm);
   };
 
-  if (!character) return <td colSpan={7}>Loading...</td>;
+  if (!character) return <CharacterTileSkeleton />;
 
   const realm = getRealmNameAndColor(character.realm);
   const opponentRealms = getOpponentRealms(character.realm);
@@ -230,10 +230,6 @@ const CharacterTile: React.FC<{
     character.realm_war_stats?.current?.player_kills[opponentRealms[0]];
   const secondOpponentStats =
     character.realm_war_stats?.current?.player_kills[opponentRealms[1]];
-
-  const refreshPage = () => {
-    router.refresh();
-  };
 
   return (
     <>
