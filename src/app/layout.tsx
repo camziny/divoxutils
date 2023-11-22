@@ -8,7 +8,7 @@ import Footer from "./footer";
 import Head from "next/head";
 import { Analytics } from "@vercel/analytics/react";
 
-const inter = Inter({
+export const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "800"],
   variable: "--font-inter",
@@ -46,7 +46,7 @@ export default function RootLayout({
           <meta name="twitter:image" content="/wh-big.png" />
           <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         </Head>
-        <body className={inter.className}>
+        <body className={`${inter.className} antialiased`}>
           <Navbar />
           {children}
           <Analytics />

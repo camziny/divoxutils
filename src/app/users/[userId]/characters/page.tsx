@@ -1,10 +1,8 @@
 import React from "react";
 import OtherCharacterList from "@/app/components/OtherCharacterList";
-import InfoIcon from "@mui/icons-material/Info";
-import { Tooltip } from "@mui/material";
 import { PageReload } from "@/app/components/PageReload";
 import { Suspense } from "react";
-import { CircularProgress } from "@mui/material";
+import Loading from "@/app/loading";
 
 interface CharactersPageParams {
   userId: string;
@@ -31,14 +29,8 @@ export default async function CharactersPage({
         <h1 className="text-3xl font-bold text-indigo-400 mb-4 text-center">
           {userData.name}
         </h1>
-        <PageReload />
-        <Suspense
-          fallback={
-            <div className="mt-4 flex justify-center">
-              <CircularProgress className="text-indigo-500" />
-            </div>
-          }
-        >
+        <Suspense fallback={<Loading />}>
+          <PageReload />
           <OtherCharacterList userId={userId} />
         </Suspense>
       </div>
