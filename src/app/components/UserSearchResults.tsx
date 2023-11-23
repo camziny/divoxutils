@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import CircularProgress from "@mui/material/CircularProgress";
 import UserList from "./UserList";
 import CancelIcon from "@mui/icons-material/Cancel";
+import Loading from "../loading";
 
 type User = {
   id: number;
@@ -80,7 +81,7 @@ export default function UserSearch() {
       <div className="w-full max-w-xs">
         {isLoading ? (
           <div className="flex justify-center items-center">
-            <CircularProgress style={{ color: "#6366F1" }} />{" "}
+            {/* <CircularProgress style={{ color: "#6366F1" }} />{" "} */}
           </div>
         ) : searchResults.length > 0 ? (
           searchResults.map((user) => (

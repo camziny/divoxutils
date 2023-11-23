@@ -134,38 +134,19 @@ const AggregateStatistics: React.FC<AggregateStatisticsProps> = ({
       aggregateStats.totalRPs += currentStats.realm_points;
       if (character.detailedCharacter.realm === 1) {
         aggregateStats.albionTotalRPs += currentStats.realm_points;
+        aggregateStats.player_kills.albion.solo_kills +=
+          currentStats.player_kills.total.solo_kills;
       } else if (character.detailedCharacter.realm === 2) {
         aggregateStats.midgardTotalRPs += currentStats.realm_points;
+        aggregateStats.player_kills.midgard.solo_kills +=
+          currentStats.player_kills.total.solo_kills;
       } else if (character.detailedCharacter.realm === 3) {
         aggregateStats.hiberniaTotalRPs += currentStats.realm_points;
+        aggregateStats.player_kills.hibernia.solo_kills +=
+          currentStats.player_kills.total.solo_kills;
       }
-
-      const characterOpponentRealms = getOpponentRealms(
-        character.detailedCharacter.realm
-      );
-      characterOpponentRealms.forEach((realmNumber) => {
-        const realmKey =
-          realmNumber === "1"
-            ? "albion"
-            : realmNumber === "2"
-            ? "midgard"
-            : "hibernia";
-        const realmStats = currentStats.player_kills[realmKey];
-        if (realmStats) {
-          aggregateStats.player_kills[realmKey].kills += realmStats.kills;
-          aggregateStats.player_kills[realmKey].death_blows +=
-            realmStats.death_blows;
-          aggregateStats.player_kills[realmKey].solo_kills +=
-            realmStats.solo_kills;
-        }
-      });
-
-      const totalStats = currentStats.player_kills.total;
-      if (totalStats) {
-        aggregateStats.player_kills.total.kills += totalStats.kills;
-        aggregateStats.player_kills.total.death_blows += totalStats.death_blows;
-        aggregateStats.player_kills.total.solo_kills += totalStats.solo_kills;
-      }
+      aggregateStats.player_kills.total.solo_kills +=
+        currentStats.player_kills.total.solo_kills;
     }
   });
 
