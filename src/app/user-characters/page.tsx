@@ -11,7 +11,7 @@ const CharacterPage: React.FC = async () => {
   }
 
   return (
-    <div className="flex flex-col items-center mt-8 space-y-4 w-full">
+    <div className="flex flex-col items-center mt-8 space-y-4 w-full overflow-x-hidden">
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <CharacterSearchAndAdd />
       </div>
