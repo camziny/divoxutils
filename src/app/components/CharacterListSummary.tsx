@@ -132,21 +132,35 @@ const AggregateStatistics: React.FC<AggregateStatisticsProps> = ({
     const currentStats = character.detailedCharacter.realm_war_stats.current;
     if (currentStats) {
       aggregateStats.totalRPs += currentStats.realm_points;
+
+      const realmKey =
+        character.detailedCharacter.realm === 1
+          ? "albion"
+          : character.detailedCharacter.realm === 2
+          ? "midgard"
+          : "hibernia";
+
       if (character.detailedCharacter.realm === 1) {
         aggregateStats.albionTotalRPs += currentStats.realm_points;
-        aggregateStats.player_kills.albion.solo_kills +=
-          currentStats.player_kills.total.solo_kills;
       } else if (character.detailedCharacter.realm === 2) {
         aggregateStats.midgardTotalRPs += currentStats.realm_points;
-        aggregateStats.player_kills.midgard.solo_kills +=
-          currentStats.player_kills.total.solo_kills;
       } else if (character.detailedCharacter.realm === 3) {
         aggregateStats.hiberniaTotalRPs += currentStats.realm_points;
-        aggregateStats.player_kills.hibernia.solo_kills +=
-          currentStats.player_kills.total.solo_kills;
       }
+
+      aggregateStats.player_kills[realmKey].kills +=
+        currentStats.player_kills.total.kills;
+      aggregateStats.player_kills[realmKey].solo_kills +=
+        currentStats.player_kills.total.solo_kills;
+      aggregateStats.player_kills[realmKey].death_blows +=
+        currentStats.player_kills.total.death_blows;
+
+      aggregateStats.player_kills.total.kills +=
+        currentStats.player_kills.total.kills;
       aggregateStats.player_kills.total.solo_kills +=
         currentStats.player_kills.total.solo_kills;
+      aggregateStats.player_kills.total.death_blows +=
+        currentStats.player_kills.total.death_blows;
     }
   });
 
