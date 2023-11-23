@@ -29,8 +29,8 @@ export default async function CharactersPage({
         <h1 className="text-3xl font-bold text-indigo-400 mb-4 text-center">
           {userData.name}
         </h1>
+        <PageReload />
         <Suspense fallback={<Loading />}>
-          <PageReload />
           <OtherCharacterList userId={userId} />
         </Suspense>
       </div>

@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useState, useEffect } from "react";
+import UserListSkeleton from "./UserListSkeleton";
 
 type User = {
   id: number;
@@ -60,11 +61,7 @@ const UserList: React.FC = () => {
   const alphabet = Object.keys(groupedUsers).sort();
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center mt-10">
-        <CircularProgress style={{ color: "#6366F1" }} />
-      </div>
-    );
+    return <UserListSkeleton />;
   }
 
   if (alphabet.length === 0) {
