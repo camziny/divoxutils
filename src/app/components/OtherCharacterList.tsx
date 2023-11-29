@@ -2,6 +2,7 @@ import CharacterTile from "./CharacterTile";
 import CharacterTableHeader from "./CharacterTableHeader";
 import AggregateStatistics from "./CharacterListSummary";
 import MobileCharacterTile from "./MobileCharacterTile";
+import { TableContainer, Paper, TableBody, Table } from "@mui/material";
 
 type OtherCharacterListProps = {
   userId?: string;
@@ -99,33 +100,39 @@ export default async function OtherCharacterList({
 
   return (
     <div className="flex flex-col items-center w-full max-w-6xl mx-auto">
-      <div className="hidden sm:block w-full overflow-x-auto p-0 border border-white rounded-lg">
-        <table className="w-full bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
-          <thead>
-            <CharacterTableHeader />
-          </thead>
-          <tbody>
-            {detailedCharacters.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="text-center py-4 text-white">
-                  No characters available for this user
-                </td>
-              </tr>
-            ) : (
-              detailedCharacters.map((item) => (
-                <CharacterTile
-                  key={item.character.id}
-                  webId={item.character.webId}
-                  initialCharacter={item}
-                  currentUserId={userId.toString()}
-                  ownerId={item.ownerId}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="hidden sm:block">
+        <TableContainer component={Paper}>
+          <Table stickyHeader style={{ tableLayout: "fixed" }}>
+            <thead>
+              <CharacterTableHeader />
+            </thead>
+          </Table>
+          <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+            <Table style={{ tableLayout: "fixed" }}>
+              <TableBody>
+                {detailedCharacters.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="text-center py-4 text-white">
+                      No characters available for this user
+                    </td>
+                  </tr>
+                ) : (
+                  detailedCharacters.map((item) => (
+                    <CharacterTile
+                      key={item.character.id}
+                      webId={item.character.webId}
+                      initialCharacter={item}
+                      currentUserId={userId.toString()}
+                      ownerId={item.ownerId}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TableContainer>
       </div>
-      <div className="sm:hidden w-full">
+      <div className="sm:hidden overflow-auto max-h-[500px]">
         {detailedCharacters.length === 0 ? (
           <div className="text-center py-4 text-white">
             No characters available for this user

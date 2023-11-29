@@ -19,7 +19,7 @@ const CharacterPage: React.FC = async () => {
         {user?.username}
       </div>
       <Suspense fallback={<Loading />}>
-        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <CharacterList userId={user.id} search="" />
         </div>
       </Suspense>

@@ -14,7 +14,7 @@ const UserListSkeleton = () => {
         </div>
       </div>
       <div className="overflow-y-auto w-full">
-        {Array.from({ length: 3 }).map((_, groupIdx) => (
+        {Array.from({ length: 7 }).map((_, groupIdx) => (
           <div key={groupIdx} className="mb-4">
             <h3 className="animate-pulse bg-gray-700 rounded h-6 w-16 font-bold text-xl text-white mb-2"></h3>
             <ul className="divide-y divide-gray-700">
