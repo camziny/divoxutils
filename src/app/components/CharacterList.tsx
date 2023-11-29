@@ -156,7 +156,10 @@ export default async function CharacterList({
               <TableBody>
                 {detailedCharacters.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-4 text-white">
+                    <td
+                      colSpan={9}
+                      className="text-center py-4 text-white bg-gray-900"
+                    >
                       No characters available. Try Refreshing.
                     </td>
                   </tr>
@@ -178,7 +181,7 @@ export default async function CharacterList({
       </div>
       <div className="sm:hidden overflow-auto max-h-[500px] w-full">
         {detailedCharacters.length === 0 ? (
-          <div className="text-center py-4 text-white">
+          <div className="text-center py-4 text-white bg-gray-900">
             No characters available
           </div>
         ) : (
