@@ -234,9 +234,9 @@ const CharacterTile: React.FC<{
   return (
     <>
       <TableRow
-        className={`rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 bg-gray-800 ${realm.color}`}
+        className={`rounded-xl overflow-hidden shadow-md bg-gray-800 ${realm.color}`}
       >
-        <TableCell className="px-4 py-1 w-12">
+        <TableCell className="w-1/12 px-4">
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? (
               <ExpandCircleDownIcon className="text-white text-xxs" />
@@ -245,25 +245,25 @@ const CharacterTile: React.FC<{
             )}
           </IconButton>
         </TableCell>
-        <TableCell className="text-white text-xxs font-semibold px-4 py-1 w-32">
+        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
           {character.name}
         </TableCell>
-        <TableCell className="text-white text-xxs font-semibold px-6 py-1 w-32 sm:w-auto">
+        <TableCell className="w-1/5 px-6 text-white text-xxs font-semibold">
           {character.guild_info?.guild_name || "-"}
         </TableCell>
-        <TableCell className="text-white text-xxs font-semibold px-6 py-1 w-20 sm:w-auto">
+        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
           {realm.name}
         </TableCell>
-        <TableCell className="text-white text-xxs font-semibold px-6 py-1 w-16 sm:w-auto">
+        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
           {character.level}
         </TableCell>
-        <TableCell className="text-white text-xxs font-semibold px-8 py-1 w-24 lg:w-auto hidden lg:table-cell">
+        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold hidden lg:table-cell">
           {character.race}
         </TableCell>
-        <TableCell className="text-white text-xxs font-semibold px-8 py-1 w-24 lg:w-auto">
+        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
           <div className="max-w-xs truncate">{character.class_name}</div>
         </TableCell>
-        <TableCell className="text-white text-xxs font-semibold px-4 py-1 w-24">
+        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
           {character.realm_war_stats?.current?.realm_points
             ? formatRealmRankWithLevel(
                 getRealmRankForPoints(
@@ -272,7 +272,7 @@ const CharacterTile: React.FC<{
               )
             : "-"}
         </TableCell>
-        <TableCell className="px-4 py-1 w-12">
+        <TableCell className="w-1/12 px-4">
           {showDeleteIcon && isOwner && (
             <IconButton
               size="large"

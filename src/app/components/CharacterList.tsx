@@ -3,6 +3,7 @@ import CharacterTile from "./CharacterTile";
 import CharacterTableHeader from "./CharacterTableHeader";
 import AggregateStatistics from "./CharacterListSummary";
 import MobileCharacterTile from "./MobileCharacterTile";
+import { TableContainer, Paper, Table, TableBody } from "@mui/material";
 
 type CharacterTileProps = {
   webId: string;
@@ -143,35 +144,39 @@ export default async function CharacterList({
 
   return (
     <div className="flex flex-col items-center w-full max-w-6xl mx-auto">
-      <div className="hidden sm:block w-full overflow-x-auto p-0 border border-white rounded-lg">
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-gray-900 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
+      <div className="hidden sm:block">
+        <TableContainer component={Paper}>
+          <Table stickyHeader style={{ tableLayout: "fixed" }}>
             <thead>
               <CharacterTableHeader />
             </thead>
-            <tbody>
-              {detailedCharacters.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="text-center py-4 text-white">
-                    No characters available. Try Refreshing.
-                  </td>
-                </tr>
-              ) : (
-                detailedCharacters.map((item) => (
-                  <CharacterTile
-                    key={item.character.id}
-                    webId={item.character.webId}
-                    initialCharacter={item}
-                    currentUserId={clerkUserId as string}
-                    ownerId={item.user.clerkUserId}
-                  />
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+          </Table>
+          <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+            <Table style={{ tableLayout: "fixed" }}>
+              <TableBody>
+                {detailedCharacters.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="text-center py-4 text-white">
+                      No characters available. Try Refreshing.
+                    </td>
+                  </tr>
+                ) : (
+                  detailedCharacters.map((item) => (
+                    <CharacterTile
+                      key={item.character.id}
+                      webId={item.character.webId}
+                      initialCharacter={item}
+                      currentUserId={clerkUserId as string}
+                      ownerId={item.user.clerkUserId}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TableContainer>
       </div>
-      <div className="sm:hidden w-full">
+      <div className="sm:hidden overflow-auto max-h-[500px] w-full">
         {detailedCharacters.length === 0 ? (
           <div className="text-center py-4 text-white">
             No characters available
@@ -188,6 +193,7 @@ export default async function CharacterList({
           ))
         )}
       </div>
+
       <AggregateStatistics
         characters={detailedCharacters}
         opponentRealms={["Midgard", "Hibernia", "Albion"]}
