@@ -4,10 +4,10 @@ function CharacterTableHeader() {
   return (
     <TableRow>
       <TableCell className="w-1/12 px-4 sticky top-0 z-10 bg-gray-900" />{" "}
-      <TableCell className="w-1/6 px-6 sticky top-0 z-10 bg-gray-900 text-white">
+      <TableCell className="w-1/4 px-6 sticky top-0 z-10 bg-gray-900 text-white">
         Name
-      </TableCell>
-      <TableCell className="w-1/5 px-6 sticky top-0 z-10 bg-gray-900 text-white">
+      </TableCell>{" "}
+      <TableCell className="w-1/4 px-6 sticky top-0 z-10 bg-gray-900 text-white">
         Guild
       </TableCell>
       <TableCell className="w-1/6 px-6 sticky top-0 z-10 bg-gray-900 text-white">

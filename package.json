@@ -59,6 +59,8 @@
     "autoprefixer": "latest",
     "eslint": "latest",
     "eslint-config-next": "latest",
+    "jest": "^29.7.0",
+    "playwright": "^1.40.1",
     "postcss": "latest",
     "tailwindcss": "latest",
     "typescript": "^5.2.2"

@@ -245,10 +245,10 @@ const CharacterTile: React.FC<{
             )}
           </IconButton>
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
+        <TableCell className="w-1/4 px-6 text-white text-xxs font-semibold">
           {character.name}
-        </TableCell>
-        <TableCell className="w-1/5 px-6 text-white text-xxs font-semibold">
+        </TableCell>{" "}
+        <TableCell className="w-1/4 px-6 text-white text-xxs font-semibold">
           {character.guild_info?.guild_name || "-"}
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
