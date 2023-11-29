@@ -112,7 +112,10 @@ export default async function OtherCharacterList({
               <TableBody>
                 {detailedCharacters.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-4 text-white">
+                    <td
+                      colSpan={9}
+                      className="text-center py-4 text-white bg-gray-900"
+                    >
                       No characters available for this user
                     </td>
                   </tr>
