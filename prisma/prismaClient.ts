@@ -9,13 +9,10 @@ if (process.env.NODE_ENV === "production") {
         url: process.env.DATABASE_URL + "?connection_limit=10",
       },
     },
-    // log: ["query", "info", "warn", "error"],
   });
 } else {
   if (!global.prisma) {
-    global.prisma = new PrismaClient({
-      // log: ["query", "info", "warn", "error"],
-    });
+    global.prisma = new PrismaClient({});
   }
   prisma = global.prisma;
 }
@@ -25,9 +22,6 @@ prisma.$use(async (params, next) => {
     const before = Date.now();
     const result = await next(params);
     const after = Date.now();
-    // console.log(
-    //   `Query ${params.model}.${params.action} took ${after - before}ms`
-    // );
     return result;
   } catch (error) {
     console.error("Query Error:", error);
