@@ -123,3 +123,12 @@ body {
 .scrollbar-visible {
   scrollbar-width: auto;
 }
+
+.whiteProgressBar {
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+.whiteProgressBar .MuiLinearProgress-barColorPrimary {
+  background-color: #5c6bc0; /* Indigo color */
+}

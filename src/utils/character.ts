@@ -81,6 +81,20 @@ export function formatRealmRankWithLevel(rank: number): string {
   return `${rankString.slice(0, -1)}L${rankString.slice(-1)}`;
 }
 
+export function calculateProgressPercentage(
+  realmPoints: number,
+  nextRankPoints: number
+): number {
+  const currentRank = getRealmRankForPoints(realmPoints);
+  const pointsForCurrentRank = realmRanksMap.get(currentRank) || 0;
+  const totalPointsForNextRank = nextRankPoints - pointsForCurrentRank;
+  const pointsEarnedForNextRank = realmPoints - pointsForCurrentRank;
+  const progressPercentage =
+    (pointsEarnedForNextRank / totalPointsForNextRank) * 100;
+
+  return Math.min(Math.max(progressPercentage, 0), 100);
+}
+
 export const realmsSummary = {
   Albion: { kills: 0, deathblows: 0, soloKills: 0, deaths: 0, realmPoints: 0 },
   Midgard: { kills: 0, deathblows: 0, soloKills: 0, deaths: 0, realmPoints: 0 },
