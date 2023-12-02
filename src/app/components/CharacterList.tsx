@@ -196,7 +196,6 @@ export default async function CharacterList({
           ))
         )}
       </div>
-
       <AggregateStatistics
         characters={detailedCharacters}
         opponentRealms={["Midgard", "Hibernia", "Albion"]}

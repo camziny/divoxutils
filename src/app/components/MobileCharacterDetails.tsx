@@ -5,7 +5,9 @@ import {
   getRealmNameAndColor,
   getRealmRankForPoints,
   formatRealmRankWithLevel,
+  calculateProgressPercentage,
 } from "@/utils/character";
+import LinearProgress from "@mui/material/LinearProgress";
 
 type MobileCharacterDetailsProps = {
   character: CharacterInfo;
@@ -14,9 +16,14 @@ type MobileCharacterDetailsProps = {
 const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
   character,
 }) => {
-  const realmPoints = character.realm_war_stats?.current?.realm_points;
+  const realmPoints = character.realm_war_stats?.current?.realm_points || 0;
   const realmRank = formatRealmRankWithLevel(
     getRealmRankForPoints(realmPoints)
+  );
+  const nextRankPoints = character.nextRankPoints || 0;
+  const progressPercentage = calculateProgressPercentage(
+    realmPoints,
+    nextRankPoints
   );
 
   return (
@@ -30,6 +37,12 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
           <p>Race: {character.race}</p>
           <p>Realm: {getRealmNameAndColor(character.realm).name}</p>
           <p>Realm Rank: {realmRank}</p>
+          <div className="w-full my-2">
+            <LinearProgress variant="determinate" value={progressPercentage} />
+          </div>
+          <div className="text-center text-xs">
+            {progressPercentage.toFixed(2)}% to next rank
+          </div>
         </div>
       </div>
     </TableCell>

@@ -84,6 +84,20 @@ function getPointsUntilNextRank(currentPoints: number): number {
   return nextRankPoints - currentPoints;
 }
 
+function calculateProgressPercentage(
+  realmPoints: number,
+  nextRankPoints: number
+): number {
+  const currentRank = getRealmRankForPoints(realmPoints);
+  const pointsForCurrentRank = realmRanksMap.get(currentRank) || 0;
+  const totalPointsForNextRank = nextRankPoints - pointsForCurrentRank;
+  const pointsEarnedForNextRank = realmPoints - pointsForCurrentRank;
+  const progressPercentage =
+    (pointsEarnedForNextRank / totalPointsForNextRank) * 100;
+
+  return Math.min(Math.max(progressPercentage, 0), 100);
+}
+
 const RealmRank: React.FC<RealmRankProps> = ({ realmPoints }) => {
   return (
     <div>
@@ -100,6 +114,6 @@ const RealmRank: React.FC<RealmRankProps> = ({ realmPoints }) => {
   );
 };
 
-export { getRealmRankForPoints, getRealmRanks };
+export { getRealmRankForPoints, getRealmRanks, calculateProgressPercentage };
 
 export default RealmRank;

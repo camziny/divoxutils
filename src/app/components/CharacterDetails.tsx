@@ -1,6 +1,11 @@
 import React from "react";
 import { TableCell } from "@mui/material";
-import RealmRank, { getRealmRankForPoints, getRealmRanks } from "./RealmRank";
+import RealmRank, {
+  getRealmRankForPoints,
+  getRealmRanks,
+  calculateProgressPercentage,
+} from "./RealmRank";
+import LinearProgress from "@mui/material/LinearProgress";
 
 type KillStats = {
   kills: number;
@@ -96,6 +101,11 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
     }
   }
 
+  const progressPercentage = calculateProgressPercentage(
+    realmPoints,
+    nextRankPoints
+  );
+
   return (
     <TableCell className="bg-gray-900 w-full p-3" colSpan={9}>
       <div className="flex justify-center items-center h-full">
@@ -120,14 +130,26 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                   <span>Total RP: {formatNumber(realmPoints)}</span>
                 </div>
                 <div className="w-full text-center">
-                  <span>
-                    IRS: {irs !== undefined ? formatNumber(irs) : "N/A"}
+                  <span className="font-medium">IRS: </span>
+                  <span className="w-28 text-right">
+                    {irs !== undefined ? formatNumber(Math.round(irs)) : "N/A"}
                   </span>
                 </div>
                 <div className="w-full text-center">
                   <span>
                     RPs to Next Rank: {formatNumber(pointsUntilNextRank)}
                   </span>
+                </div>
+                <div className="w-full my-2 whiteProgressBar">
+                  <LinearProgress
+                    variant="determinate"
+                    value={progressPercentage}
+                    style={{ height: "10px" }}
+                    classes={{ colorPrimary: "whiteProgressBar" }}
+                  />
+                </div>
+                <div className="text-center text-sm font-bold">
+                  {progressPercentage.toFixed(2)}%
                 </div>
               </div>
             </div>
@@ -189,6 +211,13 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                   {formatNumber(
                     character.realm_war_stats?.current?.player_kills?.total
                       ?.solo_kills || 0
+                  )}
+                </div>
+                <div className="w-full text-center">
+                  Deaths:{" "}
+                  {formatNumber(
+                    character.realm_war_stats?.current?.player_kills?.total
+                      ?.deaths || 0
                   )}
                 </div>
               </div>
@@ -256,6 +285,17 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                         )}
                       </span>
                     </div>
+                    {realm === "Total" && (
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-medium">Deaths:</span>
+                        <span className="w-24 text-right">
+                          {formatNumber(
+                            character.realm_war_stats?.current?.player_kills
+                              ?.total?.deaths || 0
+                          )}
+                        </span>
+                      </div>
+                    )}
                   </>
                 )}
                 {realm === "Info" && (
@@ -269,7 +309,9 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                     <div className="flex justify-between items-center text-xs">
                       <span className="font-medium">IRS:</span>
                       <span className="w-28 text-right">
-                        {irs !== undefined ? formatNumber(irs) : "N/A"}
+                        {irs !== undefined
+                          ? formatNumber(Math.round(irs))
+                          : "N/A"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
@@ -277,6 +319,17 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                       <span className="w-28 text-right">
                         {formatNumber(pointsUntilNextRank)}
                       </span>
+                    </div>
+                    <div className="w-full my-2 whiteProgressBar">
+                      <LinearProgress
+                        variant="determinate"
+                        value={progressPercentage}
+                        style={{ height: "10px" }}
+                        classes={{ colorPrimary: "whiteProgressBar" }}
+                      />
+                    </div>
+                    <div className="text-center text-sm font-bold">
+                      {progressPercentage.toFixed(2)}%
                     </div>
                   </>
                 )}
