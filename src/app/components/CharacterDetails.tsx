@@ -130,38 +130,44 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
               <h3 className="rounded-lg mb-2 px-2 py-1 uppercase text-xs font-bold text-center bg-gray-700 text-white">
                 Info
               </h3>
-              <div className="flex flex-col items-center space-y-2 px-2 text-xs text-gray-300">
+              <div className="flex flex-col items-center space-y-3 px-2 text-xs sm:text-sm text-gray-300">
                 <div className="w-full text-center">
                   <span>Total RP: {formatNumber(realmPoints)}</span>
                 </div>
                 <div className="w-full text-center">
-                  <span className="font-medium">IRS: </span>
-                  <span className="w-28 text-right">
+                  <span className="font-medium">IRS:</span>
+                  <span className="ml-1">
                     {irs !== undefined ? formatNumber(Math.round(irs)) : "N/A"}
                   </span>
                 </div>
                 <div className="w-full text-center">
                   <span className="font-medium">
                     RPs to{" "}
-                    <span className="font-bold">{nextRankFormatted}</span>:
+                    <span className="font-extrabold">{nextRankFormatted}</span>:
                   </span>
-                  <span className="w-28 text-right">
+                  <span className="ml-1">
                     {formatNumber(pointsUntilNextRank)}
                   </span>
                 </div>
-                <div className="w-full my-2 whiteProgressBar">
-                  <LinearProgress
-                    variant="determinate"
-                    value={progressPercentage}
-                    style={{ height: "10px" }}
-                    classes={{ colorPrimary: "whiteProgressBar" }}
-                  />
-                </div>
-                <div className="text-center text-sm font-bold">
-                  {progressPercentage.toFixed(2)}%
+                <div className="flex flex-col items-center w-full">
+                  <div className="w-full whiteProgressBar">
+                    <LinearProgress
+                      variant="determinate"
+                      value={progressPercentage}
+                      style={{ height: "10px" }}
+                      classes={{ colorPrimary: "whiteProgressBar" }}
+                    />
+                  </div>
+                  <div
+                    className="text-center text-base font-bold text-indigo-400"
+                    style={{ marginTop: "2px" }}
+                  >
+                    {progressPercentage.toFixed(2)}%
+                  </div>
                 </div>
               </div>
             </div>
+
             {[...opponentRealms].map((realm) => (
               <div key={realm} className="mb-4">
                 <h3
@@ -343,7 +349,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                         classes={{ colorPrimary: "whiteProgressBar" }}
                       />
                     </div>
-                    <div className="text-center text-sm font-bold">
+                    <div className="text-center text-sm font-bold text-indigo-400">
                       {progressPercentage.toFixed(2)}%
                     </div>
                   </>
