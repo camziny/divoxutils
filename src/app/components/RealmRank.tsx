@@ -114,6 +114,11 @@ const RealmRank: React.FC<RealmRankProps> = ({ realmPoints }) => {
   );
 };
 
-export { getRealmRankForPoints, getRealmRanks, calculateProgressPercentage };
+export {
+  getRealmRankForPoints,
+  getRealmRanks,
+  calculateProgressPercentage,
+  formatRealmRankWithLevel,
+};
 
 export default RealmRank;
