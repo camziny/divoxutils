@@ -161,7 +161,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                       label: "tracking-wider font-bold text-gray-400",
                       value: "text-base font-bold text-indigo-400",
                     }}
-                    label={nextRankFormatted}
+                    label={currentRankFormatted}
                     value={progressPercentage}
                     showValueLabel={true}
                   />
@@ -354,7 +354,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                           label: "tracking-wider font-bold text-gray-400",
                           value: "text-base font-bold text-indigo-400",
                         }}
-                        label={nextRankFormatted}
+                        label={currentRankFormatted}
                         value={progressPercentage}
                         showValueLabel={true}
                       />
