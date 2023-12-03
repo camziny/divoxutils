@@ -7,6 +7,7 @@ import RealmRank, {
   formatRealmRankWithLevel,
 } from "./RealmRank";
 import LinearProgress from "@mui/material/LinearProgress";
+import { Progress } from "@nextui-org/react";
 
 type KillStats = {
   kills: number;
@@ -91,7 +92,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
     character.realm_war_stats?.current?.realm_points
   );
   const nextRankFormatted = formatRealmRankWithLevel(currentRankNumber + 1);
-
+  const currentRankFormatted = formatRealmRankWithLevel(currentRank);
   const capitalizeRealm = (realm: string) => {
     return realm.charAt(0).toUpperCase() + realm.slice(1);
   };
@@ -126,7 +127,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                 {`${character.race} ${character.class_name}, Lvl ${character.level}`}
               </p>
             </div>
-            <div className="mb-4">
+            <div className="mb-6">
               <h3 className="rounded-lg mb-2 px-2 py-1 uppercase text-xs font-bold text-center bg-gray-700 text-white">
                 Info
               </h3>
@@ -150,20 +151,20 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                   </span>
                 </div>
                 <div className="flex flex-col items-center w-full">
-                  <div className="w-full whiteProgressBar">
-                    <LinearProgress
-                      variant="determinate"
-                      value={progressPercentage}
-                      style={{ height: "10px" }}
-                      classes={{ colorPrimary: "whiteProgressBar" }}
-                    />
-                  </div>
-                  <div
-                    className="text-center text-base font-bold text-indigo-400"
-                    style={{ marginTop: "2px" }}
-                  >
-                    {progressPercentage.toFixed(2)}%
-                  </div>
+                  <Progress
+                    size="md"
+                    radius="sm"
+                    classNames={{
+                      base: "max-w-md",
+                      track: "drop-shadow-md border border-default bg-gray-200",
+                      indicator: "customIndicator",
+                      label: "tracking-wider font-bold text-gray-400",
+                      value: "text-base font-bold text-indigo-400",
+                    }}
+                    label={nextRankFormatted}
+                    value={progressPercentage}
+                    showValueLabel={true}
+                  />
                 </div>
               </div>
             </div>
@@ -341,16 +342,22 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                         {formatNumber(pointsUntilNextRank)}
                       </span>
                     </div>
-                    <div className="w-full my-2 whiteProgressBar">
-                      <LinearProgress
-                        variant="determinate"
+                    <div className="flex flex-col items-center w-full">
+                      <Progress
+                        size="md"
+                        radius="sm"
+                        classNames={{
+                          base: "max-w-md",
+                          track:
+                            "drop-shadow-md border border-default bg-gray-300",
+                          indicator: "customIndicator",
+                          label: "tracking-wider font-bold text-gray-400",
+                          value: "text-base font-bold text-indigo-400",
+                        }}
+                        label={nextRankFormatted}
                         value={progressPercentage}
-                        style={{ height: "10px" }}
-                        classes={{ colorPrimary: "whiteProgressBar" }}
+                        showValueLabel={true}
                       />
-                    </div>
-                    <div className="text-center text-sm font-bold text-indigo-400">
-                      {progressPercentage.toFixed(2)}%
                     </div>
                   </>
                 )}
