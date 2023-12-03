@@ -2,21 +2,22 @@ import { PrismaClient, Prisma } from "@prisma/client";
 
 let prisma: PrismaClient;
 
-const logLevels: Prisma.LogLevel[] = ["query", "info", "warn", "error"];
-
 if (process.env.NODE_ENV === "production") {
   prisma = new PrismaClient({
     datasources: {
       db: {
-        url: process.env.DATABASE_URL + "?pgbouncer=true",
+        url: process.env.POSTGRES_PRISMA_URL,
       },
     },
-    log: logLevels,
   });
 } else {
   if (!global.prisma) {
     global.prisma = new PrismaClient({
-      log: logLevels,
+      datasources: {
+        db: {
+          url: process.env.POSTGRES_URL_NON_POOLING,
+        },
+      },
     });
   }
   prisma = global.prisma;
