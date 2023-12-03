@@ -124,11 +124,14 @@ body {
   scrollbar-width: auto;
 }
 
-.whiteProgressBar {
-  background-color: #fff;
-  border-radius: 4px;
+.customIndicator {
+  background-color: #6366f1 !important;
+}
+.customLabel {
+  font-weight: bold;
+  color: #d1d5db; /* Light gray color, adjust as needed */
 }
 
-.whiteProgressBar .MuiLinearProgress-barColorPrimary {
-  background-color: #6366f1;
+.customValue {
+  color: #6366f1; /* Indigo 500 color */
 }
