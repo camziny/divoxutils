@@ -4,6 +4,7 @@ import RealmRank, {
   getRealmRankForPoints,
   getRealmRanks,
   calculateProgressPercentage,
+  formatRealmRankWithLevel,
 } from "./RealmRank";
 import LinearProgress from "@mui/material/LinearProgress";
 
@@ -86,6 +87,10 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   const pointsUntilNextRank = nextRankPoints - realmPoints;
   const totalKills =
     character.realm_war_stats?.current?.player_kills?.total?.kills || 0;
+  const currentRankNumber = getRealmRankForPoints(
+    character.realm_war_stats?.current?.realm_points
+  );
+  const nextRankFormatted = formatRealmRankWithLevel(currentRankNumber + 1);
 
   const capitalizeRealm = (realm: string) => {
     return realm.charAt(0).toUpperCase() + realm.slice(1);
@@ -136,8 +141,12 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                   </span>
                 </div>
                 <div className="w-full text-center">
-                  <span>
-                    RPs to Next Rank: {formatNumber(pointsUntilNextRank)}
+                  <span className="font-medium">
+                    RPs to{" "}
+                    <span className="font-bold">{nextRankFormatted}</span>:
+                  </span>
+                  <span className="w-28 text-right">
+                    {formatNumber(pointsUntilNextRank)}
                   </span>
                 </div>
                 <div className="w-full my-2 whiteProgressBar">
@@ -315,7 +324,13 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium">RPs to Next Rank:</span>
+                      <span className="font-medium">
+                        RPs to{" "}
+                        <span className="font-extrabold">
+                          {nextRankFormatted}
+                        </span>
+                        :
+                      </span>
                       <span className="w-28 text-right">
                         {formatNumber(pointsUntilNextRank)}
                       </span>

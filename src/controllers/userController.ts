@@ -163,7 +163,6 @@ export const getUserByClerkUserId = async (clerkUserId: string) => {
     return await prisma.user.findUnique({
       where: { clerkUserId: clerkUserId },
       include: {
-        account: true,
         characters: true,
       },
     });
