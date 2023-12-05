@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Snackbar } from "@mui/material";
 import CharacterTileSkeleton from "./CharacterTileSkeleton";
+import { Skeleton } from "@nextui-org/react";
 
 type KillStats = {
   kills: number;
@@ -239,31 +240,19 @@ const CharacterTile: React.FC<{
         <TableCell className="w-1/12 px-4">
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? (
-              <ExpandCircleDownIcon className="text-white text-xxs" />
+              <ExpandCircleDownIcon className="text-white text-xs" />
             ) : (
-              <ExpandCircleDownIcon className="text-white text-xxs" />
+              <ExpandCircleDownIcon className="text-white text-xs" />
             )}
           </IconButton>
         </TableCell>
-        <TableCell className="w-1/4 px-6 text-white text-xxs font-semibold">
+        <TableCell className="w-1/4 px-6 text-white text-xs font-semibold">
           {character.name}
-        </TableCell>{" "}
-        <TableCell className="w-1/4 px-6 text-white text-xxs font-semibold">
-          {character.guild_info?.guild_name || "-"}
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
-          {realm.name}
-        </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
-          {character.level}
-        </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold hidden lg:table-cell">
-          {character.race}
-        </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
+        <TableCell className="w-1/6 px-6 text-white text-xs font-semibold">
           <div className="max-w-xs truncate">{character.class_name}</div>
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-xxs font-semibold">
+        <TableCell className="w-1/6 px-6 text-white text-xs font-semibold">
           {character.realm_war_stats?.current?.realm_points
             ? formatRealmRankWithLevel(
                 getRealmRankForPoints(
@@ -271,6 +260,18 @@ const CharacterTile: React.FC<{
                 )
               )
             : "-"}
+        </TableCell>
+        <TableCell className="w-1/4 px-6 text-white text-xs font-semibold">
+          {character.guild_info?.guild_name || "-"}
+        </TableCell>
+        <TableCell className="w-1/6 px-6 text-white text-xs font-semibold">
+          {character.level}
+        </TableCell>
+        <TableCell className="w-1/6 px-6 text-white text-xs font-semibold hidden lg:table-cell">
+          {character.race}
+        </TableCell>
+        <TableCell className="w-1/6 px-6 text-white text-xs font-semibold">
+          {realm.name}
         </TableCell>
         <TableCell className="w-1/12 px-4">
           {showDeleteIcon && isOwner && (

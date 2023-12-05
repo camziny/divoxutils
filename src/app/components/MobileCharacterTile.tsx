@@ -142,19 +142,19 @@ const MobileCharacterTile: React.FC<{
         <TableCell className="p-0.5 w-8">
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? (
-              <ExpandCircleDownIcon className="text-white text-xxs" />
+              <ExpandCircleDownIcon className="text-white text-xs" />
             ) : (
-              <ExpandCircleDownIcon className="text-white text-xxs" />
+              <ExpandCircleDownIcon className="text-white text-xs" />
             )}
           </IconButton>
         </TableCell>
-        <TableCell className="text-white text-xxs sm:text-xs font-semibold p-0.5 truncate w-1/4">
+        <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
           {truncateText(character.name, 10)}
         </TableCell>
-        <TableCell className="text-white text-xxs sm:text-xs font-semibold p-0.5 truncate w-1/4">
+        <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
           {truncateText(character.class_name, 8)}
         </TableCell>
-        <TableCell className="text-white text-xxs sm:text-xs font-semibold p-0.5 truncate w-1/4">
+        <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
           {character.realm_war_stats?.current?.realm_points
             ? formatRealmRankWithLevel(
                 getRealmRankForPoints(

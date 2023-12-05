@@ -1,11 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import {
-  createUserFromClerk,
-  updateUserFromClerk,
-} from "../../../src/controllers/userController";
+import { createUserFromClerk } from "../../../src/controllers/userController";
 import prisma from "../../../prisma/prismaClient";
-import { clerkClient } from "@clerk/nextjs";
-import type { WebhookEvent } from "@clerk/clerk-sdk-node";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === "POST") {
