@@ -2,12 +2,31 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { createUserFromClerk } from "../../../src/controllers/userController";
 import prisma from "../../../prisma/prismaClient";
 
+interface EmailObject {
+  id: string;
+  email_address: string;
+}
+
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === "POST") {
     const clerkData = req.body;
+    console.log("Received webhook request with body:", req.body);
+
+    if (!clerkData.data || !Array.isArray(clerkData.data.email_addresses)) {
+      console.error("Invalid clerk data:", clerkData);
+      return res.status(400).json({ error: "Invalid clerk data" });
+    }
+
     const primaryEmailObj = clerkData.data.email_addresses.find(
-      (emailObj: any) => emailObj.id === clerkData.data.primary_email_address_id
+      (emailObj: EmailObject) =>
+        emailObj.id === clerkData.data.primary_email_address_id
     );
+    const primaryEmail = primaryEmailObj ? primaryEmailObj.email_address : null;
+
+    if (!primaryEmailObj) {
+      console.error("Primary email object not found in clerk data:", clerkData);
+      return res.status(400).json({ error: "Primary email object not found" });
+    }
 
     const firstName = clerkData.data.first_name;
     const lastName = clerkData.data.last_name;
@@ -19,7 +38,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       `${firstName || ""} ${lastName || ""}`.trim() || username || emailPrefix;
 
     const userData = {
-      email: primaryEmailObj?.email_address,
+      email: primaryEmail,
       name: name,
       clerkUserId: clerkData.data.id,
     };

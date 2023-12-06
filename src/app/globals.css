@@ -16,6 +16,10 @@
   }
 }
 
+.success {
+  color: #6366f1;
+}
+
 html {
   background-color: #111827 !important;
 }
