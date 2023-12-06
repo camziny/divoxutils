@@ -195,7 +195,7 @@ const AggregateStatistics: React.FC<AggregateStatisticsProps> = ({
           {[...opponentRealms, "Total"].map((realm, index) => (
             <div
               key={index}
-              className="p-2 sm:p-3 rounded-lg border border-gray-600 shadow-md hover:shadow-lg transition-shadow duration-300 text-white space-y-2"
+              className="bg-gray-800 p-2 sm:p-3 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 text-white space-y-2"
             >
               <span
                 className={`inline-block py-0.5 px-2 rounded-full ${

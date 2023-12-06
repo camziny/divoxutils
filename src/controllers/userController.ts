@@ -19,6 +19,12 @@ const userSchema = yup
   })
   .unknown(true);
 
+interface ClerkUserData {
+  email: string;
+  name: string;
+  clerkUserId: string;
+}
+
 const clerkUserIdSchema = yup.string().required();
 
 type RegisterInput = {
@@ -126,9 +132,18 @@ export const getUserByName = async (name: string) => {
   });
 };
 
-export const createUserFromClerk = async (data: any) => {
+export const createUserFromClerk = async (data: ClerkUserData) => {
   try {
     await userSchema.validate(data);
+
+    const existingUser = await prisma.user.findUnique({
+      where: { clerkUserId: data.clerkUserId },
+    });
+
+    if (existingUser) {
+      console.log("User already exists with clerkUserId:", data.clerkUserId);
+      return existingUser;
+    }
 
     const createdUser = await prisma.user.create({
       data: {
@@ -141,11 +156,14 @@ export const createUserFromClerk = async (data: any) => {
   } catch (error) {
     if (error instanceof yup.ValidationError) {
       console.error(`Validation error: ${error.message}`, error);
-    } else if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      console.error("This email is already in use.", error);
+    } else if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        const target = error.meta?.target;
+        console.error("A unique constraint violation occurred:", target);
+        console.error("This email or clerkUserId is already in use.", error);
+      } else {
+        console.error("Prisma error:", error);
+      }
     } else {
       console.error(
         "An unexpected error occurred in createUserFromClerk:",

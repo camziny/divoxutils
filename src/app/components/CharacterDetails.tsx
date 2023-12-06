@@ -7,7 +7,11 @@ import RealmRank, {
   formatRealmRankWithLevel,
 } from "./RealmRank";
 import LinearProgress from "@mui/material/LinearProgress";
-import { Progress } from "@nextui-org/react";
+import { Progress, CircularProgress } from "@nextui-org/react";
+import TotalStatsCard from "./TotalStatsCard";
+import InfoStatsCard from "./InfoStatsCard";
+import RealmStatsCard from "./RealmStatsCard";
+import CharacterInfoCard from "./CharacterInfoCard";
 
 type KillStats = {
   kills: number;
@@ -96,6 +100,13 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   const capitalizeRealm = (realm: string) => {
     return realm.charAt(0).toUpperCase() + realm.slice(1);
   };
+  const totalDeathblows =
+    character.realm_war_stats?.current?.player_kills?.total?.death_blows;
+
+  const dbPerKillPercentage: number =
+    totalKills === 0
+      ? 0
+      : parseFloat(((totalDeathblows / totalKills) * 100).toFixed(2));
 
   function formatNumber(num: any) {
     if (typeof num === "number" && !isNaN(num)) {
@@ -115,255 +126,123 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   return (
     <TableCell className="bg-gray-900 w-full p-3" colSpan={9}>
       <div className="flex justify-center items-center h-full">
-        <div className="sm:hidden">
-          <div className="bg-gray-900 p-4 rounded-lg mx-2">
-            <div className="text-center mb-4">
-              <h2 className="text-lg font-bold text-white">{character.name}</h2>
-              <p className="text-sm text-gray-300">
-                {character.guild_info?.guild_name &&
-                  `<${character.guild_info.guild_name}>`}
-              </p>
-              <p className="text-sm text-gray-300">
-                {`${character.race} ${character.class_name}, Lvl ${character.level}`}
-              </p>
+        <div className="sm:hidden w-full">
+          <div className="bg-gray-900 rounded-lg mx-0 p-2">
+            <CharacterInfoCard character={character} />
+            <div className="mb-2 w-full">
+              <InfoStatsCard
+                totalRP={formatNumber(realmPoints)}
+                irs={formatNumber(
+                  irs !== undefined ? Math.round(irs) : undefined
+                )}
+                rpsToNextRank={formatNumber(pointsUntilNextRank)}
+                currentRank={currentRankFormatted}
+                nextRank={nextRankFormatted}
+                progressPercentage={progressPercentage}
+              />
             </div>
-            <div className="mb-6">
-              <h3 className="rounded-lg mb-2 px-2 py-1 uppercase text-xs font-bold text-center bg-gray-700 text-white">
-                Info
-              </h3>
-              <div className="flex flex-col items-center space-y-3 px-2 text-xs sm:text-sm text-gray-300">
-                <div className="w-full text-center">
-                  <span>Total RP: {formatNumber(realmPoints)}</span>
-                </div>
-                <div className="w-full text-center">
-                  <span className="font-medium">IRS:</span>
-                  <span className="ml-1">
-                    {irs !== undefined ? formatNumber(Math.round(irs)) : "N/A"}
-                  </span>
-                </div>
-                <div className="w-full text-center">
-                  <span className="font-medium">
-                    RPs to{" "}
-                    <span className="font-extrabold">{nextRankFormatted}</span>:
-                  </span>
-                  <span className="ml-1">
-                    {formatNumber(pointsUntilNextRank)}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center w-full">
-                  <Progress
-                    size="md"
-                    radius="sm"
-                    classNames={{
-                      base: "max-w-md",
-                      track: "drop-shadow-md border border-default bg-gray-200",
-                      indicator: "customIndicator",
-                      label: "tracking-wider font-bold text-gray-400",
-                      value: "text-base font-bold text-indigo-400",
-                    }}
-                    label={currentRankFormatted}
-                    value={progressPercentage}
-                    showValueLabel={true}
+            <div className="mb-2 w-full">
+              <TotalStatsCard
+                kills={formatNumber(
+                  character.realm_war_stats?.current?.player_kills?.total
+                    ?.kills || 0
+                )}
+                deathBlows={formatNumber(
+                  character.realm_war_stats?.current?.player_kills?.total
+                    ?.death_blows || 0
+                )}
+                soloKills={formatNumber(
+                  character.realm_war_stats?.current?.player_kills?.total
+                    ?.solo_kills || 0
+                )}
+                deaths={formatNumber(
+                  character.realm_war_stats?.current?.player_kills?.total
+                    ?.deaths || 0
+                )}
+                dbPerKillPercentage={dbPerKillPercentage}
+              />
+            </div>
+            <div className="mb-2 w-full">
+              {opponentRealms.map((realm) => {
+                const realmStats =
+                  character.realm_war_stats?.current?.player_kills[realm];
+                const dbPerKillRatio =
+                  realmStats?.kills === 0
+                    ? 0
+                    : (realmStats.death_blows / realmStats.kills) * 100;
+                return (
+                  <RealmStatsCard
+                    key={realm}
+                    realm={realm}
+                    kills={formatNumber(realmStats?.kills || 0)}
+                    deathBlows={formatNumber(realmStats?.death_blows || 0)}
+                    soloKills={formatNumber(realmStats?.solo_kills || 0)}
+                    dbPerKillRatio={dbPerKillRatio}
                   />
-                </div>
-              </div>
-            </div>
-
-            {[...opponentRealms].map((realm) => (
-              <div key={realm} className="mb-4">
-                <h3
-                  className={`rounded-lg mb-2 px-2 py-1 uppercase text-xs font-bold text-center ${
-                    realmColors[realm.toLowerCase() as keyof typeof realmColors]
-                  } text-white`}
-                >
-                  {capitalizeRealm(realm)}
-                </h3>
-                <div className="flex flex-col items-center space-y-2 px-2 text-xs text-gray-300">
-                  <div className="w-full text-center">
-                    Kills:{" "}
-                    {formatNumber(
-                      character.realm_war_stats?.current?.player_kills[realm]
-                        ?.kills || 0
-                    )}
-                  </div>
-                  <div className="w-full text-center">
-                    Death Blows:{" "}
-                    {formatNumber(
-                      character.realm_war_stats?.current?.player_kills[realm]
-                        ?.death_blows || 0
-                    )}
-                  </div>
-                  <div className="w-full text-center">
-                    Solo Kills:{" "}
-                    {formatNumber(
-                      character.realm_war_stats?.current?.player_kills[realm]
-                        ?.solo_kills || 0
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-            <div className="mb-4">
-              <h3 className="rounded-lg mb-2 px-2 py-1 uppercase text-xs font-bold text-center bg-gray-700 text-white">
-                Total
-              </h3>
-              <div className="flex flex-col items-center space-y-2 px-2 text-xs text-gray-300">
-                <div className="w-full text-center">
-                  Kills:{" "}
-                  {formatNumber(
-                    character.realm_war_stats?.current?.player_kills?.total
-                      ?.kills || 0
-                  )}
-                </div>
-                <div className="w-full text-center">
-                  Death Blows:{" "}
-                  {formatNumber(
-                    character.realm_war_stats?.current?.player_kills?.total
-                      ?.death_blows || 0
-                  )}
-                </div>
-                <div className="w-full text-center">
-                  Solo Kills:{" "}
-                  {formatNumber(
-                    character.realm_war_stats?.current?.player_kills?.total
-                      ?.solo_kills || 0
-                  )}
-                </div>
-                <div className="w-full text-center">
-                  Deaths:{" "}
-                  {formatNumber(
-                    character.realm_war_stats?.current?.player_kills?.total
-                      ?.deaths || 0
-                  )}
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>
         <div className="hidden sm:grid sm:grid-cols-4 sm:gap-4 sm:w-full sm:max-w-4xl sm:mx-auto">
-          {[...opponentRealms, "Total", "Info"].map((realm, index) => (
-            <div
-              key={index}
-              className="p-3 rounded-lg border border-gray-600 shadow-md hover:shadow-lg transition-shadow duration-300 text-white space-y-2"
-            >
-              <span
-                className={`inline-block py-0.5 px-2.5 rounded-full ${
-                  realm !== "Total" && realm !== "Info"
-                    ? realmColors[
-                        realm.toLowerCase() as keyof typeof realmColors
-                      ]
-                    : "bg-gray-500"
-                } uppercase text-xs font-medium`}
-              >
-                {realm === "Total" || realm === "Info"
-                  ? realm
-                  : capitalizeRealm(realm)}
-              </span>
-              <div className="space-y-1 mt-1">
-                {realm !== "Info" && (
-                  <>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium">Kills:</span>
-                      <span className="w-24 text-right">
-                        {formatNumber(
-                          realm === "Total"
-                            ? character.realm_war_stats?.current?.player_kills
-                                ?.total?.kills
-                            : character.realm_war_stats?.current?.player_kills[
-                                realm
-                              ]?.kills
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium">Death blows:</span>
-                      <span className="w-24 text-right">
-                        {formatNumber(
-                          realm === "Total"
-                            ? character.realm_war_stats?.current?.player_kills
-                                ?.total?.death_blows
-                            : character.realm_war_stats?.current?.player_kills[
-                                realm
-                              ]?.death_blows
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium">Solo kills:</span>
-                      <span className="w-24 text-right">
-                        {formatNumber(
-                          realm === "Total"
-                            ? character.realm_war_stats?.current?.player_kills
-                                ?.total?.solo_kills
-                            : character.realm_war_stats?.current?.player_kills[
-                                realm
-                              ]?.solo_kills
-                        )}
-                      </span>
-                    </div>
-                    {realm === "Total" && (
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-medium">Deaths:</span>
-                        <span className="w-24 text-right">
-                          {formatNumber(
-                            character.realm_war_stats?.current?.player_kills
-                              ?.total?.deaths || 0
-                          )}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
-                {realm === "Info" && (
-                  <>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium">Total RP:</span>
-                      <span className="w-28 text-right">
-                        {formatNumber(realmPoints)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium">IRS:</span>
-                      <span className="w-28 text-right">
-                        {irs !== undefined
-                          ? formatNumber(Math.round(irs))
-                          : "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium">
-                        RPs to{" "}
-                        <span className="font-extrabold">
-                          {nextRankFormatted}
-                        </span>
-                        :
-                      </span>
-                      <span className="w-28 text-right">
-                        {formatNumber(pointsUntilNextRank)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-center w-full">
-                      <Progress
-                        size="md"
-                        radius="sm"
-                        classNames={{
-                          base: "max-w-md",
-                          track:
-                            "drop-shadow-md border border-default bg-gray-300",
-                          indicator: "customIndicator",
-                          label: "tracking-wider font-bold text-gray-400",
-                          value: "text-base font-bold text-indigo-400",
-                        }}
-                        label={currentRankFormatted}
-                        value={progressPercentage}
-                        showValueLabel={true}
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
+          {[...opponentRealms, "Total", "Info"].map((realm, index) => {
+            if (realm !== "Total" && realm !== "Info") {
+              const realmStats =
+                character.realm_war_stats?.current?.player_kills[realm];
+              const kills = realmStats?.kills || 0;
+              const deathBlows = realmStats?.death_blows || 0;
+              const dbPerKillRatio =
+                kills === 0 ? 0 : (deathBlows / kills) * 100;
+
+              return (
+                <RealmStatsCard
+                  key={index}
+                  realm={realm}
+                  kills={formatNumber(realmStats?.kills || 0)}
+                  deathBlows={formatNumber(realmStats?.death_blows || 0)}
+                  soloKills={formatNumber(realmStats?.solo_kills || 0)}
+                  dbPerKillRatio={dbPerKillRatio}
+                />
+              );
+            } else if (realm === "Total") {
+              return (
+                <TotalStatsCard
+                  key={index}
+                  kills={formatNumber(
+                    character.realm_war_stats?.current?.player_kills?.total
+                      ?.kills || 0
+                  )}
+                  deathBlows={formatNumber(
+                    character.realm_war_stats?.current?.player_kills?.total
+                      ?.death_blows || 0
+                  )}
+                  soloKills={formatNumber(
+                    character.realm_war_stats?.current?.player_kills?.total
+                      ?.solo_kills || 0
+                  )}
+                  deaths={formatNumber(
+                    character.realm_war_stats?.current?.player_kills?.total
+                      ?.deaths || 0
+                  )}
+                  dbPerKillPercentage={dbPerKillPercentage}
+                />
+              );
+            } else {
+              return (
+                <InfoStatsCard
+                  key={index}
+                  totalRP={formatNumber(realmPoints)}
+                  irs={formatNumber(
+                    irs !== undefined ? Math.round(irs) : undefined
+                  )}
+                  rpsToNextRank={formatNumber(pointsUntilNextRank)}
+                  currentRank={currentRankFormatted}
+                  nextRank={nextRankFormatted}
+                  progressPercentage={progressPercentage}
+                />
+              );
+            }
+          })}
         </div>
       </div>
     </TableCell>
