@@ -11,6 +11,20 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === "POST") {
     const clerkData = req.body;
     console.log("Received webhook request with body:", req.body);
+    console.error(
+      JSON.stringify({
+        level: "error",
+        message: "Invalid clerk data",
+        clerkData: clerkData,
+      })
+    );
+    console.info(
+      JSON.stringify({
+        level: "info",
+        message: "Processing user creation",
+        clerkUserId: clerkData.data.id,
+      })
+    );
 
     if (!clerkData.data || !Array.isArray(clerkData.data.email_addresses)) {
       console.error("Invalid clerk data:", clerkData);
@@ -66,6 +80,15 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       }
     } catch (error) {
       const anyError = error as any;
+      console.error(
+        JSON.stringify({
+          level: "error",
+          message: "Error in processing webhook",
+          error: anyError.message,
+          stack: anyError.stack,
+          clerkUserId: clerkData.data.id,
+        })
+      );
       console.error(
         `Error ${
           existingUser ? "updating" : "creating"
