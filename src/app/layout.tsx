@@ -7,6 +7,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import Footer from "./footer";
 import Head from "next/head";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "./providers";
 
 export const inter = Inter({
@@ -51,6 +52,7 @@ export default function RootLayout({
           <Providers>
             <Navbar />
             {children}
+            <SpeedInsights />
             <Analytics />
             <Footer />
           </Providers>
