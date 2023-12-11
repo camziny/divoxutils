@@ -8,9 +8,31 @@ interface EmailObject {
 }
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  if (req.method === "POST") {
-    const clerkData = req.body;
-    console.log("Received webhook request with body:", req.body);
+  console.log(
+    JSON.stringify({
+      level: "info",
+      message: "Webhook received",
+      method: req.method,
+      body: req.body,
+    })
+  );
+
+  if (req.method !== "POST") {
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        message: "Unexpected method received",
+        method: req.method,
+      })
+    );
+    return res
+      .status(405)
+      .json({ success: false, message: "Method not allowed" });
+  }
+
+  const clerkData = req.body;
+
+  if (!clerkData.data || !Array.isArray(clerkData.data.email_addresses)) {
     console.error(
       JSON.stringify({
         level: "error",
@@ -18,87 +40,78 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         clerkData: clerkData,
       })
     );
-    console.info(
+    return res.status(400).json({ error: "Invalid clerk data" });
+  }
+
+  const primaryEmailObj = clerkData.data.email_addresses.find(
+    (emailObj: EmailObject) =>
+      emailObj.id === clerkData.data.primary_email_address_id
+  );
+
+  if (!primaryEmailObj) {
+    console.error(
       JSON.stringify({
-        level: "info",
-        message: "Processing user creation",
-        clerkUserId: clerkData.data.id,
+        level: "error",
+        message: "Primary email object not found in clerk data",
+        clerkData: clerkData,
       })
     );
+    return res.status(400).json({ error: "Primary email object not found" });
+  }
 
-    if (!clerkData.data || !Array.isArray(clerkData.data.email_addresses)) {
-      console.error("Invalid clerk data:", clerkData);
-      return res.status(400).json({ error: "Invalid clerk data" });
-    }
+  const userData = {
+    email: primaryEmailObj.email_address,
+    name: `${clerkData.data.first_name || ""} ${
+      clerkData.data.last_name || ""
+    }`.trim(),
+    clerkUserId: clerkData.data.id,
+  };
 
-    const primaryEmailObj = clerkData.data.email_addresses.find(
-      (emailObj: EmailObject) =>
-        emailObj.id === clerkData.data.primary_email_address_id
-    );
-    const primaryEmail = primaryEmailObj ? primaryEmailObj.email_address : null;
+  try {
+    const existingUser = await prisma.user.findUnique({
+      where: { clerkUserId: userData.clerkUserId },
+    });
 
-    if (!primaryEmailObj) {
-      console.error("Primary email object not found in clerk data:", clerkData);
-      return res.status(400).json({ error: "Primary email object not found" });
-    }
-
-    const firstName = clerkData.data.first_name;
-    const lastName = clerkData.data.last_name;
-    const username = clerkData.data.username;
-    const emailPrefix = primaryEmailObj?.email_address.split("@")[0];
-    const clerkUserId = clerkData.data.id;
-
-    const name =
-      `${firstName || ""} ${lastName || ""}`.trim() || username || emailPrefix;
-
-    const userData = {
-      email: primaryEmail,
-      name: name,
-      clerkUserId: clerkData.data.id,
-    };
-
-    let existingUser;
-
-    try {
-      const existingUser = await prisma.user.findUnique({
-        where: { clerkUserId },
+    if (existingUser) {
+      await prisma.user.update({
+        where: { clerkUserId: userData.clerkUserId },
+        data: { name: userData.name },
       });
-
-      if (existingUser) {
-        await prisma.user.update({
-          where: { clerkUserId },
-          data: { name: username },
-        });
-        res
-          .status(200)
-          .json({ success: true, message: "User updated successfully" });
-      } else {
-        const user = await createUserFromClerk(userData);
-        res
-          .status(200)
-          .json({ success: true, message: "User created successfully" });
-      }
-    } catch (error) {
-      const anyError = error as any;
-      console.error(
+      console.log(
         JSON.stringify({
-          level: "error",
-          message: "Error in processing webhook",
-          error: anyError.message,
-          stack: anyError.stack,
-          clerkUserId: clerkData.data.id,
+          level: "info",
+          message: "User updated successfully",
+          userId: existingUser.id,
         })
       );
-      console.error(
-        `Error ${
-          existingUser ? "updating" : "creating"
-        } user in database from Clerk webhook:`,
-        anyError.message
-      );
-      res.status(500).json({ success: false, message: anyError.message });
+      return res
+        .status(200)
+        .json({ success: true, message: "User updated successfully" });
     }
-  } else {
-    console.warn("Unexpected method:", req.method);
-    res.status(405).json({ success: false, message: "Method not allowed" });
+
+    const newUser = await createUserFromClerk(userData);
+    console.log(
+      JSON.stringify({
+        level: "info",
+        message: "User created successfully",
+        userId: newUser.id,
+      })
+    );
+    return res
+      .status(200)
+      .json({ success: true, message: "User created successfully" });
+  } catch (error: any) {
+    console.error(
+      JSON.stringify({
+        level: "error",
+        message: "Error in processing webhook",
+        error: {
+          message: error.message,
+          stack: error.stack,
+        },
+        clerkUserId: userData.clerkUserId,
+      })
+    );
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

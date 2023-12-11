@@ -153,22 +153,25 @@ export const createUserFromClerk = async (data: ClerkUserData) => {
       },
     });
     return createdUser;
-  } catch (error) {
+  } catch (error: any) {
+    console.error(
+      "Error in createUserFromClerk:",
+      JSON.stringify({
+        errorMessage: error.message,
+        errorStack: error.stack,
+        errorDetails: error,
+      })
+    );
     if (error instanceof yup.ValidationError) {
-      console.error(`Validation error: ${error.message}`, error);
+      console.error("Validation error:", error);
     } else if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
-        const target = error.meta?.target;
-        console.error("A unique constraint violation occurred:", target);
-        console.error("This email or clerkUserId is already in use.", error);
+        console.error("Unique constraint violation:", error);
       } else {
-        console.error("Prisma error:", error);
+        console.error("Prisma client error:", error);
       }
     } else {
-      console.error(
-        "An unexpected error occurred in createUserFromClerk:",
-        error
-      );
+      console.error("Unexpected error occurred:", error);
     }
     throw error;
   }
