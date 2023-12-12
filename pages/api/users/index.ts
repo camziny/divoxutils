@@ -10,12 +10,8 @@ export const handleGetUsers = async (
     case "GET":
       try {
         const name = req.query.name;
-        console.log("GET request to /api/users", { query: req.query });
-
         if (name && typeof name === "string") {
-          console.log("Fetching users by partial name:", name);
           const users = await getUsersByPartialName(name);
-          console.log("Found users:", users);
           res.status(200).json(users);
         } else {
           console.log("Fetching all users");
