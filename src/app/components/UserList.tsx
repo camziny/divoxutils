@@ -26,11 +26,13 @@ async function fetchUsers(): Promise<GroupedUsers> {
 
     const sortedUsers = users.sort((a, b) => a.name.localeCompare(b.name));
     return sortedUsers.reduce((acc: GroupedUsers, user: User) => {
-      const firstLetter = user.name[0].toUpperCase();
-      if (!acc[firstLetter]) {
-        acc[firstLetter] = [];
+      if (typeof user.name === "string" && user.name.length > 0) {
+        const firstLetter = user.name[0].toUpperCase();
+        if (!acc[firstLetter]) {
+          acc[firstLetter] = [];
+        }
+        acc[firstLetter].push(user);
       }
-      acc[firstLetter].push(user);
       return acc;
     }, {});
   } catch (error) {
