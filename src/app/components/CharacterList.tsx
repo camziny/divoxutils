@@ -160,7 +160,17 @@ export default async function CharacterList({
                       colSpan={9}
                       className="text-center py-4 text-white bg-gray-900"
                     >
-                      No characters available. Try Refreshing.
+                      <div>
+                        <p>
+                          <strong>No characters available</strong>
+                        </p>
+                        <p className="text-sm mt-2">
+                          <i>Notice:</i> Some users may currently encounter
+                          difficulties in viewing their characters after adding
+                          them. I am actively working on resolving this issue
+                          and will provide an update as soon as it&apos;s fixed!
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
