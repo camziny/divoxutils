@@ -32,6 +32,23 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
   const clerkData = req.body;
 
+  if (clerkData.type === "user.deleted") {
+    try {
+      await prisma.user.delete({
+        where: { clerkUserId: clerkData.data.id },
+      });
+      console.log(`User deleted successfully: ${clerkData.data.id}`);
+      return res
+        .status(200)
+        .json({ success: true, message: "User deleted successfully" });
+    } catch (error) {
+      console.error(`Error in deleting user: ${error}`);
+      return res
+        .status(500)
+        .json({ success: false, message: "Error in deleting user" });
+    }
+  }
+
   if (!clerkData.data || !Array.isArray(clerkData.data.email_addresses)) {
     console.error(
       JSON.stringify({
