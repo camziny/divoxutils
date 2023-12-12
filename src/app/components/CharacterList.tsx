@@ -168,7 +168,7 @@ export default async function CharacterList({
                           <i>Notice:</i> Some users may currently encounter
                           difficulties in viewing their characters after adding
                           them. I am actively working on resolving this issue
-                          and will provide an update as soon as it's fixed!
+                          and will provide an update as soon as it&apos;s fixed!
                         </p>
                       </div>
                     </td>
