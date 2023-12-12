@@ -1,7 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as userController from "../../../src/controllers/userController";
-import { generateToken } from "@/utils/auth";
-import { setCookie } from "@/utils/cookies";
 import { getUsersByPartialName } from "../../../src/controllers/userController";
 
 export const handleGetUsers = async (
@@ -12,14 +10,21 @@ export const handleGetUsers = async (
     case "GET":
       try {
         const name = req.query.name;
+        console.log("GET request to /api/users", { query: req.query });
+
         if (name && typeof name === "string") {
+          console.log("Fetching users by partial name:", name);
           const users = await getUsersByPartialName(name);
+          console.log("Found users:", users);
           res.status(200).json(users);
         } else {
+          console.log("Fetching all users");
           const users = await userController.getUsers();
+          console.log("Found users:", users);
           res.status(200).json(users);
         }
       } catch (error) {
+        console.error("Error in /api/users:", error);
         if (error instanceof Error) {
           res.status(500).json({ message: error.message });
         } else {
@@ -28,7 +33,8 @@ export const handleGetUsers = async (
       }
       break;
     default:
-      res.setHeader("Allow", ["GET", "POST"]);
+      console.log(`Method ${req.method} not allowed for /api/users`);
+      res.setHeader("Allow", ["GET"]);
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 };
