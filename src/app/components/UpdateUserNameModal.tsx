@@ -19,19 +19,27 @@ const UpdateUsernameModal: React.FC<UpdateUsernameModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleUpdateUsername = async (e: React.FormEvent) => {
+  const handleUpdateUsername = async (e: any) => {
     e.preventDefault();
     if (!user) {
       alert("User is not available.");
       return;
     }
+
+    const trimmedUsername = newUsername.trim();
+
+    if (trimmedUsername.length < 3) {
+      alert("Username must be at least 3 characters long.");
+      return;
+    }
+
     setUpdating(true);
 
     const primaryEmailId = user.primaryEmailAddressId || "default_email_id";
     const requestBody = {
       data: {
         id: user.id,
-        username: newUsername,
+        username: trimmedUsername,
         first_name: user.firstName,
         last_name: user.lastName,
         email_addresses: user.emailAddresses.map((email) => ({

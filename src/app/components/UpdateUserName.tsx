@@ -24,6 +24,13 @@ const UpdateUserName = () => {
       return;
     }
 
+    const trimmedUsername = newUsername.trim();
+
+    if (trimmedUsername.length < 3) {
+      alert("Username must be at least 3 characters long.");
+      return;
+    }
+
     setUpdating(true);
 
     const clerkUser = user as ClerkUser;
@@ -33,7 +40,7 @@ const UpdateUserName = () => {
     const requestBody = {
       data: {
         id: clerkUser.id,
-        username: newUsername,
+        username: trimmedUsername,
         first_name: clerkUser.firstName,
         last_name: clerkUser.lastName,
         email_addresses: clerkUser.emailAddresses.map((email) => ({
@@ -71,7 +78,7 @@ const UpdateUserName = () => {
         type="text"
         placeholder="New username"
         value={newUsername}
-        onChange={(e) => setNewUsername(e.target.value)}
+        onChange={(e) => setNewUsername(e.target.value.trim())}
         className="border border-gray-300 rounded px-2 py-1 mr-2"
       />
       <button
