@@ -73,6 +73,11 @@ const UpdateUsernameModal: React.FC<UpdateUsernameModalProps> = ({
     }
   };
 
+  const resetAndClose = () => {
+    setNewUsername("");
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center z-50">
       <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
@@ -95,7 +100,7 @@ const UpdateUsernameModal: React.FC<UpdateUsernameModalProps> = ({
             {updating ? "Updating..." : "Update Username"}
           </button>
           <button
-            onClick={onClose}
+            onClick={resetAndClose}
             className="w-full text-gray-300 hover:text-white transition-colors"
           >
             Cancel
