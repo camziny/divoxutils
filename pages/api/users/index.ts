@@ -14,9 +14,7 @@ export const handleGetUsers = async (
           const users = await getUsersByPartialName(name);
           res.status(200).json(users);
         } else {
-          console.log("Fetching all users");
           const users = await userController.getUsers();
-          console.log("Found users:", users);
           res.status(200).json(users);
         }
       } catch (error) {
@@ -29,7 +27,6 @@ export const handleGetUsers = async (
       }
       break;
     default:
-      console.log(`Method ${req.method} not allowed for /api/users`);
       res.setHeader("Allow", ["GET"]);
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
