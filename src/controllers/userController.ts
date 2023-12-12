@@ -19,11 +19,11 @@ const userSchema = yup
   })
   .unknown(true);
 
-interface ClerkUserData {
+type ClerkUserData = {
   email: string;
-  name: string;
+  username: string;
   clerkUserId: string;
-}
+};
 
 const clerkUserIdSchema = yup.string().required();
 
@@ -132,7 +132,7 @@ export const getUserByName = async (name: string) => {
   });
 };
 
-export const createUserFromClerk = async (data: ClerkUserData) => {
+export const createUserFromClerk = async (data: any) => {
   try {
     await userSchema.validate(data);
 
@@ -141,9 +141,9 @@ export const createUserFromClerk = async (data: ClerkUserData) => {
     });
 
     if (existingUser) {
-      console.log("User already exists with clerkUserId:", data.clerkUserId);
       return existingUser;
     }
+    const name = data.username || "Default Name";
 
     const createdUser = await prisma.user.create({
       data: {
@@ -162,16 +162,16 @@ export const createUserFromClerk = async (data: ClerkUserData) => {
         errorDetails: error,
       })
     );
+
     if (error instanceof yup.ValidationError) {
       console.error("Validation error:", error);
-    } else if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
-        console.error("Unique constraint violation:", error);
-      } else {
-        console.error("Prisma client error:", error);
-      }
+    } else if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      console.error("Unique constraint violation:", error);
     } else {
-      console.error("Unexpected error occurred:", error);
+      console.error("Prisma client error:", error);
     }
     throw error;
   }

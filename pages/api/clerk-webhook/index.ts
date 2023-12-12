@@ -61,9 +61,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
   const userData = {
     email: primaryEmailObj.email_address,
-    name: `${clerkData.data.first_name || ""} ${
-      clerkData.data.last_name || ""
-    }`.trim(),
+    name: clerkData.data.username,
     clerkUserId: clerkData.data.id,
   };
 
