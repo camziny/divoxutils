@@ -19,19 +19,27 @@ const UpdateUsernameModal: React.FC<UpdateUsernameModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleUpdateUsername = async (e: React.FormEvent) => {
+  const handleUpdateUsername = async (e: any) => {
     e.preventDefault();
     if (!user) {
       alert("User is not available.");
       return;
     }
+
+    const trimmedUsername = newUsername.trim();
+
+    if (trimmedUsername.length < 3) {
+      alert("Username must be at least 3 characters long.");
+      return;
+    }
+
     setUpdating(true);
 
     const primaryEmailId = user.primaryEmailAddressId || "default_email_id";
     const requestBody = {
       data: {
         id: user.id,
-        username: newUsername,
+        username: trimmedUsername,
         first_name: user.firstName,
         last_name: user.lastName,
         email_addresses: user.emailAddresses.map((email) => ({
@@ -65,6 +73,11 @@ const UpdateUsernameModal: React.FC<UpdateUsernameModalProps> = ({
     }
   };
 
+  const resetAndClose = () => {
+    setNewUsername("");
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center z-50">
       <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
@@ -87,7 +100,7 @@ const UpdateUsernameModal: React.FC<UpdateUsernameModalProps> = ({
             {updating ? "Updating..." : "Update Username"}
           </button>
           <button
-            onClick={onClose}
+            onClick={resetAndClose}
             className="w-full text-gray-300 hover:text-white transition-colors"
           >
             Cancel

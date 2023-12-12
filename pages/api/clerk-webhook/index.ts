@@ -74,8 +74,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
     if (existingUser) {
       await prisma.user.update({
-        where: { clerkUserId: userData.clerkUserId },
-        data: { name: userData.name },
+        where: { clerkUserId: clerkData.data.id },
+        data: { name: clerkData.data.username },
       });
       console.log(
         JSON.stringify({
