@@ -66,6 +66,10 @@ export const addCharactersToUserList = async (
     const existingWebIds = existingCharacters.map((char) => char.webId);
     const newWebIds = webIds.filter((webId) => !existingWebIds.includes(webId));
 
+    console.log(
+      `Received webIds: ${webIds}, Existing webIds in DB: ${existingWebIds}`
+    );
+
     await prisma.character.createMany({
       data: newWebIds.map((webId) => ({ webId })),
     });

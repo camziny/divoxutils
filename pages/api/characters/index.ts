@@ -7,8 +7,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const authDetails = getAuth(req);
   const clerkUserId = authDetails.userId;
 
-  console.log(`User authentication details: clerkUserId = ${clerkUserId}`);
-
   if (!clerkUserId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -17,9 +15,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     where: { clerkUserId: clerkUserId },
   });
 
-  console.log(`User retrieved from database:`, user);
-
   if (!user) {
+    console.log(`User with clerkUserId ${clerkUserId} not found in database.`);
     return res.status(404).json({ error: "User not found in our database." });
   }
 
@@ -35,6 +32,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     case "POST":
       try {
         if (!Array.isArray(req.body.webIds)) {
+          console.log(
+            `POST /api/characters: Invalid or empty webIds array for user ID ${user.id}`
+          );
           throw new Error("Expected an array of webIds.");
         }
         const foundUser = await prisma.user.findUnique({
@@ -47,9 +47,15 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           req.body.webIds,
           user.id
         );
+        console.log(
+          `Characters added for user ID ${user.id}: Count = ${characters.length}`
+        );
         res.status(201).json(characters);
       } catch (error) {
-        console.error("Error in POST request handling:", error);
+        console.error(
+          `Error in POST /api/characters for userId ${user.id}:`,
+          error
+        );
         handleError(res, error);
       }
       break;
