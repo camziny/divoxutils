@@ -44,9 +44,6 @@ export const addCharactersToUserList = async (
   webIds: string[],
   userId: number
 ) => {
-  console.log(
-    `addCharactersToUserList called with webIds: ${webIds} and userId: ${userId}`
-  );
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -65,10 +62,6 @@ export const addCharactersToUserList = async (
 
     const existingWebIds = existingCharacters.map((char) => char.webId);
     const newWebIds = webIds.filter((webId) => !existingWebIds.includes(webId));
-
-    console.log(
-      `Received webIds: ${webIds}, Existing webIds in DB: ${existingWebIds}`
-    );
 
     await prisma.character.createMany({
       data: newWebIds.map((webId) => ({ webId })),
@@ -111,11 +104,6 @@ export const addCharactersToUserList = async (
         },
       });
     }
-
-    if (charactersToLink.length === 0) {
-      console.log("No new characters to link for user:", userId);
-    }
-
     return allCharacterIds;
   } catch (error) {
     console.error(
