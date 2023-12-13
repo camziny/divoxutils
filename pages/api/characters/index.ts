@@ -7,6 +7,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const authDetails = getAuth(req);
   const clerkUserId = authDetails.userId;
 
+  console.log(`User authentication details: clerkUserId = ${clerkUserId}`);
+
   if (!clerkUserId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -14,6 +16,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const user = await prisma.user.findUnique({
     where: { clerkUserId: clerkUserId },
   });
+
+  console.log(`User retrieved from database:`, user);
 
   if (!user) {
     return res.status(404).json({ error: "User not found in our database." });
