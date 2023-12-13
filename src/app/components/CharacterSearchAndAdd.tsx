@@ -300,66 +300,68 @@ function CharacterSearchAndAdd() {
         !charactersAdded && (
           <div className="mt-4 text-white text-center">No Results Found</div>
         )}
-
-      <div className="p-2">
-        <ul>
-          {searchResults.map((character) => {
-            const realmRankPoints = character.realm_points;
-            const realmRank = getRealmRankForPoints(realmRankPoints);
-            const formattedRealmRank = formatRealmRankWithLevel(realmRank);
-            const isSelected = selectedCharacters.some(
-              (char) => char.character_web_id === character.character_web_id
-            );
-            const toggleCharacterSelection = () => {
-              setSelectedCharacters((prevSelected) => {
-                if (isSelected) {
-                  return prevSelected.filter(
-                    (char) =>
-                      char.character_web_id !== character.character_web_id
-                  );
-                } else {
-                  return [...prevSelected, character];
-                }
-              });
-            };
-            return (
-              <li
-                key={character.character_web_id}
-                className="mb-2 bg-gray-800 p-2 rounded-md"
-              >
-                <div
-                  className="flex flex-col sm:flex-row items-start sm:items-center cursor-pointer"
-                  onClick={toggleCharacterSelection}
-                >
-                  <div className="flex items-center w-full">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={toggleCharacterSelection}
-                      onClick={(e) => e.stopPropagation()}
-                      className="mr-2"
-                    />
-                    <div className="flex-grow">
-                      <span className="text-white block truncate">
-                        {character.name}
-                      </span>
-                      <span className="text-gray-500 text-xs block truncate">
-                        Lvl {character.level} {character.class_name}
+      {hasSearched && searchResults.length > 0 && (
+        <div className="p-2">
+          <h2 className="text-lg font-bold mb-4">Select Characters to Add</h2>
+          <ul>
+            {searchResults.map((character) => {
+              const realmRankPoints = character.realm_points;
+              const realmRank = getRealmRankForPoints(realmRankPoints);
+              const formattedRealmRank = formatRealmRankWithLevel(realmRank);
+              const isSelected = selectedCharacters.some(
+                (char) => char.character_web_id === character.character_web_id
+              );
+              const itemClass = isSelected
+                ? "mb-2 bg-indigo-900/70 p-2 rounded-md text-white"
+                : "mb-2 bg-gray-800 p-2 rounded-md text-gray-300";
+              const toggleCharacterSelection = () => {
+                setSelectedCharacters((prevSelected) => {
+                  if (isSelected) {
+                    return prevSelected.filter(
+                      (char) =>
+                        char.character_web_id !== character.character_web_id
+                    );
+                  } else {
+                    return [...prevSelected, character];
+                  }
+                });
+              };
+              return (
+                <li key={character.character_web_id} className={itemClass}>
+                  <div
+                    className="flex flex-col sm:flex-row items-start sm:items-center cursor-pointer"
+                    onClick={toggleCharacterSelection}
+                  >
+                    <div className="flex items-center w-full">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={toggleCharacterSelection}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mr-2"
+                      />
+                      <div className="flex-grow">
+                        <span className="text-white block truncate">
+                          {character.name}
+                        </span>
+                        <span className="text-gray-500 text-xs block truncate">
+                          Lvl {character.level} {character.class_name}
+                        </span>
+                      </div>
+                      <span className="text-indigo-500 text-xs sm:text-sm ml-auto">
+                        RR: {formattedRealmRank}
                       </span>
                     </div>
-                    <span className="text-indigo-500 text-xs sm:text-sm ml-auto">
-                      RR: {formattedRealmRank}
-                    </span>
+                    <div className="text-gray-400 text-xs sm:text-sm w-full mt-1 sm:mt-0 sm:ml-2">
+                      Guild: {character.guild_info?.guild_name || "N/A"}
+                    </div>
                   </div>
-                  <div className="text-gray-400 text-xs sm:text-sm w-full mt-1 sm:mt-0 sm:ml-2">
-                    Guild: {character.guild_info?.guild_name || "N/A"}
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {searchResults.length > 0 && (
         <div className="flex justify-center mt-4 space-x-4">

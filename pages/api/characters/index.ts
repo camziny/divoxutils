@@ -47,9 +47,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           req.body.webIds,
           user.id
         );
-        console.log(
-          `Characters added for user ID ${user.id}: Count = ${characters.length}`
-        );
         res.status(201).json(characters);
       } catch (error) {
         console.error(
