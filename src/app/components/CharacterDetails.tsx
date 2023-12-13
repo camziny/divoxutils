@@ -102,11 +102,18 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   };
   const totalDeathblows =
     character.realm_war_stats?.current?.player_kills?.total?.death_blows;
+  const totalSoloKills =
+    character.realm_war_stats?.current?.player_kills?.total?.solo_kills;
 
   const dbPerKillPercentage: number =
     totalKills === 0
       ? 0
       : parseFloat(((totalDeathblows / totalKills) * 100).toFixed(2));
+
+  const skPerKillPercentage: number =
+    totalKills === 0
+      ? 0
+      : parseFloat(((totalSoloKills / totalKills) * 100).toFixed(2));
 
   function formatNumber(num: any) {
     if (typeof num === "number" && !isNaN(num)) {
@@ -160,6 +167,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                     ?.deaths || 0
                 )}
                 dbPerKillPercentage={dbPerKillPercentage}
+                skPerKillPercentage={skPerKillPercentage}
               />
             </div>
             <div className="mb-2 w-full">
@@ -170,6 +178,10 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                   realmStats?.kills === 0
                     ? 0
                     : (realmStats.death_blows / realmStats.kills) * 100;
+                const skPerKillRatio =
+                  realmStats?.kills === 0
+                    ? 0
+                    : (realmStats.solo_kills / realmStats.kills) * 100;
                 return (
                   <RealmStatsCard
                     key={realm}
@@ -178,6 +190,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                     deathBlows={formatNumber(realmStats?.death_blows || 0)}
                     soloKills={formatNumber(realmStats?.solo_kills || 0)}
                     dbPerKillRatio={dbPerKillRatio}
+                    skPerKillRatio={skPerKillRatio}
                   />
                 );
               })}
@@ -193,6 +206,10 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
               const deathBlows = realmStats?.death_blows || 0;
               const dbPerKillRatio =
                 kills === 0 ? 0 : (deathBlows / kills) * 100;
+              const skPerKillRatio =
+                realmStats?.kills === 0
+                  ? 0
+                  : (realmStats.solo_kills / realmStats.kills) * 100;
 
               return (
                 <RealmStatsCard
@@ -202,6 +219,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                   deathBlows={formatNumber(realmStats?.death_blows || 0)}
                   soloKills={formatNumber(realmStats?.solo_kills || 0)}
                   dbPerKillRatio={dbPerKillRatio}
+                  skPerKillRatio={skPerKillRatio}
                 />
               );
             } else if (realm === "Total") {
@@ -225,6 +243,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                       ?.deaths || 0
                   )}
                   dbPerKillPercentage={dbPerKillPercentage}
+                  skPerKillPercentage={skPerKillPercentage}
                 />
               );
             } else {

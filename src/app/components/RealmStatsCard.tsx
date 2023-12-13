@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   CircularProgress,
   Card,
   CardBody,
   Chip,
   CardHeader,
+  Button,
+  ButtonGroup,
 } from "@nextui-org/react";
 
 interface RealmCardProps {
@@ -13,6 +15,7 @@ interface RealmCardProps {
   deathBlows: string;
   soloKills: string;
   dbPerKillRatio: number;
+  skPerKillRatio: number;
 }
 
 type RealmColorsType = {
@@ -22,6 +25,8 @@ type RealmColorsType = {
   hibernia: string;
   total: string;
 };
+
+type RatioKey = "dbPerKill" | "skPerKill";
 
 const realmColors: RealmColorsType = {
   albion: "bg-red-500",
@@ -40,7 +45,21 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
   deathBlows,
   soloKills,
   dbPerKillRatio,
+  skPerKillRatio,
 }) => {
+  const [selectedRatio, setSelectedRatio] = useState<RatioKey>("dbPerKill");
+
+  const ratioOptions = {
+    dbPerKill: {
+      label: "DB / Kill Ratio",
+      value: dbPerKillRatio,
+    },
+    skPerKill: {
+      label: "SK / Kill Ratio",
+      value: skPerKillRatio,
+    },
+  };
+
   return (
     <Card className="bg-gray-800 text-white flex flex-col h-full mb-2">
       <CardHeader className={`${realm.toLowerCase()} text-center`}>
@@ -69,18 +88,26 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
               track: "stroke-white/10",
               value: "text-xl font-semibold text-white",
             }}
-            value={dbPerKillRatio}
+            value={ratioOptions[selectedRatio].value}
             showValueLabel={true}
           />
-          <Chip
-            classNames={{
-              base: "border-1 border-white/30",
-              content: "text-gray-800/90 text-xs font-semibold",
-            }}
-            variant="solid"
-          >
-            DB / Kill Ratio
-          </Chip>
+          <div className="flex justify-center w-full my-2">
+            <ButtonGroup variant="flat" style={{ width: "95%" }}>
+              {Object.entries(ratioOptions).map(([key, { label }]) => (
+                <Button
+                  key={key}
+                  onClick={() => setSelectedRatio(key as RatioKey)}
+                  className={
+                    selectedRatio === key
+                      ? "bg-indigo-500/90 text-white text-xs"
+                      : "bg-white text-gray-800 text-xs"
+                  }
+                >
+                  {label}
+                </Button>
+              ))}
+            </ButtonGroup>
+          </div>
         </div>
       </CardBody>
     </Card>
