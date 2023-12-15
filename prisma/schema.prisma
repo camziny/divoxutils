@@ -34,10 +34,17 @@ model User {
 }
 
 model Character {
-  id       Int    @id @default(autoincrement())
-  webId    String @unique
-  users    UserCharacter[]
+  id                      Int    @id @default(autoincrement())
+  webId                   String @unique
+  users                   UserCharacter[]
+  totalRealmPoints        Int    @default(0)
+  realmPointsLastWeek     Int    @default(0)
+  totalSoloKills          Int    @default(0)
+  soloKillsLastWeek       Int    @default(0)
+  totalDeaths             Int    @default(0)
+  deathsLastWeek          Int    @default(0)
 }
+
 
 model UserCharacter {
   clerkUserId   String
