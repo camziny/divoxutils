@@ -16,6 +16,9 @@ export default authMiddleware({
     "/api/users",
     "/search",
     "/users/(.*)/characters",
+    "/api/leaderboard",
+    "/leaderboards",
+    "/api/updateLeaderboardStats",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
