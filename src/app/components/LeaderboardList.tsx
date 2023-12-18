@@ -70,7 +70,11 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
     setCurrentPage(page);
   };
 
-  const handleCategoryChange = (category: LeaderboardCategory) => {
+  const handleCategoryChange = (
+    category: LeaderboardCategory,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
     setSelectedCategory(category);
   };
 
@@ -112,7 +116,9 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
             {Object.entries(categories).map(([key, label]) => (
               <DropdownItem
                 key={key}
-                onClick={() => handleCategoryChange(key as LeaderboardCategory)}
+                onClick={(e) =>
+                  handleCategoryChange(key as LeaderboardCategory, e)
+                }
               >
                 {label}
               </DropdownItem>
@@ -120,45 +126,60 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
           </DropdownMenu>
         </Dropdown>
       </div>
-      <ol className="space-y-4">
-        {isLoading
-          ? renderSkeletons()
-          : paginatedData.map((item, index) => (
-              <li
-                key={item.userId}
-                className="bg-gray-800 p-4 rounded-md hover:bg-gray-700 transition duration-300 ease-in-out transform hover:-translate-y-1"
-              >
-                <Link
-                  href={`/users/${item.clerkUserId}/characters`}
-                  className="flex justify-between items-center w-full h-full text-indigo-400 hover:text-indigo-300 font-medium"
-                >
-                  <span className="flex-grow flex items-center">
-                    <span className="text-xl mr-2 font-bold">
-                      {startIndex + index + 1}.
-                    </span>
-                    <span className="text-lg">{item.userName}</span>
-                  </span>
-                  <span className="text-white font-bold">
-                    {formatNumber(item[selectedCategory])}
-                  </span>
-                </Link>
-              </li>
-            ))}
-      </ol>
-
-      <div className="my-4 flex justify-center">
-        <Pagination
-          total={Math.ceil(data.length / itemsPerPage)}
-          initialPage={1}
-          onChange={(page) => setCurrentPage(page)}
-          classNames={{
-            wrapper: "gap-0 overflow-visible h-8 rounded border border-divider",
-            item: "w-8 h-8 text-small rounded-none bg-transparent text-white",
-            cursor:
-              "bg-gradient-to-b shadow-lg from-default-500 to-default-800 dark:from-default-300 dark:to-default-100 text-white font-bold",
-          }}
-        />
-      </div>
+      {[
+        "realmPointsLastWeek",
+        "soloKillsLastWeek",
+        "deathsLastWeek",
+        "irsLastWeek",
+      ].includes(selectedCategory) ? (
+        <div className="text-center py-4">
+          <span className="text-3xl text-gray-500 font-semibold">
+            Coming Soon
+          </span>
+        </div>
+      ) : (
+        <>
+          <ol className="space-y-4">
+            {isLoading
+              ? renderSkeletons()
+              : paginatedData.map((item, index) => (
+                  <li
+                    key={item.userId}
+                    className="bg-gray-800 p-4 rounded-md hover:bg-gray-700 transition duration-300 ease-in-out transform hover:-translate-y-1"
+                  >
+                    <Link
+                      href={`/users/${item.clerkUserId}/characters`}
+                      className="flex justify-between items-center w-full h-full text-indigo-400 hover:text-indigo-300 font-medium"
+                    >
+                      <span className="flex-grow flex items-center">
+                        <span className="text-xl mr-2 font-bold">
+                          {startIndex + index + 1}.
+                        </span>
+                        <span className="text-lg">{item.userName}</span>
+                      </span>
+                      <span className="text-white font-bold">
+                        {formatNumber(item[selectedCategory])}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+          </ol>
+          <div className="my-4 flex justify-center">
+            <Pagination
+              total={Math.ceil(data.length / itemsPerPage)}
+              initialPage={1}
+              onChange={(page) => setCurrentPage(page)}
+              classNames={{
+                wrapper:
+                  "gap-0 overflow-visible h-8 rounded border border-divider",
+                item: "w-8 h-8 text-small rounded-none bg-transparent text-white",
+                cursor:
+                  "bg-gradient-to-b shadow-lg from-default-500 to-default-800 dark:from-default-300 dark:to-default-100 text-white font-bold",
+              }}
+            />
+          </div>
+        </>
+      )}
     </section>
   );
 };

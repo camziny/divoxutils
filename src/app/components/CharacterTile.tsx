@@ -148,9 +148,16 @@ const CharacterTile: React.FC<{
       accountId: number | null;
     };
   };
+  realmPointsLastWeek: number;
   currentUserId: string;
   ownerId: string;
-}> = ({ webId, initialCharacter, currentUserId, ownerId }) => {
+}> = ({
+  webId,
+  initialCharacter,
+  realmPointsLastWeek,
+  currentUserId,
+  ownerId,
+}) => {
   const router = useRouter();
   const [character, setCharacter] = useState<CharacterInfo | null>(null);
   const [open, setOpen] = useState(false);
@@ -291,6 +298,7 @@ const CharacterTile: React.FC<{
               <CharacterDetails
                 character={character}
                 opponentRealms={opponentRealms}
+                realmPointsLastWeek={realmPointsLastWeek}
               />
             </div>
           </TableCell>

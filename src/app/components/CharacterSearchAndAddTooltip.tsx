@@ -16,16 +16,14 @@ export default function App() {
 
   return (
     <>
-      <div className="flex justify-center items-center space-x-4">
+      <div className="flex items-center justify-start space-x-4">
         <Button
           onPress={onOpen}
           size="sm"
-          className="flex items-center justify-center bg-gray-900/90 text-indigo-500"
+          className="bg-gray-900/90 text-indigo-500"
           endContent={<InfoIcon />}
         >
-          <h1 className="text-3xl font-bold text-white text-center">
-            Leaderboards
-          </h1>
+          <h1 className="text-xl font-bold text-white">Add Characters</h1>
         </Button>
       </div>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -35,10 +33,9 @@ export default function App() {
               <ModalHeader className="flex flex-col gap-1"></ModalHeader>
               <ModalBody className="bg-gray-900">
                 <p>
-                  Leaderboards are updated every Sunday at midnight (UTC). New
-                  users or characters added during the week will be fully
-                  reflected in the leaderboard calculations from the second week
-                  of their registration.
+                  If you attempt to add a character that&apos;s already in your
+                  list, we&apos;ll recognize it and prevent duplication. No need
+                  to worry about duplicates!
                 </p>
               </ModalBody>
               <ModalFooter></ModalFooter>

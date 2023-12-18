@@ -3,6 +3,7 @@ import Link from "next/link";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useState, useEffect } from "react";
 import UserListSkeleton from "./UserListSkeleton";
+import useDebounce from "./UseDebounce";
 
 type User = {
   id: number;

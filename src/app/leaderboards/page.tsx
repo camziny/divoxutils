@@ -29,10 +29,7 @@ export default async function LeaderboardPage() {
   return (
     <div className="p-4 md:p-8 lg:p-12">
       <div className="max-w-screen-lg mx-auto text-center">
-        <h1 className="text-3xl font-bold text-indigo-400 mb-2">
-          Leaderboards
-        </h1>
-        <div className="mb-4">
+        <div className="mb-6">
           <LeaderboardTooltip />
         </div>
         <LeaderboardList data={leaderboardData} />

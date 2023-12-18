@@ -19,6 +19,7 @@ export default authMiddleware({
     "/api/leaderboard",
     "/leaderboards",
     "/api/updateLeaderboardStats",
+    "/api/batchedLeaderboardUpdate",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
