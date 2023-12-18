@@ -23,6 +23,11 @@ type AggregateStatsType = {
   midgardTotalRPs: number;
   hiberniaTotalRPs: number;
   albionTotalRPs: number;
+  midgardRPsLastWeek: number;
+  hiberniaRPsLastWeek: number;
+  albionRPsLastWeek: number;
+  totalRPsLastWeek: number;
+
   player_kills: PlayerKillsAggregate;
 };
 
@@ -52,6 +57,7 @@ type DetailedCharacter = {
   character?: {
     id: number;
     webId: string;
+    realmPointsLastWeek: number;
   };
   detailedCharacter: {
     character_web_id: string;
@@ -107,6 +113,10 @@ const AggregateStatistics: React.FC<AggregateStatisticsProps> = ({
     midgardTotalRPs: 0,
     hiberniaTotalRPs: 0,
     albionTotalRPs: 0,
+    midgardRPsLastWeek: 0,
+    hiberniaRPsLastWeek: 0,
+    albionRPsLastWeek: 0,
+    totalRPsLastWeek: 0,
     player_kills: {
       total: { kills: 0, death_blows: 0, solo_kills: 0 },
       midgard: { kills: 0, death_blows: 0, solo_kills: 0 },
@@ -130,30 +140,36 @@ const AggregateStatistics: React.FC<AggregateStatisticsProps> = ({
 
   characters.forEach((character) => {
     const currentStats = character.detailedCharacter.realm_war_stats.current;
+    const realmPointsLastWeek = character.character?.realmPointsLastWeek || 0;
+    aggregateStats.totalRPsLastWeek += realmPointsLastWeek;
+
     if (currentStats) {
       aggregateStats.totalRPs += currentStats.realm_points;
 
-      const realmKey =
-        character.detailedCharacter.realm === 1
-          ? "albion"
-          : character.detailedCharacter.realm === 2
-          ? "midgard"
-          : "hibernia";
+      let realmKey = "";
 
       if (character.detailedCharacter.realm === 1) {
+        realmKey = "albion";
         aggregateStats.albionTotalRPs += currentStats.realm_points;
+        aggregateStats.albionRPsLastWeek += realmPointsLastWeek;
       } else if (character.detailedCharacter.realm === 2) {
+        realmKey = "midgard";
         aggregateStats.midgardTotalRPs += currentStats.realm_points;
+        aggregateStats.midgardRPsLastWeek += realmPointsLastWeek;
       } else if (character.detailedCharacter.realm === 3) {
+        realmKey = "hibernia";
         aggregateStats.hiberniaTotalRPs += currentStats.realm_points;
+        aggregateStats.hiberniaRPsLastWeek += realmPointsLastWeek;
       }
 
-      aggregateStats.player_kills[realmKey].kills +=
-        currentStats.player_kills.total.kills;
-      aggregateStats.player_kills[realmKey].solo_kills +=
-        currentStats.player_kills.total.solo_kills;
-      aggregateStats.player_kills[realmKey].death_blows +=
-        currentStats.player_kills.total.death_blows;
+      if (realmKey) {
+        aggregateStats.player_kills[realmKey].kills +=
+          currentStats.player_kills.total.kills;
+        aggregateStats.player_kills[realmKey].solo_kills +=
+          currentStats.player_kills.total.solo_kills;
+        aggregateStats.player_kills[realmKey].death_blows +=
+          currentStats.player_kills.total.death_blows;
+      }
 
       aggregateStats.player_kills.total.kills +=
         currentStats.player_kills.total.kills;
@@ -208,35 +224,47 @@ const AggregateStatistics: React.FC<AggregateStatisticsProps> = ({
               </span>
 
               <div className="space-y-1.5 mt-1">
-                {["Kills", "Death Blows", "Solo Kills", "Realm Points"].map(
-                  (stat, i) => (
-                    <div
-                      key={i}
-                      className="flex justify-between items-center text-xs sm:text-sm"
-                    >
-                      <span className="font-medium">{stat}:</span>
-                      <span className="w-20 sm:w-24 text-right font-medium">
-                        {stat !== "Realm Points"
-                          ? formatNumber(
-                              aggregateStats.player_kills[
-                                realm.toLowerCase() as keyof PlayerKillsAggregate
-                              ]?.[
-                                stat
-                                  .replace(/ /g, "_")
-                                  .toLowerCase() as keyof PlayerKillStats
-                              ]
-                            )
-                          : realm !== "Total"
-                          ? formatNumber(
-                              aggregateStats[
-                                realmToPropertyMap[realm.toLowerCase()]
-                              ]
-                            )
-                          : formatNumber(aggregateStats.totalRPs)}
-                      </span>
-                    </div>
-                  )
-                )}
+                {[
+                  "Kills",
+                  "Death Blows",
+                  "Solo Kills",
+                  // "RPs LW",
+                  "Realm Points",
+                ].map((stat, i) => (
+                  <div
+                    key={i}
+                    className="flex justify-between items-center text-xs sm:text-sm"
+                  >
+                    <span className="font-medium">{stat}:</span>
+                    <span className="w-20 sm:w-24 text-right font-medium">
+                      {stat === "RPs LW"
+                        ? formatNumber(
+                            realm !== "Total"
+                              ? aggregateStats[
+                                  `${realm.toLowerCase()}RPsLastWeek` as keyof AggregateStatsType
+                                ]
+                              : aggregateStats.totalRPsLastWeek
+                          )
+                        : stat === "Realm Points"
+                        ? formatNumber(
+                            realm !== "Total"
+                              ? aggregateStats[
+                                  realmToPropertyMap[realm.toLowerCase()]
+                                ]
+                              : aggregateStats.totalRPs
+                          )
+                        : formatNumber(
+                            aggregateStats.player_kills[
+                              realm.toLowerCase() as keyof PlayerKillsAggregate
+                            ]?.[
+                              stat
+                                .replace(/ /g, "_")
+                                .toLowerCase() as keyof PlayerKillStats
+                            ]
+                          )}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           ))}

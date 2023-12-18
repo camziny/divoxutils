@@ -45,6 +45,7 @@ export type CharacterInfo = {
 type CharacterDetailsProps = {
   character: CharacterInfo;
   opponentRealms: string[];
+  realmPointsLastWeek: number;
 };
 
 type RealmColorsType = {
@@ -65,6 +66,7 @@ const realmColors: RealmColorsType = {
 const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   character,
   opponentRealms,
+  realmPointsLastWeek,
 }) => {
   const firstOpponentStats =
     character.realm_war_stats?.current?.player_kills[opponentRealms[0]];
@@ -146,6 +148,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                 currentRank={currentRankFormatted}
                 nextRank={nextRankFormatted}
                 progressPercentage={progressPercentage}
+                realmPointsLastWeek={formatNumber(realmPointsLastWeek)}
               />
             </div>
             <div className="mb-2 w-full">
@@ -258,6 +261,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                   currentRank={currentRankFormatted}
                   nextRank={nextRankFormatted}
                   progressPercentage={progressPercentage}
+                  realmPointsLastWeek={formatNumber(realmPointsLastWeek)}
                 />
               );
             }

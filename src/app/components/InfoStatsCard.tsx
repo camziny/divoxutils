@@ -8,6 +8,7 @@ interface InfoStatsCardProps {
   currentRank: string;
   nextRank: string;
   progressPercentage: number;
+  realmPointsLastWeek: string;
 }
 
 const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
@@ -17,7 +18,9 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
   nextRank,
   currentRank,
   progressPercentage,
+  realmPointsLastWeek,
 }) => {
+  console.log("rps last week:", realmPointsLastWeek);
   return (
     <Card className="bg-gray-800 text-white flex flex-col h-full">
       <CardHeader className="text-center bg-indigo-500">Info</CardHeader>
@@ -31,6 +34,10 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
             IRS:{" "}
             <span className="font-bold">{irs !== undefined ? irs : "N/A"}</span>
           </div>
+          {/* <div className="text-center my-2">
+            RPs Last Week:{" "}
+            <span className="font-bold">{realmPointsLastWeek}</span>
+          </div> */}
           <div className="text-center my-2">
             RPs to <span className="font-extrabold">{nextRank}</span>:{" "}
             <span className="font-bold">{rpsToNextRank}</span>

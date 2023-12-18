@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import { Snackbar } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -9,6 +9,17 @@ import CircularProgress from "@mui/material/CircularProgress";
 import InfoIcon from "@mui/icons-material/Info";
 import { Tooltip } from "@mui/material";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
+import useDebounce from "./UseDebounce";
+import {
+  Input,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Button,
+} from "@nextui-org/react";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import CharacterSearchAndAddTooltip from "./CharacterSearchAndAddTooltip";
 
 type CharacterType = {
   character_web_id: string;
@@ -43,6 +54,7 @@ function CharacterSearchAndAdd() {
   const [searchError, setSearchError] = useState("");
   const [invalidSearchAttempted, setInvalidSearchAttempted] = useState(false);
   const [open, setOpen] = useState(false);
+  const debouncedSearchTerm = useDebounce(name, 500);
 
   const handleTooltipToggle = () => {
     setOpen(!open);
@@ -60,28 +72,32 @@ function CharacterSearchAndAdd() {
     return response.json();
   };
 
-  const handleSearch = async () => {
-    if (name.length < 3) {
-      setInvalidSearchAttempted(true);
-      setSearchResults([]);
-      return;
-    }
-    setInvalidSearchAttempted(false);
-    setHasSearched(true);
-    setIsFetching(true);
-    try {
-      const results = await fetchCharacters(name, cluster);
-      if (results && results.results) {
-        setSearchResults(results.results);
-      } else {
+  useEffect(() => {
+    const performSearch = async () => {
+      if (debouncedSearchTerm.length < 3) {
+        setInvalidSearchAttempted(debouncedSearchTerm.length > 0);
         setSearchResults([]);
+        return;
       }
-    } catch (error) {
-      console.error("Error fetching characters:", error);
-    } finally {
-      setIsFetching(false);
-    }
-  };
+      setInvalidSearchAttempted(false);
+      setHasSearched(true);
+      setIsFetching(true);
+      try {
+        const results = await fetchCharacters(debouncedSearchTerm, cluster);
+        if (results && results.results) {
+          setSearchResults(results.results);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error("Error fetching characters:", error);
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    performSearch();
+  }, [debouncedSearchTerm, cluster]);
 
   const saveCharacters = async () => {
     setIsFetching(true);
@@ -220,10 +236,18 @@ function CharacterSearchAndAdd() {
     setIsFetching(false);
   };
 
+  function handleServerChange(server: string) {
+    setCluster(server);
+  }
+
+  const servers = {
+    ywain: "Ywain",
+  };
+
   return (
     <div className="bg-gray-900 p-4 rounded-lg">
       <div className="flex justify-between mb-2">
-        <div className="flex items-center text-white font-semibold text-lg">
+        {/* <div className="flex items-center text-white font-semibold text-lg">
           <span>Add Characters</span>
           <ClickAwayListener onClickAway={handleClose}>
             <Tooltip
@@ -251,38 +275,67 @@ function CharacterSearchAndAdd() {
               />
             </Tooltip>
           </ClickAwayListener>
-        </div>
+        </div> */}
+
+        <CharacterSearchAndAddTooltip />
       </div>
       <div className="flex flex-wrap items-center mb-2 space-x-2">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Character Name"
-          className="bg-gray-800 p-2 rounded flex-1 text-sm"
-        />
-        <select
-          value={cluster}
-          onChange={(e) => setCluster(e.target.value)}
-          className="bg-gray-800 p-2 rounded flex-1 text-sm"
-        >
-          <option value="">Select a Cluster...</option>
-          <option value="ywain">Ywain</option>
-        </select>
-        {hasSearched ? (
-          <button
-            onClick={cancelSearch}
-            className="flex items-center space-x-2 text-md font-semibold bg-red-400 text-white py-2 px-4 rounded-lg hover:bg-red-500 shadow-md transition-all duration-300"
-          >
-            <CancelOutlinedIcon />
-          </button>
-        ) : (
-          <button
-            onClick={handleSearch}
-            className="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 text-sm flex-shrink-0"
-          >
-            Search
-          </button>
-        )}
+        <div className="relative flex-1">
+          <Input
+            size="sm"
+            type="text"
+            placeholder="Character Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            classNames={{
+              label: "text-gray-500 dark:text-gray-300",
+              input: [
+                "bg-transparent",
+                "text-gray-800 dark:text-gray-200",
+                "placeholder:text-gray-400 dark:placeholder:text-gray-500",
+              ],
+              innerWrapper: "bg-transparent",
+              inputWrapper: [
+                "shadow-xl",
+                "bg-gray-800",
+                "dark:bg-gray-700",
+                "hover:bg-gray-700 dark:hover:bg-gray-600",
+                "group-data-[focused=true]:bg-gray-800 dark:group-data-[focused=true]:bg-gray-700",
+                "focus:border-indigo-600",
+                "!cursor-text",
+              ],
+            }}
+          />
+        </div>
+        <div>
+          <Dropdown>
+            <DropdownTrigger>
+              <Button
+                color="primary"
+                className="text-indigo-500 bg-gray-800 border-indigo-500"
+              >
+                {servers[cluster as keyof typeof servers] ||
+                  "Select a Cluster..."}
+                <KeyboardArrowDownIcon />
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              variant="faded"
+              aria-label="Server Selection"
+              className="bg-gray-900 text-indigo-400"
+            >
+              {Object.entries(servers).map(([key, label]) => (
+                <DropdownItem
+                  key={key}
+                  onClick={() => handleServerChange(key)}
+                  className="hover:bg-gray-700"
+                >
+                  {label}
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
+        </div>
       </div>
       {isFetching && (
         <div className="mt-4 flex justify-center">
@@ -296,6 +349,7 @@ function CharacterSearchAndAdd() {
       )}
       {!isFetching &&
         hasSearched &&
+        name.length >= 3 &&
         searchResults.length === 0 &&
         !charactersAdded && (
           <div className="mt-4 text-white text-center">No Results Found</div>
@@ -366,8 +420,13 @@ function CharacterSearchAndAdd() {
       {searchResults.length > 0 && (
         <div className="flex justify-center mt-4 space-x-4">
           <button
+            disabled={selectedCharacters.length === 0}
             onClick={handleAddToList}
-            className="flex items-center space-x-2 text-md font-semibold bg-indigo-400 text-white py-2 px-4 rounded-lg hover:bg-indigo-500 shadow-md transition-all duration-300"
+            className={`flex items-center space-x-2 text-md font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-300 ${
+              selectedCharacters.length === 0
+                ? "opacity-50 cursor-not-allowed bg-gray-400"
+                : "bg-indigo-400 hover:bg-indigo-500 text-white"
+            }`}
           >
             <AddCircleOutlinedIcon />
             <span>Add</span>

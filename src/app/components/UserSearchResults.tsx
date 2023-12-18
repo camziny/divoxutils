@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import CircularProgress from "@mui/material/CircularProgress";
 import UserList from "./UserList";
-import CancelIcon from "@mui/icons-material/Cancel";
-import Loading from "../loading";
+import useDebounce from "./UseDebounce";
+import { Input } from "@nextui-org/react";
 
 type User = {
   id: number;
@@ -19,70 +18,73 @@ type UserSearchResultsProps = {
 
 export default function UserSearch() {
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 500);
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter;
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    setSearchPerformed(true);
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/users?name=${query}`);
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (debouncedQuery.trim() === "") {
+        setSearchResults([]);
+        setSearchPerformed(false);
+        setIsLoading(false);
+        return;
       }
-      const users = await response.json();
-      setSearchResults(users);
-    } catch (error) {
-      console.error("Failed to fetch search results:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const cancelSearch = () => {
-    setQuery("");
-    setSearchResults([]);
-    setSearchPerformed(false);
-    setIsLoading(false);
-  };
+      setSearchPerformed(true);
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/users?name=${debouncedQuery}`);
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        const users = await response.json();
+        setSearchResults(users);
+      } catch (error) {
+        console.error("Failed to fetch search results:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [debouncedQuery]);
 
   return (
     <div className="flex flex-col items-center justify-center my-10 bg-gray-900">
-      <form
-        onSubmit={handleSubmit}
-        className="flex justify-center mb-6 w-full max-w-xs"
-      >
-        <input
-          className="border-2 border-gray-300 rounded-full px-4 py-2 mr-3 w-full focus:outline-none focus:border-blue-500 text-gray-700 bg-white"
+      <form className="flex justify-center mb-6 w-full max-w-xs">
+        <Input
+          size="sm"
           type="text"
           placeholder="Search user..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          classNames={{
+            label: "text-gray-500 dark:text-gray-300",
+            input: [
+              "bg-transparent",
+              "text-gray-800 dark:text-gray-200",
+              "placeholder:text-gray-400 dark:placeholder:text-gray-500",
+            ],
+            innerWrapper: "bg-transparent",
+            inputWrapper: [
+              "shadow-xl",
+              "bg-gray-800",
+              "dark:bg-gray-700",
+              "hover:bg-gray-700 dark:hover:bg-gray-600",
+              "group-data-[focused=true]:bg-gray-800 dark:group-data-[focused=true]:bg-gray-700",
+              "border border-indigo-500",
+              "focus:border-indigo-600",
+              "!cursor-text",
+            ],
+          }}
         />
-        <button
-          className="bg-indigo-500 text-white rounded-full px-4 py-2 hover:bg-indigo-600"
-          type="submit"
-        >
-          Search
-        </button>
       </form>
-      {searchPerformed && (
-        <button
-          onClick={cancelSearch}
-          className="flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 border border-indigo-700 rounded shadow mb-4 rounded-full"
-        >
-          <CancelIcon className="mr-2" />
-          <span>Cancel</span>
-        </button>
-      )}
       <div className="w-full max-w-xs">
         {isLoading ? (
-          <div className="flex justify-center items-center">
-            {/* <CircularProgress style={{ color: "#6366F1" }} />{" "} */}
-          </div>
+          <div className="flex justify-center items-center"></div>
         ) : searchResults.length > 0 ? (
           searchResults.map((user) => (
             <Link key={user.id} href={`/users/${user.clerkUserId}/characters`}>
@@ -92,7 +94,7 @@ export default function UserSearch() {
             </Link>
           ))
         ) : searchPerformed ? (
-          <p className="text-gray-500">No users found</p>
+          <p className="text-gray-500 text-center">No users found</p>
         ) : null}
       </div>
       <UserList />
