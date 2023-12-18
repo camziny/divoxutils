@@ -117,14 +117,14 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
             )}
             {!isUserSignedIn && (
               <>
-                <Link href="/leaderboards">
+                {/* <Link href="/leaderboards">
                   <div
                     onClick={closeMenu}
                     className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
                   >
                     Leaderboards
                   </div>
-                </Link>
+                </Link> */}
                 <Link href="/search">
                   <div
                     onClick={closeMenu}
