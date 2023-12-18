@@ -14,54 +14,74 @@ export default async function batchedLeaderboardUpdate(
     const batchSize = 5;
     let updatedCount = 0;
     let failedCount = 0;
-    const characters = await prisma.character.findMany({
+
+    const users = await prisma.user.findMany({
       where: {
-        totalRealmPoints: 0,
+        characters: {
+          some: {
+            character: {
+              totalRealmPoints: 0,
+            },
+          },
+        },
       },
       take: batchSize,
+      include: {
+        characters: {
+          include: {
+            character: true,
+          },
+        },
+      },
     });
 
-    for (const character of characters) {
-      try {
-        const apiUrl = `https://api.camelotherald.com/character/info/${character.webId}`;
-        const response = await fetch(apiUrl);
-        const data = await response.json();
+    for (const user of users) {
+      for (const userCharacter of user.characters) {
+        const character = userCharacter.character;
+        if (character.totalRealmPoints === 0) {
+          try {
+            const apiUrl = `https://api.camelotherald.com/character/info/${character.webId}`;
+            const response = await fetch(apiUrl);
+            const data = await response.json();
 
-        if (data && data.realm_war_stats && data.realm_war_stats.current) {
-          const currentStats = data.realm_war_stats.current;
+            if (data && data.realm_war_stats && data.realm_war_stats.current) {
+              const currentStats = data.realm_war_stats.current;
 
-          const realmPointsLastWeek =
-            currentStats.realm_points - character.totalRealmPoints;
-          const soloKillsLastWeek =
-            currentStats.player_kills.total.solo_kills -
-            character.totalSoloKills;
-          const deathsLastWeek =
-            currentStats.player_kills.total.deaths - character.totalDeaths;
+              const realmPointsLastWeek =
+                currentStats.realm_points - character.totalRealmPoints;
+              const soloKillsLastWeek =
+                currentStats.player_kills.total.solo_kills -
+                character.totalSoloKills;
+              const deathsLastWeek =
+                currentStats.player_kills.total.deaths - character.totalDeaths;
 
-          await prisma.character.update({
-            where: { webId: character.webId },
-            data: {
-              totalRealmPoints: currentStats.realm_points,
-              realmPointsLastWeek,
-              totalSoloKills: currentStats.player_kills.total.solo_kills,
-              soloKillsLastWeek,
-              totalDeaths: currentStats.player_kills.total.deaths,
-              deathsLastWeek,
-            },
-          });
-          updatedCount++;
+              await prisma.character.update({
+                where: { id: character.id },
+                data: {
+                  totalRealmPoints: currentStats.realm_points,
+                  realmPointsLastWeek,
+                  totalSoloKills: currentStats.player_kills.total.solo_kills,
+                  soloKillsLastWeek,
+                  totalDeaths: currentStats.player_kills.total.deaths,
+                  deathsLastWeek,
+                },
+              });
+              updatedCount++;
+            }
+          } catch (error) {
+            console.error(
+              `Failed to update stats for character ${character.webId}:`,
+              error
+            );
+            failedCount++;
+          }
         }
-      } catch (error) {
-        console.error(
-          `Failed to update stats for character ${character.webId}:`,
-          error
-        );
-        failedCount++;
       }
     }
+
     res.status(200).json({
       message: "Batch update process completed",
-      processedCharacters: characters.length,
+      processedUsers: users.length,
       updatedCharacters: updatedCount,
       failedUpdates: failedCount,
     });
