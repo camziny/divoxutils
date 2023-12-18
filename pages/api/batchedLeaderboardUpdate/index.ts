@@ -14,6 +14,7 @@ export default async function batchedLeaderboardUpdate(
     const batchSize = 5;
     let updatedCount = 0;
     let failedCount = 0;
+    let processedUserData = [];
 
     const users = await prisma.user.findMany({
       where: {
@@ -36,8 +37,10 @@ export default async function batchedLeaderboardUpdate(
     });
 
     for (const user of users) {
+      let processedCharactersData = [];
       for (const userCharacter of user.characters) {
         const character = userCharacter.character;
+        console.log(`Processing character: ${character.webId}`);
         if (character.totalRealmPoints === 0) {
           try {
             const apiUrl = `https://api.camelotherald.com/character/info/${character.webId}`;
@@ -67,16 +70,33 @@ export default async function batchedLeaderboardUpdate(
                 },
               });
               updatedCount++;
+              processedCharactersData.push({
+                characterWebId: character.webId,
+                updated: true,
+              });
             }
           } catch (error) {
             console.error(
               `Failed to update stats for character ${character.webId}:`,
               error
             );
+            const errorMessage =
+              error instanceof Error ? error.message : "Unknown error";
             failedCount++;
+            processedCharactersData.push({
+              characterWebId: character.webId,
+              updated: false,
+              error: errorMessage,
+            });
           }
         }
       }
+
+      processedUserData.push({
+        clerkUserId: user.clerkUserId,
+        user: user.name,
+        charactersProcessed: processedCharactersData,
+      });
     }
 
     res.status(200).json({
@@ -84,6 +104,7 @@ export default async function batchedLeaderboardUpdate(
       processedUsers: users.length,
       updatedCharacters: updatedCount,
       failedUpdates: failedCount,
+      userDetails: processedUserData,
     });
   } else {
     res.setHeader("Allow", ["POST"]);
