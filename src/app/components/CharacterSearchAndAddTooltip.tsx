@@ -33,9 +33,9 @@ export default function App() {
               <ModalHeader className="flex flex-col gap-1"></ModalHeader>
               <ModalBody className="bg-gray-900">
                 <p>
-                  If you attempt to add a character that's already in your list,
-                  we'll recognize it and prevent duplication. No need to worry
-                  about duplicates!
+                  If you attempt to add a character that&apos;s already in your
+                  list, we&apos;ll recognize it and prevent duplication. No need
+                  to worry about duplicates!
                 </p>
               </ModalBody>
               <ModalFooter></ModalFooter>
