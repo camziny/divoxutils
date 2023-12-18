@@ -11,7 +11,7 @@ export default async function batchedLeaderboardUpdate(
   }
 
   if (req.method === "POST") {
-    const batchSize = 5;
+    const batchSize = 10;
     let updatedCount = 0;
     let failedCount = 0;
     let processedUserData = [];
