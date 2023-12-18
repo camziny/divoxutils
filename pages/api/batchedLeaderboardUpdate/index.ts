@@ -40,12 +40,15 @@ export default async function batchedLeaderboardUpdate(
       let processedCharactersData = [];
       for (const userCharacter of user.characters) {
         const character = userCharacter.character;
-        console.log(`Processing character: ${character.webId}`);
+        console.log(
+          `Processing character: ${character.webId}, Total Realm Points: ${character.totalRealmPoints}`
+        );
         if (character.totalRealmPoints === 0) {
           try {
             const apiUrl = `https://api.camelotherald.com/character/info/${character.webId}`;
             const response = await fetch(apiUrl);
             const data = await response.json();
+            console.log(`API response for ${character.webId}: `, data);
 
             if (data && data.realm_war_stats && data.realm_war_stats.current) {
               const currentStats = data.realm_war_stats.current;
@@ -58,7 +61,7 @@ export default async function batchedLeaderboardUpdate(
               const deathsLastWeek =
                 currentStats.player_kills.total.deaths - character.totalDeaths;
 
-              await prisma.character.update({
+              const updatedCharacter = await prisma.character.update({
                 where: { id: character.id },
                 data: {
                   totalRealmPoints: currentStats.realm_points,
@@ -69,6 +72,9 @@ export default async function batchedLeaderboardUpdate(
                   deathsLastWeek,
                 },
               });
+              console.log(
+                `Updated character: ${updatedCharacter.webId}, New Total Realm Points: ${updatedCharacter.totalRealmPoints}`
+              );
               updatedCount++;
               processedCharactersData.push({
                 characterWebId: character.webId,
