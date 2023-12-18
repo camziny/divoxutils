@@ -12,6 +12,8 @@ export default async function batchedLeaderboardUpdate(
 
   if (req.method === "POST") {
     const batchSize = 5;
+    let updatedCount = 0;
+    let failedCount = 0;
     const characters = await prisma.character.findMany({
       where: {
         totalRealmPoints: 0,
@@ -47,16 +49,22 @@ export default async function batchedLeaderboardUpdate(
               deathsLastWeek,
             },
           });
+          updatedCount++;
         }
       } catch (error) {
         console.error(
           `Failed to update stats for character ${character.webId}:`,
           error
         );
+        failedCount++;
       }
     }
-
-    res.status(200).json({ message: "Batch update successful" });
+    res.status(200).json({
+      message: "Batch update process completed",
+      processedCharacters: characters.length,
+      updatedCharacters: updatedCount,
+      failedUpdates: failedCount,
+    });
   } else {
     res.setHeader("Allow", ["POST"]);
     res.status(405).end(`Method ${req.method} Not Allowed`);
