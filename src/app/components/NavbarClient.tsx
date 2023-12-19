@@ -53,7 +53,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
 
         <button
           onClick={toggleMenu}
-          className="text-white md:hidden focus:outline-none focus:ring-2 focus:ring-gray-600 p-2 rounded hover:bg-gray-700"
+          className="text-white lg:hidden focus:outline-none focus:ring-2 focus:ring-gray-600 p-2 rounded hover:bg-gray-700"
         >
           {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
@@ -61,7 +61,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
         <div
           className={`${
             isMenuOpen ? "block" : "hidden"
-          } md:flex flex-grow justify-end items-center w-full md:w-auto`}
+          } lg:flex flex-grow justify-end items-center w-full lg:w-auto`}
         >
           <div className="flex flex-col md:flex-row md:space-x-4 mt-4 md:mt-0">
             <Link href="/about">
@@ -82,14 +82,14 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     My Characters
                   </div>
                 </Link>
-                {/* <Link href="/leaderboards">
+                <Link href="/leaderboards">
                   <div
                     onClick={closeMenu}
                     className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
                   >
                     Leaderboards
                   </div>
-                </Link> */}
+                </Link>
                 <Link href="/search">
                   <div
                     onClick={closeMenu}
@@ -117,14 +117,14 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
             )}
             {!isUserSignedIn && (
               <>
-                {/* <Link href="/leaderboards">
+                <Link href="/leaderboards">
                   <div
                     onClick={closeMenu}
                     className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
                   >
                     Leaderboards
                   </div>
-                </Link> */}
+                </Link>
                 <Link href="/search">
                   <div
                     onClick={closeMenu}

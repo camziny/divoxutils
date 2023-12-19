@@ -35,7 +35,7 @@ export default function App() {
               <ModalHeader className="flex flex-col gap-1"></ModalHeader>
               <ModalBody className="bg-gray-900">
                 <p>
-                  Leaderboards are updated every Sunday at midnight (UTC). New
+                  Leaderboards are updated every Monday at 5:00 AM (UTC). New
                   users or characters added during the week will be fully
                   reflected in the leaderboard calculations from the second week
                   of their registration.
