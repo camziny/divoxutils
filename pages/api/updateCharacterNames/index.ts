@@ -25,7 +25,21 @@ export default async function updateCharacterNames(
 
     let skip = 0;
 
+    console.log("Starting character name update process");
+
+    const countUnknown = await prisma.character.count({
+      where: {
+        OR: [{ characterName: "Unknown" }, { className: "Unknown" }],
+      },
+    });
+    console.log(`Total characters with 'Unknown' values: ${countUnknown}`);
+
     while (true) {
+      const currentDate = new Date(new Date().setHours(0, 0, 0, 0));
+      console.log(
+        `Processing batch: Skip = ${skip}, Batch Size = ${batchSize}, Current Date for Query: ${currentDate}`
+      );
+
       console.log(
         `Processing batch: Skip = ${skip}, Batch Size = ${batchSize}`
       );
@@ -46,6 +60,7 @@ export default async function updateCharacterNames(
         skip: skip,
       });
       if (characters.length === 0) {
+        console.log("No more characters to update in this batch");
         break;
       }
 
@@ -64,11 +79,17 @@ export default async function updateCharacterNames(
           };
 
           if (firstName && firstName !== character.characterName) {
+            console.log(
+              `Updating name for character ID ${character.id} from '${character.characterName}' to '${firstName}'`
+            );
             nameUpdateData.characterName = firstName;
             nameUpdateData.previousCharacterName = character.characterName;
           }
 
           if (className && className !== character.className) {
+            console.log(
+              `Updating class for character ID ${character.id} from '${character.className}' to '${className}'`
+            );
             nameUpdateData.className = className;
           }
 
@@ -89,6 +110,15 @@ export default async function updateCharacterNames(
       }
       skip += batchSize;
     }
+
+    const countRemainingUnknown = await prisma.character.count({
+      where: {
+        OR: [{ characterName: "Unknown" }, { className: "Unknown" }],
+      },
+    });
+    console.log(
+      `Characters remaining with 'Unknown' values: ${countRemainingUnknown}`
+    );
 
     res.status(200).json({
       message: "Character names update process completed",
