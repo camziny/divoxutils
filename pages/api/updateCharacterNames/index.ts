@@ -26,7 +26,22 @@ export default async function updateCharacterNames(
     let skip = 0;
 
     while (true) {
+      console.log(
+        `Processing batch: Skip = ${skip}, Batch Size = ${batchSize}`
+      );
       const characters = await prisma.character.findMany({
+        where: {
+          nameLastUpdated: {
+            lt: new Date(new Date().setHours(0, 0, 0, 0)),
+          },
+        },
+        select: {
+          id: true,
+          webId: true,
+          characterName: true,
+          className: true,
+          nameLastUpdated: true,
+        },
         take: batchSize,
         skip: skip,
       });
