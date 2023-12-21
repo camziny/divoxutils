@@ -24,6 +24,7 @@ export default async function updateCharacterNames(
     let failedCount = 0;
 
     let skip = 0;
+    const fourHoursAgo = new Date(new Date().getTime() - 4 * 60 * 60 * 1000);
 
     console.log("Starting character name update process");
 
@@ -35,19 +36,15 @@ export default async function updateCharacterNames(
     console.log(`Total characters with 'Unknown' values: ${countUnknown}`);
 
     while (true) {
-      const currentDate = new Date(new Date().setHours(0, 0, 0, 0));
-      console.log(
-        `Processing batch: Skip = ${skip}, Batch Size = ${batchSize}, Current Date for Query: ${currentDate}`
-      );
-
       console.log(
         `Processing batch: Skip = ${skip}, Batch Size = ${batchSize}`
       );
       const characters = await prisma.character.findMany({
         where: {
           nameLastUpdated: {
-            lt: new Date(new Date().setHours(0, 0, 0, 0)),
+            lt: fourHoursAgo,
           },
+          OR: [{ characterName: "Unknown" }, { className: "Unknown" }],
         },
         select: {
           id: true,
@@ -59,6 +56,9 @@ export default async function updateCharacterNames(
         take: batchSize,
         skip: skip,
       });
+
+      console.log(`Characters in current batch: ${characters.length}`);
+
       if (characters.length === 0) {
         console.log("No more characters to update in this batch");
         break;
