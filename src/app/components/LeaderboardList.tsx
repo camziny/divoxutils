@@ -93,24 +93,25 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
     leaderboardData: LeaderboardItem[],
     selectedCategory: LeaderboardCategory
   ) {
-    let filteredData = leaderboardData.filter((item) => {
-      if (
-        [
-          "realmPointsLastWeek",
-          "soloKillsLastWeek",
-          "deathsLastWeek",
-          "irsLastWeek",
-        ].includes(selectedCategory)
-      ) {
-        const lastUpdatedDate =
-          item.lastUpdated instanceof Date
-            ? item.lastUpdated
-            : new Date(item.lastUpdated);
-        return isBeforeThisWeek(lastUpdatedDate);
-      }
-      return true;
-    });
-    return filteredData.sort(
+    // let filteredData = leaderboardData.filter((item) => {
+    //   if (
+    //     [
+    //       "realmPointsLastWeek",
+    //       "soloKillsLastWeek",
+    //       "deathsLastWeek",
+    //       "irsLastWeek",
+    //     ].includes(selectedCategory)
+    //   ) {
+    //     const lastUpdatedDate =
+    //       item.lastUpdated instanceof Date
+    //         ? item.lastUpdated
+    //         : new Date(item.lastUpdated);
+    //     return isBeforeThisWeek(lastUpdatedDate);
+    //   }
+    //   return true;
+    // });
+    // return filteredData.sort(
+    return leaderboardData.sort(
       (a, b) => b[selectedCategory] - a[selectedCategory]
     );
   }
