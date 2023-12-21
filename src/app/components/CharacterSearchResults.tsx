@@ -137,13 +137,15 @@ export default function CharacterNameSearch() {
                           <span className="text-base font-semibold text-indigo-400">
                             {userCharacter.character.className}
                           </span>
-                          <span className="text-sm font-semibold text-indigo-400">
-                            {formatRealmRankWithLevel(
-                              getRealmRankForPoints(
-                                userCharacter.character.totalRealmPoints
-                              )
-                            )}
-                          </span>
+                          {userCharacter.character.totalRealmPoints > 0 && (
+                            <span className="text-sm font-semibold text-indigo-400">
+                              {formatRealmRankWithLevel(
+                                getRealmRankForPoints(
+                                  userCharacter.character.totalRealmPoints
+                                )
+                              )}
+                            </span>
+                          )}
                         </li>
                       ))}
                   </ul>
