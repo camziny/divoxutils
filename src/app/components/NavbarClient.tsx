@@ -99,6 +99,15 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     <SearchIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
                   </div>
                 </Link>
+                {/* <Link href="/character-search">
+                  <div
+                    onClick={closeMenu}
+                    className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
+                    Character Search
+                    <SearchIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
+                  </div>
+                </Link> */}
                 <div
                   className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
                   onClick={() => setIsUpdateUsernameModalOpen(true)}
@@ -134,6 +143,15 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     <SearchIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
                   </div>
                 </Link>
+                {/* <Link href="/character-search">
+                  <div
+                    onClick={closeMenu}
+                    className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
+                    Character Search
+                    <SearchIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
+                  </div>
+                </Link> */}
                 <Link href="/sign-in">
                   <div
                     onClick={closeMenu}

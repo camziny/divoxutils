@@ -1,6 +1,16 @@
 import prisma from "../../../prisma/prismaClient";
 import { NextApiRequest, NextApiResponse } from "next";
 
+interface CharacterUpdateData {
+  totalRealmPoints: number;
+  realmPointsLastWeek: number;
+  totalSoloKills: number;
+  soloKillsLastWeek: number;
+  totalDeaths: number;
+  deathsLastWeek: number;
+  lastUpdated: Date;
+}
+
 export default async function batchedLeaderboardUpdate(
   req: NextApiRequest,
   res: NextApiResponse
@@ -29,28 +39,23 @@ export default async function batchedLeaderboardUpdate(
         if (data && data.realm_war_stats && data.realm_war_stats.current) {
           const currentStats = data.realm_war_stats.current;
 
-          if (currentStats.realm_points === 0) {
-            continue;
-          }
-
-          const realmPointsLastWeek =
-            currentStats.realm_points - character.totalRealmPoints;
-          const soloKillsLastWeek =
-            currentStats.player_kills.total.solo_kills -
-            character.totalSoloKills;
-          const deathsLastWeek =
-            currentStats.player_kills.total.deaths - character.totalDeaths;
+          let updateData: CharacterUpdateData = {
+            totalRealmPoints: currentStats.realm_points,
+            realmPointsLastWeek:
+              currentStats.realm_points - character.totalRealmPoints,
+            totalSoloKills: currentStats.player_kills.total.solo_kills,
+            soloKillsLastWeek:
+              currentStats.player_kills.total.solo_kills -
+              character.totalSoloKills,
+            totalDeaths: currentStats.player_kills.total.deaths,
+            deathsLastWeek:
+              currentStats.player_kills.total.deaths - character.totalDeaths,
+            lastUpdated: new Date(),
+          };
 
           await prisma.character.update({
             where: { id: character.id },
-            data: {
-              totalRealmPoints: currentStats.realm_points,
-              realmPointsLastWeek,
-              totalSoloKills: currentStats.player_kills.total.solo_kills,
-              soloKillsLastWeek,
-              totalDeaths: currentStats.player_kills.total.deaths,
-              deathsLastWeek,
-            },
+            data: updateData,
           });
           updatedCount++;
         }
@@ -64,7 +69,6 @@ export default async function batchedLeaderboardUpdate(
         failedCount++;
       }
     }
-
     res.status(200).json({
       message: "Batch update process completed",
       updatedCharacters: updatedCount,

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Character" ADD COLUMN     "nameLastUpdated" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;

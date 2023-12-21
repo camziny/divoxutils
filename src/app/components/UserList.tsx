@@ -73,7 +73,7 @@ const UserList: React.FC = () => {
 
   return (
     <div className="w-full mt-8 px-2 relative">
-      <div className="sticky top-10 left-0 z-10 bg-gray-900 py-2">
+      <div className="sticky top-0 left-0 z-10 bg-gray-900 py-2">
         <div className="flex justify-center mb-4 overflow-x-auto">
           {alphabet.map((letter) => (
             <a
