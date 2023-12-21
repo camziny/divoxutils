@@ -39,8 +39,8 @@ export default async function LeaderboardPage() {
           Undergoing Maintenance
         </div>
         <p className="text-lg text-gray-500">
-          I'm currently making improvements and will have the leaderboards back
-          up shortly.
+          I&apos;m currently making improvements and will have the leaderboards
+          back up shortly.
         </p>
       </div>
     </div>
