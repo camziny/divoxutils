@@ -12,8 +12,11 @@ export default async function updateCharacterNames(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log("Received request for updateCharacterNames");
   const authHeader = req.headers.authorization;
+  console.log("Authorization Header:", authHeader);
   if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    console.error("Authorization failed");
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -26,11 +29,16 @@ export default async function updateCharacterNames(
       take: batchSize,
     });
 
+    console.log(`Found ${characters.length} characters to update`);
+
     for (const character of characters) {
       try {
         const apiUrl = `https://api.camelotherald.com/character/info/${character.webId}`;
+        console.log("Fetching data for character:", character.webId);
         const response = await fetch(apiUrl);
         const data = await response.json();
+
+        console.log("Data received for character:", data);
 
         const fullName = data.name;
         const firstName = fullName.split(" ")[0];
@@ -61,6 +69,8 @@ export default async function updateCharacterNames(
         failedCount++;
       }
     }
+
+    console.log("Update process completed");
 
     res.status(200).json({
       message: "Character names update process completed",
