@@ -12,9 +12,7 @@ export default async function updateCharacterNames(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log("Received request for updateCharacterNames");
   const authHeader = req.headers.authorization;
-  console.log("Authorization Header:", authHeader);
   if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     console.error("Authorization failed");
     return res.status(401).json({ message: "Unauthorized" });
@@ -25,52 +23,57 @@ export default async function updateCharacterNames(
     let updatedCount = 0;
     let failedCount = 0;
 
-    const characters = await prisma.character.findMany({
-      take: batchSize,
-    });
+    let skip = 0;
 
-    console.log(`Found ${characters.length} characters to update`);
-
-    for (const character of characters) {
-      try {
-        const apiUrl = `https://api.camelotherald.com/character/info/${character.webId}`;
-        console.log("Fetching data for character:", character.webId);
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-
-        console.log("Data received for character:", data);
-
-        const fullName = data.name;
-        const firstName = fullName.split(" ")[0];
-        const className = data.class_name;
-
-        let nameUpdateData: CharacterNameUpdateData = {
-          nameLastUpdated: new Date(),
-        };
-
-        if (firstName && firstName !== character.characterName) {
-          nameUpdateData.characterName = firstName;
-          nameUpdateData.previousCharacterName = character.characterName;
-        }
-
-        if (className && className !== character.className) {
-          nameUpdateData.className = className;
-        }
-
-        if (Object.keys(nameUpdateData).length > 1) {
-          await prisma.character.update({
-            where: { id: character.id },
-            data: nameUpdateData,
-          });
-          updatedCount++;
-        }
-      } catch (error) {
-        console.error(`Failed to update character ${character.webId}:`, error);
-        failedCount++;
+    while (true) {
+      const characters = await prisma.character.findMany({
+        take: batchSize,
+        skip: skip,
+      });
+      if (characters.length === 0) {
+        break;
       }
-    }
 
-    console.log("Update process completed");
+      for (const character of characters) {
+        try {
+          const apiUrl = `https://api.camelotherald.com/character/info/${character.webId}`;
+          const response = await fetch(apiUrl);
+          const data = await response.json();
+
+          const fullName = data.name;
+          const firstName = fullName.split(" ")[0];
+          const className = data.class_name;
+
+          let nameUpdateData: CharacterNameUpdateData = {
+            nameLastUpdated: new Date(),
+          };
+
+          if (firstName && firstName !== character.characterName) {
+            nameUpdateData.characterName = firstName;
+            nameUpdateData.previousCharacterName = character.characterName;
+          }
+
+          if (className && className !== character.className) {
+            nameUpdateData.className = className;
+          }
+
+          if (Object.keys(nameUpdateData).length > 1) {
+            await prisma.character.update({
+              where: { id: character.id },
+              data: nameUpdateData,
+            });
+            updatedCount++;
+          }
+        } catch (error) {
+          console.error(
+            `Failed to update character ${character.webId}:`,
+            error
+          );
+          failedCount++;
+        }
+      }
+      skip += batchSize;
+    }
 
     res.status(200).json({
       message: "Character names update process completed",
