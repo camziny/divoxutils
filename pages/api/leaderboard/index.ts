@@ -11,6 +11,7 @@ interface CharacterStats {
   realmPointsLastWeek: number;
   soloKillsLastWeek: number;
   irsLastWeek: number;
+  lastUpdated: Date;
 }
 
 export default async function handler(
@@ -34,12 +35,21 @@ export default async function handler(
                   deathsLastWeek: true,
                   realmPointsLastWeek: true,
                   soloKillsLastWeek: true,
+                  lastUpdated: true,
                 },
               },
             },
           },
         },
       });
+
+      const isBeforeThisWeek = (date: Date) => {
+        const now = new Date();
+        const startOfThisWeek = new Date(now);
+        startOfThisWeek.setUTCDate(now.getUTCDate() - now.getUTCDay());
+        startOfThisWeek.setUTCHours(5, 0, 0, 0);
+        return date < startOfThisWeek;
+      };
 
       const aggregatedLeaderboardData = leaderboardData.map((user) => {
         let totalPoints = 0;
@@ -48,25 +58,35 @@ export default async function handler(
         let deathsLastWeek = 0;
         let realmPointsLastWeek = 0;
         let soloKillsLastWeek = 0;
+        let latestUpdate: Date | null = null;
 
         user.characters.forEach((userCharacter) => {
-          totalPoints += userCharacter.character.totalRealmPoints;
-          totalSoloKills += userCharacter.character.totalSoloKills;
-          totalDeaths += userCharacter.character.totalDeaths;
-          deathsLastWeek += userCharacter.character.deathsLastWeek;
-          realmPointsLastWeek += userCharacter.character.realmPointsLastWeek;
-          soloKillsLastWeek += userCharacter.character.soloKillsLastWeek;
+          if (userCharacter.character.lastUpdated) {
+            const lastUpdatedDate = new Date(
+              userCharacter.character.lastUpdated
+            );
+            if (isBeforeThisWeek(lastUpdatedDate)) {
+              totalPoints += userCharacter.character.totalRealmPoints;
+              totalSoloKills += userCharacter.character.totalSoloKills;
+              totalDeaths += userCharacter.character.totalDeaths;
+              deathsLastWeek += userCharacter.character.deathsLastWeek;
+              realmPointsLastWeek +=
+                userCharacter.character.realmPointsLastWeek;
+              soloKillsLastWeek += userCharacter.character.soloKillsLastWeek;
+              if (!latestUpdate || lastUpdatedDate > latestUpdate) {
+                latestUpdate = lastUpdatedDate;
+              }
+            }
+          }
         });
 
         const irs =
-          totalDeaths > 0
-            ? parseFloat((totalPoints / totalDeaths).toFixed(0))
-            : 0;
+          totalDeaths > 0 ? Math.round(totalPoints / totalDeaths) : totalPoints;
 
         const irsLastWeek =
           deathsLastWeek > 0
-            ? (realmPointsLastWeek / deathsLastWeek).toFixed(0)
-            : "0.00";
+            ? Math.round(realmPointsLastWeek / deathsLastWeek)
+            : realmPointsLastWeek;
 
         return {
           userId: user.id,
@@ -79,7 +99,8 @@ export default async function handler(
           realmPointsLastWeek: realmPointsLastWeek,
           soloKillsLastWeek: soloKillsLastWeek,
           irs: irs,
-          irsLastWeek: parseFloat(irsLastWeek),
+          irsLastWeek: irsLastWeek,
+          lastUpdated: latestUpdate,
         };
       });
 

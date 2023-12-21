@@ -234,3 +234,28 @@ export const getUsersByPartialName = async (name: string) => {
     },
   });
 };
+
+export const getUserByCharacterName = async (characterName: string) => {
+  return await prisma.user.findMany({
+    where: {
+      characters: {
+        some: {
+          character: {
+            characterName: {
+              startsWith: characterName,
+              mode: "insensitive",
+            },
+          },
+        },
+      },
+    },
+    include: {
+      account: true,
+      characters: {
+        include: {
+          character: true,
+        },
+      },
+    },
+  });
+};

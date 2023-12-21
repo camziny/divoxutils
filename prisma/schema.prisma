@@ -36,6 +36,9 @@ model User {
 model Character {
   id                      Int    @id @default(autoincrement())
   webId                   String @unique
+  characterName           String @default("Unknown")
+  className               String @default("Unknown")
+  previousCharacterName   String?
   users                   UserCharacter[]
   totalRealmPoints        Int    @default(0)
   realmPointsLastWeek     Int    @default(0)
@@ -43,6 +46,8 @@ model Character {
   soloKillsLastWeek       Int    @default(0)
   totalDeaths             Int    @default(0)
   deathsLastWeek          Int    @default(0)
+  lastUpdated             DateTime? @default(now())
+  nameLastUpdated         DateTime? @default(now())
 }
 
 

@@ -23,7 +23,8 @@ interface LeaderboardItem {
   deathsLastWeek: number;
   irs: number;
   irsLastWeek: number;
-  [key: string]: number | string;
+  lastUpdated: Date;
+  [key: string]: number | string | Date;
 }
 
 interface LeaderboardListProps {
@@ -51,10 +52,6 @@ type LeaderboardCategory =
   | "irs"
   | "irsLastWeek";
 
-interface LeaderboardListProps {
-  data: LeaderboardItem[];
-}
-
 const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const [selectedCategory, setSelectedCategory] =
     useState<LeaderboardCategory>("totalRealmPoints");
@@ -78,17 +75,42 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
     setSelectedCategory(category);
   };
 
-  function formatNumber(number: number) {
+  const formatNumber = (number: number) => {
     return isNaN(number)
       ? "N/A"
       : new Intl.NumberFormat("en-US").format(number);
+  };
+
+  function isBeforeThisWeek(date: Date) {
+    const now = new Date();
+    const startOfThisWeek = new Date(now);
+    startOfThisWeek.setUTCDate(now.getUTCDate() - now.getUTCDay());
+    startOfThisWeek.setUTCHours(5, 0, 0, 0);
+    return date < startOfThisWeek;
   }
 
   function sortLeaderboardData(
     leaderboardData: LeaderboardItem[],
     selectedCategory: LeaderboardCategory
   ) {
-    return leaderboardData.sort(
+    let filteredData = leaderboardData.filter((item) => {
+      if (
+        [
+          "realmPointsLastWeek",
+          "soloKillsLastWeek",
+          "deathsLastWeek",
+          "irsLastWeek",
+        ].includes(selectedCategory)
+      ) {
+        const lastUpdatedDate =
+          item.lastUpdated instanceof Date
+            ? item.lastUpdated
+            : new Date(item.lastUpdated);
+        return isBeforeThisWeek(lastUpdatedDate);
+      }
+      return true;
+    });
+    return filteredData.sort(
       (a, b) => b[selectedCategory] - a[selectedCategory]
     );
   }

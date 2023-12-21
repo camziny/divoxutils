@@ -10,7 +10,13 @@ export const handleGetUsers = async (
     case "GET":
       try {
         const name = req.query.name;
-        if (name && typeof name === "string") {
+        const characterName = req.query.characterName;
+        if (characterName && typeof characterName === "string") {
+          const users = await userController.getUserByCharacterName(
+            characterName
+          );
+          res.status(200).json(users);
+        } else if (name && typeof name === "string") {
           const users = await getUsersByPartialName(name);
           res.status(200).json(users);
         } else {
