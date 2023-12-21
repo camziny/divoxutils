@@ -62,21 +62,20 @@ export default async function handler(
 
         user.characters.forEach((userCharacter) => {
           if (userCharacter.character.lastUpdated) {
-            const lastUpdatedDate = new Date(
-              userCharacter.character.lastUpdated
-            );
-            if (isBeforeThisWeek(lastUpdatedDate)) {
-              totalPoints += userCharacter.character.totalRealmPoints;
-              totalSoloKills += userCharacter.character.totalSoloKills;
-              totalDeaths += userCharacter.character.totalDeaths;
-              deathsLastWeek += userCharacter.character.deathsLastWeek;
-              realmPointsLastWeek +=
-                userCharacter.character.realmPointsLastWeek;
-              soloKillsLastWeek += userCharacter.character.soloKillsLastWeek;
-              if (!latestUpdate || lastUpdatedDate > latestUpdate) {
-                latestUpdate = lastUpdatedDate;
-              }
-            }
+            // const lastUpdatedDate = new Date(
+            //   userCharacter.character.lastUpdated
+            // );
+            // if (isBeforeThisWeek(lastUpdatedDate)) {
+            totalPoints += userCharacter.character.totalRealmPoints;
+            totalSoloKills += userCharacter.character.totalSoloKills;
+            totalDeaths += userCharacter.character.totalDeaths;
+            deathsLastWeek += userCharacter.character.deathsLastWeek;
+            realmPointsLastWeek += userCharacter.character.realmPointsLastWeek;
+            soloKillsLastWeek += userCharacter.character.soloKillsLastWeek;
+            // if (!latestUpdate || lastUpdatedDate > latestUpdate) {
+            //   latestUpdate = lastUpdatedDate;
+            // }
+            // }
           }
         });
 
