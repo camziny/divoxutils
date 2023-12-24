@@ -37,20 +37,21 @@ export default async function resetLastWeekStats(
       break;
     }
 
-    for (const character of charactersToUpdate) {
-      await prisma.character.update({
-        where: { id: character.id },
-        data: {
-          realmPointsLastWeek: 0,
-          soloKillsLastWeek: 0,
-          deathsLastWeek: 0,
-        },
-      });
-      lastProcessedId = character.id;
-      updatedCount++;
-    }
+    const idsToUpdate = charactersToUpdate.map((character) => character.id);
 
-    console.log(`Last processed character ID: ${lastProcessedId}`);
+    await prisma.character.updateMany({
+      where: {
+        id: { in: idsToUpdate },
+      },
+      data: {
+        realmPointsLastWeek: 0,
+        soloKillsLastWeek: 0,
+        deathsLastWeek: 0,
+      },
+    });
+
+    lastProcessedId = charactersToUpdate[charactersToUpdate.length - 1].id;
+    updatedCount += charactersToUpdate.length;
   }
 
   res.status(200).json({
