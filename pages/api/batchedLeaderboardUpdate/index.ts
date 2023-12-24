@@ -1,5 +1,9 @@
 import prisma from "../../../prisma/prismaClient";
 import { NextApiRequest, NextApiResponse } from "next";
+import {
+  getLastProcessedCharacterId,
+  updateLastProcessedCharacterId,
+} from "@/controllers/batchStateController";
 
 interface CharacterUpdateData {
   totalRealmPoints: number;
@@ -9,6 +13,26 @@ interface CharacterUpdateData {
   totalDeaths: number;
   deathsLastWeek: number;
   lastUpdated: Date;
+}
+
+function calculateUpdateTimes(updateHourUTC: number, gracePeriodHours: number) {
+  let lastMonday = new Date();
+  lastMonday.setUTCHours(updateHourUTC, 0, 0, 0);
+  lastMonday.setUTCDate(
+    lastMonday.getUTCDate() - ((lastMonday.getUTCDay() + 6) % 7)
+  );
+  let currentUpdateStartTime = new Date(lastMonday.getTime());
+  if (
+    new Date().getUTCDay() === 1 &&
+    new Date().getUTCHours() >= updateHourUTC
+  ) {
+    currentUpdateStartTime.setUTCDate(currentUpdateStartTime.getUTCDate() + 7);
+  }
+  const gracePeriodEndTime = new Date(
+    lastMonday.getTime() + gracePeriodHours * 60 * 60 * 1000
+  );
+
+  return { currentUpdateStartTime, gracePeriodEndTime };
 }
 
 export default async function batchedLeaderboardUpdate(
@@ -21,13 +45,27 @@ export default async function batchedLeaderboardUpdate(
   }
 
   if (req.method === "POST") {
-    const batchSize = 50;
+    const batchSize = 100;
     let updatedCount = 0;
     let failedCount = 0;
 
+    const gracePeriodHours = 0.5;
+    const updateHourUTC = 5;
+
+    const { currentUpdateStartTime, gracePeriodEndTime } = calculateUpdateTimes(
+      updateHourUTC,
+      gracePeriodHours
+    );
+
+    const lastProcessedId = await getLastProcessedCharacterId(prisma);
+
     const characters = await prisma.character.findMany({
-      where: { totalRealmPoints: 0 },
+      where: {
+        id: { gt: lastProcessedId },
+        lastUpdated: { lt: currentUpdateStartTime },
+      },
       take: batchSize,
+      orderBy: { id: "asc" },
     });
 
     for (const character of characters) {
@@ -38,37 +76,59 @@ export default async function batchedLeaderboardUpdate(
 
         if (data && data.realm_war_stats && data.realm_war_stats.current) {
           const currentStats = data.realm_war_stats.current;
+          if (character.lastUpdated) {
+            const characterLastUpdated = new Date(character.lastUpdated);
 
-          let updateData: CharacterUpdateData = {
-            totalRealmPoints: currentStats.realm_points,
-            realmPointsLastWeek:
-              currentStats.realm_points - character.totalRealmPoints,
-            totalSoloKills: currentStats.player_kills.total.solo_kills,
-            soloKillsLastWeek:
+            const realmPointsDiff =
+              currentStats.realm_points - character.totalRealmPoints;
+            const soloKillsDiff =
               currentStats.player_kills.total.solo_kills -
-              character.totalSoloKills,
-            totalDeaths: currentStats.player_kills.total.deaths,
-            deathsLastWeek:
-              currentStats.player_kills.total.deaths - character.totalDeaths,
-            lastUpdated: new Date(),
-          };
+              character.totalSoloKills;
+            const deathsDiff =
+              currentStats.player_kills.total.deaths - character.totalDeaths;
 
-          await prisma.character.update({
-            where: { id: character.id },
-            data: updateData,
-          });
-          updatedCount++;
+            let updateData = {
+              totalRealmPoints: currentStats.realm_points,
+              totalSoloKills: currentStats.player_kills.total.solo_kills,
+              totalDeaths: currentStats.player_kills.total.deaths,
+              realmPointsLastWeek: 0,
+              soloKillsLastWeek: 0,
+              deathsLastWeek: 0,
+              lastUpdated: new Date(),
+            };
+
+            if (
+              characterLastUpdated < currentUpdateStartTime &&
+              characterLastUpdated <= gracePeriodEndTime
+            ) {
+              updateData.realmPointsLastWeek =
+                realmPointsDiff > 0 ? realmPointsDiff : 0;
+              updateData.soloKillsLastWeek =
+                soloKillsDiff > 0 ? soloKillsDiff : 0;
+              updateData.deathsLastWeek = deathsDiff > 0 ? deathsDiff : 0;
+            }
+
+            await prisma.character.update({
+              where: { id: character.id },
+              data: updateData,
+            });
+            updatedCount++;
+          }
         }
       } catch (error) {
         console.error(
           `Failed to update stats for character ${character.webId}:`,
           error
         );
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
         failedCount++;
       }
     }
+
+    if (characters.length > 0) {
+      const newLastProcessedId = characters[characters.length - 1].id;
+      await updateLastProcessedCharacterId(prisma, newLastProcessedId);
+    }
+
     res.status(200).json({
       message: "Batch update process completed",
       updatedCharacters: updatedCount,
