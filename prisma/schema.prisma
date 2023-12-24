@@ -59,6 +59,11 @@ model UserCharacter {
   @@id([clerkUserId, characterId])
 }
 
+model BatchState {
+  key   String @id
+  value Int
+}
+
 
 
 
