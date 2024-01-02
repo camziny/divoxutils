@@ -87,7 +87,7 @@ export default function UserSearch() {
           <div className="flex justify-center items-center"></div>
         ) : searchResults.length > 0 ? (
           searchResults.map((user) => (
-            <Link key={user.id} href={`/users/${user.clerkUserId}/characters`}>
+            <Link key={user.id} href={`/[name]/${user.name}`}>
               <div className="text-indigo-400 text-2xl cursor-pointer p-4 rounded-md bg-gray-800 hover:bg-gray-600 transition-colors flex justify-center items-center">
                 {user.name}
               </div>

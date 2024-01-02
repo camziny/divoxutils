@@ -17,8 +17,13 @@ export const handleGetUsers = async (
           );
           res.status(200).json(users);
         } else if (name && typeof name === "string") {
-          const users = await getUsersByPartialName(name);
-          res.status(200).json(users);
+          const exactUserMatch = await userController.getUserByName(name);
+          if (exactUserMatch.length > 0) {
+            res.status(200).json(exactUserMatch);
+          } else {
+            const users = await userController.getUsersByPartialName(name);
+            res.status(200).json(users);
+          }
         } else {
           const users = await userController.getUsers();
           res.status(200).json(users);
