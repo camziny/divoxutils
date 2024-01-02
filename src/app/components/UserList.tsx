@@ -105,7 +105,7 @@ const UserList: React.FC = () => {
               </h3>
               <ul className="divide-y divide-gray-700">
                 {groupedUsers[letter].map((user) => (
-                  <Link key={user.id} href={`/${user.name}`}>
+                  <Link key={user.id} href={`/${user.name}/characters`}>
                     <li className="text-indigo-400 hover:text-indigo-300 cursor-pointer p-2 bg-gray-800 hover:bg-gray-700 transition-colors rounded-md">
                       {user.name}
                     </li>
