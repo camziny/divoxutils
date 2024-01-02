@@ -34,10 +34,10 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
             IRS:{" "}
             <span className="font-bold">{irs !== undefined ? irs : "N/A"}</span>
           </div>
-          {/* <div className="text-center my-2">
+          <div className="text-center my-2">
             RPs Last Week:{" "}
             <span className="font-bold">{realmPointsLastWeek}</span>
-          </div> */}
+          </div>
           <div className="text-center my-2">
             RPs to <span className="font-extrabold">{nextRank}</span>:{" "}
             <span className="font-bold">{rpsToNextRank}</span>

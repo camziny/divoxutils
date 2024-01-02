@@ -148,7 +148,9 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                 currentRank={currentRankFormatted}
                 nextRank={nextRankFormatted}
                 progressPercentage={progressPercentage}
-                realmPointsLastWeek={formatNumber(realmPointsLastWeek)}
+                realmPointsLastWeek={formatNumber(
+                  realmPointsLastWeek === realmPoints ? 0 : realmPointsLastWeek
+                )}
               />
             </div>
             <div className="mb-2 w-full">
@@ -261,7 +263,11 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                   currentRank={currentRankFormatted}
                   nextRank={nextRankFormatted}
                   progressPercentage={progressPercentage}
-                  realmPointsLastWeek={formatNumber(realmPointsLastWeek)}
+                  realmPointsLastWeek={formatNumber(
+                    realmPointsLastWeek === realmPoints
+                      ? 0
+                      : realmPointsLastWeek
+                  )}
                 />
               );
             }
