@@ -160,7 +160,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                     className="bg-gray-800 p-4 rounded-md hover:bg-gray-700 transition duration-300 ease-in-out transform hover:-translate-y-1"
                   >
                     <Link
-                      href={`/user/${item.userName}`}
+                      href={`/${item.userName}`}
                       className="flex justify-between items-center w-full h-full text-indigo-400 hover:text-indigo-300 font-medium"
                     >
                       <span className="flex-grow flex items-center">
