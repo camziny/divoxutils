@@ -67,6 +67,7 @@ model BatchState {
 
 model Group {
   id            Int         @id @default(autoincrement())
+  public        Boolean     @default(true)
   name          String
   groupOwner    String
   groupUsers    GroupUser[]
@@ -82,8 +83,6 @@ model GroupUser {
   user          User        @relation(fields: [clerkUserId], references: [clerkUserId])
   @@id([groupId, clerkUserId])
 }
-
-
 
 
 
