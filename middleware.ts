@@ -23,6 +23,7 @@ export default authMiddleware({
     "/character-search",
     "/api/updateCharacterNames",
     "/api/resetLastWeekStats",
+    "/api/resetBatchState",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
