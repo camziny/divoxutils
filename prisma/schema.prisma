@@ -31,6 +31,7 @@ model User {
   accountId    Int?            @unique
   account      Account?
   characters   UserCharacter[]
+  groupUsers   GroupUser[]
 }
 
 model Character {
@@ -63,6 +64,26 @@ model BatchState {
   key   String @id
   value Int
 }
+
+model Group {
+  id            Int         @id @default(autoincrement())
+  name          String
+  groupOwner    String
+  groupUsers    GroupUser[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model GroupUser {
+  groupId       Int
+  clerkUserId   String
+  characterId   Int?
+  group         Group       @relation(fields: [groupId], references: [id])
+  user          User        @relation(fields: [clerkUserId], references: [clerkUserId])
+  @@id([groupId, clerkUserId])
+}
+
+
 
 
 

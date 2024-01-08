@@ -24,6 +24,9 @@ export default authMiddleware({
     "/api/updateCharacterNames",
     "/api/resetLastWeekStats",
     "/api/resetBatchState",
+    "/api/group",
+    "/api/groups",
+    "/group-builder",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
