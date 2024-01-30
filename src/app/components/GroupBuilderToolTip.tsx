@@ -58,9 +58,9 @@ export default function App() {
                     Active Group, select a character.
                   </li>
                   <li>
-                    <strong>Save and Share:</strong> Hit "Save Group" to lock in
-                    your choices. Click &quot;Share Group&quot;to get a
-                    shareable link.
+                    <strong>Save and Share:</strong> Hit &quot;Save Group&quot;
+                    to lock in your choices. Click &quot;Share Group&quot; to
+                    get a shareable link.
                   </li>
                 </ul>
               </ModalBody>
