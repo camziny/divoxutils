@@ -48,7 +48,6 @@ export default function UserSearch() {
         setIsLoading(false);
       }
     };
-
     fetchUsers();
   }, [debouncedQuery]);
 
@@ -87,7 +86,7 @@ export default function UserSearch() {
           <div className="flex justify-center items-center"></div>
         ) : searchResults.length > 0 ? (
           searchResults.map((user) => (
-            <Link key={user.id} href={`/${user.name}/characters`}>
+            <Link key={user.id} href={`user/${user.name}/characters`}>
               <div className="text-indigo-400 text-2xl cursor-pointer p-4 rounded-md bg-gray-800 hover:bg-gray-600 transition-colors flex justify-center items-center">
                 {user.name}
               </div>

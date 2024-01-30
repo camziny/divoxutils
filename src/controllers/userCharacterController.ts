@@ -124,3 +124,40 @@ export const getUserCharactersByUserId = async (clerkUserId: string) => {
     throw error;
   }
 };
+
+export const deleteUserCharacterByWebId = async (
+  clerkUserId: string,
+  webId: string
+) => {
+  try {
+    const userCharacter = await prisma.userCharacter.findFirst({
+      where: {
+        clerkUserId: clerkUserId,
+        character: {
+          webId: webId,
+        },
+      },
+      include: {
+        character: true,
+      },
+    });
+
+    if (!userCharacter) {
+      console.log(
+        `Character with webId ${webId} not found for user ${clerkUserId}.`
+      );
+      return null;
+    }
+
+    await prisma.character.delete({
+      where: { id: userCharacter.character.id },
+    });
+
+    console.log(
+      `Character with webId ${webId} deleted for user ${clerkUserId}.`
+    );
+  } catch (error) {
+    console.error("Error deleting character by webId:", error);
+    throw error;
+  }
+};

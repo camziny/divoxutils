@@ -29,12 +29,40 @@ export default function App() {
         </Button>
       </div>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-        <ModalContent className="bg-gray-900">
+        <ModalContent className="bg-gray-500">
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1"></ModalHeader>
-              <ModalBody className="bg-gray-900">
-                <p>Information about group builder goes here.</p>
+              <ModalBody className="bg-gray-500">
+                <p className="text-lg font-semibold">Building Your Group</p>
+                <ul className="list-disc list-inside space-y-2">
+                  <li>
+                    <strong>Add Users:</strong> Start by adding users to your
+                    roster.
+                  </li>
+                  <li>
+                    <strong>Select a Realm:</strong> Once you choose a realm,
+                    characters will filtered accordingly.
+                  </li>
+                  <li>
+                    <strong>Privacy Settings:</strong> Want to keep your comp
+                    exclusive? Check the &quot;Private&quot; box to limit
+                    visibility to only those in the Active Group.
+                  </li>
+                  <li>
+                    <strong>Form Your Active Group:</strong> Drag and drop users
+                    from the Roster into the Active Group.
+                  </li>
+                  <li>
+                    <strong>Assign Characters:</strong> For each user in the
+                    Active Group, select a character.
+                  </li>
+                  <li>
+                    <strong>Save and Share:</strong> Hit "Save Group" to lock in
+                    your choices. Click &quot;Share Group&quot;to get a
+                    shareable link.
+                  </li>
+                </ul>
               </ModalBody>
               <ModalFooter></ModalFooter>
             </>

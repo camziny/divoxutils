@@ -16,6 +16,7 @@ export default authMiddleware({
     "/api/users",
     "/search",
     "/users/(.*)/characters",
+    "/users/(.*)/group",
     "/api/leaderboard",
     "/leaderboards",
     "/api/updateLeaderboardStats",
@@ -24,12 +25,27 @@ export default authMiddleware({
     "/api/updateCharacterNames",
     "/api/resetLastWeekStats",
     "/api/resetBatchState",
-    "/api/group",
     "/api/groups",
     "/group-builder",
+    "/api/group",
+    "/api/group/:clerkUserId",
+    "/api/group/:groupId/users",
+    "/api/group/addUser",
+    "/api/group/removeUser",
+    "/api/group/moveToActiveGroup",
+    "/api/group/group-by-id/:groupId/users",
+    "/api/group/group-by-id/:groupId/group-with-characters",
+    "/api/group/group-by-name/(.*)",
+    "/api/group/group-owner",
+    "/user/(.*)/characters",
+    "/user/(.*)/group",
+    "/api/delete-character-by-web-id",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
+      return false;
+    }
+    if (req.url.startsWith("/api/group/")) {
       return false;
     }
     return undefined;

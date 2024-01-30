@@ -9,6 +9,8 @@ import Head from "next/head";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "./providers";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export const inter = Inter({
   subsets: ["latin"],
@@ -55,6 +57,7 @@ export default function RootLayout({
             <SpeedInsights />
             <Analytics />
             <Footer />
+            <ToastContainer />
           </Providers>
         </body>
       </html>

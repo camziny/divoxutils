@@ -69,6 +69,7 @@ model Group {
   id            Int         @id @default(autoincrement())
   public        Boolean     @default(true)
   name          String
+  realm         String?
   groupOwner    String
   groupUsers    GroupUser[]
   createdAt     DateTime    @default(now())
@@ -79,6 +80,7 @@ model GroupUser {
   groupId       Int
   clerkUserId   String
   characterId   Int?
+  isInActiveGroup    Boolean     @default(false)
   group         Group       @relation(fields: [groupId], references: [id])
   user          User        @relation(fields: [clerkUserId], references: [clerkUserId])
   @@id([groupId, clerkUserId])

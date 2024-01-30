@@ -115,7 +115,7 @@ export default function CharacterNameSearch() {
               className="mb-4 bg-gray-800 rounded-lg shadow-md"
             >
               <Link
-                href={`/users/${user.clerkUserId}/characters`}
+                href={`/user/${user.name}/characters`}
                 className="hover:text-indigo-400"
               >
                 <CardHeader className="bg-gray-700 text-indigo-400 text-xl font-semibold cursor-pointer">

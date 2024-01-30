@@ -8,7 +8,7 @@ export default function HomePage() {
       <div className="container mx-auto p-8">
         <header className="text-center py-10">
           <h1 className="text-5xl font-extrabold mb-2">
-            <Link href="/divox/characters">
+            <Link href="/user/divox/characters">
               <div className="text-indigo-500 hover:text-indigo-400 inline">
                 divox
               </div>
