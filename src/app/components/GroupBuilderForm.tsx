@@ -16,12 +16,11 @@ import GroupUserSearch from "./GroupUserSearch";
 import GroupDraggable from "./GroupDraggable";
 import GroupRealmSelector from "./GroupRealmSelector";
 import CloseIcon from "@mui/icons-material/Close";
-import { Checkbox, Button, user } from "@nextui-org/react";
+import { Checkbox, Button } from "@nextui-org/react";
 import { toast } from "react-toastify";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import { GroupUser, GroupBuilderFormProps } from "@/utils/group";
-import { GroupDraggableProps, DroppableProps } from "@/utils/dnd";
-import { Realm } from "@/utils/group";
+import { DroppableProps } from "@/utils/dnd";
 
 const preprocessUserData = (userData: any) => {
   return userData.map((user: GroupUser) => {

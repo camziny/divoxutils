@@ -7,8 +7,12 @@ import {
   DropdownItem,
 } from "@nextui-org/react";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { GroupRealmSelectorProps } from "@/utils/group";
 
-const GroupRealmSelector = ({ selectedRealm, setSelectedRealm }) => {
+const GroupRealmSelector: React.FC<GroupRealmSelectorProps> = ({
+  selectedRealm,
+  setSelectedRealm,
+}) => {
   const realms = ["Albion", "Hibernia", "Midgard", "PvP"];
 
   return (
