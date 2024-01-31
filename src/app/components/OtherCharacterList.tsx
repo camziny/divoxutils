@@ -58,14 +58,19 @@ async function fetchCharacterData(webId?: string) {
 
 async function getDetailedCharacters(userId?: any) {
   const characters = await fetchCharactersForUser(userId);
-  const detailedCharacters = await Promise.all(
-    characters.map(async (char: any) => {
-      const ownerId = char.userId;
-      const detailedData = await fetchCharacterData(char.character.webId);
-      return { ...char, detailedCharacter: detailedData, ownerId: ownerId };
-    })
-  );
-  return detailedCharacters;
+  const detailedCharactersPromises = characters.map(async (char: any) => {
+    const detailedData = await fetchCharacterData(char.character.webId);
+
+    if (!detailedData) {
+      return null;
+    }
+
+    const ownerId = char.userId;
+    return { ...char, detailedCharacter: detailedData, ownerId: ownerId };
+  });
+
+  const detailedCharacters = await Promise.all(detailedCharactersPromises);
+  return detailedCharacters.filter((char) => char !== null);
 }
 
 type RealmType = 1 | 2 | 3;
@@ -84,6 +89,7 @@ export default async function OtherCharacterList({
   if (userId) {
     detailedCharacters = await getDetailedCharacters(userId);
     detailedCharacters.sort((a, b) => {
+      if (!a.detailedCharacter || !b.detailedCharacter) return 0;
       const realmA = a.detailedCharacter.realm as RealmType;
       const realmB = b.detailedCharacter.realm as RealmType;
       const realmPointsA =
