@@ -21,6 +21,9 @@ import { toast } from "react-toastify";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import { GroupUser, GroupBuilderFormProps } from "@/utils/group";
 import { DroppableProps } from "@/utils/dnd";
+import CreateGroupButton from "./CreateGroupButton";
+import { useUser } from "@clerk/clerk-react";
+import { useRouter } from "next/navigation";
 
 const preprocessUserData = (userData: any) => {
   return userData.map((user: GroupUser) => {
@@ -38,12 +41,19 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
   groupUsers,
   group,
   active,
-  roster,
 }) => {
+  const [isGroupCreated, setIsGroupCreated] = useState(group != null);
+  const [groupData, setGroupData] = useState(null);
   const groupOwnerInitialCharacterId = group
     ? active.find((user) => user.clerkUserId === group.groupOwner)
         ?.characters[0]?.id || null
     : null;
+
+  const { user } = useUser();
+  const loggedInUserId = user?.id || "";
+  const loggedInUserName = user?.username || "";
+
+  const router = useRouter();
 
   const initialSelectedCharacters = groupUsers.reduce<{
     [key: string]: number | null;
@@ -273,6 +283,24 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
       });
   };
 
+  // const handleGroupCreated = (newGroup: any) => {
+  //   setGroupData(newGroup);
+  //   setIsGroupCreated(true);
+  //   setRosterUsers([...rosterUsers, newGroup.groupOwner]);
+
+  //   router.refresh();
+  // };
+
+  // if (!isGroupCreated) {
+  //   return (
+  //     <CreateGroupButton
+  //       clerkUserId={loggedInUserId}
+  //       onGroupCreated={handleGroupCreated}
+  //       name={loggedInUserName}
+  //     />
+  //   );
+  // }
+
   return (
     <DndContext
       sensors={sensors}
@@ -374,6 +402,7 @@ const Droppable: React.FC<DroppableProps> = ({
   handleCharacterSelect,
 }) => {
   const { setNodeRef } = useDroppable({ id });
+
   return (
     <div
       ref={setNodeRef}
@@ -386,54 +415,37 @@ const Droppable: React.FC<DroppableProps> = ({
         {" "}
         <div className="flex flex-wrap justify-center gap-4">
           {" "}
-          {items.map((user: GroupUser) => (
-            <div className="relative" key={user.id}>
-              {" "}
-              <GroupDraggable
-                user={user}
-                isOverlay={true}
-                selectedRealm={selectedRealm}
-                selectedCharacters={selectedCharacters}
-                onCharacterSelect={handleCharacterSelect}
-              />
-              <button
-                onClick={() => onRemove(user)}
-                className="absolute top-0 right-0 m-1 text-white bg-gray-600 hover:bg-gray-700 rounded-full p-1 z-10"
-                style={{
-                  width: "24px",
-                  height: "24px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <CloseIcon className="h-1 w-1" />
-              </button>
-            </div>
-          ))}
+          {items.map(
+            (user: GroupUser) =>
+              user?.id && (
+                <div className="relative" key={user.id}>
+                  {" "}
+                  <GroupDraggable
+                    user={user}
+                    isOverlay={true}
+                    selectedRealm={selectedRealm}
+                    selectedCharacters={selectedCharacters}
+                    onCharacterSelect={handleCharacterSelect}
+                  />
+                  <button
+                    onClick={() => onRemove(user)}
+                    className="absolute top-0 right-0 m-1 text-white bg-gray-600 hover:bg-gray-700 rounded-full p-1 z-10"
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CloseIcon className="h-1 w-1" />
+                  </button>
+                </div>
+              )
+          )}
         </div>
       </div>
     </div>
   );
 };
-
-// const Draggable = ({ user, selectedRealm }) => {
-//   const { attributes, listeners, setNodeRef } = useDraggable({ id: user.id });
-
-//   return (
-//     <div ref={setNodeRef} {...listeners} {...attributes}>
-//       <GroupDraggable
-//         user={user}
-//         isOverlay={false}
-//         selectedRealm={selectedRealm}
-//         isInActiveGroup={false}
-//       >
-//         <div className="bg-gray-700 border border-gray-500 rounded-md p-2 m-1 cursor-grab text-center hover:bg-gray-500 hover:shadow-md transition duration-200 ease-in-out w-full max-w-xs">
-//           <div className="text-center font-semibold text-indigo-400">
-//             {user.name}
-//           </div>
-//         </div>
-//       </GroupDraggable>
-//     </div>
-//   );
 export default GroupBuilderForm;
