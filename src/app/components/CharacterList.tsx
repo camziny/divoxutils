@@ -52,6 +52,10 @@ async function fetchCharactersForUser(userId: number) {
 }
 
 async function fetchCharacterData(webId: string) {
+  if (webId === "Jcedk2Qasok") {
+    return null;
+  }
+
   const apiUrl = `https://api.camelotherald.com/character/info/${webId}`;
 
   try {
