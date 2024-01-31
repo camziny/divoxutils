@@ -5,6 +5,7 @@ import GroupBuilderToolTip from "../components/GroupBuilderToolTip";
 import GroupBuilderForm from "../components/GroupBuilderForm";
 import { currentUser } from "@clerk/nextjs";
 import { GroupUser } from "@/utils/group";
+import CreateGroupButton from "../components/CreateGroupButton";
 
 async function fetchGroupData(clerkUserId: string) {
   try {
@@ -73,6 +74,11 @@ export default async function GroupBuilder() {
 
   const clerkUserId = user.id;
   const group = await fetchGroupData(clerkUserId);
+
+  if (!group) {
+    return <CreateGroupButton clerkUserId={user.id} name={user.username} />;
+  }
+
   const ownerCharacters = await fetchGroupUsersWithCharacters(clerkUserId);
   const groupOwner = {
     clerkUserId,

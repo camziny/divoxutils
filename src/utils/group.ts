@@ -222,3 +222,8 @@ export interface ViewGroupProps {
   isGroupPrivate: boolean;
   activeGroupUserIds: string[];
 }
+
+export interface CreateGroupButtonProps {
+  clerkUserId: string;
+  name: string;
+}

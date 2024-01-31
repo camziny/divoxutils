@@ -40,6 +40,8 @@ export default authMiddleware({
     "/user/(.*)/characters",
     "/user/(.*)/group",
     "/api/delete-character-by-web-id",
+    "/api/group/saveGroup",
+    "/api/group/createGroup",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
