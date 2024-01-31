@@ -62,12 +62,10 @@ export default async function handler(
 
         user.characters.forEach((userCharacter) => {
           const character = userCharacter.character;
-          // Aggregate total stats always
           totalPoints += character.totalRealmPoints;
           totalSoloKills += character.totalSoloKills;
           totalDeaths += character.totalDeaths;
 
-          // Aggregate 'last week' stats only if they differ from total stats
           if (character.realmPointsLastWeek !== character.totalRealmPoints) {
             realmPointsLastWeek += character.realmPointsLastWeek;
           }
@@ -78,7 +76,6 @@ export default async function handler(
             deathsLastWeek += character.deathsLastWeek;
           }
 
-          // Update the latest update date
           if (
             character.lastUpdated &&
             (!latestUpdate || character.lastUpdated > latestUpdate)
