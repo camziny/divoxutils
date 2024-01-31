@@ -247,36 +247,6 @@ function CharacterSearchAndAdd() {
   return (
     <div className="bg-gray-900 p-4 rounded-lg">
       <div className="flex justify-between mb-2">
-        {/* <div className="flex items-center text-white font-semibold text-lg">
-          <span>Add Characters</span>
-          <ClickAwayListener onClickAway={handleClose}>
-            <Tooltip
-              title="If you attempt to add a character that's already in your list, we'll recognize it and prevent duplication. No need to worry about duplicates!"
-              arrow
-              open={open}
-              placement="bottom"
-              sx={{
-                tooltip: {
-                  bgColor: "#1A202C",
-                  color: "white",
-                  fontSize: "0.875rem",
-                  border: "1px solid #5A67D8",
-                },
-                arrow: {
-                  color: "#1A202C",
-                },
-              }}
-            >
-              <InfoIcon
-                className="text-indigo-400 ml-1"
-                onClick={handleTooltipToggle}
-                onMouseEnter={() => setOpen(true)}
-                onMouseLeave={() => setOpen(false)}
-              />
-            </Tooltip>
-          </ClickAwayListener>
-        </div> */}
-
         <CharacterSearchAndAddTooltip />
       </div>
       <div className="flex flex-wrap items-center mb-2 space-x-2">

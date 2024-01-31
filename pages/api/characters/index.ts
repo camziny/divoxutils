@@ -16,7 +16,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   });
 
   if (!user) {
-    console.log(`User with clerkUserId ${clerkUserId} not found in database.`);
     return res.status(404).json({ error: "User not found in our database." });
   }
 
@@ -32,9 +31,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     case "POST":
       try {
         if (!Array.isArray(req.body.webIds)) {
-          console.log(
-            `POST /api/characters: Invalid or empty webIds array for user ID ${user.id}`
-          );
           throw new Error("Expected an array of webIds.");
         }
         const foundUser = await prisma.user.findUnique({

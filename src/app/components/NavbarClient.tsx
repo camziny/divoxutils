@@ -10,6 +10,7 @@ import UpdateUsernameModal from "./UpdateUserNameModal";
 import { useUser } from "@clerk/nextjs";
 import EditIcon from "@mui/icons-material/Edit";
 import useFetchUser from "./FetchUser";
+import ConstructionIcon from "@mui/icons-material/Construction";
 
 type NavbarClientProps = {
   isUserSignedIn: boolean;
@@ -82,6 +83,23 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     My Characters
                   </div>
                 </Link>
+                {/* <Link href="/group-builder">
+                  <div
+                    onClick={closeMenu}
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
+                    Group Builder
+                    <ConstructionIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
+                  </div>
+                </Link> */}
+                {/* <Link href={`/user/${userName}/group`}>
+                  <div
+                    onClick={closeMenu}
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
+                    My Group
+                  </div>
+                </Link> */}
                 <Link href="/leaderboards">
                   <div
                     onClick={closeMenu}

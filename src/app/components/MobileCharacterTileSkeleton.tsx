@@ -20,7 +20,9 @@ const MobileCharacterTileSkeleton = () => {
       <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
         <div className="animate-pulse bg-gray-700 rounded h-4 w-3/4"></div>
       </TableCell>
-      <TableCell className="p-0.5 w-8"></TableCell>
+      <TableCell className="p-0.5 w-8">
+        <div className="bg-gray-700 rounded h-6 w-6"></div>
+      </TableCell>
     </TableRow>
   );
 };

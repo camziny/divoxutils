@@ -137,9 +137,37 @@ body {
 }
 .customLabel {
   font-weight: bold;
-  color: #d1d5db; /* Light gray color, adjust as needed */
+  color: #d1d5db;
 }
 
 .customValue {
-  color: #6366f1; /* Indigo 500 color */
+  color: #6366f1;
+}
+
+.drag-overlay-style {
+  border: 2px dashed #666;
+  box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+}
+
+.draggable-item {
+  transition: transform 0.2s ease-in-out, opacity 0.2s ease;
+}
+
+.user-item-container {
+  padding: 10px;
+  margin: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  cursor: grab;
+}
+
+.user-item-container:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.user-item-container:active {
+  cursor: grabbing;
 }
