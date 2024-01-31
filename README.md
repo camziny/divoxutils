@@ -11,7 +11,7 @@ divoxutils is a specialized tool designed for the Dark Age of Camelot gaming com
 - Discord SSO with Clerk: We use Clerk to integrate Discord Single Sign-On (SSO), ensuring ease of use and secure access for our users.
 
 ### Technologies Used
-DivoxUtils is built with a robust stack to provide a seamless user experience:
+divoxutils is built with a robust stack to provide a seamless user experience:
 
 - Next.js & TypeScript: For a solid and scalable frontend framework.
 - Clerk/NextJS: For user management and authentication.
