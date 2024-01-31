@@ -8,7 +8,7 @@ divoxutils is a specialized tool designed for the Dark Age of Camelot gaming com
 - Group Builder: A novel feature allowing users to create in-game group setups by adding other users and selecting characters for each participant.
 
 ### User Authentication
-- Discord SSO with Clerk: We use Clerk to integrate Discord Single Sign-On (SSO), ensuring ease of use and secure access for our users.
+- Discord SSO with Clerk: I use Clerk to integrate Discord Single Sign-On (SSO), ensuring ease of use and secure access for our users.
 
 ### Technologies Used
 divoxutils is built with a robust stack to provide a seamless user experience:
