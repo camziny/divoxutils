@@ -28,13 +28,13 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="p-4 md:p-8 lg:p-12">
-      <div className="max-w-screen-lg mx-auto text-center">
+      {/* <div className="max-w-screen-lg mx-auto text-center">
         <div className="mb-6">
           <LeaderboardTooltip />
         </div>
         <LeaderboardList data={leaderboardData} />
-      </div>
-      {/* <div className="max-w-screen-lg mx-auto text-center">
+      </div> */}
+      <div className="max-w-screen-lg mx-auto text-center">
         <div className="mb-6 text-2xl font-semibold text-gray-400">
           Undergoing Maintenance
         </div>
@@ -42,7 +42,7 @@ export default async function LeaderboardPage() {
           I&apos;m currently making improvements and will have the leaderboards
           back up shortly.
         </p>
-      </div> */}
+      </div>
     </div>
   );
 }
