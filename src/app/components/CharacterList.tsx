@@ -97,12 +97,16 @@ async function getDetailedCharacters(userId: any, search: any) {
     );
   }
 
-  const detailedCharacters = await Promise.all(
-    characters.map(async (char: any) => {
-      const detailedData = await fetchCharacterData(char.character.webId);
-      return { ...char, detailedCharacter: detailedData };
-    })
-  );
+  const detailedCharacters = (
+    await Promise.all(
+      characters.map(async (char: any) => {
+        const detailedData = await fetchCharacterData(char.character.webId);
+        if (!detailedData) return null;
+        return { ...char, detailedCharacter: detailedData };
+      })
+    )
+  ).filter((char) => char !== null);
+
   return detailedCharacters;
 }
 
@@ -128,6 +132,7 @@ export default async function CharacterList({
   if (effectiveUserId) {
     detailedCharacters = await getDetailedCharacters(effectiveUserId, search);
     detailedCharacters.sort((a, b) => {
+      if (!a.detailedCharacter || !b.detailedCharacter) return 0;
       const realmA = a.detailedCharacter.realm as RealmType;
       const realmB = b.detailedCharacter.realm as RealmType;
       const realmPointsA =
