@@ -74,7 +74,7 @@ const ViewGroup: React.FC<ViewGroupProps> = ({
   };
 
   const reduceFontSize = (text: string) => {
-    return text.length > 8
+    return text.length > 12
       ? "text-md font-bold"
       : "text-lg font-bold md:text-xl";
   };
@@ -95,18 +95,10 @@ const ViewGroup: React.FC<ViewGroupProps> = ({
                 </CardHeader>
                 {groupUser.character && (
                   <CardBody className="space-y-1 md:space-y-2 p-2 md:p-4">
-                    <span
-                      className={`text-white font-semibold ${reduceFontSize(
-                        groupUser.character.characterName
-                      )}`}
-                    >
+                    <span className="text-white font-semibold text-lg truncate">
                       {groupUser.character.characterName}
                     </span>
-                    <span
-                      className={`text-white font-semibold ${reduceFontSize(
-                        groupUser.character.className
-                      )}`}
-                    >
+                    <span className="text-white font-semibold text-lg">
                       {groupUser.character.className}
                     </span>
                     <span className="text-indigo-400 text-lg md:text-xl font-semibold">
