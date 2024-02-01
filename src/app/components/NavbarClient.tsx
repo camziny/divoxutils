@@ -83,7 +83,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     My Characters
                   </div>
                 </Link>
-                {/* <Link href="/group-builder">
+                <Link href="/group-builder">
                   <div
                     onClick={closeMenu}
                     className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
@@ -91,15 +91,15 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     Group Builder
                     <ConstructionIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
                   </div>
-                </Link> */}
-                {/* <Link href={`/user/${userName}/group`}>
+                </Link>
+                <Link href={`/user/${userName}/group`}>
                   <div
                     onClick={closeMenu}
                     className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
                   >
                     My Group
                   </div>
-                </Link> */}
+                </Link>
                 <Link href="/leaderboards">
                   <div
                     onClick={closeMenu}
