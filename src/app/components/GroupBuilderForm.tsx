@@ -21,9 +21,7 @@ import { toast } from "react-toastify";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import { GroupUser, GroupBuilderFormProps } from "@/utils/group";
 import { DroppableProps } from "@/utils/dnd";
-import CreateGroupButton from "./CreateGroupButton";
 import { useUser } from "@clerk/clerk-react";
-import { useRouter } from "next/navigation";
 
 const preprocessUserData = (userData: any) => {
   return userData.map((user: GroupUser) => {
@@ -50,10 +48,6 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
     : null;
 
   const { user } = useUser();
-  const loggedInUserId = user?.id || "";
-  const loggedInUserName = user?.username || "";
-
-  const router = useRouter();
 
   const initialSelectedCharacters = groupUsers.reduce<{
     [key: string]: number | null;
@@ -120,10 +114,10 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
     const draggedUserId = active.id.toString();
     let userToMove =
       rosterUsers.find(
-        (user: GroupUser) => user.id.toString() === draggedUserId
+        (user: GroupUser) => user.id?.toString() === draggedUserId
       ) ||
       activeGroupUsers.find(
-        (user: GroupUser) => user.id.toString() === draggedUserId
+        (user: GroupUser) => user.id?.toString() === draggedUserId
       );
 
     if (!userToMove) {
@@ -149,7 +143,9 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
       ) {
         setActiveGroupUsers((prev: any) => [...prev, userToMove]);
         setRosterUsers((prev: any) =>
-          prev.filter((user: GroupUser) => user.id.toString() !== draggedUserId)
+          prev.filter(
+            (user: GroupUser) => user.id?.toString() !== draggedUserId
+          )
         );
       }
     } else if (over.id === "roster") {
@@ -166,8 +162,38 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
     }
   };
 
-  const handleUserAddition = (newUser: any) => {
-    setRosterUsers((currentUsers: any) => [...currentUsers, newUser]);
+  async function fetchGroupUsersWithCharacters(clerkUserId: string) {
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${clerkUserId}`;
+
+    try {
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return [];
+        }
+        throw new Error(`Fetch response error: ${JSON.stringify(data)}`);
+      }
+
+      return Array.isArray(data) ? data : data.userCharacters || [];
+    } catch (error) {
+      console.error("Error in fetchCharactersForUser:", error);
+      return [];
+    }
+  }
+
+  const handleUserAddition = async (newUser: any) => {
+    const characters = await fetchGroupUsersWithCharacters(newUser.clerkUserId);
+    const userWithCharacters = {
+      ...newUser,
+      characters: characters,
+    };
+
+    setRosterUsers((currentUsers: any) => [
+      ...currentUsers,
+      userWithCharacters,
+    ]);
   };
 
   const handleRemoveUser = async (user: GroupUser) => {
@@ -282,24 +308,6 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
         console.error("Failed to copy URL:", err);
       });
   };
-
-  // const handleGroupCreated = (newGroup: any) => {
-  //   setGroupData(newGroup);
-  //   setIsGroupCreated(true);
-  //   setRosterUsers([...rosterUsers, newGroup.groupOwner]);
-
-  //   router.refresh();
-  // };
-
-  // if (!isGroupCreated) {
-  //   return (
-  //     <CreateGroupButton
-  //       clerkUserId={loggedInUserId}
-  //       onGroupCreated={handleGroupCreated}
-  //       name={loggedInUserName}
-  //     />
-  //   );
-  // }
 
   return (
     <DndContext
