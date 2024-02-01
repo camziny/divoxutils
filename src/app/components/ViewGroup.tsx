@@ -73,26 +73,40 @@ const ViewGroup: React.FC<ViewGroupProps> = ({
       });
   };
 
+  const reduceFontSize = (text: string) => {
+    return text.length > 8
+      ? "text-md font-bold"
+      : "text-lg font-bold md:text-xl";
+  };
+
   return (
     <div className="container mx-auto">
       <div className="flex justify-center">
         <div className="grid grid-cols-2 gap-x-6 gap-y-0 md:gap-x-16 md:gap-y-6 max-w-full mx-auto">
           {usersData.slice(0, 8).map((groupUser) => (
             <div key={groupUser.clerkUserId} className="mb-5 w-full">
-              <Card className="shadow-md bg-gray-700 min-h-[170px] md:min-h-[200px] w-[150px] md:w-[250px]">
+              <Card className="shadow-md bg-gray-700 h-[200px] md:w-[250px] w-[150px]">
                 <CardHeader className="flex justify-between items-center mb-2 md:mb-4 bg-gray-600">
                   <Link href={`/user/${groupUser.user.name}/characters`}>
-                    <span className="text-indigo-300 text-lg md:text-2xl font-semibold">
+                    <span className="text-indigo-300 text-lg md:text-2xl font-semibold whitespace-normal break-words">
                       {groupUser.user.name}
                     </span>
                   </Link>
                 </CardHeader>
                 {groupUser.character && (
                   <CardBody className="space-y-1 md:space-y-2 p-2 md:p-4">
-                    <span className="text-white text-lg md:text-xl font-semibold">
+                    <span
+                      className={`text-white font-semibold ${reduceFontSize(
+                        groupUser.character.characterName
+                      )}`}
+                    >
                       {groupUser.character.characterName}
                     </span>
-                    <span className="text-white text-lg md:text-xl font-semibold">
+                    <span
+                      className={`text-white font-semibold ${reduceFontSize(
+                        groupUser.character.className
+                      )}`}
+                    >
                       {groupUser.character.className}
                     </span>
                     <span className="text-indigo-400 text-lg md:text-xl font-semibold">
