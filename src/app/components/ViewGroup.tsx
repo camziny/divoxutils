@@ -75,68 +75,27 @@ const ViewGroup: React.FC<ViewGroupProps> = ({
 
   return (
     <div className="container mx-auto">
-      <div className="flex items-center justify-center mb-6 mt-0">
-        <Button
-          size="lg"
-          className="bg-gray-700 text-white hover:bg-gray-600 active:bg-gray-800 transition duration-300 ease-in-out"
-          onClick={handleShareGroup}
-        >
-          <span className="mr-2">Share</span>
-          <IosShareIcon />
-        </Button>
-      </div>
       <div className="flex justify-center">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-16 gap-y-6">
-          {groupOwnerData && (
-            <div className="max-w-sm mb-5">
-              <Card className="shadow-md bg-gray-700 min-h-[200px] min-w-[300px]">
-                <CardHeader className="flex justify-between items-center mb-4 bg-gray-600">
-                  <Link href={`/user/${groupOwnerData.user.name}/characters`}>
-                    <span className="text-indigo-300 font-bold text-2xl">
-                      {groupOwnerData.user.name}
-                    </span>
-                  </Link>
-                </CardHeader>
-                {groupOwnerData.character && (
-                  <CardBody className="space-y-2">
-                    <span className="text-white text-xl font-semibold">
-                      {groupOwnerData.character.characterName}
-                    </span>
-                    <span className="text-white text-xl font-semibold">
-                      {groupOwnerData.character.className}
-                    </span>
-                    <span className="text-indigo-400 text-xl font-semibold">
-                      {" "}
-                      {formatRealmRankWithLevel(
-                        getRealmRankForPoints(
-                          groupOwnerData.character.totalRealmPoints
-                        )
-                      )}
-                    </span>
-                  </CardBody>
-                )}
-              </Card>
-            </div>
-          )}
-          {usersData.slice(0, 7).map((groupUser) => (
-            <div key={groupUser.clerkUserId} className="max-w-sm mb-5">
-              <Card className="shadow-md  bg-gray-700 min-h-[200px] min-w-[300px]">
-                <CardHeader className="flex justify-between items-center mb-4 bg-gray-600">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-0 md:gap-x-16 md:gap-y-6 max-w-full mx-auto">
+          {usersData.slice(0, 8).map((groupUser) => (
+            <div key={groupUser.clerkUserId} className="mb-5 w-full">
+              <Card className="shadow-md bg-gray-700 min-h-[170px] md:min-h-[200px] w-[150px] md:w-[250px]">
+                <CardHeader className="flex justify-between items-center mb-2 md:mb-4 bg-gray-600">
                   <Link href={`/user/${groupUser.user.name}/characters`}>
-                    <span className="text-indigo-300 text-2xl font-semibold">
+                    <span className="text-indigo-300 text-lg md:text-2xl font-semibold">
                       {groupUser.user.name}
                     </span>
                   </Link>
                 </CardHeader>
                 {groupUser.character && (
-                  <CardBody className="space-y-2">
-                    <span className="text-white text-xl font-semibold">
+                  <CardBody className="space-y-1 md:space-y-2 p-2 md:p-4">
+                    <span className="text-white text-lg md:text-xl font-semibold">
                       {groupUser.character.characterName}
                     </span>
-                    <span className="text-white text-xl font-semibold">
+                    <span className="text-white text-lg md:text-xl font-semibold">
                       {groupUser.character.className}
                     </span>
-                    <span className="text-indigo-400 text-xl font-semibold">
+                    <span className="text-indigo-400 text-lg md:text-xl font-semibold">
                       {formatRealmRankWithLevel(
                         getRealmRankForPoints(
                           groupUser.character.totalRealmPoints
@@ -149,6 +108,16 @@ const ViewGroup: React.FC<ViewGroupProps> = ({
             </div>
           ))}
         </div>
+      </div>
+      <div className="flex items-center justify-center mb-6 mt-0">
+        <Button
+          size="lg"
+          className="bg-gray-700 text-white hover:bg-gray-600 active:bg-gray-800 transition duration-300 ease-in-out"
+          onClick={handleShareGroup}
+        >
+          <span className="mr-2">Share</span>
+          <IosShareIcon />
+        </Button>
       </div>
     </div>
   );

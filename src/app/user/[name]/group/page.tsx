@@ -41,7 +41,6 @@ export default async function GroupPage({
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": "no-cache",
     },
   });
   if (!usersRes.ok) {
@@ -53,15 +52,27 @@ export default async function GroupPage({
 
   const groupOwnerClerkUserId = group.groupOwner;
 
-  const groupOwnerRes = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/group/group-owner?groupId=${group.id}&clerkUserId=${groupOwnerClerkUserId}`
-  );
+  const groupOwnerResFetchUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/group/group-owner?groupId=${group.id}&clerkUserId=${groupOwnerClerkUserId}`;
+
+  const groupOwnerRes = await fetch(groupOwnerResFetchUrl, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+    },
+  });
   if (!groupOwnerRes.ok) {
     throw new Error(
       `Failed to fetch group owner: ${groupOwnerRes.status} ${groupOwnerRes.statusText}`
     );
   }
   const groupOwnerData = await groupOwnerRes.json();
+
+  const filteredUsersData: GroupUser[] = usersData.filter(
+    (user: GroupUser) => user.clerkUserId !== groupOwnerClerkUserId
+  );
+
+  const combinedUserData = [groupOwnerData, ...filteredUsersData];
 
   const privateStatus = group.public ? (
     <LockOpenIcon fontSize="medium" />
@@ -81,9 +92,9 @@ export default async function GroupPage({
         </div>
         <ViewGroup
           groupOwnerData={groupOwnerData}
-          usersData={usersData}
+          usersData={combinedUserData}
           isGroupPrivate={!group.public}
-          activeGroupUserIds={usersData
+          activeGroupUserIds={filteredUsersData
             .filter((user: GroupUser) => user.isInActiveGroup)
             .map((user: GroupUser) => user.clerkUserId)}
         />

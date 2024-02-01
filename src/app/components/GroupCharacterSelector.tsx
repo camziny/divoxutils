@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dropdown,
   DropdownTrigger,
@@ -88,6 +88,23 @@ const GroupCharacterSelector: React.FC<GroupCharacterSelectorProps> = ({
     );
     onCharacterSelect(characterId);
   };
+
+  useEffect(() => {
+    const selectedChar = characters.find(
+      (char) => char.character.id === selectedCharacterId
+    );
+
+    if (selectedChar) {
+      const formattedRank = formatRealmRankWithLevel(
+        getRealmRankForPoints(selectedChar.character.totalRealmPoints)
+      );
+
+      const newDisplay = `${selectedChar.character.characterName} (${selectedChar.character.className} ${formattedRank})`;
+      setSelectedCharacterDisplay(newDisplay);
+    } else {
+      setSelectedCharacterDisplay("Select a Character");
+    }
+  }, [characters, selectedCharacterId]);
 
   return (
     <Card className="w-full max-w-5xl mx-auto border-none  bg-gray-700">

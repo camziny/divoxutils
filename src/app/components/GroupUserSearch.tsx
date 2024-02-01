@@ -4,8 +4,8 @@ import useDebounce from "./UseDebounce";
 import { Input, Button } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import Loading from "../loading";
-import { Snackbar } from "@mui/material";
 import { User, GroupUserSearchProps } from "@/utils/group";
+import { toast } from "react-toastify";
 
 const GroupUserSearch: React.FC<GroupUserSearchProps> = ({
   clerkUserId,
@@ -17,8 +17,6 @@ const GroupUserSearch: React.FC<GroupUserSearchProps> = ({
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const router = useRouter();
 
@@ -104,10 +102,11 @@ const GroupUserSearch: React.FC<GroupUserSearchProps> = ({
       );
       setQuery("");
       setSearchPerformed(false);
-      setSnackbarMessage("User(s) Successfully Added");
-      setSnackbarOpen(true);
+      router.refresh();
+      toast.success("User(s) Successfully Added", { position: "bottom-left" });
     } catch (error) {
       console.error("Error adding user to group:", error);
+      toast.error("Error adding user to group", { position: "bottom-left" });
     }
   };
 
@@ -195,24 +194,6 @@ const GroupUserSearch: React.FC<GroupUserSearchProps> = ({
           </Button>
         )}
       </div>
-      <Snackbar
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-        message={snackbarMessage}
-        action={
-          <button
-            onClick={() => setSnackbarOpen(false)}
-            className="text-gray-300 hover:text-gray-500"
-          >
-            X
-          </button>
-        }
-      />
     </div>
   );
 };
