@@ -16,6 +16,6 @@ divoxutils is built with a robust stack to provide a seamless user experience:
 - Next.js & TypeScript: For a solid and scalable frontend framework.
 - Clerk/NextJS: For user management and authentication.
 - Vercel: High-performance hosting solution.
-- Prisma: Our choice for database management, offering flexibility and ease of use.
+- Prisma: My choice for database management, offering flexibility and ease of use.
 - PostgreSQL: Robust database for managing complex data sets.
 - Playwright: For comprehensive and reliable testing of the application.
