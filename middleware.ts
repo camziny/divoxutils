@@ -42,11 +42,16 @@ export default authMiddleware({
     "/api/delete-character-by-web-id",
     "/api/group/saveGroup",
     "/api/group/createGroup",
+    "/api/group/deleteGroup",
   ],
   beforeAuth: (req) => {
+    if (req.url.startsWith("/api/group/deleteGroup")) {
+      return false;
+    }
     if (req.url.startsWith("/api/users/")) {
       return false;
     }
+
     if (req.url.startsWith("/api/group/")) {
       return false;
     }
