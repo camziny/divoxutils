@@ -248,3 +248,33 @@ export const createNewGroup = async (
 
   return transaction;
 };
+
+export const deleteGroupById = async (groupId: number) => {
+  try {
+    const transaction = await prisma.$transaction(async (prisma) => {
+      await prisma.groupUser.deleteMany({
+        where: {
+          groupId: groupId,
+        },
+      });
+
+      const deletedGroup = await prisma.group.delete({
+        where: {
+          id: groupId,
+        },
+      });
+
+      return deletedGroup;
+    });
+
+    console.log(
+      `Group with ID ${groupId} and its associations have been deleted.`
+    );
+    return transaction;
+  } catch (error) {
+    console.error(`Error deleting group with ID ${groupId}:`, error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+};
