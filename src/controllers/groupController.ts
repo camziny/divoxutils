@@ -51,6 +51,17 @@ export const addUserToGroup = async (
     throw new Error("Group not found");
   }
 
+  const existingMember = await prisma.groupUser.findFirst({
+    where: {
+      groupId: group.id,
+      clerkUserId: memberClerkUserId,
+    },
+  });
+
+  if (existingMember) {
+    throw new Error("User is already a member of this group");
+  }
+
   return await prisma.groupUser.create({
     data: {
       groupId: group.id,
@@ -64,12 +75,20 @@ export const moveUserToActiveGroup = async (
   groupId: number,
   clerkUserId: string
 ) => {
+  const groupUser = await prisma.groupUser.findFirst({
+    where: {
+      groupId: groupId,
+      clerkUserId: clerkUserId,
+    },
+  });
+
+  if (!groupUser) {
+    throw new Error("GroupUser record not found");
+  }
+
   return await prisma.groupUser.update({
     where: {
-      groupId_clerkUserId: {
-        groupId,
-        clerkUserId,
-      },
+      id: groupUser.id,
     },
     data: {
       isInActiveGroup: true,
@@ -84,16 +103,21 @@ export const removeUserFromGroup = async (
   await groupIdSchema.validate(groupId);
 
   try {
-    const result = await prisma.groupUser.delete({
+    const groupUser = await prisma.groupUser.findFirst({
       where: {
-        groupId_clerkUserId: {
-          groupId,
-          clerkUserId,
-        },
+        groupId: groupId,
+        clerkUserId: clerkUserId,
       },
     });
 
-    return result;
+    if (!groupUser) {
+      throw new Error("GroupUser record not found");
+    }
+    return await prisma.groupUser.delete({
+      where: {
+        id: groupUser.id,
+      },
+    });
   } catch (error) {
     console.error("Failed to remove user from group:", error);
     throw new Error("Failed to remove user from group");
@@ -122,6 +146,11 @@ export const getUsersByGroup = async (groupId: number) => {
   return group;
 };
 
+type User = {
+  clerkUserId: string;
+  selectedCharacterId?: number;
+};
+
 export const saveGroupDetails = async (
   groupId: number,
   realm: string,
@@ -140,47 +169,39 @@ export const saveGroupDetails = async (
       data: { isInActiveGroup: false },
     });
 
-    for (const user of activeUsers) {
-      await prisma.groupUser.upsert({
-        where: {
-          groupId_clerkUserId: {
-            groupId,
+    const processUsers = async (users: User[], isActive: boolean) => {
+      for (const user of users) {
+        const groupUser = await prisma.groupUser.findFirst({
+          where: {
+            groupId: groupId,
             clerkUserId: user.clerkUserId,
           },
-        },
-        update: {
-          isInActiveGroup: true,
-          characterId: user.selectedCharacterId || null,
-        },
-        create: {
-          groupId,
-          clerkUserId: user.clerkUserId,
-          isInActiveGroup: true,
-          characterId: user.selectedCharacterId || null,
-        },
-      });
-    }
+        });
 
-    for (const user of rosterUsers) {
-      await prisma.groupUser.upsert({
-        where: {
-          groupId_clerkUserId: {
-            groupId,
-            clerkUserId: user.clerkUserId,
-          },
-        },
-        update: {
-          isInActiveGroup: false,
-          characterId: user.selectedCharacterId || null,
-        },
-        create: {
-          groupId,
-          clerkUserId: user.clerkUserId,
-          isInActiveGroup: false,
-          characterId: user.selectedCharacterId || null,
-        },
-      });
-    }
+        if (groupUser) {
+          await prisma.groupUser.update({
+            where: { id: groupUser.id },
+            data: {
+              isInActiveGroup: isActive,
+              characterId: user.selectedCharacterId || null,
+            },
+          });
+        } else {
+          await prisma.groupUser.create({
+            data: {
+              groupId,
+              clerkUserId: user.clerkUserId,
+              isInActiveGroup: isActive,
+              characterId: user.selectedCharacterId || null,
+            },
+          });
+        }
+      }
+    };
+
+    await processUsers(activeUsers, true);
+
+    await processUsers(rosterUsers, false);
 
     return { activeUsers, rosterUsers };
   });

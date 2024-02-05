@@ -45,9 +45,6 @@ export default authMiddleware({
     "/api/group/deleteGroup",
   ],
   beforeAuth: (req) => {
-    if (req.url.startsWith("/api/group/deleteGroup")) {
-      return false;
-    }
     if (req.url.startsWith("/api/users/")) {
       return false;
     }
