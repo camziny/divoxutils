@@ -14,12 +14,10 @@ export default async function handler(
   const { clerkUserId, groupId } = req.query;
 
   try {
-    const groupUser = await prisma.groupUser.findUnique({
+    const groupUser = await prisma.groupUser.findFirst({
       where: {
-        groupId_clerkUserId: {
-          groupId: parseInt(groupId as string),
-          clerkUserId: clerkUserId as string,
-        },
+        groupId: parseInt(groupId as string),
+        clerkUserId: clerkUserId as string,
       },
     });
 

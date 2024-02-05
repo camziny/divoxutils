@@ -77,14 +77,17 @@ model Group {
 }
 
 model GroupUser {
+  id            Int    @id @default(autoincrement())
   groupId       Int
   clerkUserId   String
   characterId   Int?
   isInActiveGroup    Boolean     @default(false)
   group         Group       @relation(fields: [groupId], references: [id])
   user          User        @relation(fields: [clerkUserId], references: [clerkUserId])
-  @@id([groupId, clerkUserId])
+
+  @@index([groupId, clerkUserId])
 }
+
 
 
 
