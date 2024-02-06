@@ -58,7 +58,9 @@ export const addUserToGroup = async (
     },
   });
 
+  console.log(`Adding user ${memberClerkUserId} to group ${group.id}`);
   if (existingMember) {
+    console.log(`User ${memberClerkUserId} is already in group ${group.id}`);
     throw new Error("User is already a member of this group");
   }
 
