@@ -40,11 +40,15 @@ export const deleteGroup = async (id: number) => {
 };
 
 export const addUserToGroup = async (
-  groupOwnerClerkUserId: string,
+  groupId: number,
   memberClerkUserId: string
 ) => {
-  const group = await prisma.group.findFirst({
-    where: { groupOwner: groupOwnerClerkUserId },
+  console.log(
+    `Received request to add user ${memberClerkUserId} to group ${groupId}`
+  );
+
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
   });
 
   if (!group) {
@@ -53,24 +57,31 @@ export const addUserToGroup = async (
 
   const existingMember = await prisma.groupUser.findFirst({
     where: {
-      groupId: group.id,
+      groupId: groupId,
       clerkUserId: memberClerkUserId,
     },
   });
 
-  console.log(`Adding user ${memberClerkUserId} to group ${group.id}`);
   if (existingMember) {
-    console.log(`User ${memberClerkUserId} is already in group ${group.id}`);
+    console.log(
+      `User ${memberClerkUserId} is already a member of group ${groupId}`
+    );
     throw new Error("User is already a member of this group");
+  } else {
+    console.log(
+      `User ${memberClerkUserId} is not in group ${groupId}, proceeding to add`
+    );
   }
 
-  return await prisma.groupUser.create({
+  const addedUser = await prisma.groupUser.create({
     data: {
-      groupId: group.id,
+      groupId: groupId,
       clerkUserId: memberClerkUserId,
       isInActiveGroup: false,
     },
   });
+  console.log(`Added user ${memberClerkUserId} to group ${groupId}`);
+  return addedUser;
 };
 
 export const moveUserToActiveGroup = async (

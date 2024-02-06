@@ -69,6 +69,8 @@ const GroupUserSearch: React.FC<GroupUserSearchProps> = ({
       return;
     }
 
+    const groupId = group?.id;
+
     try {
       await Promise.all(
         selectedUsers.map(async (user) => {
@@ -76,7 +78,7 @@ const GroupUserSearch: React.FC<GroupUserSearchProps> = ({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              groupOwnerClerkUserId: clerkUserId,
+              groupId: groupId,
               memberClerkUserId: user.clerkUserId,
             }),
           });
