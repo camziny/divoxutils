@@ -315,7 +315,7 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <GroupUserSearch onUserAdd={handleUserAddition} />
+      <GroupUserSearch onUserAdd={handleUserAddition} group={group} />
       <div className="flex items-center justify-center my-4">
         <GroupRealmSelector
           selectedRealm={selectedRealm}

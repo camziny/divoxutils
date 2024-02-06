@@ -30,7 +30,7 @@ export type UserWithCharacters = {
 
 export type GroupUserSearchProps = {
   clerkUserId?: string;
-  group?: Group;
+  group: Group | null | undefined;
   onUserAdd: (user: UserWithCharacters) => void;
 };
 
