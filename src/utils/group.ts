@@ -62,11 +62,15 @@ export type GroupRosterProps = {
 export type ActiveGroupProps = {
   users: UserWithCharacters[];
   selectedRealm: string;
+  sortOption: SortOption;
+  classTypeFilters: ClassType[];
   selectedCharacters: { [key: string]: number | null };
   onCharacterSelect: (userId: string, characterId: number) => void;
 };
 
 export type Realm = "Albion" | "Hibernia" | "Midgard" | "PvP";
+
+export type SortOption = "Class Name" | "RR High to Low" | "RR Low to High";
 
 export type CharacterWrapper = {
   character: any;
@@ -86,7 +90,9 @@ export type GroupCharacterSelectorProps = {
   characters: any[];
   selectedCharacterId: number | null;
   onCharacterSelect: (characterId: number) => void;
-  selectedRealm: Realm;
+  selectedRealm: string;
+  sortOption: SortOption;
+  classTypeFilters: ClassType[];
 };
 
 export type CharacterClassesByRealm = {
@@ -226,4 +232,74 @@ export interface ViewGroupProps {
 export interface CreateGroupButtonProps {
   clerkUserId: string;
   name: string;
+}
+
+export interface GroupSortAndFilterProps {
+  setSortOption: (option: SortOption) => void;
+  currentSortOption?: SortOption;
+}
+
+export type ClassType = "Tank" | "Caster" | "Support" | "Stealth";
+
+export type CharacterClassesByClassType = {
+  [key in ClassType]: string[];
+};
+
+export const characterClassesByClassType: CharacterClassesByClassType = {
+  Tank: [
+    "Armsman",
+    "Armswoman",
+    "Berserker",
+    "Blademaster",
+    "Champion",
+    "Hero",
+    "Heroine",
+    "Mauler",
+    "Mercenary",
+    "Minstrel",
+    "Necromancer",
+    "Paladin",
+    "Reaver",
+    "Savage",
+    "Skald",
+    "Thane",
+    "Valewalker",
+    "Valkyrie",
+    "Vampiir",
+    "Warrior",
+  ],
+  Caster: [
+    "Animist",
+    "Bainshee",
+    "Cabalist",
+    "Eldritch",
+    "Enchanter",
+    "Enchantress",
+    "Heretic",
+    "Mauler",
+    "Mentalist",
+    "Necromancer",
+    "Runemaster",
+    "Sorcerer",
+    "Sorceress",
+    "Spiritmaster",
+    "Thane",
+    "Theurgist",
+    "Warlock",
+    "Wizard",
+  ],
+  Support: ["Bard", "Cleric", "Druid", "Friar", "Healer", "Shaman", "Warden"],
+  Stealth: [
+    "Hunter",
+    "Infiltrator",
+    "Minstrel",
+    "Nightshade",
+    "Ranger",
+    "Scout",
+    "Shadowblade",
+  ],
+};
+
+export interface GroupCharacterFilterProps {
+  onFilterChange: (filters: ClassType[]) => void;
 }

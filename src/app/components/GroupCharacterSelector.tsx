@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dropdown,
   DropdownTrigger,
@@ -17,6 +17,7 @@ import {
   GroupCharacterSelectorProps,
   Realm,
   characterClassesByRealm,
+  characterClassesByClassType,
 } from "@/utils/group";
 
 const getRealmByClassName = (className: string): Realm => {
@@ -34,6 +35,8 @@ const GroupCharacterSelector: React.FC<GroupCharacterSelectorProps> = ({
   selectedCharacterId,
   onCharacterSelect,
   selectedRealm,
+  sortOption,
+  classTypeFilters,
 }) => {
   const isSelectedRealmPlaceholder = (
     realm: Realm | string
@@ -48,28 +51,45 @@ const GroupCharacterSelector: React.FC<GroupCharacterSelectorProps> = ({
     ? "PvP"
     : selectedRealm;
 
-  const filteredCharacters =
-    effectiveRealm === "PvP"
-      ? characters
-      : characters.filter(
-          (characterObj) =>
-            getRealmByClassName(characterObj.character.className) ===
-            selectedRealm
-        );
+  const filteredCharacters = useMemo(() => {
+    return characters.filter((characterObj) => {
+      const isRealmMatch =
+        effectiveRealm === "PvP" ||
+        getRealmByClassName(characterObj.character.className) ===
+          effectiveRealm;
+      if (classTypeFilters.length === 0) return isRealmMatch;
+      const isClassTypeMatch = classTypeFilters.some((filter) =>
+        characterClassesByClassType[filter].includes(
+          characterObj.character.className
+        )
+      );
+      return isRealmMatch && isClassTypeMatch;
+    });
+  }, [characters, effectiveRealm, classTypeFilters]);
 
-  const sortedCharacters = [...filteredCharacters].sort((a, b) => {
-    if (a.character.className < b.character.className) {
-      return -1;
-    }
-    if (a.character.className > b.character.className) {
-      return 1;
-    }
-    return a.character.characterName.localeCompare(b.character.characterName);
-  });
+  const sortedCharacters = useMemo(() => {
+    return [...filteredCharacters].sort((a, b) => {
+      switch (sortOption) {
+        case "Class Name":
+          if (a.character.className < b.character.className) return -1;
+          if (a.character.className > b.character.className) return 1;
+          return a.character.characterName.localeCompare(
+            b.character.characterName
+          );
+        case "RR High to Low":
+          return b.character.totalRealmPoints - a.character.totalRealmPoints;
+        case "RR Low to High":
+          return a.character.totalRealmPoints - b.character.totalRealmPoints;
+        default:
+          return 0;
+      }
+    });
+  }, [filteredCharacters, sortOption]);
 
   const selectedCharacter = characters.find(
     (char) => char.character.id === selectedCharacterId
   )?.character;
+
   const formattedRank = selectedCharacter
     ? formatRealmRankWithLevel(
         getRealmRankForPoints(selectedCharacter.totalRealmPoints)
@@ -130,19 +150,21 @@ const GroupCharacterSelector: React.FC<GroupCharacterSelectorProps> = ({
                   <DropdownItem
                     key={character.id}
                     onClick={() => handleLocalCharacterSelect(character.id)}
-                    className="flex items-center justify-between px-6 py-3 rounded transition-colors duration-200 ease-in-out hover:bg-gray-700"
+                    className="flex items-center justify-between px-6 py-2 rounded transition-colors duration-200 ease-in-out hover:bg-gray-700"
                   >
                     <span className="truncate block font-bold text-white text-lg">
                       {character.characterName}
                     </span>
-                    <span className="truncate block text-white text-base font-semibold">
-                      {character.className}
-                    </span>
-                    <span className="text-indigo-400 text-base font-semibold">
-                      {formatRealmRankWithLevel(
-                        getRealmRankForPoints(character.totalRealmPoints)
-                      )}
-                    </span>
+                    <div className="flex justify-between items-center">
+                      <span className="truncate text-white text-base font-semibold">
+                        {character.className}
+                      </span>
+                      <span className="text-indigo-400 text-base font-semibold">
+                        {formatRealmRankWithLevel(
+                          getRealmRankForPoints(character.totalRealmPoints)
+                        )}
+                      </span>
+                    </div>
                   </DropdownItem>
                 ))
               ) : (

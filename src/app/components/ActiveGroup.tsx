@@ -7,8 +7,10 @@ import { ActiveGroupProps, Realm } from "@/utils/group";
 const ActiveGroup: React.FC<ActiveGroupProps> = ({
   users,
   selectedRealm,
+  sortOption,
   selectedCharacters,
   onCharacterSelect,
+  classTypeFilters,
 }) => {
   const { setNodeRef } = useDroppable({ id: "active-group" });
 
@@ -71,6 +73,8 @@ const ActiveGroup: React.FC<ActiveGroupProps> = ({
                     onCharacterSelect(user.id.toString(), characterId)
                   }
                   selectedRealm={validRealm as Realm}
+                  sortOption={sortOption}
+                  classTypeFilters={classTypeFilters}
                 />
               </div>
             </div>
