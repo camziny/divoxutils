@@ -39,6 +39,7 @@ model Character {
   webId                   String @unique
   characterName           String @default("Unknown")
   className               String @default("Unknown")
+  realm                   String @default("Unknown")
   previousCharacterName   String?
   users                   UserCharacter[]
   totalRealmPoints        Int    @default(0)
