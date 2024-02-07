@@ -59,7 +59,14 @@ async function fetchGroupUsersWithCharacters(clerkUserId: string) {
       throw new Error(`Fetch response error: ${JSON.stringify(data)}`);
     }
 
-    return Array.isArray(data) ? data : data.userCharacters || [];
+    const characters = Array.isArray(data) ? data : data.userCharacters || [];
+
+    const charactersWithRealm = characters.map((character: any) => ({
+      ...character,
+      realm: character.character.realm,
+    }));
+
+    return charactersWithRealm;
   } catch (error) {
     console.error("Error in fetchCharactersForUser:", error);
     return [];

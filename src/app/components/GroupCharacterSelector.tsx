@@ -55,8 +55,7 @@ const GroupCharacterSelector: React.FC<GroupCharacterSelectorProps> = ({
     return characters.filter((characterObj) => {
       const isRealmMatch =
         effectiveRealm === "PvP" ||
-        getRealmByClassName(characterObj.character.className) ===
-          effectiveRealm;
+        characterObj.character.realm === effectiveRealm;
       if (classTypeFilters.length === 0) return isRealmMatch;
       const isClassTypeMatch = classTypeFilters.some((filter) =>
         characterClassesByClassType[filter].includes(

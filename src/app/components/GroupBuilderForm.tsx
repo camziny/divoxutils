@@ -56,6 +56,8 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
 
   const { user } = useUser();
 
+  console.log("groupUsers:", groupUsers);
+
   const initialSelectedCharacters = groupUsers.reduce<{
     [key: string]: number | null;
   }>((acc, user) => {
