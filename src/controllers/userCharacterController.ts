@@ -161,3 +161,28 @@ export const deleteUserCharacterByWebId = async (
     throw error;
   }
 };
+
+export async function getUserCharactersByUserName(userName: string) {
+  const user = await prisma.user.findUnique({
+    where: { name: userName },
+    include: {
+      characters: {
+        select: {
+          character: {
+            select: {
+              characterName: true,
+              className: true,
+              totalRealmPoints: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return user.characters.map((uc) => uc.character);
+}
