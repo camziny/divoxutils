@@ -19,9 +19,16 @@ import CloseIcon from "@mui/icons-material/Close";
 import { Checkbox, Button } from "@nextui-org/react";
 import { toast } from "react-toastify";
 import IosShareIcon from "@mui/icons-material/IosShare";
-import { GroupUser, GroupBuilderFormProps } from "@/utils/group";
+import {
+  GroupUser,
+  GroupBuilderFormProps,
+  SortOption,
+  ClassType,
+} from "@/utils/group";
 import { DroppableProps } from "@/utils/dnd";
 import { useUser } from "@clerk/clerk-react";
+import GroupSortAndFilter from "./GroupSortAndFilter";
+import GroupCharacterFilter from "./GroupCharacterFilter";
 
 const preprocessUserData = (userData: any) => {
   return userData.map((user: GroupUser) => {
@@ -83,6 +90,8 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
   const [activeId, setActiveId] = useState<number | string | null>(null);
   const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor));
   const [selectedRealm, setSelectedRealm] = useState<string>("PvP");
+  const [sortOption, setSortOption] = useState<SortOption>("RR High to Low");
+  const [classTypeFilters, setClassTypeFilters] = useState<ClassType[]>([]);
 
   const [isPrivate, setIsPrivate] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -316,21 +325,40 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
       onDragEnd={handleDragEnd}
     >
       <GroupUserSearch onUserAdd={handleUserAddition} group={group} />
-      <div className="flex items-center justify-center my-4">
-        <GroupRealmSelector
-          selectedRealm={selectedRealm}
-          setSelectedRealm={setSelectedRealm}
-        />
-        <div className="flex items-center ml-4">
-          <Checkbox
-            aria-label="Private"
-            checked={isPrivate}
-            onChange={handleIsPrivate}
-            color="default"
-            size="lg"
+      <div className="flex flex-col sm:flex-row items-center justify-center my-4 space-y-4 sm:space-y-0 sm:space-x-8">
+        <div className="flex flex-col sm:flex-row items-center justify-center sm:items-center">
+          <span className="text-xl font-medium text-gray-400 mb-2 sm:mb-0 sm:mr-3">
+            Realm:
+          </span>
+          <GroupRealmSelector
+            selectedRealm={selectedRealm}
+            setSelectedRealm={setSelectedRealm}
           />
-          <span className="text-xl">Private</span>
         </div>
+        <div className="flex flex-col sm:flex-row items-center justify-center sm:items-center">
+          <span className="text-xl font-medium text-gray-400 mb-2 sm:mb-0 sm:mr-3">
+            Sort Characters:
+          </span>
+          <GroupSortAndFilter setSortOption={setSortOption} />
+        </div>
+        <div className="flex flex-col sm:flex-row items-center justify-center sm:items-center">
+          <div className="flex items-center mb-2 sm:mb-0">
+            <Checkbox
+              aria-label="Private"
+              checked={isPrivate}
+              onChange={handleIsPrivate}
+              color="default"
+              size="lg"
+            />
+            <span className="text-xl ml-2">Private</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col sm:flex-row justify-center items-center text-center sm:text-left">
+        <span className="text-xl font-medium text-gray-400 mb-2 sm:mb-0 sm:mr-3">
+          Filters:
+        </span>
+        <GroupCharacterFilter onFilterChange={setClassTypeFilters} />
       </div>
       <Droppable
         id="roster"
@@ -344,8 +372,10 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
       <ActiveGroup
         users={activeGroupUsers}
         selectedRealm={selectedRealm}
+        sortOption={sortOption}
         selectedCharacters={selectedCharacters}
         onCharacterSelect={handleCharacterSelect}
+        classTypeFilters={classTypeFilters}
       />
       <DragOverlay
         modifiers={[restrictToWindowEdges]}

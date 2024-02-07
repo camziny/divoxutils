@@ -129,7 +129,7 @@ const GroupUserSearch: React.FC<GroupUserSearchProps> = ({
               input: [
                 "bg-transparent",
                 "text-gray-800 dark:text-gray-200",
-                "placeholder:text-gray-400 dark:placeholder:text-gray-500",
+                "placeholder:text-gray-400 text-lg dark:placeholder:text-gray-500",
               ],
               innerWrapper: "bg-transparent",
               inputWrapper: [
