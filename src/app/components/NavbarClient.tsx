@@ -11,6 +11,7 @@ import { useUser } from "@clerk/nextjs";
 import EditIcon from "@mui/icons-material/Edit";
 import useFetchUser from "./FetchUser";
 import ConstructionIcon from "@mui/icons-material/Construction";
+import useFetchGroupByClerkUserId from "./FetchGroupUserName";
 
 type NavbarClientProps = {
   isUserSignedIn: boolean;
@@ -23,6 +24,10 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
   const { user } = useUser();
   const { userData, isLoading } = useFetchUser(user?.id || " ");
   const [userName, setUserName] = useState<string | null>(null);
+
+  const { groupData, error } = useFetchGroupByClerkUserId(user?.id || "");
+
+  const groupName = groupData?.name;
 
   const handleUsernameUpdated = (newUsername: string) => {
     setUserName(newUsername);
@@ -92,7 +97,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     <ConstructionIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
                   </div>
                 </Link>
-                <Link href={`/user/${userName}/group`}>
+                <Link href={`/user/${groupName}/group`}>
                   <div
                     onClick={closeMenu}
                     className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
