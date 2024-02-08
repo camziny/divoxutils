@@ -97,7 +97,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     <ConstructionIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
                   </div>
                 </Link>
-                <Link href={`/user/${groupName}/group`}>
+                <Link href={`/user/${userName}/group`}>
                   <div
                     onClick={closeMenu}
                     className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer"
