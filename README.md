@@ -13,7 +13,7 @@ divoxutils is a specialized tool designed for the Dark Age of Camelot gaming com
 ### Technologies Used
 divoxutils is built with a robust stack to provide a seamless user experience:
 
-- Next.js & TypeScript: For a solid and scalable frontend framework.
+- NextJS & TypeScript: For a solid and scalable frontend framework.
 - Clerk/NextJS: For user management and authentication.
 - Vercel: High-performance hosting solution.
 - Prisma: My choice for database management, offering flexibility and ease of use.
