@@ -187,3 +187,15 @@ export async function getUserCharactersByUserName(userName: string) {
 
   return user.characters.map((uc) => uc.character);
 }
+
+export async function getAllUserNames(): Promise<string[]> {
+  const users = await prisma.user.findMany({
+    select: {
+      name: true,
+    },
+  });
+
+  return users
+    .map((user) => user.name)
+    .filter((name): name is string => name !== null);
+}
