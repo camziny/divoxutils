@@ -24,7 +24,10 @@ export function levenshteinDistance(a: string, b: string): number {
   return matrix[a.length][b.length];
 }
 
-export function findClosestMatch(input: string, options: string[]): string {
+export function findClosestMatch(
+  input: string,
+  options: string[]
+): string | null {
   let closestMatch = options[0];
   let minDistance = levenshteinDistance(
     input.toLowerCase(),
@@ -40,6 +43,12 @@ export function findClosestMatch(input: string, options: string[]): string {
       minDistance = distance;
       closestMatch = option;
     }
+  }
+
+  const threshold = 3;
+
+  if (minDistance > threshold) {
+    return null;
   }
 
   return closestMatch;

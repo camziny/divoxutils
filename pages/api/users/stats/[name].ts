@@ -21,6 +21,11 @@ export default async function handler(
       const typedName = typeof name === "string" ? name : "";
       const allUserNames = await getAllUserNames();
       const closestUserName = findClosestMatch(typedName, allUserNames);
+
+      if (closestUserName === null) {
+        return res.status(404).json({ message: `User ${typedName} not found` });
+      }
+
       const userData = await prisma.user.findUnique({
         where: {
           name: closestUserName,
