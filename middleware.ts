@@ -45,6 +45,8 @@ export default authMiddleware({
     "/api/group/deleteGroup",
     "/api/users/characters/(.*)",
     "/api/batchedRealmUpdate",
+    "/api/users/stats/(.*)",
+    "/api/characters/stats/(.*)",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
