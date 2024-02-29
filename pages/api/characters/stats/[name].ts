@@ -9,6 +9,13 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const apiSecret = process.env.DISCORD_BOT_API_KEY;
+  const apiKey = req.headers["x-api-key"];
+
+  if (!apiKey || apiKey !== apiSecret) {
+    res.status(401).json({ message: "Invalid or missing API key." });
+    return;
+  }
   if (req.method === "GET") {
     const { name } = req.query;
 
