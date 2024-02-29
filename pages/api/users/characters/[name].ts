@@ -47,6 +47,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
+  if (closestUserName === null) {
+    return res.status(404).json({ message: `User ${typedName} not found` });
+  }
+
   switch (req.method) {
     case "GET":
       try {
