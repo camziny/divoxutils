@@ -47,6 +47,7 @@ export default authMiddleware({
     "/api/batchedRealmUpdate",
     "/api/users/stats/(.*)",
     "/api/characters/stats/(.*)",
+    "/discord",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
