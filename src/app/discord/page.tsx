@@ -1,6 +1,5 @@
 import { FaDiscord } from "react-icons/fa";
 import Image from "next/image";
-import Sidebar from "../components/SideBar";
 
 export const metadata = {
   title: "Discord Bot - divoxutils",
@@ -212,10 +211,10 @@ const DiscordPage = () => {
             </div>
           </div>
         </div>
-
         <p className="text-sm italic">
           *Note: The images above are for illustration purposes only. Your
-          actual output may vary depending on the character's or user's data.*
+          actual output may vary depending on the character&apos;s or
+          user&apos;s data.*
         </p>
       </div>
     </div>
