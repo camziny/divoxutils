@@ -11,14 +11,14 @@ const DiscordPage = () => {
       <div className="flex-1 container mx-auto bg-gray-900 p-6 sm:p-10 rounded-xl shadow-lg space-y-6">
         <div className="bg-gray-900 p-4 rounded-lg shadow-md">
           <header className="text-center mb-2">
-            <h1 className="text-3xl sm:text-5xl font-semibold text-white mb-4">
+            <h1 className="text-2xl sm:text-4xl font-semibold text-white mb-4">
               Discord Bot
             </h1>
             <div className="h-1 w-24 bg-indigo-500 mx-auto"></div>
           </header>
           <div className="flex flex-col items-center justify-center space-y-6">
             <div className="w-full sm:w-3/4 lg:w-2/3 xl:w-1/2 text-left">
-              <p className="text-white text-base sm:text-lg md:text-xl leading-relaxed text-center sm:text-left">
+              <p className="text-white text-sm sm:text-base md:text-lg leading-relaxed text-center sm:text-left">
                 The divoxutils Discord bot is designed to seamlessly integrate
                 with your Discord server, providing access to a range of
                 commands that fetch information and statistics about users and
@@ -36,40 +36,40 @@ const DiscordPage = () => {
                 rel="noopener noreferrer"
               >
                 <FaDiscord className="mr-3" size={50} />
-                <span className="text-lg">Add divoxutils Bot</span>
+                <span className="text-base">Add divoxutils Bot</span>
               </a>
             </div>
           </div>
         </div>
         <div className="space-y-8" id="character-info">
           <div className="bg-gray-700 p-4 rounded-lg shadow-md">
-            <h2 className="text-4xl font-extrabold text-indigo-400 mb-4">
+            <h2 className="text-3xl font-extrabold text-indigo-400 mb-4">
               /character-info
             </h2>
-            <p className="text-lg text-white leading-8 mb-2">
+            <p className="text-base text-white leading-8 mb-2">
               Retrieves basic information for a specific character in the game.
               This command does not require the character to be registered on
               divoxutils.
             </p>
-            <h3 className="text-xl font-semibold text-white">Usage</h3>
+            <h3 className="text-lg font-semibold text-white">Usage</h3>
             <div className="bg-gray-600 p-2 rounded-md">
               <code className="text-sm sm:text-base text-indigo-200">
                 /character-info name:&lt;character_name&gt;
               </code>
             </div>
-            <h3 className="text-xl font-semibold text-white">Example</h3>
+            <h3 className="text-lg font-semibold text-white">Example</h3>
             <div className="bg-gray-600 p-2 rounded-md">
               <code className="text-sm sm:text-base text-indigo-200">
                 /character-info name:divoxx
               </code>
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Output</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">Output</h3>
             <div className="text-center">
               <Image
                 src="/character-info example.png"
                 alt="Character Info Example"
-                width={175}
-                height={100}
+                width={150}
+                height={75}
                 className="rounded-md"
               />
             </div>
@@ -77,32 +77,32 @@ const DiscordPage = () => {
         </div>
         <div className="space-y-8" id="character-stats">
           <div className="bg-gray-700 p-4 rounded-lg shadow-md">
-            <h2 className="text-4xl font-extrabold text-indigo-400 mb-4">
+            <h2 className="text-3xl font-extrabold text-indigo-400 mb-4">
               /character-stats
             </h2>
-            <p className="text-lg text-white leading-8 mb-2">
+            <p className="text-base text-white leading-8 mb-2">
               Retrieves detailed statistics for a specific character. The
               character must be registered on divoxutils.
             </p>
-            <h3 className="text-xl font-semibold">Usage</h3>
+            <h3 className="text-lg font-semibold">Usage</h3>
             <div className="bg-gray-600 p-2 rounded-md">
               <code className="text-sm sm:text-base text-indigo-200">
                 /character-stats name:&lt;character_name&gt;
               </code>
             </div>
-            <h3 className="text-xl font-semibold">Example</h3>
+            <h3 className="text-lg font-semibold">Example</h3>
             <div className="bg-gray-600 p-2 rounded-md">
               <code className="text-sm sm:text-base text-indigo-200">
                 /character-stats name:divoxx
               </code>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Output</h3>
+            <h3 className="text-lg font-semibold mb-2">Output</h3>
             <div className="text-center">
               <Image
                 src="/character-stats example.png"
                 alt="Character Stats Example"
-                width={175}
-                height={100}
+                width={150}
+                height={75}
                 className="rounded-md"
               />
             </div>
@@ -110,32 +110,32 @@ const DiscordPage = () => {
         </div>
         <div className="space-y-8" id="user-stats">
           <div className="bg-gray-700 p-4 rounded-lg shadow-md">
-            <h2 className="text-4xl font-extrabold text-indigo-400 mb-4">
+            <h2 className="text-3xl font-extrabold text-indigo-400 mb-4">
               /user-stats
             </h2>
-            <p className="text-lg text-white leading-8 mb-2">
+            <p className="text-base text-white leading-8 mb-2">
               Retrieves detailed statistics for a specific user. The user must
               be registered on divoxutils.
             </p>
-            <h3 className="text-xl font-semibold">Usage</h3>
+            <h3 className="text-lg font-semibold">Usage</h3>
             <div className="bg-gray-600 p-2 rounded-md">
               <code className="text-sm sm:text-base text-indigo-200">
                 /user-stats name:&lt;user_name&gt;
               </code>
             </div>
-            <h3 className="text-xl font-semibold">Example</h3>
+            <h3 className="text-lg font-semibold">Example</h3>
             <div className="bg-gray-600 p-2 rounded-md">
               <code className="text-sm sm:text-base text-indigo-200">
                 /user-stats name:divox
               </code>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Output</h3>
+            <h3 className="text-lg font-semibold mb-2">Output</h3>
             <div className="text-center">
               <Image
                 src="/user-stats example.png"
                 alt="Character Stats Example"
-                width={225}
-                height={175}
+                width={200}
+                height={150}
                 className="rounded-md"
               />
             </div>
@@ -143,15 +143,15 @@ const DiscordPage = () => {
         </div>
         <div className="space-y-8" id="user-characters">
           <div className="bg-gray-700 p-4 rounded-lg shadow-md">
-            <h2 className="text-4xl font-extrabold text-indigo-400 mb-4">
+            <h2 className="text-3xl font-extrabold text-indigo-400 mb-4">
               /user-characters
             </h2>
-            <p className="text-lg text-white leading-8 mb-2">
+            <p className="text-base text-white leading-8 mb-2">
               Retrieves a list of characters associated with a user. The user
               must be registered on divoxutils. The command can be tailored to
               display characters based on realm and class type.
             </p>
-            <h3 className="text-xl font-semibold">Usage</h3>
+            <h3 className="text-lg font-semibold">Usage</h3>
             <div className="bg-gray-600 p-2 rounded-md">
               <code className="text-sm sm:text-base text-indigo-200">
                 /user-characters name:&lt;user_name&gt; [realm:&lt;realm&gt;]
@@ -193,19 +193,19 @@ const DiscordPage = () => {
               </table>
             </div>
 
-            <h3 className="text-xl font-semibold">Example</h3>
+            <h3 className="text-lg font-semibold">Example</h3>
             <div className="bg-gray-600 p-2 rounded-md mb-2">
               <code className="text-sm sm:text-base text-indigo-200">
                 /user-characters name:divox realm:alb classtype:support
               </code>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Output</h3>
+            <h3 className="text-lg font-semibold mb-2">Output</h3>
             <div className="text-center">
               <Image
                 src="/user-characters example.png"
                 alt="Character Stats Example"
-                width={225}
-                height={175}
+                width={200}
+                height={150}
                 className="rounded-md"
               />
             </div>
