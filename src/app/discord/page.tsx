@@ -134,8 +134,8 @@ const DiscordPage = () => {
               <Image
                 src="/user-stats example.png"
                 alt="Character Stats Example"
-                width={150}
-                height={125}
+                width={175}
+                height={150}
                 className="rounded-md"
               />
             </div>
