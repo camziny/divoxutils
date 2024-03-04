@@ -34,9 +34,15 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
     setUserName(newUsername);
   };
 
+  const fetchUserName = async (clerkUserId: string) => {
+    const response = await fetch(`/api/users/${clerkUserId}`);
+    const data = await response.json();
+    return data.name;
+  };
+
   useEffect(() => {
     if (user) {
-      setUserName(user.username);
+      fetchUserName(user.id).then(setUserName);
     }
   }, [user]);
 
