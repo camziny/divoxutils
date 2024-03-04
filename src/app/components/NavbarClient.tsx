@@ -106,10 +106,12 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     </div>
                   </div>
                 </Link>
-                <Link href={`/user/${userName}/group`}>
+                <Link href={userName ? `/user/${userName}/group` : "#"}>
                   <div
-                    onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    onClick={userName ? closeMenu : undefined}
+                    className={`px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base ${
+                      !userName ? "cursor-not-allowed" : ""
+                    }`}
                   >
                     My Group
                   </div>
