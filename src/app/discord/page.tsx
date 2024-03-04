@@ -43,7 +43,7 @@ const DiscordPage = () => {
         </div>
         <div className="space-y-8" id="character-info">
           <div className="bg-gray-700 p-4 rounded-lg shadow-md">
-            <h2 className="text-3xl font-extrabold text-indigo-400 mb-4">
+            <h2 className="text-2xl font-extrabold text-indigo-400 mb-4">
               /character-info
             </h2>
             <p className="text-base text-white leading-8 mb-2">
@@ -68,8 +68,8 @@ const DiscordPage = () => {
               <Image
                 src="/character-info example.png"
                 alt="Character Info Example"
-                width={150}
-                height={75}
+                width={125}
+                height={50}
                 className="rounded-md"
               />
             </div>
@@ -77,7 +77,7 @@ const DiscordPage = () => {
         </div>
         <div className="space-y-8" id="character-stats">
           <div className="bg-gray-700 p-4 rounded-lg shadow-md">
-            <h2 className="text-3xl font-extrabold text-indigo-400 mb-4">
+            <h2 className="text-2xl font-extrabold text-indigo-400 mb-4">
               /character-stats
             </h2>
             <p className="text-base text-white leading-8 mb-2">
@@ -101,8 +101,8 @@ const DiscordPage = () => {
               <Image
                 src="/character-stats example.png"
                 alt="Character Stats Example"
-                width={150}
-                height={75}
+                width={125}
+                height={50}
                 className="rounded-md"
               />
             </div>
@@ -110,7 +110,7 @@ const DiscordPage = () => {
         </div>
         <div className="space-y-8" id="user-stats">
           <div className="bg-gray-700 p-4 rounded-lg shadow-md">
-            <h2 className="text-3xl font-extrabold text-indigo-400 mb-4">
+            <h2 className="text-2xl font-extrabold text-indigo-400 mb-4">
               /user-stats
             </h2>
             <p className="text-base text-white leading-8 mb-2">
@@ -134,8 +134,8 @@ const DiscordPage = () => {
               <Image
                 src="/user-stats example.png"
                 alt="Character Stats Example"
-                width={200}
-                height={150}
+                width={150}
+                height={125}
                 className="rounded-md"
               />
             </div>
@@ -143,7 +143,7 @@ const DiscordPage = () => {
         </div>
         <div className="space-y-8" id="user-characters">
           <div className="bg-gray-700 p-4 rounded-lg shadow-md">
-            <h2 className="text-3xl font-extrabold text-indigo-400 mb-4">
+            <h2 className="text-2xl font-extrabold text-indigo-400 mb-4">
               /user-characters
             </h2>
             <p className="text-base text-white leading-8 mb-2">
@@ -204,8 +204,8 @@ const DiscordPage = () => {
               <Image
                 src="/user-characters example.png"
                 alt="Character Stats Example"
-                width={200}
-                height={150}
+                width={150}
+                height={100}
                 className="rounded-md"
               />
             </div>
