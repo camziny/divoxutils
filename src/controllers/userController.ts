@@ -259,3 +259,18 @@ export const getUserByCharacterName = async (characterName: string) => {
     },
   });
 };
+
+export const deleteUserByClerkUserId = async (clerkUserId: string) => {
+  try {
+    await clerkUserIdSchema.validate(clerkUserId);
+
+    return await prisma.user.delete({
+      where: { clerkUserId },
+    });
+  } catch (error) {
+    if (error instanceof yup.ValidationError) {
+      throw new Error(`Validation error: ${error.message}`);
+    }
+    throw new Error("An unexpected error occurred.");
+  }
+};
