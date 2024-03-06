@@ -2,6 +2,10 @@ import React from "react";
 import LeaderboardList from "@/app/components/LeaderboardList";
 import LeaderboardTooltip from "@/app/components/LeaderboardTooltip";
 
+export const metadata = {
+  title: "Leaderboards - divoxutils",
+};
+
 async function fetchLeaderboardData() {
   try {
     const apiUrl = `${

@@ -7,6 +7,10 @@ import { currentUser } from "@clerk/nextjs";
 import { GroupUser } from "@/utils/group";
 import CreateGroupButton from "../components/CreateGroupButton";
 
+export const metadata = {
+  title: "Group Builder - divoxutils",
+};
+
 async function fetchGroupData(clerkUserId: string) {
   try {
     const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/group/${clerkUserId}`;

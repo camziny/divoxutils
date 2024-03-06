@@ -4,6 +4,10 @@ import CharacterSearchAndAdd from "../components/CharacterSearchAndAdd";
 import { currentUser } from "@clerk/nextjs";
 import Loading from "../loading";
 
+export const metadata = {
+  title: "My Characters - divoxutils",
+};
+
 const CharacterPage: React.FC = async () => {
   const user = await currentUser();
   if (user === null) {

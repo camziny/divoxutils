@@ -2,6 +2,11 @@ import React from "react";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs";
 import HomeCarousel from "./components/HomeCarousel";
+
+export const metadata = {
+  title: "Home - divoxutils",
+};
+
 export default function HomePage() {
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">

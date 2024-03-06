@@ -1,7 +1,7 @@
 import { FaTwitch, FaDiscord, FaPaypal } from "react-icons/fa";
 
 export const metadata = {
-  title: "About divoxutils",
+  title: "About - divoxutils",
 };
 
 const links = [
