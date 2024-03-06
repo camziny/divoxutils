@@ -48,6 +48,7 @@ export default authMiddleware({
     "/api/users/stats/(.*)",
     "/api/characters/stats/(.*)",
     "/discord",
+    "/api/delete/user/(.*)",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
