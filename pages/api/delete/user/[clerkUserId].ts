@@ -2,6 +2,14 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { deleteUserByClerkUserId } from "@/controllers/userController";
 
 const handleDeleteUser = async (req: NextApiRequest, res: NextApiResponse) => {
+  const apiSecret = process.env.DISCORD_BOT_API_KEY;
+  const apiKey = req.headers["x-api-key"];
+
+  if (!apiKey || apiKey !== apiSecret) {
+    res.status(401).json({ message: "Invalid or missing API key." });
+    return;
+  }
+
   if (req.method === "DELETE") {
     try {
       const { clerkUserId } = req.query;
