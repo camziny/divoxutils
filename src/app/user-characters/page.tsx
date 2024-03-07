@@ -3,6 +3,7 @@ import CharacterList from "../components/CharacterList";
 import CharacterSearchAndAdd from "../components/CharacterSearchAndAdd";
 import { currentUser } from "@clerk/nextjs";
 import Loading from "../loading";
+import ShareProfileButton from "../components/ShareProfileButton";
 
 export const metadata = {
   title: "My Characters - divoxutils",
@@ -19,8 +20,9 @@ const CharacterPage: React.FC = async () => {
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <CharacterSearchAndAdd />
       </div>
-      <div className="text-2xl sm:text-3xl font-bold text-indigo-400 mb-4 sm:mb-6">
+      <div className="text-2xl sm:text-3xl font-bold text-indigo-400 mb-4 sm:mb-6 flex items-center gap-2">
         {user?.username}
+        {user?.username && <ShareProfileButton username={user.username} />}
       </div>
       <Suspense fallback={<Loading />}>
         <div className="w-full px-4 sm:px-6 lg:px-8">

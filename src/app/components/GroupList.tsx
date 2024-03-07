@@ -16,7 +16,7 @@ async function fetchGroupsForUser(userId: string) {
     return data;
   } catch (error) {
     console.error("Error in fetchGroupsForUser:", error);
-    throw error; // This will be caught in the catch block of the calling function
+    throw error;
   }
 }
 
@@ -41,7 +41,7 @@ export default async function GroupList({ userId }: { userId: string }) {
       {groups.length === 0 ? (
         <p>No groups available.</p>
       ) : (
-        groups.map((group) => <div key={group.id}>{group.name}</div>) // Type of group inferred as Group
+        groups.map((group) => <div key={group.id}>{group.name}</div>)
       )}
     </div>
   );

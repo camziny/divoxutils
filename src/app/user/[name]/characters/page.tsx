@@ -4,6 +4,7 @@ import { PageReload } from "@/app/components/PageReload";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
 import type { Metadata, ResolvingMetadata } from "next";
+import ShareProfileButton from "@/app/components/ShareProfileButton";
 
 interface CharactersPageParams {
   name: string;
@@ -51,8 +52,9 @@ export default async function CharactersPage({
   return (
     <div className="p-4 md:p-8 lg:p-12">
       <div className="max-w-screen-lg mx-auto">
-        <h1 className="text-3xl font-bold text-indigo-400 mb-4 text-center">
+        <h1 className="text-3xl font-bold text-indigo-400 mb-4 text-center flex items-center gap-2 justify-center">
           {user.name}
+          <ShareProfileButton username={user.name} />
         </h1>
         <PageReload />
         <Suspense fallback={<Loading />}>
