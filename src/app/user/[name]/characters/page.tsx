@@ -3,10 +3,32 @@ import OtherCharacterList from "@/app/components/OtherCharacterList";
 import { PageReload } from "@/app/components/PageReload";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
+import type { Metadata, ResolvingMetadata } from "next";
 
 interface CharactersPageParams {
   name: string;
   clerkUserId: string;
+}
+
+export async function generateMetadata(
+  { params }: { params: CharactersPageParams },
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { name } = params;
+
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/users?name=${name}`
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
+  }
+  const userData = await res.json();
+
+  const user = userData[0];
+
+  return {
+    title: `${user.name} - divoxutils`,
+  };
 }
 
 export default async function CharactersPage({
