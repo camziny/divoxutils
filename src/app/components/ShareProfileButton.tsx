@@ -30,7 +30,7 @@ const ShareProfileButton: React.FC<ShareProfileButtonProps> = ({
       onClick={handleShareClick}
       className="bg-gray-900 text-indigo-400 hover:bg-gray-800 rounded-lg active:bg-gray-700 transition duration-300 ease-in-out flex items-center p-1"
     >
-      <IosShareIcon style={{ fontSize: "1.5rem", verticalAlign: "middle" }} />
+      <IosShareIcon style={{ fontSize: "1.75rem", verticalAlign: "middle" }} />
     </button>
   );
 };
