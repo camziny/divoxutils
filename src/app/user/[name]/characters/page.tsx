@@ -50,16 +50,18 @@ export default async function CharactersPage({
   const user = userData[0];
 
   return (
-    <div className="p-4 md:p-8 lg:p-12">
-      <div className="max-w-screen-lg mx-auto">
-        <h1 className="text-3xl font-bold text-indigo-400 mb-4 text-center flex items-center gap-2 justify-center">
-          {user.name}
-          <ShareProfileButton username={user.name} />
-        </h1>
-        <PageReload />
-        <Suspense fallback={<Loading />}>
-          <OtherCharacterList userId={user.clerkUserId} />
-        </Suspense>
+    <div className="bg-gray-900 min-h-screen text-gray-300">
+      <div className="p-4 md:p-8 lg:p-12">
+        <div className="max-w-screen-lg mx-auto">
+          <h1 className="text-3xl font-bold text-indigo-400 mb-4 text-center flex items-center gap-2 justify-center">
+            {user.name}
+            <ShareProfileButton username={user.name} />
+          </h1>
+          <PageReload />
+          <Suspense fallback={<Loading />}>
+            <OtherCharacterList userId={user.clerkUserId} />
+          </Suspense>
+        </div>
       </div>
     </div>
   );
