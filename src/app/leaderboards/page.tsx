@@ -1,6 +1,7 @@
 import React from "react";
 import LeaderboardList from "@/app/components/LeaderboardList";
 import LeaderboardTooltip from "@/app/components/LeaderboardTooltip";
+import { divider } from "@nextui-org/react";
 
 export const metadata = {
   title: "Leaderboards - divoxutils",
@@ -31,14 +32,15 @@ export default async function LeaderboardPage() {
   const leaderboardData = await fetchLeaderboardData();
 
   return (
-    <div className="p-4 md:p-8 lg:p-12">
-      <div className="max-w-screen-lg mx-auto text-center">
-        <div className="mb-6">
-          <LeaderboardTooltip />
+    <div className="bg-gray-900 min-h-screen text-gray-300">
+      <div className="p-4 md:p-8 lg:p-12">
+        <div className="max-w-screen-lg mx-auto text-center">
+          <div className="mb-6">
+            <LeaderboardTooltip />
+          </div>
+          <LeaderboardList data={leaderboardData} />
         </div>
-        <LeaderboardList data={leaderboardData} />
-      </div>
-      {/* <div className="max-w-screen-lg mx-auto text-center">
+        {/* <div className="max-w-screen-lg mx-auto text-center">
         <div className="mb-6 text-2xl font-semibold text-gray-400">
           Undergoing Maintenance
         </div>
@@ -47,6 +49,7 @@ export default async function LeaderboardPage() {
           back up shortly.
         </p>
       </div> */}
+      </div>
     </div>
   );
 }

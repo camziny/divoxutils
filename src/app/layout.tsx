@@ -51,14 +51,16 @@ export default function RootLayout({
           <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         </Head>
         <body className={`${inter.className} antialiased`}>
-          <Providers>
-            <Navbar />
-            {children}
-            <SpeedInsights />
-            <Analytics />
-            <Footer />
-            <ToastContainer />
-          </Providers>
+          <div className="flex flex-col min-h-screen">
+            <Providers>
+              <Navbar />
+              {children}
+              <SpeedInsights />
+              <Analytics />
+              <Footer />
+              <ToastContainer />
+            </Providers>
+          </div>
         </body>
       </html>
     </ClerkProvider>
