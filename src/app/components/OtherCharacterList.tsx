@@ -135,6 +135,7 @@ export default async function OtherCharacterList({
                       webId={item.character.webId}
                       initialCharacter={item}
                       realmPointsLastWeek={item.character.realmPointsLastWeek}
+                      totalRealmPoints={item.character.totalRealmPoints}
                       currentUserId={userId.toString()}
                       ownerId={item.ownerId}
                     />
@@ -157,6 +158,7 @@ export default async function OtherCharacterList({
               webId={item.character.webId}
               initialCharacter={item}
               realmPointsLastWeek={item.character.realmPointsLastWeek}
+              totalRealmPoints={item.character.totalRealmPoints}
               currentUserId={userId.toString()}
               ownerId={item.ownerId}
             />
