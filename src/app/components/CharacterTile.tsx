@@ -149,12 +149,14 @@ const CharacterTile: React.FC<{
     };
   };
   realmPointsLastWeek: number;
+  totalRealmPoints: number;
   currentUserId: string;
   ownerId: string;
 }> = ({
   webId,
   initialCharacter,
   realmPointsLastWeek,
+  totalRealmPoints,
   currentUserId,
   ownerId,
 }) => {
@@ -238,6 +240,9 @@ const CharacterTile: React.FC<{
   const secondOpponentStats =
     character.realm_war_stats?.current?.player_kills[opponentRealms[1]];
 
+  const realmPointsThisWeek =
+    character.realm_war_stats.current.realm_points - totalRealmPoints;
+
   return (
     <>
       <TableRow
@@ -299,6 +304,7 @@ const CharacterTile: React.FC<{
                 character={character}
                 opponentRealms={opponentRealms}
                 realmPointsLastWeek={realmPointsLastWeek}
+                realmPointsThisWeek={realmPointsThisWeek}
               />
             </div>
           </TableCell>

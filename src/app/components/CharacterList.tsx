@@ -13,6 +13,7 @@ type CharacterTileProps = {
     webId: string;
   };
   realmPointsLastWeek: number;
+  totalRealmPoints: number;
   currentUserId?: string | null;
   ownerId: string;
 };
@@ -190,6 +191,7 @@ export default async function CharacterList({
                       webId={item.character.webId}
                       initialCharacter={item}
                       realmPointsLastWeek={item.character.realmPointsLastWeek}
+                      totalRealmPoints={item.character.totalRealmPoints}
                       currentUserId={clerkUserId as string}
                       ownerId={item.user.clerkUserId}
                     />
@@ -212,6 +214,7 @@ export default async function CharacterList({
               webId={item.character.webId}
               initialCharacter={item}
               realmPointsLastWeek={item.detailedCharacter.realmPointsLastWeek}
+              totalRealmPoints={item.character.totalRealmPoints}
               currentUserId={clerkUserId!}
               ownerId={item.user.clerkUserId}
             />
