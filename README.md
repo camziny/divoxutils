@@ -3,12 +3,13 @@
 divoxutils is a specialized tool designed for the Dark Age of Camelot gaming community. It offers a unique blend of features tailored to enhance the gaming experience for enthusiasts of this classic MMORPG.
 
 ### Key Features
-- Character Lists: Users can compile all of their Dark Age of Camelot characters into a single, manageable list.
-- Leaderboards: See where you stand in both "All Time" and "Last Week" categories, offering a competitive insight into your game standing.
-- Group Builder: A novel feature allowing users to create in-game group setups by adding other users and selecting characters for each participant.
-
+- **Character Lists**: Users can compile all of their Dark Age of Camelot characters into a single, manageable list.
+- **Leaderboards**: See where you stand in both "All Time" and "Last Week" categories, offering a competitive insight into your game standing.
+- **Group Builder**: A novel feature allowing users to create in-game group setups by adding other users and selecting characters for each participant.
+- **Discord Bot**: Seamlessly integrate with your Discord server, providing access to a range of commands that fetch information and statistics about users and their characters.
+  
 ### User Authentication
-- Discord SSO with Clerk: I use Clerk to integrate Discord Single Sign-On (SSO), ensuring ease of use and secure access for our users.
+- **Discord SSO with Clerk**: I use Clerk to integrate Discord Single Sign-On (SSO), ensuring ease of use and secure access for our users.
 
 ### Technologies Used
 divoxutils is built with a robust stack to provide a seamless user experience:
