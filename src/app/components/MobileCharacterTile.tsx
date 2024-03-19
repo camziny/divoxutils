@@ -32,18 +32,24 @@ type CharacterInfo = {
   guild_info?: {
     guild_name?: string;
   };
-  realm_war_stats: {
-    current: {
-      realm_points: number;
-      player_kills: {
-        total: KillStats;
-        [key: string]: KillStats;
-      };
-    };
+  formattedRealmPoints: string;
+  guild_name: string;
+  realm_points: number;
+  player_kills: {
+    total: KillStats;
+    [key: string]: KillStats;
   };
 };
 
 const MobileCharacterTile: React.FC<{
+  character: {
+    id: number;
+    webId: string;
+    characterName: string;
+    className: string;
+    realm: string;
+  };
+  characterDetails: CharacterInfo;
   webId: string;
   initialCharacter: {
     character: {
@@ -64,6 +70,8 @@ const MobileCharacterTile: React.FC<{
   ownerId: string;
 }> = ({
   webId,
+  character,
+  characterDetails,
   initialCharacter,
   realmPointsLastWeek,
   totalRealmPoints,
@@ -71,25 +79,12 @@ const MobileCharacterTile: React.FC<{
   ownerId,
 }) => {
   const router = useRouter();
-  const [character, setCharacter] = useState<CharacterInfo | null>(null);
   const [open, setOpen] = useState(false);
   const { userId } = useAuth();
 
   const isOwner = userId === ownerId;
   const showDeleteIcon = isOwner;
   const isMobile = useMediaQuery({ maxWidth: 767 });
-
-  useEffect(() => {
-    async function fetchData() {
-      const response = await fetch(
-        `https://api.camelotherald.com/character/info/${webId}`
-      );
-      const data = await response.json();
-      setCharacter(data);
-    }
-
-    fetchData();
-  }, [webId]);
 
   const handleDelete = async (
     event: React.MouseEvent,
@@ -121,21 +116,18 @@ const MobileCharacterTile: React.FC<{
     }
   };
 
-  const getOpponentRealms = (realmId: number) => {
-    const realms = ["albion", "midgard", "hibernia"];
-    const currentRealm = realms[realmId - 1];
-    return realms.filter((r) => r !== currentRealm);
+  const getOpponentRealms = (realmName: string) => {
+    const realms = ["Albion", "Midgard", "Hibernia"];
+    return realms.filter((r) => r !== realmName);
   };
 
-  if (!character) return <MobileCharacterTileSkeleton />;
+  if (!characterDetails) return <MobileCharacterTileSkeleton />;
 
   const realm = getRealmNameAndColor(character.realm);
   const opponentRealms = getOpponentRealms(character.realm);
 
-  const firstOpponentStats =
-    character.realm_war_stats?.current?.player_kills[opponentRealms[0]];
-  const secondOpponentStats =
-    character.realm_war_stats?.current?.player_kills[opponentRealms[1]];
+  const firstOpponentStats = characterDetails.player_kills[opponentRealms[0]];
+  const secondOpponentStats = characterDetails.player_kills[opponentRealms[1]];
 
   const truncateText = (text: string, maxLength: number) => {
     return text.length > maxLength
@@ -143,8 +135,7 @@ const MobileCharacterTile: React.FC<{
       : text;
   };
 
-  const realmPointsThisWeek =
-    character.realm_war_stats.current.realm_points - totalRealmPoints;
+  const realmPointsThisWeek = characterDetails.realm_points - totalRealmPoints;
 
   return (
     <>
@@ -161,25 +152,19 @@ const MobileCharacterTile: React.FC<{
           </IconButton>
         </TableCell>
         <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
-          {truncateText(character.name, 10)}
+          {truncateText(characterDetails.name, 10)}
         </TableCell>
         <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
-          {truncateText(character.class_name, 8)}
+          {truncateText(characterDetails.class_name, 8)}
         </TableCell>
         <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
-          {character.realm_war_stats?.current?.realm_points
-            ? formatRealmRankWithLevel(
-                getRealmRankForPoints(
-                  character.realm_war_stats.current.realm_points
-                )
-              )
-            : "-"}
+          {characterDetails.formattedRealmPoints || "-"}
         </TableCell>
         <TableCell className="p-0.5 w-8">
           {showDeleteIcon && isOwner && (
             <IconButton
               size="small"
-              onClick={(e) => handleDelete(e, character.character_web_id)}
+              onClick={(e) => handleDelete(e, character.webId)}
               style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
             >
               <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
@@ -192,10 +177,11 @@ const MobileCharacterTile: React.FC<{
           <TableCell colSpan={isMobile ? 5 : 9} className="p-0">
             <div className="flex justify-center py-2">
               <CharacterDetails
-                character={character}
+                character={characterDetails}
                 opponentRealms={opponentRealms}
                 realmPointsLastWeek={realmPointsLastWeek}
                 realmPointsThisWeek={realmPointsThisWeek}
+                totalRealmPoints={totalRealmPoints}
               />
             </div>
           </TableCell>

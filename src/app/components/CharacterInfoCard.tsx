@@ -1,12 +1,8 @@
 import { Card, CardBody, CardHeader } from "@nextui-org/react";
 
-interface GuildInfo {
-  guild_name?: string;
-}
-
 interface Character {
   name: string;
-  guild_info?: GuildInfo;
+  guild_name?: string;
   race: string;
   class_name: string;
   level: number;
@@ -25,9 +21,9 @@ const CharacterInfoCard: React.FC<CharacterInfoCardProps> = ({ character }) => {
         </div>
       </CardHeader>
       <CardBody className="pt-0 pb-4 px-4">
-        {character.guild_info?.guild_name && (
+        {character.guild_name && (
           <p className="text-sm text-gray-300 font-semibold text-center my-0">
-            <span>{`<${character.guild_info.guild_name}>`}</span>
+            <span>{`<${character.guild_name}>`}</span>
           </p>
         )}
         <p className="text-sm text-gray-300 font-semibold text-center mt-1">

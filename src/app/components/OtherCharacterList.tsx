@@ -133,6 +133,8 @@ export default async function OtherCharacterList({
                     <CharacterTile
                       key={item.character.id}
                       webId={item.character.webId}
+                      characterDetails={item.characterDetails}
+                      character={item.character}
                       initialCharacter={item}
                       realmPointsLastWeek={item.character.realmPointsLastWeek}
                       totalRealmPoints={item.character.totalRealmPoints}
@@ -156,6 +158,8 @@ export default async function OtherCharacterList({
             <MobileCharacterTile
               key={item.character.id}
               webId={item.character.webId}
+              characterDetails={item.characterDetails}
+              character={item.character}
               initialCharacter={item}
               realmPointsLastWeek={item.character.realmPointsLastWeek}
               totalRealmPoints={item.character.totalRealmPoints}

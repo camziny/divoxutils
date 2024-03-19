@@ -189,6 +189,8 @@ export default async function CharacterList({
                     <CharacterTile
                       key={item.character.id}
                       webId={item.character.webId}
+                      character={item.character}
+                      characterDetails={item.characterDetails}
                       initialCharacter={item}
                       realmPointsLastWeek={item.character.realmPointsLastWeek}
                       totalRealmPoints={item.character.totalRealmPoints}
@@ -212,8 +214,10 @@ export default async function CharacterList({
             <MobileCharacterTile
               key={item.character.id}
               webId={item.character.webId}
+              character={item.character}
+              characterDetails={item.characterDetails}
               initialCharacter={item}
-              realmPointsLastWeek={item.detailedCharacter.realmPointsLastWeek}
+              realmPointsLastWeek={item.character.realmPointsLastWeek}
               totalRealmPoints={item.character.totalRealmPoints}
               currentUserId={clerkUserId!}
               ownerId={item.user.clerkUserId}

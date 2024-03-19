@@ -1,10 +1,10 @@
-export const getRealmNameAndColor = (realmId: number) => {
-  switch (realmId) {
-    case 1:
+export const getRealmNameAndColor = (realmName: string) => {
+  switch (realmName) {
+    case "Albion":
       return { name: "Albion", color: "albion" };
-    case 2:
+    case "Midgard":
       return { name: "Midgard", color: "midgard" };
-    case 3:
+    case "Hibernia":
       return { name: "Hibernia", color: "hibernia" };
     default:
       return { name: "", color: "" };

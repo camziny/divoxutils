@@ -48,7 +48,6 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
   skPerKillRatio,
 }) => {
   const [selectedRatio, setSelectedRatio] = useState<RatioKey>("dbPerKill");
-
   const ratioOptions = {
     dbPerKill: {
       label: "DB / Kill Ratio",
