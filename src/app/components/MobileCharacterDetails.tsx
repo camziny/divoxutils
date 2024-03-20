@@ -35,7 +35,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
           <p>Class: {character.class_name}</p>
           <p>Level: {character.level}</p>
           <p>Race: {character.race}</p>
-          <p>Realm: {getRealmNameAndColor(character.realm).name}</p>
+          {/* <p>Realm: {getRealmNameAndColor(character.realm).name}</p> */}
           <p>Realm Rank: {realmRank}</p>
           <div className="w-full my-2">
             <LinearProgress variant="determinate" value={progressPercentage} />

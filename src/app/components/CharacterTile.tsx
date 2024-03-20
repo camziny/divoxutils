@@ -26,99 +26,27 @@ type CharacterInfo = {
   guild_info?: {
     guild_name?: string;
   };
-  realm_war_stats: {
-    current: {
-      realm_points: number;
-      player_kills: {
-        total: KillStats;
-        [key: string]: KillStats;
-      };
-    };
+  formattedRealmPoints: string;
+  guild_name: string;
+
+  realm_points: number;
+  player_kills: {
+    total: KillStats;
+    [key: string]: KillStats;
   };
 };
-
-const getRealmNameAndColor = (realmId: number) => {
-  switch (realmId) {
-    case 1:
+const getRealmNameAndColor = (realmName: string) => {
+  switch (realmName) {
+    case "Albion":
       return { name: "Albion", color: "albion" };
-    case 2:
+    case "Midgard":
       return { name: "Midgard", color: "midgard" };
-    case 3:
+    case "Hibernia":
       return { name: "Hibernia", color: "hibernia" };
     default:
       return { name: "", color: "" };
   }
 };
-
-function getRealmRanks(): Map<number, number> {
-  const realmRanks = new Map<number, number>();
-
-  for (let rr = 0; rr < 100; rr++) {
-    realmRanks.set(
-      rr + 11,
-      (50 * Math.pow(rr, 3) + 75 * Math.pow(rr, 2) + 25 * rr) / 6
-    );
-  }
-
-  const hardcodedRanks: [number, number][] = [
-    [111, 9111713],
-    [112, 10114001],
-    [113, 11226541],
-    [114, 12461460],
-    [115, 13832221],
-    [116, 15353765],
-    [117, 17042680],
-    [118, 18917374],
-    [119, 20998286],
-    [120, 23308097],
-    [121, 25871988],
-    [122, 28717906],
-    [123, 31876876],
-    [124, 35383333],
-    [125, 39275499],
-    [126, 43595804],
-    [127, 48391343],
-    [128, 53714390],
-    [129, 59622973],
-    [130, 66181501],
-    [131, 73461466],
-    [132, 81542227],
-    [133, 90511872],
-    [134, 100468178],
-    [135, 111519678],
-    [136, 123786843],
-    [137, 137403395],
-    [138, 152517769],
-    [139, 169294723],
-    [140, 187917143],
-  ];
-
-  for (const [rank, points] of hardcodedRanks) {
-    realmRanks.set(rank, points);
-  }
-
-  return realmRanks;
-}
-const realmRanksMap: any = getRealmRanks();
-
-function getRealmRankForPoints(points: number): number {
-  let rank = 0;
-
-  for (const [rr, requiredPoints] of realmRanksMap) {
-    if (points >= requiredPoints) {
-      rank = rr;
-    } else {
-      break;
-    }
-  }
-
-  return rank;
-}
-
-function formatRealmRankWithLevel(rank: number): string {
-  const rankString = rank.toString();
-  return `${rankString.slice(0, -1)}L${rankString.slice(-1)}`;
-}
 
 const realmsSummary = {
   Albion: { kills: 0, deathblows: 0, soloKills: 0, deaths: 0, realmPoints: 0 },
@@ -134,6 +62,14 @@ const realmsSummary = {
 };
 
 const CharacterTile: React.FC<{
+  character: {
+    id: number;
+    webId: string;
+    characterName: string;
+    className: string;
+    realm: string;
+  };
+  characterDetails: CharacterInfo;
   webId: string;
   initialCharacter: {
     character: {
@@ -153,6 +89,8 @@ const CharacterTile: React.FC<{
   currentUserId: string;
   ownerId: string;
 }> = ({
+  character,
+  characterDetails,
   webId,
   initialCharacter,
   realmPointsLastWeek,
@@ -161,7 +99,6 @@ const CharacterTile: React.FC<{
   ownerId,
 }) => {
   const router = useRouter();
-  const [character, setCharacter] = useState<CharacterInfo | null>(null);
   const [open, setOpen] = useState(false);
   const { userId } = useAuth();
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -170,28 +107,6 @@ const CharacterTile: React.FC<{
   const isOwner = userId === ownerId;
 
   const showDeleteIcon = isOwner;
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch(
-          `https://api.camelotherald.com/character/info/${webId}`
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to fetch character data for webId: ${webId}`);
-        }
-        const data = await response.json();
-        setCharacter(data);
-      } catch (error) {
-        console.error(
-          `Error fetching character data for webId ${webId}:`,
-          error
-        );
-      }
-    }
-
-    fetchData();
-  }, [webId]);
 
   const handleDelete = async (
     event: React.MouseEvent,
@@ -224,24 +139,21 @@ const CharacterTile: React.FC<{
     }
   };
 
-  const getOpponentRealms = (realmId: number) => {
-    const realms = ["albion", "midgard", "hibernia"];
-    const currentRealm = realms[realmId - 1];
-    return realms.filter((r) => r !== currentRealm);
+  const getOpponentRealms = (realmName: string) => {
+    const realms = ["Albion", "Midgard", "Hibernia"];
+    return realms.filter((r) => r !== realmName);
   };
 
-  if (!character) return <CharacterTileSkeleton />;
+  if (!characterDetails) return <CharacterTileSkeleton />;
 
   const realm = getRealmNameAndColor(character.realm);
+
   const opponentRealms = getOpponentRealms(character.realm);
 
-  const firstOpponentStats =
-    character.realm_war_stats?.current?.player_kills[opponentRealms[0]];
-  const secondOpponentStats =
-    character.realm_war_stats?.current?.player_kills[opponentRealms[1]];
+  const firstOpponentStats = characterDetails.player_kills[opponentRealms[0]];
+  const secondOpponentStats = characterDetails.player_kills[opponentRealms[1]];
 
-  const realmPointsThisWeek =
-    character.realm_war_stats.current.realm_points - totalRealmPoints;
+  const realmPointsThisWeek = characterDetails.realm_points - totalRealmPoints;
 
   return (
     <>
@@ -258,28 +170,22 @@ const CharacterTile: React.FC<{
           </IconButton>
         </TableCell>
         <TableCell className="w-1/4 px-6 text-white text-sm font-semibold">
-          {character.name}
+          {characterDetails.name}
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-sm font-semibold">
-          <div className="max-w-xs truncate">{character.class_name}</div>
+          <div className="max-w-xs truncate">{characterDetails.class_name}</div>
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-md font-semibold">
-          {character.realm_war_stats?.current?.realm_points
-            ? formatRealmRankWithLevel(
-                getRealmRankForPoints(
-                  character.realm_war_stats.current.realm_points
-                )
-              )
-            : "-"}
+          {characterDetails.formattedRealmPoints || "-"}
         </TableCell>
         <TableCell className="w-1/4 px-6 text-white text-sm font-semibold">
-          {character.guild_info?.guild_name || "-"}
+          {characterDetails.guild_name || "-"}
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-sm font-semibold">
-          {character.level}
+          {characterDetails.level}
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-sm font-semibold hidden lg:table-cell">
-          {character.race}
+          {characterDetails.race}
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-sm font-semibold">
           {realm.name}
@@ -288,7 +194,7 @@ const CharacterTile: React.FC<{
           {showDeleteIcon && isOwner && (
             <IconButton
               size="large"
-              onClick={(e) => handleDelete(e, character.character_web_id)}
+              onClick={(e) => handleDelete(e, character.webId)}
               style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
             >
               <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
@@ -301,10 +207,11 @@ const CharacterTile: React.FC<{
           <TableCell colSpan={9} className="p-0">
             <div className="flex justify-center py-2">
               <CharacterDetails
-                character={character}
+                character={characterDetails}
                 opponentRealms={opponentRealms}
                 realmPointsLastWeek={realmPointsLastWeek}
                 realmPointsThisWeek={realmPointsThisWeek}
+                totalRealmPoints={totalRealmPoints}
               />
             </div>
           </TableCell>

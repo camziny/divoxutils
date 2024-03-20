@@ -20,25 +20,22 @@ type KillStats = {
   solo_kills: number;
 };
 
-export type CharacterInfo = {
+type CharacterInfo = {
   character_web_id: string;
   name: string;
   realm: number;
   race: string;
   class_name: string;
   level: number;
-  nextRankPoints?: number;
   guild_info?: {
     guild_name?: string;
   };
-  realm_war_stats: {
-    current: {
-      realm_points: number;
-      player_kills: {
-        total: KillStats;
-        [key: string]: KillStats;
-      };
-    };
+  realm_points: number;
+  formattedRealmPoints: string;
+  guild_name: string;
+  player_kills: {
+    total: KillStats;
+    [key: string]: KillStats;
   };
 };
 
@@ -47,6 +44,7 @@ type CharacterDetailsProps = {
   opponentRealms: string[];
   realmPointsLastWeek: number;
   realmPointsThisWeek: number;
+  totalRealmPoints: number;
 };
 
 type RealmColorsType = {
@@ -69,11 +67,18 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   opponentRealms,
   realmPointsLastWeek,
   realmPointsThisWeek,
+  totalRealmPoints,
 }) => {
-  const firstOpponentStats =
-    character.realm_war_stats?.current?.player_kills[opponentRealms[0]];
-  const secondOpponentStats =
-    character.realm_war_stats?.current?.player_kills[opponentRealms[1]];
+  const getStats = (realm: string) =>
+    character.player_kills[realm] || {
+      kills: 0,
+      deaths: 0,
+      death_blows: 0,
+      solo_kills: 0,
+    };
+
+  const firstOpponentStats = getStats(opponentRealms[0]);
+  const secondOpponentStats = getStats(opponentRealms[1]);
 
   const realmColors = {
     albion: "albion",
@@ -82,9 +87,8 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
     total: "bg-gray-600",
   };
 
-  const realmPoints = character.realm_war_stats?.current?.realm_points;
-  const deaths =
-    character.realm_war_stats?.current?.player_kills?.total?.deaths;
+  const realmPoints = character.realm_points;
+  const deaths = character.player_kills?.total?.deaths;
   const irs =
     !deaths || deaths === 0
       ? undefined
@@ -94,20 +98,15 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   const currentRank = getRealmRankForPoints(realmPoints);
   const nextRankPoints = getRealmRanks().get(currentRank + 1) || 0;
   const pointsUntilNextRank = nextRankPoints - realmPoints;
-  const totalKills =
-    character.realm_war_stats?.current?.player_kills?.total?.kills || 0;
-  const currentRankNumber = getRealmRankForPoints(
-    character.realm_war_stats?.current?.realm_points
-  );
+  const totalKills = character.player_kills?.total?.kills || 0;
+  const currentRankNumber = getRealmRankForPoints(character.realm_points);
   const nextRankFormatted = formatRealmRankWithLevel(currentRankNumber + 1);
   const currentRankFormatted = formatRealmRankWithLevel(currentRank);
   const capitalizeRealm = (realm: string) => {
     return realm.charAt(0).toUpperCase() + realm.slice(1);
   };
-  const totalDeathblows =
-    character.realm_war_stats?.current?.player_kills?.total?.death_blows;
-  const totalSoloKills =
-    character.realm_war_stats?.current?.player_kills?.total?.solo_kills;
+  const totalDeathblows = character.player_kills?.total?.death_blows;
+  const totalSoloKills = character.player_kills?.total?.solo_kills;
 
   const dbPerKillPercentage: number =
     totalKills === 0
@@ -134,6 +133,13 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
     nextRankPoints
   );
 
+  console.log(
+    "realmPointsLastWeek:",
+    realmPointsLastWeek,
+    "totalRealmPoints:",
+    totalRealmPoints
+  );
+
   return (
     <TableCell className="bg-gray-900 w-full p-3" colSpan={9}>
       <div className="flex justify-center items-center h-full">
@@ -152,27 +158,23 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                 progressPercentage={progressPercentage}
                 realmPointsThisWeek={formatNumber(realmPointsThisWeek)}
                 realmPointsLastWeek={formatNumber(
-                  realmPointsLastWeek === realmPoints ? 0 : realmPointsLastWeek
+                  realmPointsLastWeek === totalRealmPoints
+                    ? 0
+                    : realmPointsLastWeek
                 )}
               />
             </div>
             <div className="mb-2 w-full">
               <TotalStatsCard
-                kills={formatNumber(
-                  character.realm_war_stats?.current?.player_kills?.total
-                    ?.kills || 0
-                )}
+                kills={formatNumber(character.player_kills?.total?.kills || 0)}
                 deathBlows={formatNumber(
-                  character.realm_war_stats?.current?.player_kills?.total
-                    ?.death_blows || 0
+                  character.player_kills?.total?.death_blows || 0
                 )}
                 soloKills={formatNumber(
-                  character.realm_war_stats?.current?.player_kills?.total
-                    ?.solo_kills || 0
+                  character.player_kills?.total?.solo_kills || 0
                 )}
                 deaths={formatNumber(
-                  character.realm_war_stats?.current?.player_kills?.total
-                    ?.deaths || 0
+                  character.player_kills?.total?.deaths || 0
                 )}
                 dbPerKillPercentage={dbPerKillPercentage}
                 skPerKillPercentage={skPerKillPercentage}
@@ -180,16 +182,20 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
             </div>
             <div className="mb-2 w-full">
               {opponentRealms.map((realm) => {
-                const realmStats =
-                  character.realm_war_stats?.current?.player_kills[realm];
+                const realmStats = character.player_kills[realm.toLowerCase()];
                 const dbPerKillRatio =
-                  realmStats?.kills === 0
-                    ? 0
-                    : (realmStats.death_blows / realmStats.kills) * 100;
+                  realmStats &&
+                  realmStats.kills &&
+                  realmStats.death_blows !== undefined
+                    ? (realmStats.death_blows / realmStats.kills) * 100
+                    : 0;
                 const skPerKillRatio =
-                  realmStats?.kills === 0
-                    ? 0
-                    : (realmStats.solo_kills / realmStats.kills) * 100;
+                  realmStats &&
+                  realmStats.kills &&
+                  realmStats.solo_kills !== undefined
+                    ? (realmStats.solo_kills / realmStats.kills) * 100
+                    : 0;
+
                 return (
                   <RealmStatsCard
                     key={realm}
@@ -208,17 +214,17 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
         <div className="hidden sm:grid sm:grid-cols-4 sm:gap-4 sm:w-full sm:max-w-4xl sm:mx-auto">
           {[...opponentRealms, "Total", "Info"].map((realm, index) => {
             if (realm !== "Total" && realm !== "Info") {
-              const realmStats =
-                character.realm_war_stats?.current?.player_kills[realm];
+              const realmStats = character.player_kills[realm.toLowerCase()];
               const kills = realmStats?.kills || 0;
               const deathBlows = realmStats?.death_blows || 0;
               const dbPerKillRatio =
                 kills === 0 ? 0 : (deathBlows / kills) * 100;
               const skPerKillRatio =
-                realmStats?.kills === 0
-                  ? 0
-                  : (realmStats.solo_kills / realmStats.kills) * 100;
-
+                realmStats &&
+                realmStats.kills &&
+                realmStats.solo_kills !== undefined
+                  ? (realmStats.solo_kills / realmStats.kills) * 100
+                  : 0;
               return (
                 <RealmStatsCard
                   key={index}
@@ -235,20 +241,16 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                 <TotalStatsCard
                   key={index}
                   kills={formatNumber(
-                    character.realm_war_stats?.current?.player_kills?.total
-                      ?.kills || 0
+                    character.player_kills?.total?.kills || 0
                   )}
                   deathBlows={formatNumber(
-                    character.realm_war_stats?.current?.player_kills?.total
-                      ?.death_blows || 0
+                    character.player_kills?.total?.death_blows || 0
                   )}
                   soloKills={formatNumber(
-                    character.realm_war_stats?.current?.player_kills?.total
-                      ?.solo_kills || 0
+                    character.player_kills?.total?.solo_kills || 0
                   )}
                   deaths={formatNumber(
-                    character.realm_war_stats?.current?.player_kills?.total
-                      ?.deaths || 0
+                    character.player_kills?.total?.deaths || 0
                   )}
                   dbPerKillPercentage={dbPerKillPercentage}
                   skPerKillPercentage={skPerKillPercentage}
@@ -268,7 +270,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                   progressPercentage={progressPercentage}
                   realmPointsThisWeek={formatNumber(realmPointsThisWeek)}
                   realmPointsLastWeek={formatNumber(
-                    realmPointsLastWeek === realmPoints
+                    realmPointsLastWeek === totalRealmPoints
                       ? 0
                       : realmPointsLastWeek
                   )}
