@@ -50,6 +50,33 @@ model Character {
   deathsLastWeek          Int    @default(0)
   lastUpdated             DateTime? @default(now())
   nameLastUpdated         DateTime? @default(now())
+  heraldCharacterWebId    String?
+  heraldName              String?
+  heraldServerName        String?
+  heraldRealm             Int?
+  heraldRace              String?
+  heraldClassName         String?
+  heraldLevel             Int?
+  heraldGuildName         String?
+  heraldRealmPoints       Int?
+  heraldBountyPoints      Int?
+  heraldTotalKills        Int?
+  heraldTotalDeaths       Int?
+  heraldTotalDeathBlows   Int?
+  heraldTotalSoloKills    Int?
+  heraldMidgardKills      Int?
+  heraldMidgardDeaths     Int?
+  heraldMidgardDeathBlows Int?
+  heraldMidgardSoloKills  Int?
+  heraldAlbionKills       Int?
+  heraldAlbionDeaths      Int?
+  heraldAlbionDeathBlows  Int?
+  heraldAlbionSoloKills   Int?
+  heraldHiberniaKills     Int?
+  heraldHiberniaDeaths    Int?
+  heraldHiberniaDeathBlows Int?
+  heraldHiberniaSoloKills Int?
+  heraldMasterLevel       String?
 }
 
 
@@ -89,6 +116,10 @@ model GroupUser {
   @@index([groupId, clerkUserId])
 }
 
+model HeraldBatchState {
+  key                   String  @id
+  lastProcessedCharacterId  Int
+}
 
 
 

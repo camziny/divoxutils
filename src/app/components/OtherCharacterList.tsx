@@ -3,120 +3,85 @@ import CharacterTableHeader from "./CharacterTableHeader";
 import AggregateStatistics from "./CharacterListSummary";
 import MobileCharacterTile from "./MobileCharacterTile";
 import { TableContainer, Paper, TableBody, Table } from "@mui/material";
+import { CharacterData, Realm } from "@/utils/character";
 
 type OtherCharacterListProps = {
   userId?: string;
 };
 
-async function fetchCharactersForUser(userId: number) {
+async function fetchCharactersForUser(
+  userId: number
+): Promise<CharacterData[]> {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
 
   try {
     const response = await fetch(apiUrl);
     const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(`Fetch response error: ${JSON.stringify(data)}`);
-    }
-    if (Array.isArray(data)) {
-      return data;
-    }
-    if (data.userCharacters && Array.isArray(data.userCharacters)) {
-      return data.userCharacters;
-    } else {
-      throw new Error(
-        "Invalid data structure: Expected an array of user characters"
-      );
-    }
-  } catch (error) {
-    console.error("Error in fetchCharactersForUser:", error);
-    return [];
-  }
-}
-
-async function fetchCharacterData(webId?: string) {
-  if (webId === "Jcedk2Qasok") {
-    return null;
-  }
-  const apiUrl = `https://api.camelotherald.com/character/info/${webId}`;
-  try {
-    const response = await fetch(apiUrl);
     if (!response.ok) {
       throw new Error(
-        `Failed to fetch data for character with webId: ${webId}`
+        `Fetch response error: ${response.status} - ${JSON.stringify(data)}`
       );
     }
-    return await response.json();
+    const characterDetails = data;
+    return characterDetails;
   } catch (error) {
-    console.error(
-      `Error fetching data for character with webId: ${webId}:`,
-      error
-    );
-    return null;
+    console.error("Error fetching characters:", error);
+    throw error;
   }
 }
 
-async function getDetailedCharacters(userId?: any) {
-  const characters = await fetchCharactersForUser(userId);
-  const detailedCharactersPromises = characters.map(async (char: any) => {
-    const detailedData = await fetchCharacterData(char.character.webId);
-
-    if (!detailedData) {
-      return null;
-    }
-
-    const ownerId = char.userId;
-    return { ...char, detailedCharacter: detailedData, ownerId: ownerId };
-  });
-
-  const detailedCharacters = await Promise.all(detailedCharactersPromises);
-  return detailedCharacters.filter((char) => char !== null);
-}
-
-type RealmType = 1 | 2 | 3;
-
-const sortOrder: Record<RealmType, number> = {
-  1: 1,
-  3: 2,
-  2: 3,
+const realmOrder: Record<Realm, number> = {
+  Albion: 1,
+  Hibernia: 2,
+  Midgard: 3,
 };
 
-export default async function OtherCharacterList({
-  userId,
-}: OtherCharacterListProps) {
-  let detailedCharacters = [];
+const sortCharacters = (characters: CharacterData[]) => {
+  return characters.sort((a, b) => {
+    if (realmOrder[a.realm] < realmOrder[b.realm]) return -1;
+    if (realmOrder[a.realm] > realmOrder[b.realm]) return 1;
+    return b.totalRealmPoints - a.totalRealmPoints;
+  });
+};
 
-  if (userId) {
-    detailedCharacters = await getDetailedCharacters(userId);
-    detailedCharacters.sort((a, b) => {
-      if (!a.detailedCharacter || !b.detailedCharacter) return 0;
-      const realmA = a.detailedCharacter.realm as RealmType;
-      const realmB = b.detailedCharacter.realm as RealmType;
-      const realmPointsA =
-        a.detailedCharacter.realm_war_stats?.current?.realm_points || 0;
-      const realmPointsB =
-        b.detailedCharacter.realm_war_stats?.current?.realm_points || 0;
+export default async function OtherCharacterList({ userId }: { userId: any }) {
+  const ownerId = userId;
+  const effectiveUserId = ownerId || userId;
+  let detailedCharacters: any = [];
+  let userError = null;
 
-      if (sortOrder[realmA] !== sortOrder[realmB]) {
-        return sortOrder[realmA] - sortOrder[realmB];
-      } else {
-        return realmPointsB - realmPointsA;
-      }
-    });
-  } else {
-    return <p>User ID is not provided. Unable to fetch characters.</p>;
+  try {
+    if (effectiveUserId) {
+      const fetchedCharacters = await fetchCharactersForUser(effectiveUserId);
+      detailedCharacters = sortCharacters(fetchedCharacters);
+    } else {
+      userError = (
+        <p>User is not authenticated. Please log in to view characters.</p>
+      );
+    }
+  } catch (error) {
+    console.error("Error fetching characters:", error);
+    userError = <p>An error occurred while fetching characters.</p>;
   }
 
   return (
     <div className="flex flex-col items-center w-full max-w-6xl mx-auto">
-      <div className="hidden sm:block">
+      {userError}
+
+      <div className="hidden sm:block character-table-container overflow-auto max-h-[1000px]">
         <TableContainer component={Paper}>
           <Table stickyHeader style={{ tableLayout: "fixed" }}>
             <thead>
               <CharacterTableHeader />
             </thead>
           </Table>
-          <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+          <div
+            style={{
+              height: "1000px",
+              overflowY: "auto",
+              backgroundColor: "#111827",
+            }}
+          >
             <Table style={{ tableLayout: "fixed" }}>
               <TableBody>
                 {detailedCharacters.length === 0 ? (
@@ -125,21 +90,33 @@ export default async function OtherCharacterList({
                       colSpan={9}
                       className="text-center py-4 text-white bg-gray-900"
                     >
-                      No characters available for this user
+                      <div>
+                        <strong>No characters available</strong>
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  detailedCharacters.map((item) => (
+                  detailedCharacters.map((character: CharacterData) => (
                     <CharacterTile
-                      key={item.character.id}
-                      webId={item.character.webId}
-                      characterDetails={item.characterDetails}
-                      character={item.character}
-                      initialCharacter={item}
-                      realmPointsLastWeek={item.character.realmPointsLastWeek}
-                      totalRealmPoints={item.character.totalRealmPoints}
-                      currentUserId={userId.toString()}
-                      ownerId={item.ownerId}
+                      key={character.id}
+                      webId={character.webId}
+                      character={character}
+                      characterDetails={character}
+                      formattedHeraldRealmPoints={
+                        character.formattedHeraldRealmPoints
+                      }
+                      initialCharacter={{
+                        id: character.id,
+                        userId: userId,
+                        webId: character.webId,
+                      }}
+                      heraldBountyPoints={character.heraldBountyPoints}
+                      heraldTotalKills={character.heraldTotalKills}
+                      heraldTotalDeaths={character.heraldTotalDeaths}
+                      realmPointsLastWeek={character.realmPointsLastWeek}
+                      totalRealmPoints={character.totalRealmPoints}
+                      currentUserId={userId}
+                      ownerId={character.clerkUserId}
                     />
                   ))
                 )}
@@ -148,31 +125,36 @@ export default async function OtherCharacterList({
           </div>
         </TableContainer>
       </div>
-      <div className="sm:hidden overflow-auto max-h-[500px]">
+      <div className="sm:hidden overflow-auto max-h-[500px] w-full">
         {detailedCharacters.length === 0 ? (
-          <div className="text-center py-4 text-white">
-            No characters available for this user
+          <div className="text-center py-4 text-white bg-gray-900">
+            No characters available
           </div>
         ) : (
-          detailedCharacters.map((item) => (
+          detailedCharacters.map((character: CharacterData) => (
             <MobileCharacterTile
-              key={item.character.id}
-              webId={item.character.webId}
-              characterDetails={item.characterDetails}
-              character={item.character}
-              initialCharacter={item}
-              realmPointsLastWeek={item.character.realmPointsLastWeek}
-              totalRealmPoints={item.character.totalRealmPoints}
-              currentUserId={userId.toString()}
-              ownerId={item.ownerId}
+              key={character.id}
+              webId={character.webId}
+              character={character}
+              characterDetails={character}
+              formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
+              initialCharacter={{
+                id: character.id,
+                userId: userId,
+                webId: character.webId,
+              }}
+              heraldBountyPoints={character.heraldBountyPoints}
+              heraldTotalKills={character.heraldTotalKills}
+              heraldTotalDeaths={character.heraldTotalDeaths}
+              realmPointsLastWeek={character.realmPointsLastWeek}
+              totalRealmPoints={character.totalRealmPoints}
+              currentUserId={userId}
+              ownerId={character.clerkUserId}
             />
           ))
         )}
       </div>
-      <AggregateStatistics
-        characters={detailedCharacters}
-        opponentRealms={["Midgard", "Hibernia", "Albion"]}
-      />
+      <AggregateStatistics characters={detailedCharacters} />
     </div>
   );
 }

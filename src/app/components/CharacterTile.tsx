@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Snackbar } from "@mui/material";
 import CharacterTileSkeleton from "./CharacterTileSkeleton";
+import { CharacterData } from "@/utils/character";
 
 type KillStats = {
   kills: number;
@@ -19,7 +20,7 @@ type KillStats = {
 type CharacterInfo = {
   character_web_id: string;
   name: string;
-  realm: number;
+  realm: string;
   race: string;
   class_name: string;
   level: number;
@@ -34,7 +35,12 @@ type CharacterInfo = {
     total: KillStats;
     [key: string]: KillStats;
   };
+  formattedHeraldRealmPoints: string;
+  heraldBountyPoints: number;
+  heraldTotalKills: number;
+  heraldTotalDeaths: number;
 };
+
 const getRealmNameAndColor = (realmName: string) => {
   switch (realmName) {
     case "Albion":
@@ -62,40 +68,28 @@ const realmsSummary = {
 };
 
 const CharacterTile: React.FC<{
-  character: {
-    id: number;
-    webId: string;
-    characterName: string;
-    className: string;
-    realm: string;
-  };
-  characterDetails: CharacterInfo;
-  webId: string;
+  character: CharacterData;
+  characterDetails: CharacterData;
   initialCharacter: {
-    character: {
-      id: number;
-      webId: string;
-    };
-    user: {
-      id: number;
-      clerkUserId: string;
-      email: string;
-      name: string;
-      accountId: number | null;
-    };
+    id: number;
+    userId: string;
+    webId: string;
   };
+  webId: string;
   realmPointsLastWeek: number;
   totalRealmPoints: number;
   currentUserId: string;
   ownerId: string;
+  formattedHeraldRealmPoints: any;
+  heraldBountyPoints: any;
+  heraldTotalKills: any;
+  heraldTotalDeaths: any;
 }> = ({
   character,
   characterDetails,
-  webId,
   initialCharacter,
   realmPointsLastWeek,
   totalRealmPoints,
-  currentUserId,
   ownerId,
 }) => {
   const router = useRouter();
@@ -114,7 +108,7 @@ const CharacterTile: React.FC<{
   ) => {
     event.stopPropagation();
 
-    const characterId = initialCharacter.character.id;
+    const characterId = initialCharacter.id;
 
     const isConfirmed = window.confirm(
       "Are you sure you want to delete this character?"
@@ -146,14 +140,12 @@ const CharacterTile: React.FC<{
 
   if (!characterDetails) return <CharacterTileSkeleton />;
 
-  const realm = getRealmNameAndColor(character.realm);
+  const realm = getRealmNameAndColor(characterDetails.realm);
 
-  const opponentRealms = getOpponentRealms(character.realm);
+  const opponentRealms = getOpponentRealms(characterDetails.realm);
 
-  const firstOpponentStats = characterDetails.player_kills[opponentRealms[0]];
-  const secondOpponentStats = characterDetails.player_kills[opponentRealms[1]];
-
-  const realmPointsThisWeek = characterDetails.realm_points - totalRealmPoints;
+  const realmPointsThisWeek =
+    characterDetails.heraldRealmPoints - totalRealmPoints;
 
   return (
     <>
@@ -170,22 +162,24 @@ const CharacterTile: React.FC<{
           </IconButton>
         </TableCell>
         <TableCell className="w-1/4 px-6 text-white text-sm font-semibold">
-          {characterDetails.name}
+          {characterDetails.heraldName}
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-sm font-semibold">
-          <div className="max-w-xs truncate">{characterDetails.class_name}</div>
+          <div className="max-w-xs truncate">
+            {characterDetails.heraldClassName}
+          </div>
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-md font-semibold">
-          {characterDetails.formattedRealmPoints || "-"}
+          {characterDetails.formattedHeraldRealmPoints || "-"}
         </TableCell>
         <TableCell className="w-1/4 px-6 text-white text-sm font-semibold">
-          {characterDetails.guild_name || "-"}
+          {characterDetails.heraldGuildName || "-"}
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-sm font-semibold">
-          {characterDetails.level}
+          {characterDetails.heraldLevel}
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-sm font-semibold hidden lg:table-cell">
-          {characterDetails.race}
+          {characterDetails.heraldRace}
         </TableCell>
         <TableCell className="w-1/6 px-6 text-white text-sm font-semibold">
           {realm.name}

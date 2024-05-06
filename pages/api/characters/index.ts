@@ -30,20 +30,25 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       break;
     case "POST":
       try {
-        if (!Array.isArray(req.body.webIds)) {
-          throw new Error("Expected an array of webIds.");
+        if (!Array.isArray(req.body.characters)) {
+          throw new Error("Expected an array of character details.");
         }
+
         const foundUser = await prisma.user.findUnique({
           where: { id: user.id },
         });
+
         if (!foundUser) {
           throw new Error(`No user found with ID: ${user.id}`);
         }
-        const characters = await characterController.addCharactersToUserList(
-          req.body.webIds,
-          user.id
-        );
-        res.status(201).json(characters);
+
+        const addedCharacters =
+          await characterController.addCharactersToUserList(
+            req.body.characters,
+            user.id
+          );
+
+        res.status(201).json({ addedCharacters });
       } catch (error) {
         console.error(
           `Error in POST /api/characters for userId ${user.id}:`,
@@ -52,6 +57,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         handleError(res, error);
       }
       break;
+
     default:
       res.setHeader("Allow", ["GET", "POST"]);
       res.status(405).end(`Method ${req.method} Not Allowed`);

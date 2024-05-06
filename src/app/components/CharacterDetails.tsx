@@ -12,6 +12,13 @@ import TotalStatsCard from "./TotalStatsCard";
 import InfoStatsCard from "./InfoStatsCard";
 import RealmStatsCard from "./RealmStatsCard";
 import CharacterInfoCard from "./CharacterInfoCard";
+import {
+  CharacterData,
+  Realm,
+  PlayerKillRealm,
+  PlayerKills,
+  RealmType,
+} from "@/utils/character";
 
 type KillStats = {
   kills: number;
@@ -40,7 +47,7 @@ type CharacterInfo = {
 };
 
 type CharacterDetailsProps = {
-  character: CharacterInfo;
+  character: CharacterData;
   opponentRealms: string[];
   realmPointsLastWeek: number;
   realmPointsThisWeek: number;
@@ -54,6 +61,10 @@ type RealmColorsType = {
   hibernia: string;
   total: string;
 };
+
+function isValidRealmKey(key: any): key is RealmType {
+  return ["total", "midgard", "albion", "hibernia"].includes(key);
+}
 
 const realmColors: RealmColorsType = {
   albion: "bg-red-500",
@@ -69,16 +80,66 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   realmPointsThisWeek,
   totalRealmPoints,
 }) => {
-  const getStats = (realm: string) =>
-    character.player_kills[realm] || {
-      kills: 0,
-      deaths: 0,
-      death_blows: 0,
-      solo_kills: 0,
+  const totalKills = character.player_kills.total
+    ? character.player_kills.total.kills
+    : 0;
+  const midgardKills = character.player_kills.midgard
+    ? character.player_kills.midgard.kills
+    : 0;
+  const albionKills = character.player_kills.albion
+    ? character.player_kills.albion.kills
+    : 0;
+  const hiberniaKills = character.player_kills.hibernia
+    ? character.player_kills.hibernia.kills
+    : 0;
+
+  const getStats = (realm: Realm, character: CharacterData) => {
+    const realmMapping: Record<
+      Realm,
+      {
+        kills: number | undefined;
+        deaths: number | undefined;
+        death_blows: number | undefined;
+        solo_kills?: number | undefined;
+      }
+    > = {
+      Midgard: {
+        kills: character?.heraldMidgardKills,
+        deaths: character?.heraldMidgardDeaths,
+        death_blows: character?.heraldMidgardDeathBlows,
+      },
+      Albion: {
+        kills: character?.heraldAlbionKills,
+        deaths: character?.heraldAlbionDeaths,
+        death_blows: character?.heraldAlbionDeathBlows,
+        solo_kills: character?.heraldAlbionSoloKills,
+      },
+      Hibernia: {
+        kills: character?.heraldHiberniaKills || 0,
+        deaths: character?.heraldHiberniaDeaths || 0,
+        death_blows: character?.heraldHiberniaDeathBlows || 0,
+        solo_kills: character?.heraldHiberniaSoloKills || 0,
+      },
     };
 
-  const firstOpponentStats = getStats(opponentRealms[0]);
-  const secondOpponentStats = getStats(opponentRealms[1]);
+    return (
+      realmMapping[realm] || {
+        kills: 0,
+        deaths: 0,
+        death_blows: 0,
+        solo_kills: 0,
+      }
+    );
+  };
+
+  const {
+    player_kills: {
+      total: { kills, deaths, death_blows, solo_kills },
+      albion,
+      midgard,
+      hibernia,
+    },
+  } = character;
 
   const realmColors = {
     albion: "albion",
@@ -87,8 +148,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
     total: "bg-gray-600",
   };
 
-  const realmPoints = character.realm_points;
-  const deaths = character.player_kills?.total?.deaths;
+  const realmPoints = character.heraldRealmPoints;
   const irs =
     !deaths || deaths === 0
       ? undefined
@@ -98,8 +158,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   const currentRank = getRealmRankForPoints(realmPoints);
   const nextRankPoints = getRealmRanks().get(currentRank + 1) || 0;
   const pointsUntilNextRank = nextRankPoints - realmPoints;
-  const totalKills = character.player_kills?.total?.kills || 0;
-  const currentRankNumber = getRealmRankForPoints(character.realm_points);
+  const currentRankNumber = getRealmRankForPoints(character.heraldRealmPoints);
   const nextRankFormatted = formatRealmRankWithLevel(currentRankNumber + 1);
   const currentRankFormatted = formatRealmRankWithLevel(currentRank);
   const capitalizeRealm = (realm: string) => {
@@ -131,13 +190,6 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   const progressPercentage = calculateProgressPercentage(
     realmPoints,
     nextRankPoints
-  );
-
-  console.log(
-    "realmPointsLastWeek:",
-    realmPointsLastWeek,
-    "totalRealmPoints:",
-    totalRealmPoints
   );
 
   return (
@@ -182,7 +234,9 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
             </div>
             <div className="mb-2 w-full">
               {opponentRealms.map((realm) => {
-                const realmStats = character.player_kills[realm.toLowerCase()];
+                const realmKey =
+                  realm.toLowerCase() as keyof typeof character.player_kills;
+                const realmStats = character.player_kills[realmKey];
                 const dbPerKillRatio =
                   realmStats &&
                   realmStats.kills &&
@@ -214,7 +268,9 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
         <div className="hidden sm:grid sm:grid-cols-4 sm:gap-4 sm:w-full sm:max-w-4xl sm:mx-auto">
           {[...opponentRealms, "Total", "Info"].map((realm, index) => {
             if (realm !== "Total" && realm !== "Info") {
-              const realmStats = character.player_kills[realm.toLowerCase()];
+              const realmKey =
+                realm.toLowerCase() as keyof typeof character.player_kills;
+              const realmStats = character.player_kills[realmKey];
               const kills = realmStats?.kills || 0;
               const deathBlows = realmStats?.death_blows || 0;
               const dbPerKillRatio =
