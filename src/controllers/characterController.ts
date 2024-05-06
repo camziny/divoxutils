@@ -1,6 +1,7 @@
 import prisma from "../../prisma/prismaClient";
 import * as yup from "yup";
 import axios from "axios";
+import { NewCharacterData } from "@/utils/character";
 
 const characterSchema = yup.object().shape({
   name: yup.string().required(),
@@ -40,9 +41,16 @@ export const fetchCharacterDetails = async (name: string, cluster: string) => {
   }
 };
 
+export const realmMapping: { [key: number]: string } = {
+  1: "Albion",
+  2: "Midgard",
+  3: "Hibernia",
+};
+
 export const addCharactersToUserList = async (
   webIds: string[],
-  userId: number
+  userId: number,
+  newCharacterData: NewCharacterData[] = []
 ) => {
   try {
     const user = await prisma.user.findUnique({
@@ -52,6 +60,7 @@ export const addCharactersToUserList = async (
     if (!user) {
       throw new Error(`User with ID ${userId} not found.`);
     }
+
     const existingCharacters = await prisma.character.findMany({
       where: {
         webId: {
@@ -61,50 +70,81 @@ export const addCharactersToUserList = async (
     });
 
     const existingWebIds = existingCharacters.map((char) => char.webId);
-    const newWebIds = webIds.filter((webId) => !existingWebIds.includes(webId));
+    const newCharacterDetails = newCharacterData
+      .filter((char) => !existingWebIds.includes(char.webId))
+      .map((character) => ({
+        ...character,
+        realm: realmMapping[character.realm as number] || "Unknown",
+      }));
 
-    await prisma.character.createMany({
-      data: newWebIds.map((webId) => ({ webId })),
-    });
-
-    const freshlyCreatedCharacters = await prisma.character.findMany({
-      where: {
-        webId: {
-          in: newWebIds,
+    for (const character of newCharacterDetails) {
+      await prisma.character.upsert({
+        where: { webId: character.webId },
+        update: {
+          characterName: character.characterName,
+          className: character.className,
+          realm: character.realm,
+          heraldCharacterWebId: character.heraldCharacterWebId,
+          heraldName: character.heraldName,
+          heraldServerName: character.heraldServerName,
+          heraldRealm: character.heraldRealm,
+          heraldRace: character.heraldRace,
+          heraldClassName: character.heraldClassName,
+          heraldLevel: character.heraldLevel,
+          heraldGuildName: character.heraldGuildName,
+          heraldRealmPoints: character.heraldRealmPoints,
+          heraldBountyPoints: character.heraldBountyPoints,
+          heraldTotalKills: character.heraldTotalKills,
+          heraldTotalDeaths: character.heraldTotalDeaths,
+          heraldTotalDeathBlows: character.heraldTotalDeathBlows,
+          heraldTotalSoloKills: character.heraldTotalSoloKills,
+          heraldMidgardKills: character.heraldMidgardKills,
+          heraldMidgardDeaths: character.heraldMidgardDeaths,
+          heraldMidgardDeathBlows: character.heraldMidgardDeathBlows,
+          heraldMidgardSoloKills: character.heraldMidgardSoloKills,
+          heraldAlbionKills: character.heraldAlbionKills,
+          heraldAlbionDeaths: character.heraldAlbionDeaths,
+          heraldAlbionDeathBlows: character.heraldAlbionDeathBlows,
+          heraldAlbionSoloKills: character.heraldAlbionSoloKills,
+          heraldHiberniaKills: character.heraldHiberniaKills,
+          heraldHiberniaDeaths: character.heraldHiberniaDeaths,
+          heraldHiberniaDeathBlows: character.heraldHiberniaDeathBlows,
+          heraldHiberniaSoloKills: character.heraldHiberniaSoloKills,
+          heraldMasterLevel: character.heraldMasterLevel,
         },
-      },
-    });
-
-    const allCharacterIds = [
-      ...existingCharacters,
-      ...freshlyCreatedCharacters,
-    ].map((char) => char.id);
-
-    const userCharacterLinks = await prisma.userCharacter.findMany({
-      where: {
-        clerkUserId: user.clerkUserId,
-        characterId: {
-          in: allCharacterIds,
-        },
-      },
-    });
-
-    const linkedCharacterIds = userCharacterLinks.map(
-      (link) => link.characterId
-    );
-    const charactersToLink = allCharacterIds.filter(
-      (id) => !linkedCharacterIds.includes(id)
-    );
-
-    for (let characterId of charactersToLink) {
-      await prisma.userCharacter.create({
-        data: {
-          clerkUserId: user.clerkUserId,
-          characterId,
-        },
+        create: character,
       });
     }
-    return allCharacterIds;
+
+    const allCharacterIds = await prisma.character.findMany({
+      where: {
+        webId: {
+          in: webIds,
+        },
+      },
+    });
+
+    for (let character of allCharacterIds) {
+      const linkExists = await prisma.userCharacter.findUnique({
+        where: {
+          clerkUserId_characterId: {
+            clerkUserId: user.clerkUserId,
+            characterId: character.id,
+          },
+        },
+      });
+
+      if (!linkExists) {
+        await prisma.userCharacter.create({
+          data: {
+            clerkUserId: user.clerkUserId,
+            characterId: character.id,
+          },
+        });
+      }
+    }
+
+    return allCharacterIds.map((char) => char.id);
   } catch (error) {
     console.error(
       `Error adding characters to user list for userId ${userId}:`,

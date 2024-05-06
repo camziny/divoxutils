@@ -14,6 +14,7 @@ import {
 } from "@/utils/character";
 import { useMediaQuery } from "react-responsive";
 import MobileCharacterTileSkeleton from "./MobileCharacterTileSkeleton";
+import { CharacterData } from "@/utils/character";
 
 type KillStats = {
   kills: number;
@@ -22,52 +23,23 @@ type KillStats = {
   solo_kills: number;
 };
 
-type CharacterInfo = {
-  character_web_id: string;
-  name: string;
-  realm: number;
-  race: string;
-  class_name: string;
-  level: number;
-  guild_info?: {
-    guild_name?: string;
-  };
-  formattedRealmPoints: string;
-  guild_name: string;
-  realm_points: number;
-  player_kills: {
-    total: KillStats;
-    [key: string]: KillStats;
-  };
-};
-
 const MobileCharacterTile: React.FC<{
-  character: {
-    id: number;
-    webId: string;
-    characterName: string;
-    className: string;
-    realm: string;
-  };
-  characterDetails: CharacterInfo;
-  webId: string;
+  character: CharacterData;
+  characterDetails: CharacterData;
   initialCharacter: {
-    character: {
-      id: number;
-      webId: string;
-    };
-    user: {
-      id: number;
-      clerkUserId: string;
-      email: string;
-      name: string;
-      accountId: number | null;
-    };
+    id: number;
+    userId: string;
+    webId: string;
   };
+  webId: string;
   realmPointsLastWeek: number;
   totalRealmPoints: number;
   currentUserId: string;
   ownerId: string;
+  formattedHeraldRealmPoints: any;
+  heraldBountyPoints: any;
+  heraldTotalKills: any;
+  heraldTotalDeaths: any;
 }> = ({
   webId,
   character,
@@ -92,7 +64,7 @@ const MobileCharacterTile: React.FC<{
   ) => {
     event.stopPropagation();
 
-    const characterId = initialCharacter.character.id;
+    const characterId = initialCharacter.id;
 
     const isConfirmed = window.confirm(
       "Are you sure you want to delete this character?"
@@ -123,11 +95,8 @@ const MobileCharacterTile: React.FC<{
 
   if (!characterDetails) return <MobileCharacterTileSkeleton />;
 
-  const realm = getRealmNameAndColor(character.realm);
-  const opponentRealms = getOpponentRealms(character.realm);
-
-  const firstOpponentStats = characterDetails.player_kills[opponentRealms[0]];
-  const secondOpponentStats = characterDetails.player_kills[opponentRealms[1]];
+  const realm = getRealmNameAndColor(characterDetails.realm);
+  const opponentRealms = getOpponentRealms(characterDetails.realm);
 
   const truncateText = (text: string, maxLength: number) => {
     return text.length > maxLength
@@ -135,7 +104,8 @@ const MobileCharacterTile: React.FC<{
       : text;
   };
 
-  const realmPointsThisWeek = characterDetails.realm_points - totalRealmPoints;
+  const realmPointsThisWeek =
+    characterDetails.heraldRealmPoints - totalRealmPoints;
 
   return (
     <>
@@ -152,13 +122,13 @@ const MobileCharacterTile: React.FC<{
           </IconButton>
         </TableCell>
         <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
-          {truncateText(characterDetails.name, 10)}
+          {truncateText(characterDetails.heraldName, 10)}
         </TableCell>
         <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
-          {truncateText(characterDetails.class_name, 8)}
+          {truncateText(characterDetails.heraldClassName, 8)}
         </TableCell>
         <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
-          {characterDetails.formattedRealmPoints || "-"}
+          {characterDetails.formattedHeraldRealmPoints || "-"}
         </TableCell>
         <TableCell className="p-0.5 w-8">
           {showDeleteIcon && isOwner && (

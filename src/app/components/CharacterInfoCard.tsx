@@ -1,4 +1,5 @@
 import { Card, CardBody, CardHeader } from "@nextui-org/react";
+import { CharacterData } from "@/utils/character";
 
 interface Character {
   name: string;
@@ -9,7 +10,7 @@ interface Character {
 }
 
 interface CharacterInfoCardProps {
-  character: Character;
+  character: CharacterData;
 }
 
 const CharacterInfoCard: React.FC<CharacterInfoCardProps> = ({ character }) => {
@@ -17,17 +18,17 @@ const CharacterInfoCard: React.FC<CharacterInfoCardProps> = ({ character }) => {
     <Card className="bg-gray-800 text-white mb-3">
       <CardHeader className="flex justify-center items-center p-2 mb-0">
         <div className="text-xl md:text-2xl font-bold m-0">
-          {character.name}
+          {character.heraldName}
         </div>
       </CardHeader>
       <CardBody className="pt-0 pb-4 px-4">
-        {character.guild_name && (
+        {character.heraldGuildName && (
           <p className="text-sm text-gray-300 font-semibold text-center my-0">
-            <span>{`<${character.guild_name}>`}</span>
+            <span>{`<${character.heraldGuildName}>`}</span>
           </p>
         )}
         <p className="text-sm text-gray-300 font-semibold text-center mt-1">
-          {`${character.race} ${character.class_name}, Lvl ${character.level}`}
+          {`${character.heraldRace} ${character.heraldClassName}, Lvl ${character.heraldLevel}`}
         </p>
       </CardBody>
     </Card>

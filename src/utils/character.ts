@@ -134,3 +134,172 @@ export type CharacterInfo = {
     };
   };
 };
+
+export type Realm = "Albion" | "Midgard" | "Hibernia";
+
+export type RealmKillStats = {
+  kills: number;
+  deaths: number;
+  death_blows: number;
+  solo_kills: number;
+};
+
+export type PlayerKillRealm = "total" | "midgard" | "albion" | "hibernia";
+
+export interface PlayerKills {
+  total: RealmKillStats;
+  midgard?: RealmKillStats;
+  albion?: RealmKillStats;
+  hibernia?: RealmKillStats;
+}
+
+export type RealmType = "midgard" | "albion" | "hibernia" | "total";
+
+export type CharacterData = {
+  id: number;
+  webId: string;
+  initialCharacter: {
+    id: number;
+    userId: string;
+    webId: string;
+  };
+  character_web_id?: string;
+  characterName: string;
+  className: string;
+  realm: Realm;
+  totalRealmPoints: number;
+  realmPointsLastWeek: number;
+  totalSoloKills: number;
+  soloKillsLastWeek: number;
+  totalDeaths: number;
+  deathsLastWeek: number;
+  lastUpdated: string;
+  nameLastUpdated: string;
+  player_kills: {
+    total: RealmKillStats;
+    midgard?: RealmKillStats;
+    albion?: RealmKillStats;
+    hibernia?: RealmKillStats;
+  };
+  heraldCharacterWebId: string;
+  heraldName: string;
+  heraldServerName: string;
+  heraldRealm: number;
+  heraldRace: string;
+  heraldClassName: string;
+  heraldLevel: number;
+  heraldGuildName: string;
+  heraldRealmPoints: number;
+  heraldBountyPoints: number;
+  heraldTotalKills?: number;
+  heraldTotalDeaths?: number;
+  heraldTotalDeathBlows?: number;
+  heraldTotalSoloKills?: number;
+  heraldMidgardKills?: number;
+  heraldMidgardDeaths?: number;
+  heraldMidgardDeathBlows?: number;
+  heraldMidgardSoloKills?: number;
+  heraldAlbionKills?: number;
+  heraldAlbionDeaths?: number;
+  heraldAlbionDeathBlows?: number;
+  heraldAlbionSoloKills?: number;
+  heraldHiberniaKills?: number;
+  heraldHiberniaDeaths?: number;
+  heraldHiberniaDeathBlows?: number;
+  heraldHiberniaSoloKills?: number;
+  heraldMasterLevel: string;
+  clerkUserId: string;
+  formattedHeraldRealmPoints: string;
+};
+
+export const createCharacterDetails = (character: CharacterData) => {
+  return {
+    id: character.id,
+    webId: character.webId,
+    character_web_id: character.webId,
+    characterName: character.characterName,
+    className: character.className,
+    realm: character.realm,
+    totalRealmPoints: character.totalRealmPoints,
+    realmPointsLastWeek: character.realmPointsLastWeek,
+    totalSoloKills: character.totalSoloKills,
+    soloKillsLastWeek: character.soloKillsLastWeek,
+    totalDeaths: character.totalDeaths,
+    deathsLastWeek: character.deathsLastWeek,
+    lastUpdated: character.lastUpdated,
+    nameLastUpdated: character.nameLastUpdated,
+    player_kills: {
+      total: character.player_kills.total || {
+        kills: 0,
+        deaths: 0,
+        death_blows: 0,
+        solo_kills: 0,
+      },
+      midgard: character.player_kills.midgard || {
+        kills: 0,
+        deaths: 0,
+        death_blows: 0,
+        solo_kills: 0,
+      },
+      albion: character.player_kills.albion || {
+        kills: 0,
+        deaths: 0,
+        death_blows: 0,
+        solo_kills: 0,
+      },
+      hibernia: character.player_kills.hibernia || {
+        kills: 0,
+        deaths: 0,
+        death_blows: 0,
+        solo_kills: 0,
+      },
+    },
+    heraldCharacterWebId: character.heraldCharacterWebId,
+    heraldName: character.heraldName,
+    heraldServerName: character.heraldServerName,
+    heraldRealm: character.heraldRealm,
+    heraldRace: character.heraldRace,
+    heraldClassName: character.heraldClassName,
+    heraldLevel: character.heraldLevel,
+    heraldGuildName: character.heraldGuildName,
+    heraldRealmPoints: character.heraldRealmPoints,
+    heraldBountyPoints: character.heraldBountyPoints,
+    heraldMasterLevel: character.heraldMasterLevel,
+    clerkUserId: character.clerkUserId,
+    formattedHeraldRealmPoints: character.formattedHeraldRealmPoints,
+  };
+};
+
+export type NewCharacterData = {
+  webId: string;
+  characterName: string;
+  className: string;
+  realm: number | string;
+  heraldCharacterWebId?: string;
+  heraldName?: string;
+  heraldServerName?: string;
+  heraldRealm?: number;
+  heraldRace?: string;
+  heraldClassName?: string;
+  heraldLevel?: number;
+  heraldGuildName?: string;
+  heraldRealmPoints?: number;
+  heraldBountyPoints?: number;
+  heraldTotalKills?: number;
+  heraldTotalDeaths?: number;
+  heraldTotalDeathBlows?: number;
+  heraldTotalSoloKills?: number;
+  heraldMidgardKills?: number;
+  heraldMidgardDeaths?: number;
+  heraldMidgardDeathBlows?: number;
+  heraldMidgardSoloKills?: number;
+  heraldAlbionKills?: number;
+  heraldAlbionDeaths?: number;
+  heraldAlbionDeathBlows?: number;
+  heraldAlbionSoloKills?: number;
+  heraldHiberniaKills?: number;
+  heraldHiberniaDeaths?: number;
+  heraldHiberniaDeathBlows?: number;
+  heraldHiberniaSoloKills?: number;
+  heraldMasterLevel?: string;
+};

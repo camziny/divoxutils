@@ -19,5 +19,32 @@ async function updateLastProcessedCharacterId(
     create: { key: "lastProcessedCharacterId", value: lastId },
   });
 }
+async function getLastProcessedHeraldCharacterId(
+  prisma: PrismaClient
+): Promise<number> {
+  const state = (await prisma.heraldBatchState.findUnique({
+    where: { key: "lastProcessedCharacterId" },
+  })) as { lastProcessedCharacterId: number } | null;
+  return state ? state.lastProcessedCharacterId : 0;
+}
 
-export { getLastProcessedCharacterId, updateLastProcessedCharacterId };
+async function updateLastProcessedHeraldCharacterId(
+  prisma: PrismaClient,
+  lastId: number
+): Promise<void> {
+  await prisma.heraldBatchState.upsert({
+    where: { key: "lastProcessedCharacterId" },
+    update: { lastProcessedCharacterId: lastId },
+    create: {
+      key: "lastProcessedCharacterId",
+      lastProcessedCharacterId: lastId,
+    },
+  });
+}
+
+export {
+  getLastProcessedCharacterId,
+  updateLastProcessedCharacterId,
+  getLastProcessedHeraldCharacterId,
+  updateLastProcessedHeraldCharacterId,
+};

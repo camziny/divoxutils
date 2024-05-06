@@ -30,10 +30,50 @@ type CharacterType = {
     guild_name: string;
   };
   realm_points: number;
+  heraldCharacterWebId: string;
+  heraldName: string;
+  heraldServerName: string;
+  heraldRealm: number;
+  heraldRace: string;
+  heraldClassName: string;
+  heraldLevel: number;
+  heraldGuildName: string;
+  heraldRealmPoints: number;
+  heraldBountyPoints: number;
+  heraldTotalKills: number;
+  heraldTotalDeaths: number;
+  heraldTotalDeathBlows: number;
+  heraldTotalSoloKills: number;
+  heraldMidgardKills: number;
+  heraldMidgardDeaths: number;
+  heraldMidgardDeathBlows: number;
+  heraldMidgardSoloKills: number;
+  heraldAlbionKills: number;
+  heraldAlbionDeaths: number;
+  heraldAlbionDeathBlows: number;
+  heraldAlbionSoloKills: number;
+  heraldHiberniaKills: number;
+  heraldHiberniaDeaths: number;
+  heraldHiberniaDeathBlows: number;
+  heraldHiberniaSoloKills: number;
+  heraldMasterLevel: string;
 };
 
 type UserType = {
   sessionToken: string;
+};
+
+type RealmNames = {
+  [key: number]: string;
+};
+
+const getRealmName = (realmId: number): string => {
+  const realmNames: RealmNames = {
+    1: "Albion",
+    2: "Midgard",
+    3: "Hibernia",
+  };
+  return realmNames[realmId] || "Unknown";
 };
 
 function CharacterSearchAndAdd() {
@@ -101,24 +141,24 @@ function CharacterSearchAndAdd() {
 
   const saveCharacters = async () => {
     setIsFetching(true);
-    const requestBody = {
-      webIds: selectedCharacters.map((character) => character.character_web_id),
-    };
+    const webIds = selectedCharacters.map(
+      (character) => character.character_web_id
+    );
 
     try {
-      const response = await fetch("/api/characters", {
+      const response = await fetch("/api/characters/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ webIds }),
       });
 
       const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error);
+        throw new Error(data.error || "Failed to add character");
       }
+
       router.refresh();
       setSnackbarOpen(true);
       setAddedCount(selectedCharacters.length);

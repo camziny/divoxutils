@@ -4,14 +4,9 @@ import {
   formatRealmRankWithLevel,
   getRealmRankForPoints,
 } from "../../../src/utils/character";
+import { PrismaClient } from "@prisma/client";
 
-const fetchCharacterDetails = async (characterWebId: string) => {
-  const response = await fetch(
-    `https://api.camelotherald.com/character/info/${characterWebId}`
-  );
-  const data = await response.json();
-  return data;
-};
+const prisma = new PrismaClient();
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { userId } = req.query;
@@ -24,38 +19,83 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const userCharacters =
       await userCharacterController.getUserCharactersByUserId(userId);
-    if (userCharacters && userCharacters.length) {
-      const charactersWithDetails = await Promise.all(
-        userCharacters.map(async (userCharacter) => {
-          const characterDetails = await fetchCharacterDetails(
-            userCharacter.character.webId
-          );
-          const formattedRealmPoints = formatRealmRankWithLevel(
-            getRealmRankForPoints(
-              characterDetails.realm_war_stats.current.realm_points
-            )
-          );
-          return {
-            ...userCharacter,
-            characterDetails: {
-              name: characterDetails.name,
-              race: characterDetails.race,
-              class_name: characterDetails.class_name,
-              level: characterDetails.level,
-              guild_name: characterDetails.guild_info?.guild_name,
-              realm_points:
-                characterDetails.realm_war_stats.current.realm_points,
-              formattedRealmPoints,
-              player_kills:
-                characterDetails.realm_war_stats.current.player_kills,
-            },
-          };
-        })
-      );
-      res.status(200).json({ userCharacters: charactersWithDetails });
-    } else {
+
+    if (!userCharacters || userCharacters.length === 0) {
       res.status(404).json({ message: "No characters found for the user." });
+      return;
     }
+
+    const charactersWithDetails = userCharacters
+      .map((userCharacter) => {
+        if (!userCharacter.character) {
+          return null;
+        }
+
+        const { character, user } = userCharacter;
+        const heraldRealmPoints = character.heraldRealmPoints ?? 0;
+        const formattedHeraldRealmPoints = formatRealmRankWithLevel(
+          getRealmRankForPoints(heraldRealmPoints)
+        );
+
+        return {
+          id: character.id,
+          webId: character.webId,
+          characterName: character.characterName,
+          className: character.className,
+          realm: character.realm,
+          previousCharacterName: character.previousCharacterName,
+          totalRealmPoints: character.totalRealmPoints,
+          realmPointsLastWeek: character.realmPointsLastWeek,
+          totalSoloKills: character.totalSoloKills,
+          soloKillsLastWeek: character.soloKillsLastWeek,
+          totalDeaths: character.totalDeaths,
+          deathsLastWeek: character.deathsLastWeek,
+          lastUpdated: character.lastUpdated,
+          nameLastUpdated: character.nameLastUpdated,
+          heraldCharacterWebId: character.heraldCharacterWebId,
+          heraldName: character.heraldName,
+          heraldServerName: character.heraldServerName,
+          heraldRealm: character.heraldRealm,
+          heraldRace: character.heraldRace,
+          heraldClassName: character.heraldClassName,
+          heraldLevel: character.heraldLevel,
+          heraldGuildName: character.heraldGuildName,
+          heraldRealmPoints: character.heraldRealmPoints,
+          heraldBountyPoints: character.heraldBountyPoints,
+          heraldMasterLevel: character.heraldMasterLevel,
+          clerkUserId: user.clerkUserId,
+          formattedHeraldRealmPoints,
+          player_kills: {
+            total: {
+              kills: character.heraldTotalKills || 0,
+              deaths: character.heraldTotalDeaths || 0,
+              death_blows: character.heraldTotalDeathBlows || 0,
+              solo_kills: character.heraldTotalSoloKills || 0,
+            },
+            midgard: {
+              kills: character.heraldMidgardKills || 0,
+              deaths: character.heraldMidgardDeaths || 0,
+              death_blows: character.heraldMidgardDeathBlows || 0,
+              solo_kills: character.heraldMidgardSoloKills || 0,
+            },
+            albion: {
+              kills: character.heraldAlbionKills || 0,
+              deaths: character.heraldAlbionDeaths || 0,
+              death_blows: character.heraldAlbionDeathBlows || 0,
+              solo_kills: character.heraldAlbionSoloKills || 0,
+            },
+            hibernia: {
+              kills: character.heraldHiberniaKills || 0,
+              deaths: character.heraldHiberniaDeaths || 0,
+              death_blows: character.heraldHiberniaDeathBlows || 0,
+              solo_kills: character.heraldHiberniaSoloKills || 0,
+            },
+          },
+        };
+      })
+      .filter(Boolean);
+
+    res.status(200).json(charactersWithDetails);
   } catch (error) {
     console.error("Error in /api/userCharactersByUserId:", error);
     res.status(500).json({ message: "An internal server error occurred" });

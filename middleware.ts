@@ -49,6 +49,8 @@ export default authMiddleware({
     "/api/characters/stats/(.*)",
     "/discord",
     "/api/delete/user/(.*)",
+    "/api/batchedHeraldUpdate",
+    "/api/resetHeraldBatchState",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
