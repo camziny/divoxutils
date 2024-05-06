@@ -99,7 +99,7 @@ const MobileCharacterTile: React.FC<{
   const opponentRealms = getOpponentRealms(characterDetails.realm);
 
   const truncateText = (text: string, maxLength: number) => {
-    if (!text) return "";
+    if (!text) return "N/A";
     return text.length > maxLength
       ? `${text.substring(0, maxLength - 3)}...`
       : text;
