@@ -89,7 +89,7 @@ export default async function CharacterList({
     <div className="flex flex-col items-center w-full max-w-6xl mx-auto">
       {userError}
 
-      <div className="hidden sm:block character-table-container overflow-auto max-h-[1000px]">
+      <div className="hidden sm:block character-table-container">
         <TableContainer component={Paper}>
           <Table stickyHeader style={{ tableLayout: "fixed" }}>
             <thead>
