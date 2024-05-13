@@ -78,6 +78,13 @@ export const addCharactersToUserList = async (
       }));
 
     for (const character of newCharacterDetails) {
+      console.log(
+        `Realm mapping for new characters:`,
+        newCharacterDetails.map((char) => ({
+          webId: char.webId,
+          realm: char.realm,
+        }))
+      );
       await prisma.character.upsert({
         where: { webId: character.webId },
         update: {

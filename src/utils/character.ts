@@ -213,6 +213,12 @@ export type CharacterData = {
 };
 
 export const createCharacterDetails = (character: CharacterData) => {
+  const defaultKillStats = {
+    kills: 0,
+    deaths: 0,
+    death_blows: 0,
+    solo_kills: 0,
+  };
   return {
     id: character.id,
     webId: character.webId,
@@ -229,30 +235,10 @@ export const createCharacterDetails = (character: CharacterData) => {
     lastUpdated: character.lastUpdated,
     nameLastUpdated: character.nameLastUpdated,
     player_kills: {
-      total: character.player_kills.total || {
-        kills: 0,
-        deaths: 0,
-        death_blows: 0,
-        solo_kills: 0,
-      },
-      midgard: character.player_kills.midgard || {
-        kills: 0,
-        deaths: 0,
-        death_blows: 0,
-        solo_kills: 0,
-      },
-      albion: character.player_kills.albion || {
-        kills: 0,
-        deaths: 0,
-        death_blows: 0,
-        solo_kills: 0,
-      },
-      hibernia: character.player_kills.hibernia || {
-        kills: 0,
-        deaths: 0,
-        death_blows: 0,
-        solo_kills: 0,
-      },
+      total: character.player_kills.total ?? defaultKillStats,
+      midgard: character.player_kills.midgard ?? defaultKillStats,
+      albion: character.player_kills.albion ?? defaultKillStats,
+      hibernia: character.player_kills.hibernia ?? defaultKillStats,
     },
     heraldCharacterWebId: character.heraldCharacterWebId,
     heraldName: character.heraldName,
