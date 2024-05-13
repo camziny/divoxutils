@@ -37,21 +37,31 @@ async function upsertCharacter(char: any) {
       char.realm_war_stats.current.player_kills.total.death_blows,
     heraldTotalSoloKills:
       char.realm_war_stats.current.player_kills.total.solo_kills,
-    heraldAlbionKills: char.realm_war_stats.current.player_kills.albion.kills,
-    heraldAlbionDeaths: char.realm_war_stats.current.player_kills.albion.deaths,
+    heraldAlbionKills:
+      char.realm_war_stats.current.player_kills.albion?.kills ?? 0,
+    heraldAlbionDeaths:
+      char.realm_war_stats.current.player_kills.albion?.deaths ?? 0,
     heraldAlbionDeathBlows:
-      char.realm_war_stats.current.player_kills.albion.death_blows,
+      char.realm_war_stats.current.player_kills.albion?.death_blows ?? 0,
     heraldAlbionSoloKills:
-      char.realm_war_stats.current.player_kills.albion.solo_kills,
+      char.realm_war_stats.current.player_kills.albion?.solo_kills ?? 0,
     heraldHiberniaKills:
-      char.realm_war_stats.current.player_kills.hibernia.kills,
+      char.realm_war_stats.current.player_kills.hibernia?.kills ?? 0,
     heraldHiberniaDeaths:
-      char.realm_war_stats.current.player_kills.hibernia.deaths,
+      char.realm_war_stats.current.player_kills.hibernia?.deaths ?? 0,
     heraldHiberniaDeathBlows:
-      char.realm_war_stats.current.player_kills.hibernia.death_blows,
+      char.realm_war_stats.current.player_kills.hibernia?.death_blows ?? 0,
     heraldHiberniaSoloKills:
-      char.realm_war_stats.current.player_kills.hibernia.solo_kills,
-    heraldMasterLevel: char.master_level.level.toString(),
+      char.realm_war_stats.current.player_kills.hibernia?.solo_kills ?? 0,
+    heraldMidgardKills:
+      char.realm_war_stats.current.player_kills.midgard?.kills ?? 0,
+    heraldMidgardDeaths:
+      char.realm_war_stats.current.player_kills.midgard?.deaths ?? 0,
+    heraldMidgardDeathBlows:
+      char.realm_war_stats.current.player_kills.midgard?.death_blows ?? 0,
+    heraldMidgardSoloKills:
+      char.realm_war_stats.current.player_kills.midgard?.solo_kills ?? 0,
+    heraldMasterLevel: char.master_level?.level?.toString() ?? "Unknown",
   };
 
   return prisma.character.upsert({
