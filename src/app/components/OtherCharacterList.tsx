@@ -38,9 +38,24 @@ const realmOrder: Record<Realm, number> = {
 
 const sortCharacters = (characters: CharacterData[]) => {
   return characters.sort((a, b) => {
+    if (!(a.realm in realmOrder) || !(b.realm in realmOrder)) {
+      console.error("Invalid realm data:", a.realm, b.realm);
+      return 0;
+    }
     if (realmOrder[a.realm] < realmOrder[b.realm]) return -1;
     if (realmOrder[a.realm] > realmOrder[b.realm]) return 1;
-    return b.totalRealmPoints - a.totalRealmPoints;
+    if (
+      typeof a.heraldRealmPoints !== "number" ||
+      typeof b.heraldRealmPoints !== "number"
+    ) {
+      console.error(
+        "Invalid realm points data:",
+        a.heraldRealmPoints,
+        b.heraldRealmPoints
+      );
+      return 0;
+    }
+    return b.heraldRealmPoints - a.heraldRealmPoints;
   });
 };
 
