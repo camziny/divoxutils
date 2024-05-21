@@ -37,7 +37,9 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
           </div>
           <div className="text-center my-2">
             RPs This Week:{" "}
-            <span className="font-bold">{realmPointsThisWeek}</span>
+            <span className="font-bold">
+              {totalRP === realmPointsThisWeek ? 0 : realmPointsThisWeek}
+            </span>
           </div>
           <div className="text-center my-2">
             RPs Last Week:{" "}
