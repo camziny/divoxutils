@@ -144,8 +144,8 @@ export default async function GroupBuilder() {
           </h2>
           <FaWrench className="mx-auto text-indigo-500 h-10 w-10" />
           <p className="text-lg">
-            I'm currently making some improvements to the Group Builder feature.
-            Please check back later.
+            I&apos;m currently making some improvements to the Group Builder
+            feature. Please check back later.
           </p>
         </div>
 
