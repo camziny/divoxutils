@@ -6,6 +6,7 @@ import GroupBuilderForm from "../components/GroupBuilderForm";
 import { currentUser } from "@clerk/nextjs";
 import { GroupUser } from "@/utils/group";
 import CreateGroupButton from "../components/CreateGroupButton";
+import { FaWrench } from "react-icons/fa";
 
 export const metadata = {
   title: "Group Builder - divoxutils",
@@ -137,13 +138,24 @@ export default async function GroupBuilder() {
         {user?.username}&apos;s group
       </div>
       <Suspense fallback={<Loading />}>
-        <GroupBuilderForm
+        <div className="text-center p-4 bg-gray-600 text-gray-200 border border-indigo-300 rounded-md mb-20 max-w-lg mx-auto">
+          <h2 className="text-xl font-semibold mb-2">
+            Group Builder Under Maintenance
+          </h2>
+          <FaWrench className="mx-auto text-indigo-500 h-10 w-10" />
+          <p className="text-lg">
+            I&apos;m currently making some improvements to the Group Builder
+            feature. Please check back later.
+          </p>
+        </div>
+
+        {/* <GroupBuilderForm
           group={group}
           clerkUserId={clerkUserId}
           groupUsers={groupUsersWithCharacters}
           active={active}
           roster={roster}
-        />
+        /> */}
       </Suspense>
     </div>
   );
