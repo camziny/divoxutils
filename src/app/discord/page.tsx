@@ -211,6 +211,129 @@ const DiscordPage = () => {
             </div>
           </div>
         </div>
+        <div className="space-y-8" id="compare-users">
+          <div className="bg-gray-700 p-4 rounded-lg shadow-md">
+            <h2 className="text-2xl font-extrabold text-indigo-400 mb-4">
+              /compare-users
+            </h2>
+            <p className="text-base text-white leading-8 mb-2">
+              Compares the stats of two users registered on divoxutils. This
+              command retrieves and displays a comparison of their total and
+              last week&apos;s stats, including realm points, solo kills,
+              deaths, and IRS. The users must be registered on divoxutils to use
+              this command.
+            </p>
+            <h3 className="text-lg font-semibold">Usage</h3>
+            <div className="bg-gray-600 p-2 rounded-md">
+              <code className="text-sm sm:text-base text-indigo-200">
+                /compare-users name1:&lt;user_name&gt; name2:&lt;user_name&gt;
+              </code>
+            </div>
+            <div className="text-sm sm:text-base text-white leading-8 mb-2">
+              <table className="table-auto w-full text-left">
+                <thead>
+                  <tr className="text-white">
+                    <th>Parameter</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-gray-700">
+                    <td>
+                      <strong>name1</strong>
+                    </td>
+                    <td>The name of the first user.</td>
+                  </tr>
+                  <tr className="bg-gray-600">
+                    <td>
+                      <strong>name2</strong>
+                    </td>
+                    <td>The name of the second user.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3 className="text-lg font-semibold">Example</h3>
+            <div className="bg-gray-600 p-2 rounded-md mb-2">
+              <code className="text-sm sm:text-base text-indigo-200">
+                /compare-users name1:divox name2:barbarianz
+              </code>
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Output</h3>
+            <div className="text-center">
+              <Image
+                src="/compare-users.png"
+                alt="Compare Users Example"
+                width={150}
+                height={100}
+                className="rounded-md"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="space-y-8" id="compare-users">
+          <div className="bg-gray-700 p-4 rounded-lg shadow-md">
+            <h2 className="text-2xl font-extrabold text-indigo-400 mb-4">
+              /compare-chars
+            </h2>
+            <p className="text-base text-white leading-8 mb-2">
+              Compares the stats of two characters registered on divoxutils.
+              This command retrieves and displays a comparison of their total
+              and last week&apos;s stats, including realm points, solo kills,
+              deaths, and IRS. The characters must be registered on divoxutils
+              to use this command.
+            </p>
+            <h3 className="text-lg font-semibold">Usage</h3>
+            <div className="bg-gray-600 p-2 rounded-md">
+              <code className="text-sm sm:text-base text-indigo-200">
+                /compare-chars name1:&lt;character_name&gt;
+                name2:&lt;character_name&gt;
+              </code>
+            </div>
+            <div className="text-sm sm:text-base text-white leading-8 mb-2">
+              <table className="table-auto w-full text-left">
+                <thead>
+                  <tr className="text-white">
+                    <th>Parameter</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-gray-700">
+                    <td>
+                      <strong>name1</strong>
+                    </td>
+                    <td>The name of the first character.</td>
+                  </tr>
+                  <tr className="bg-gray-600">
+                    <td>
+                      <strong>name2</strong>
+                    </td>
+                    <td>The name of the second character.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3 className="text-lg font-semibold">Example</h3>
+            <div className="bg-gray-600 p-2 rounded-md mb-2">
+              <code className="text-sm sm:text-base text-indigo-200">
+                /compare-chars name1:patarhahahehe name2:xuuhahahehe
+              </code>
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Output</h3>
+            <div className="text-center">
+              <Image
+                src="/compare-characters.png"
+                alt="Compare Users Example"
+                width={150}
+                height={100}
+                className="rounded-md"
+              />
+            </div>
+          </div>
+        </div>
         <p className="text-sm italic">
           *Note: The images above are for illustration purposes only. Your
           actual output may vary depending on the character&apos;s or
