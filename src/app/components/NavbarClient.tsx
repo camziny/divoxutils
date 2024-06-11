@@ -66,21 +66,20 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
 
         <button
           onClick={toggleMenu}
-          className="text-white 2xl:hidden focus:outline-none focus:ring-2 focus:ring-gray-600 p-2 rounded hover:bg-gray-700"
+          className="text-white lg:hidden focus:outline-none focus:ring-2 focus:ring-gray-600 p-2 rounded hover:bg-gray-700"
         >
           {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
-
         <div
           className={`${
             isMenuOpen ? "flex" : "hidden"
-          } 2xl:flex flex-col 2xl:flex-row flex-grow justify-end items-right w-full 2xl:w-auto`}
+          } lg:flex flex-col lg:flex-row flex-grow justify-between items-center w-full lg:w-auto`}
         >
-          <div className="flex flex-col 2xl:flex-row 2xl:space-x-4 mt-4 md:mt-0 justify-end">
+          <div className="flex flex-col lg:flex-row lg:space-x-4 mt-4 md:mt-0 w-full lg:w-auto lg:ml-auto">
             <Link href="/about">
               <div
                 onClick={closeMenu}
-                className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
               >
                 About
               </div>
@@ -90,7 +89,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <Link href="/user-characters">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   >
                     My Characters
                   </div>
@@ -98,18 +97,16 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <Link href="/group-builder">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   >
-                    <div className="flex items-center">
-                      Group Builder
-                      <ConstructionIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
-                    </div>
+                    <span>Group Builder</span>
+                    <ConstructionIcon className="text-indigo-500 hover:text-indigo-600 ml-1" />
                   </div>
                 </Link>
                 <Link href={userName ? `/user/${userName}/group` : "#"}>
                   <div
                     onClick={userName ? closeMenu : undefined}
-                    className={`px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base ${
+                    className={`px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end ${
                       !userName ? "cursor-not-allowed" : ""
                     }`}
                   >
@@ -119,7 +116,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <Link href="/leaderboards">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   >
                     Leaderboards
                   </div>
@@ -127,46 +124,31 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <Link href="/search">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   >
-                    <div className="flex items-center">
-                      Search Users
-                      <SearchIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
-                    </div>
-                  </div>
-                </Link>
-                <Link href="/character-search">
-                  <div
-                    onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
-                  >
-                    <div className="flex items-center">
-                      Search Characters
-                      <SearchIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
-                    </div>
+                    <span>Search</span>
+                    <SearchIcon className="text-indigo-500 hover:text-indigo-600 ml-1" />
                   </div>
                 </Link>
                 <Link href="/discord">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   >
-                    <div className="flex items-center">
-                      Discord Bot
-                      <FaDiscord
-                        className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-2"
-                        size={20}
-                      />
-                    </div>
+                    <span>Discord Bot</span>
+                    <FaDiscord
+                      className="text-indigo-500 hover:text-indigo-600 ml-2"
+                      size={20}
+                    />
                   </div>
                 </Link>
                 <div
-                  className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                  className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   onClick={() => setIsUpdateUsernameModalOpen(true)}
                 >
                   <span className="mr-1 font-semibold">{userName}</span>
                   {userName && (
-                    <EditIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer" />
+                    <EditIcon className="text-indigo-500 hover:text-indigo-600" />
                   )}
                 </div>
                 <UpdateUsernameModal
@@ -181,7 +163,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <Link href="/leaderboards">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   >
                     Leaderboards
                   </div>
@@ -189,43 +171,28 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <Link href="/search">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   >
-                    <div className="flex items-center">
-                      Search Users
-                      <SearchIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
-                    </div>
-                  </div>
-                </Link>
-                <Link href="/character-search">
-                  <div
-                    onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
-                  >
-                    <div className="flex items-center">
-                      Search Characters
-                      <SearchIcon className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-1" />
-                    </div>
+                    <span>Search</span>
+                    <SearchIcon className="text-indigo-500 hover:text-indigo-600 ml-1" />
                   </div>
                 </Link>
                 <Link href="/discord">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   >
-                    <div className="flex items-center">
-                      Discord Bot
-                      <FaDiscord
-                        className="text-indigo-500 hover:text-indigo-600 cursor-pointer ml-2"
-                        size={20}
-                      />
-                    </div>
+                    <span>Discord Bot</span>
+                    <FaDiscord
+                      className="text-indigo-500 hover:text-indigo-600 ml-2"
+                      size={20}
+                    />
                   </div>
                 </Link>
                 <Link href="/sign-in">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   >
                     Sign In
                   </div>
@@ -233,7 +200,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <Link href="/sign-up">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-32 lg:w-auto text-sm lg:text-base"
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   >
                     Register
                   </div>

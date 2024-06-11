@@ -174,6 +174,7 @@ export async function getUserCharactersByUserName(userName: string) {
               className: true,
               totalRealmPoints: true,
               realm: true,
+              heraldName: true,
             },
           },
         },
