@@ -82,9 +82,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
               return {
                 characterName: character.characterName,
                 className: character.className,
+                heraldName: character.heraldName,
                 formattedRank,
               };
             });
+
+          console.log("API Response Characters:", sortedAndFormattedCharacters);
 
           res.status(200).json({
             user: `${closestUserName}`,
