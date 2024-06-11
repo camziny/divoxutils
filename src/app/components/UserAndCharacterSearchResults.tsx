@@ -166,7 +166,8 @@ export default function UserAndCharacterNameSearch() {
                       ) : (
                         <li className="flex items-center space-x-4">
                           <span className="font-semibold text-lg text-gray-300">
-                            No characters found with the name '{query}'
+                            No characters found with the name &apos;{query}
+                            &apos;
                           </span>
                         </li>
                       )}
