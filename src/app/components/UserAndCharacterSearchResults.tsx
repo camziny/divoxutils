@@ -16,7 +16,6 @@ type Character = {
   heraldName: string;
   totalRealmPoints: number;
   className: string;
-  heraldClassName: string;
   user: {
     id: number;
     clerkUserId: string;
@@ -31,7 +30,7 @@ type User = {
   characters: Character[];
 };
 
-export default function UserAndCharacterNameSearch() {
+export default function CharacterNameSearch() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 500);
   const [searchResults, setSearchResults] = useState<{
@@ -83,7 +82,7 @@ export default function UserAndCharacterNameSearch() {
   }, [debouncedQuery]);
 
   return (
-    <div className="flex flex-col items-center justify-center my-10 bg-gray-900 px-2">
+    <div className="flex flex-col items-center justify-center my-10 bg-gray-900 px-4">
       <form className="flex justify-center mb-6 w-full max-w-md">
         <Input
           size="sm"
@@ -139,7 +138,7 @@ export default function UserAndCharacterNameSearch() {
                           .filter((userCharacter) =>
                             userCharacter.heraldName
                               .toLowerCase()
-                              .startsWith(debouncedQuery.toLowerCase())
+                              .includes(debouncedQuery.toLowerCase())
                           )
                           .map((userCharacter, index) => (
                             <li
@@ -150,7 +149,7 @@ export default function UserAndCharacterNameSearch() {
                                 {userCharacter.heraldName}
                               </span>
                               <span className="text-base font-semibold text-indigo-400">
-                                {userCharacter.heraldClassName}
+                                {userCharacter.className}
                               </span>
                               {userCharacter.totalRealmPoints > 0 && (
                                 <span className="text-sm font-semibold text-indigo-400">
@@ -166,8 +165,7 @@ export default function UserAndCharacterNameSearch() {
                       ) : (
                         <li className="flex items-center space-x-4">
                           <span className="font-semibold text-lg text-gray-300">
-                            No characters found with the name &apos;{query}
-                            &apos;
+                            No characters found with the name '{query}'
                           </span>
                         </li>
                       )}
