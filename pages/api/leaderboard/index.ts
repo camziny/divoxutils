@@ -1,19 +1,6 @@
 import prisma from "../../../prisma/prismaClient";
 import { NextApiRequest, NextApiResponse } from "next";
 
-interface CharacterStats {
-  webId: string;
-  totalRealmPoints: number;
-  totalSoloKills: number;
-  totalDeaths: number;
-  irs: number;
-  deathsLastWeek: number;
-  realmPointsLastWeek: number;
-  soloKillsLastWeek: number;
-  irsLastWeek: number;
-  lastUpdated: Date;
-}
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -29,6 +16,7 @@ export default async function handler(
             select: {
               character: {
                 select: {
+                  id: true,
                   totalRealmPoints: true,
                   totalSoloKills: true,
                   totalDeaths: true,
@@ -36,6 +24,9 @@ export default async function handler(
                   realmPointsLastWeek: true,
                   soloKillsLastWeek: true,
                   lastUpdated: true,
+                  heraldRealmPoints: true,
+                  heraldTotalDeaths: true,
+                  heraldTotalSoloKills: true,
                 },
               },
             },
@@ -43,12 +34,12 @@ export default async function handler(
         },
       });
 
-      const isBeforeThisWeek = (date: Date) => {
+      const isWithinThisWeek = (date: Date) => {
         const now = new Date();
         const startOfThisWeek = new Date(now);
         startOfThisWeek.setUTCDate(now.getUTCDate() - now.getUTCDay());
-        startOfThisWeek.setUTCHours(5, 0, 0, 0);
-        return date < startOfThisWeek;
+        startOfThisWeek.setUTCHours(9, 0, 0, 0);
+        return date >= startOfThisWeek;
       };
 
       const aggregatedLeaderboardData = leaderboardData.map((user) => {
@@ -59,6 +50,11 @@ export default async function handler(
         let realmPointsLastWeek = 0;
         let soloKillsLastWeek = 0;
         let latestUpdate: Date | null = null;
+
+        let realmPointsThisWeek = 0;
+        let deathsThisWeek = 0;
+        let soloKillsThisWeek = 0;
+        let irsThisWeek = 0;
 
         user.characters.forEach((userCharacter) => {
           const character = userCharacter.character;
@@ -82,7 +78,69 @@ export default async function handler(
           ) {
             latestUpdate = character.lastUpdated;
           }
+
+          if (
+            character.lastUpdated &&
+            isWithinThisWeek(new Date(character.lastUpdated))
+          ) {
+            if (
+              character.heraldRealmPoints !== null &&
+              character.realmPointsLastWeek !== null
+            ) {
+              const rpThisWeek =
+                character.heraldRealmPoints - character.realmPointsLastWeek;
+              realmPointsThisWeek += rpThisWeek;
+            }
+
+            if (
+              character.heraldTotalDeaths !== null &&
+              character.deathsLastWeek !== null
+            ) {
+              const deathsThisWeekValue =
+                character.heraldTotalDeaths - character.deathsLastWeek;
+              deathsThisWeek += deathsThisWeekValue;
+            }
+
+            if (
+              character.heraldTotalSoloKills !== null &&
+              character.soloKillsLastWeek !== null
+            ) {
+              const skThisWeek =
+                character.heraldTotalSoloKills - character.soloKillsLastWeek;
+              soloKillsThisWeek += skThisWeek;
+            }
+
+            if (
+              character.realmPointsLastWeek === 0 ||
+              character.realmPointsLastWeek === null
+            ) {
+              realmPointsThisWeek = character.heraldRealmPoints ?? 0;
+            }
+
+            if (
+              character.deathsLastWeek === 0 ||
+              character.deathsLastWeek === null
+            ) {
+              deathsThisWeek = character.heraldTotalDeaths ?? 0;
+            }
+
+            if (
+              character.soloKillsLastWeek === 0 ||
+              character.soloKillsLastWeek === null
+            ) {
+              soloKillsThisWeek = character.heraldTotalSoloKills ?? 0;
+            }
+          }
         });
+
+        realmPointsThisWeek = Math.max(0, realmPointsThisWeek);
+        deathsThisWeek = Math.max(0, deathsThisWeek);
+        soloKillsThisWeek = Math.max(0, soloKillsThisWeek);
+
+        irsThisWeek =
+          deathsThisWeek > 0
+            ? Math.round(realmPointsThisWeek / deathsThisWeek)
+            : realmPointsThisWeek;
 
         const irs =
           totalDeaths > 0 ? Math.round(totalPoints / totalDeaths) : totalPoints;
@@ -105,6 +163,10 @@ export default async function handler(
           irs: irs,
           irsLastWeek: irsLastWeek,
           lastUpdated: latestUpdate,
+          realmPointsThisWeek: realmPointsThisWeek,
+          deathsThisWeek: deathsThisWeek,
+          soloKillsThisWeek: soloKillsThisWeek,
+          irsThisWeek: irsThisWeek,
         };
       });
 

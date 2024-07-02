@@ -1,6 +1,10 @@
 import React from "react";
-import LeaderboardList from "@/app/components/LeaderboardList";
+import ThisWeekLeaderboardList from "@/app/components/ThisWeekLeaderboardList";
 import LeaderboardTooltip from "@/app/components/LeaderboardTooltip";
+
+export const metadata = {
+  title: "This Week Leaderboards - divoxutils",
+};
 
 async function fetchLeaderboardData() {
   try {
@@ -23,26 +27,19 @@ async function fetchLeaderboardData() {
   }
 }
 
-export default async function LeaderboardPage() {
+export default async function ThisWeekLeaderboardPage() {
   const leaderboardData = await fetchLeaderboardData();
 
   return (
-    <div className="p-4 md:p-8 lg:p-12">
-      <div className="max-w-screen-lg mx-auto text-center">
-        <div className="mb-6">
-          <LeaderboardTooltip />
+    <div className="bg-gray-900 min-h-screen text-gray-300">
+      <div className="p-4 md:p-8 lg:p-12">
+        <div className="max-w-screen-lg mx-auto text-center">
+          <div className="mb-6">
+            <LeaderboardTooltip />
+          </div>
+          <ThisWeekLeaderboardList data={leaderboardData} />
         </div>
-        <LeaderboardList data={leaderboardData} />
       </div>
-      {/* <div className="max-w-screen-lg mx-auto text-center">
-        <div className="mb-6 text-2xl font-semibold text-gray-400">
-          Undergoing Maintenance
-        </div>
-        <p className="text-lg text-gray-500">
-          I&apos;m currently making improvements and will have the leaderboards
-          back up shortly.
-        </p>
-      </div> */}
     </div>
   );
 }
