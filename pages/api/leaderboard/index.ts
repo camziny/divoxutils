@@ -85,28 +85,28 @@ export default async function handler(
           ) {
             if (
               character.heraldRealmPoints !== null &&
-              character.realmPointsLastWeek !== null
+              character.totalRealmPoints !== null
             ) {
               const rpThisWeek =
-                character.heraldRealmPoints - character.realmPointsLastWeek;
+                character.heraldRealmPoints - character.totalRealmPoints;
               realmPointsThisWeek += rpThisWeek;
             }
 
             if (
               character.heraldTotalDeaths !== null &&
-              character.deathsLastWeek !== null
+              character.totalDeaths !== null
             ) {
               const deathsThisWeekValue =
-                character.heraldTotalDeaths - character.deathsLastWeek;
+                character.heraldTotalDeaths - character.totalDeaths;
               deathsThisWeek += deathsThisWeekValue;
             }
 
             if (
               character.heraldTotalSoloKills !== null &&
-              character.soloKillsLastWeek !== null
+              character.totalSoloKills !== null
             ) {
               const skThisWeek =
-                character.heraldTotalSoloKills - character.soloKillsLastWeek;
+                character.heraldTotalSoloKills - character.totalSoloKills;
               soloKillsThisWeek += skThisWeek;
             }
 
