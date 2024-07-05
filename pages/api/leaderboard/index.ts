@@ -84,6 +84,11 @@ export default async function handler(
           ) {
             realmPointsThisWeek =
               character.heraldRealmPoints - character.totalRealmPoints;
+            if (user.id === 1) {
+              console.log(
+                `User ${user.id}, Character ${character.id}: realmPointsThisWeek = ${realmPointsThisWeek}`
+              );
+            }
           }
 
           if (
@@ -92,6 +97,11 @@ export default async function handler(
           ) {
             deathsThisWeek =
               character.heraldTotalDeaths - character.totalDeaths;
+            if (user.id === 1) {
+              console.log(
+                `User ${user.id}, Character ${character.id}: deathsThisWeek = ${deathsThisWeek}`
+              );
+            }
           }
 
           if (
@@ -100,6 +110,11 @@ export default async function handler(
           ) {
             soloKillsThisWeek =
               character.heraldTotalSoloKills - character.totalSoloKills;
+            if (user.id === 1) {
+              console.log(
+                `User ${user.id}, Character ${character.id}: soloKillsThisWeek = ${soloKillsThisWeek}`
+              );
+            }
           }
         });
 
