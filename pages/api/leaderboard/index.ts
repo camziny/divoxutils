@@ -79,32 +79,27 @@ export default async function handler(
             latestUpdate = character.lastUpdated;
           }
           if (
-            character.lastUpdated &&
-            isWithinThisWeek(new Date(character.lastUpdated))
+            character.heraldRealmPoints !== null &&
+            character.totalRealmPoints !== null
           ) {
-            if (
-              character.heraldRealmPoints !== null &&
-              character.totalRealmPoints !== null
-            ) {
-              realmPointsThisWeek =
-                character.heraldRealmPoints - character.totalRealmPoints;
-            }
+            realmPointsThisWeek =
+              character.heraldRealmPoints - character.totalRealmPoints;
+          }
 
-            if (
-              character.heraldTotalDeaths !== null &&
-              character.totalDeaths !== null
-            ) {
-              deathsThisWeek =
-                character.heraldTotalDeaths - character.totalDeaths;
-            }
+          if (
+            character.heraldTotalDeaths !== null &&
+            character.totalDeaths !== null
+          ) {
+            deathsThisWeek =
+              character.heraldTotalDeaths - character.totalDeaths;
+          }
 
-            if (
-              character.heraldTotalSoloKills !== null &&
-              character.totalSoloKills !== null
-            ) {
-              soloKillsThisWeek =
-                character.heraldTotalSoloKills - character.totalSoloKills;
-            }
+          if (
+            character.heraldTotalSoloKills !== null &&
+            character.totalSoloKills !== null
+          ) {
+            soloKillsThisWeek =
+              character.heraldTotalSoloKills - character.totalSoloKills;
           }
         });
 
