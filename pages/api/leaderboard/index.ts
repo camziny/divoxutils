@@ -90,9 +90,11 @@ export default async function handler(
                 character.heraldRealmPoints - character.totalRealmPoints;
               realmPointsThisWeek += rpThisWeek;
 
-              if (character.totalRealmPoints !== 0) {
+              if (character.heraldRealmPoints !== character.totalRealmPoints) {
                 if (user.name === "darby" || user.name === "mickz") {
-                  console.log(`Realm Points This Week Calculation:`);
+                  console.log(
+                    `User ${user.name} (${user.id}), Character ${character.id}`
+                  );
                   console.log(
                     `heraldRealmPoints: ${character.heraldRealmPoints}`
                   );
@@ -112,13 +114,17 @@ export default async function handler(
                 character.heraldTotalDeaths - character.totalDeaths;
               deathsThisWeek += deathsThisWeekValue;
 
-              if (user.name === "darby" || user.name === "mickz") {
-                console.log(`Deaths This Week Calculation:`);
-                console.log(
-                  `heraldTotalDeaths: ${character.heraldTotalDeaths}`
-                );
-                console.log(`totalDeaths: ${character.totalDeaths}`);
-                console.log(`deathsThisWeek: ${deathsThisWeekValue}`);
+              if (character.heraldTotalDeaths !== character.totalDeaths) {
+                if (user.name === "darby" || user.name === "mickz") {
+                  console.log(
+                    `User ${user.name} (${user.id}), Character ${character.id}`
+                  );
+                  console.log(
+                    `heraldTotalDeaths: ${character.heraldTotalDeaths}`
+                  );
+                  console.log(`totalDeaths: ${character.totalDeaths}`);
+                  console.log(`deathsThisWeek: ${deathsThisWeekValue}`);
+                }
               }
             }
 
@@ -130,13 +136,17 @@ export default async function handler(
                 character.heraldTotalSoloKills - character.totalSoloKills;
               soloKillsThisWeek += skThisWeek;
 
-              if (user.name === "darby" || user.name === "mickz") {
-                console.log(`Solo Kills This Week Calculation:`);
-                console.log(
-                  `heraldTotalSoloKills: ${character.heraldTotalSoloKills}`
-                );
-                console.log(`totalSoloKills: ${character.totalSoloKills}`);
-                console.log(`soloKillsThisWeek: ${skThisWeek}`);
+              if (character.heraldTotalSoloKills !== character.totalSoloKills) {
+                if (user.name === "darby" || user.name === "mickz") {
+                  console.log(
+                    `User ${user.name} (${user.id}), Character ${character.id}`
+                  );
+                  console.log(
+                    `heraldTotalSoloKills: ${character.heraldTotalSoloKills}`
+                  );
+                  console.log(`totalSoloKills: ${character.totalSoloKills}`);
+                  console.log(`soloKillsThisWeek: ${skThisWeek}`);
+                }
               }
             }
           } else {
