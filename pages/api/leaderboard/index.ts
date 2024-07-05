@@ -90,13 +90,17 @@ export default async function handler(
                 character.heraldRealmPoints - character.totalRealmPoints;
               realmPointsThisWeek += rpThisWeek;
 
-              if (user.name === "darby") {
-                console.log(`Realm Points This Week Calculation:`);
-                console.log(
-                  `heraldRealmPoints: ${character.heraldRealmPoints}`
-                );
-                console.log(`totalRealmPoints: ${character.totalRealmPoints}`);
-                console.log(`realmPointsThisWeek: ${rpThisWeek}`);
+              if (character.totalRealmPoints !== 0) {
+                if (user.name === "darby" || user.name === "mickz") {
+                  console.log(`Realm Points This Week Calculation:`);
+                  console.log(
+                    `heraldRealmPoints: ${character.heraldRealmPoints}`
+                  );
+                  console.log(
+                    `totalRealmPoints: ${character.totalRealmPoints}`
+                  );
+                  console.log(`realmPointsThisWeek: ${rpThisWeek}`);
+                }
               }
             }
 
@@ -108,7 +112,7 @@ export default async function handler(
                 character.heraldTotalDeaths - character.totalDeaths;
               deathsThisWeek += deathsThisWeekValue;
 
-              if (user.name === "darby") {
+              if (user.name === "darby" || user.name === "mickz") {
                 console.log(`Deaths This Week Calculation:`);
                 console.log(
                   `heraldTotalDeaths: ${character.heraldTotalDeaths}`
@@ -126,7 +130,7 @@ export default async function handler(
                 character.heraldTotalSoloKills - character.totalSoloKills;
               soloKillsThisWeek += skThisWeek;
 
-              if (user.name === "darby") {
+              if (user.name === "darby" || user.name === "mickz") {
                 console.log(`Solo Kills This Week Calculation:`);
                 console.log(
                   `heraldTotalSoloKills: ${character.heraldTotalSoloKills}`
@@ -136,7 +140,7 @@ export default async function handler(
               }
             }
           } else {
-            if (user.name === "darby") {
+            if (user.name === "darby" || user.name === "mickz") {
               console.log(
                 `Character ${character.id} is NOT updated this week.`
               );
