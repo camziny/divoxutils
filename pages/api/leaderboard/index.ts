@@ -78,58 +78,52 @@ export default async function handler(
           ) {
             latestUpdate = character.lastUpdated;
           }
+          if (
+            character.heraldRealmPoints !== null &&
+            character.totalRealmPoints !== null
+          ) {
+            const rpThisWeek =
+              character.heraldRealmPoints - character.totalRealmPoints;
+            realmPointsThisWeek += rpThisWeek;
+          }
 
           if (
-            character.lastUpdated &&
-            isWithinThisWeek(new Date(character.lastUpdated))
+            character.heraldTotalDeaths !== null &&
+            character.totalDeaths !== null
           ) {
-            if (
-              character.heraldRealmPoints !== null &&
-              character.totalRealmPoints !== null
-            ) {
-              const rpThisWeek =
-                character.heraldRealmPoints - character.totalRealmPoints;
-              realmPointsThisWeek += rpThisWeek;
-            }
+            const deathsThisWeekValue =
+              character.heraldTotalDeaths - character.totalDeaths;
+            deathsThisWeek += deathsThisWeekValue;
+          }
 
-            if (
-              character.heraldTotalDeaths !== null &&
-              character.totalDeaths !== null
-            ) {
-              const deathsThisWeekValue =
-                character.heraldTotalDeaths - character.totalDeaths;
-              deathsThisWeek += deathsThisWeekValue;
-            }
+          if (
+            character.heraldTotalSoloKills !== null &&
+            character.totalSoloKills !== null
+          ) {
+            const skThisWeek =
+              character.heraldTotalSoloKills - character.totalSoloKills;
+            soloKillsThisWeek += skThisWeek;
+          }
 
-            if (
-              character.heraldTotalSoloKills !== null &&
-              character.totalSoloKills !== null
-            ) {
-              const skThisWeek =
-                character.heraldTotalSoloKills - character.totalSoloKills;
-              soloKillsThisWeek += skThisWeek;
-            }
+          if (
+            character.realmPointsLastWeek === 0 ||
+            character.realmPointsLastWeek === null
+          ) {
+            realmPointsThisWeek = character.heraldRealmPoints ?? 0;
+          }
 
-            if (
-              character.realmPointsLastWeek === 0 ||
-              character.realmPointsLastWeek === null
-            ) {
-              realmPointsThisWeek = character.heraldRealmPoints ?? 0;
-            }
+          if (
+            character.deathsLastWeek === 0 ||
+            character.deathsLastWeek === null
+          ) {
+            deathsThisWeek = character.heraldTotalDeaths ?? 0;
+          }
 
-            if (
-              character.deathsLastWeek === 0 ||
-              character.deathsLastWeek === null
-            ) {
-              deathsThisWeek = character.heraldTotalDeaths ?? 0;
-            }
-
-            if (
-              character.soloKillsLastWeek === 0 ||
-              character.soloKillsLastWeek === null
-            ) {
-              soloKillsThisWeek = character.heraldTotalSoloKills ?? 0;
-            }
+          if (
+            character.soloKillsLastWeek === 0 ||
+            character.soloKillsLastWeek === null
+          ) {
+            soloKillsThisWeek = character.heraldTotalSoloKills ?? 0;
           }
         });
 
