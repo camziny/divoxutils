@@ -79,40 +79,66 @@ export default async function handler(
             latestUpdate = character.lastUpdated;
           }
           if (
-            character.heraldRealmPoints !== null &&
-            character.totalRealmPoints !== null
+            character.lastUpdated &&
+            isWithinThisWeek(new Date(character.lastUpdated))
           ) {
-            realmPointsThisWeek =
-              character.heraldRealmPoints - character.totalRealmPoints;
-            if (user.id === 1) {
-              console.log(
-                `User ${user.id}, Character ${character.id}: realmPointsThisWeek = ${realmPointsThisWeek}`
-              );
-            }
-          }
+            if (
+              character.heraldRealmPoints !== null &&
+              character.totalRealmPoints !== null
+            ) {
+              const rpThisWeek =
+                character.heraldRealmPoints - character.totalRealmPoints;
+              realmPointsThisWeek += rpThisWeek;
 
-          if (
-            character.heraldTotalDeaths !== null &&
-            character.totalDeaths !== null
-          ) {
-            deathsThisWeek =
-              character.heraldTotalDeaths - character.totalDeaths;
-            if (user.id === 1) {
-              console.log(
-                `User ${user.id}, Character ${character.id}: deathsThisWeek = ${deathsThisWeek}`
-              );
+              if (user.id === 1) {
+                console.log(`Realm Points This Week Calculation:`);
+                console.log(
+                  `heraldRealmPoints: ${character.heraldRealmPoints}`
+                );
+                console.log(`totalRealmPoints: ${character.totalRealmPoints}`);
+                console.log(`realmPointsThisWeek: ${rpThisWeek}`);
+              }
             }
-          }
 
-          if (
-            character.heraldTotalSoloKills !== null &&
-            character.totalSoloKills !== null
-          ) {
-            soloKillsThisWeek =
-              character.heraldTotalSoloKills - character.totalSoloKills;
+            if (
+              character.heraldTotalDeaths !== null &&
+              character.totalDeaths !== null
+            ) {
+              const deathsThisWeekValue =
+                character.heraldTotalDeaths - character.totalDeaths;
+              deathsThisWeek += deathsThisWeekValue;
+
+              if (user.id === 1) {
+                console.log(`Deaths This Week Calculation:`);
+                console.log(
+                  `heraldTotalDeaths: ${character.heraldTotalDeaths}`
+                );
+                console.log(`totalDeaths: ${character.totalDeaths}`);
+                console.log(`deathsThisWeek: ${deathsThisWeekValue}`);
+              }
+            }
+
+            if (
+              character.heraldTotalSoloKills !== null &&
+              character.totalSoloKills !== null
+            ) {
+              const skThisWeek =
+                character.heraldTotalSoloKills - character.totalSoloKills;
+              soloKillsThisWeek += skThisWeek;
+
+              if (user.id === 1) {
+                console.log(`Solo Kills This Week Calculation:`);
+                console.log(
+                  `heraldTotalSoloKills: ${character.heraldTotalSoloKills}`
+                );
+                console.log(`totalSoloKills: ${character.totalSoloKills}`);
+                console.log(`soloKillsThisWeek: ${skThisWeek}`);
+              }
+            }
+          } else {
             if (user.id === 1) {
               console.log(
-                `User ${user.id}, Character ${character.id}: soloKillsThisWeek = ${soloKillsThisWeek}`
+                `Character ${character.id} is NOT updated this week.`
               );
             }
           }
