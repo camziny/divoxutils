@@ -61,8 +61,18 @@ export default async function handler(
         let accumulatedDeathsThisWeek = 0;
         let accumulatedSoloKillsThisWeek = 0;
 
+        const processedCharacterIds = new Set<number>();
+
         user.characters.forEach((userCharacter) => {
           const character = userCharacter.character;
+
+          if (processedCharacterIds.has(character.id)) {
+            console.warn(`Character ${character.id} processed multiple times.`);
+            return;
+          }
+
+          processedCharacterIds.add(character.id);
+
           totalPoints += character.totalRealmPoints;
           totalSoloKills += character.totalSoloKills;
           totalDeaths += character.totalDeaths;
@@ -89,7 +99,7 @@ export default async function handler(
               realmPointsThisWeek += rpThisWeek;
 
               if (character.heraldRealmPoints !== character.totalRealmPoints) {
-                if (user.name === "darby" || user.name === "mickz") {
+                if (user.name === "mickz") {
                   console.log(
                     `User: ${user.name} (ID: ${user.id}), Character: ${character.characterName} (ID: ${character.id})`
                   );
@@ -115,7 +125,7 @@ export default async function handler(
               deathsThisWeek += deathsThisWeekValue;
 
               if (character.heraldTotalDeaths !== character.totalDeaths) {
-                if (user.name === "darby" || user.name === "mickz") {
+                if (user.name === "mickz") {
                   console.log(
                     `User: ${user.name} (ID: ${user.id}), Character: ${character.characterName} (ID: ${character.id})`
                   );
