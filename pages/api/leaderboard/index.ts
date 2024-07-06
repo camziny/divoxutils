@@ -75,13 +75,6 @@ export default async function handler(
           if (character.deathsLastWeek !== character.totalDeaths) {
             deathsLastWeek += character.deathsLastWeek;
           }
-
-          if (
-            character.lastUpdated &&
-            (!latestUpdate || character.lastUpdated > latestUpdate)
-          ) {
-            latestUpdate = character.lastUpdated;
-          }
           if (
             character.lastUpdated &&
             isWithinThisWeek(new Date(character.lastUpdated))
@@ -170,7 +163,6 @@ export default async function handler(
             }
           }
         });
-
         if (user.name === "darby" || user.name === "mickz") {
           console.log(`User: ${user.name} (ID: ${user.id})`);
           console.log(
@@ -182,6 +174,8 @@ export default async function handler(
           console.log(
             `Accumulated Solo Kills This Week: ${accumulatedSoloKillsThisWeek}`
           );
+          console.log(`Total Realm Points: ${totalPoints}`);
+          console.log(`Total Deaths: ${totalDeaths}`);
         }
 
         realmPointsThisWeek = Math.max(0, realmPointsThisWeek);
