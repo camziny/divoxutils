@@ -97,18 +97,6 @@ export default async function handler(
               const rpThisWeek =
                 character.heraldRealmPoints - character.totalRealmPoints;
               accumulatedRealmPointsThisWeek += rpThisWeek;
-
-              if (user.name === "mickz") {
-                console.log(
-                  `User: ${user.name} (ID: ${user.id}), Character: ${character.characterName} (ID: ${character.id})`
-                );
-                console.log(`Realm Points This Week Calculation:`);
-                console.log(
-                  `heraldRealmPoints: ${character.heraldRealmPoints}`
-                );
-                console.log(`totalRealmPoints: ${character.totalRealmPoints}`);
-                console.log(`realmPointsThisWeek: ${rpThisWeek}`);
-              }
             }
 
             if (
@@ -118,18 +106,6 @@ export default async function handler(
               const deathsThisWeekValue =
                 character.heraldTotalDeaths - character.totalDeaths;
               accumulatedDeathsThisWeek += deathsThisWeekValue;
-
-              if (user.name === "mickz") {
-                console.log(
-                  `User: ${user.name} (ID: ${user.id}), Character: ${character.characterName} (ID: ${character.id})`
-                );
-                console.log(`Deaths This Week Calculation:`);
-                console.log(
-                  `heraldTotalDeaths: ${character.heraldTotalDeaths}`
-                );
-                console.log(`totalDeaths: ${character.totalDeaths}`);
-                console.log(`deathsThisWeek: ${deathsThisWeekValue}`);
-              }
             }
 
             if (
@@ -139,50 +115,13 @@ export default async function handler(
               const skThisWeek =
                 character.heraldTotalSoloKills - character.totalSoloKills;
               accumulatedSoloKillsThisWeek += skThisWeek;
-
-              if (user.name === "mickz") {
-                console.log(
-                  `User: ${user.name} (ID: ${user.id}), Character: ${character.characterName} (ID: ${character.id})`
-                );
-                console.log(`Solo Kills This Week Calculation:`);
-                console.log(
-                  `heraldTotalSoloKills: ${character.heraldTotalSoloKills}`
-                );
-                console.log(`totalSoloKills: ${character.totalSoloKills}`);
-                console.log(`soloKillsThisWeek: ${skThisWeek}`);
-              }
-            }
-          } else {
-            if (user.name === "mickz") {
-              console.log(
-                `User: ${user.name} (ID: ${user.id}), Character: ${character.characterName} (ID: ${character.id})`
-              );
-              console.log(
-                `Character ${character.id} is NOT updated this week.`
-              );
             }
           }
         });
 
-        // Log accumulated stats for the user
-        if (user.name === "mickz") {
-          console.log(`User: ${user.name} (ID: ${user.id})`);
-          console.log(
-            `Accumulated Realm Points This Week: ${accumulatedRealmPointsThisWeek}`
-          );
-          console.log(
-            `Accumulated Deaths This Week: ${accumulatedDeathsThisWeek}`
-          );
-          console.log(
-            `Accumulated Solo Kills This Week: ${accumulatedSoloKillsThisWeek}`
-          );
-          console.log(`Total Realm Points: ${totalPoints}`);
-          console.log(`Total Deaths: ${totalDeaths}`);
-        }
-
-        realmPointsThisWeek = Math.max(0, realmPointsThisWeek);
-        deathsThisWeek = Math.max(0, deathsThisWeek);
-        soloKillsThisWeek = Math.max(0, soloKillsThisWeek);
+        realmPointsThisWeek = Math.max(0, accumulatedRealmPointsThisWeek);
+        deathsThisWeek = Math.max(0, accumulatedDeathsThisWeek);
+        soloKillsThisWeek = Math.max(0, accumulatedSoloKillsThisWeek);
 
         irsThisWeek =
           deathsThisWeek > 0
