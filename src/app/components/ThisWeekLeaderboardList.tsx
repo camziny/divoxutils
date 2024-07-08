@@ -108,7 +108,6 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
       selectedPeriod === "total"
         ? `total${capitalize(selectedMetric)}`
         : `${selectedMetric}${capitalize(selectedPeriod)}`;
-    console.log(`Metric Key: ${metricKey}`);
 
     return leaderboardData.sort(
       (a, b) => (b[metricKey] as number) - (a[metricKey] as number)
@@ -186,10 +185,6 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                     ? `total${capitalize(selectedMetric)}`
                     : `${selectedMetric}${capitalize(selectedPeriod)}`;
                 const value = item[metricKey] as number | undefined;
-
-                console.log(
-                  `User: ${item.userName}, Metric Key: ${metricKey}, Value: ${value}`
-                );
 
                 return (
                   <li

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Dropdown,
@@ -9,6 +9,7 @@ import {
   Button,
   Pagination,
   Skeleton,
+  ButtonGroup,
 } from "@nextui-org/react";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
@@ -17,45 +18,61 @@ interface LeaderboardItem {
   userName: string;
   totalRealmPoints: number;
   realmPointsLastWeek: number;
+  realmPointsThisWeek: number;
   totalSoloKills: number;
   soloKillsLastWeek: number;
+  soloKillsThisWeek: number;
   totalDeaths: number;
   deathsLastWeek: number;
+  deathsThisWeek: number;
   irs: number;
   irsLastWeek: number;
+  irsThisWeek: number;
   lastUpdated: Date;
-  [key: string]: number | string | Date;
+  totalIrs?: number;
+  [key: string]: number | string | Date | undefined;
 }
 
 interface LeaderboardListProps {
   data: LeaderboardItem[];
 }
 
-const categories: Record<LeaderboardCategory, string> = {
-  totalRealmPoints: "Total Realm Points",
-  realmPointsLastWeek: "Realm Points Last Week",
-  totalSoloKills: "Total Solo Kills",
-  soloKillsLastWeek: "Solo Kills Last Week",
-  totalDeaths: "Total Deaths",
-  deathsLastWeek: "Deaths Last Week",
-  irs: "Total IRS",
-  irsLastWeek: "IRS Last Week",
+const metrics = {
+  realmPoints: "Realm Points",
+  soloKills: "Solo Kills",
+  deaths: "Deaths",
+  irs: "IRS",
 };
 
-type LeaderboardCategory =
-  | "totalRealmPoints"
-  | "realmPointsLastWeek"
-  | "totalSoloKills"
-  | "soloKillsLastWeek"
-  | "totalDeaths"
-  | "deathsLastWeek"
-  | "irs"
-  | "irsLastWeek";
+const periods = {
+  total: "",
+  lastWeek: "Last Week",
+  thisWeek: "This Week",
+};
+
+type Metric = keyof typeof metrics;
+type Period = keyof typeof periods;
 
 const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
-  const [selectedCategory, setSelectedCategory] =
-    useState<LeaderboardCategory>("totalRealmPoints");
-  const sortedLeaderboardData = sortLeaderboardData(data, selectedCategory);
+  const [selectedMetric, setSelectedMetric] = useState<Metric>("realmPoints");
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>("total");
+
+  useEffect(() => {}, [selectedMetric, selectedPeriod, data]);
+
+  const processedData = data.map((item) => {
+    const totalIrs =
+      item.totalDeaths > 0
+        ? Math.round(item.totalRealmPoints / item.totalDeaths)
+        : item.totalRealmPoints;
+    return { ...item, totalIrs };
+  });
+
+  const sortedLeaderboardData = sortLeaderboardData(
+    processedData,
+    selectedMetric,
+    selectedPeriod
+  );
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
@@ -67,42 +84,38 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
     setCurrentPage(page);
   };
 
-  const handleCategoryChange = (
-    category: LeaderboardCategory,
-    e: React.MouseEvent
-  ) => {
+  const handleMetricChange = (metric: Metric, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedCategory(category);
+    setSelectedMetric(metric);
   };
 
-  const formatNumber = (number: number) => {
-    return isNaN(number)
+  const handlePeriodChange = (period: Period) => {
+    setSelectedPeriod(period);
+  };
+
+  const formatNumber = (number: number | undefined) => {
+    return number === undefined || isNaN(number)
       ? "N/A"
       : new Intl.NumberFormat("en-US").format(number);
   };
 
-  function isBeforeThisWeek(date: Date) {
-    const now = new Date();
-    const startOfThisWeek = new Date(now);
-    startOfThisWeek.setUTCDate(now.getUTCDate() - now.getUTCDay());
-    startOfThisWeek.setUTCHours(5, 0, 0, 0);
-    return date < startOfThisWeek;
-  }
-
   function sortLeaderboardData(
     leaderboardData: LeaderboardItem[],
-    selectedCategory: LeaderboardCategory
+    selectedMetric: Metric,
+    selectedPeriod: Period
   ) {
-    let filteredData = leaderboardData.filter((item) => {
-      const isRealmPointsEqual =
-        item.realmPointsLastWeek === item.totalRealmPoints;
-      const isSoloKillsEqual = item.soloKillsLastWeek === item.totalSoloKills;
-      const isDeathsEqual = item.deathsLastWeek === item.totalDeaths;
-      return !(isRealmPointsEqual && isSoloKillsEqual && isDeathsEqual);
-    });
-    return filteredData.sort(
-      (a, b) => b[selectedCategory] - a[selectedCategory]
+    const metricKey =
+      selectedPeriod === "total"
+        ? `total${capitalize(selectedMetric)}`
+        : `${selectedMetric}${capitalize(selectedPeriod)}`;
+
+    return leaderboardData.sort(
+      (a, b) => (b[metricKey] as number) - (a[metricKey] as number)
     );
+  }
+
+  function capitalize(s: string) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
   const isLoading = !data || data.length === 0;
@@ -113,24 +126,48 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
 
   return (
     <section className="max-w-3xl mx-auto px-6">
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col items-center">
+        <ButtonGroup className="mb-4 relative">
+          <Button
+            onClick={() => handlePeriodChange("total")}
+            className={`bg-gray-800 text-indigo-400 ${
+              selectedPeriod === "total" ? "border-2  border-indigo-500" : ""
+            }`}
+          >
+            Total
+          </Button>
+          <Button
+            onClick={() => handlePeriodChange("lastWeek")}
+            className={`bg-gray-800 text-indigo-400 ${
+              selectedPeriod === "lastWeek" ? "border-2 border-indigo-500" : ""
+            }`}
+          >
+            Last Week
+          </Button>
+          <Button
+            onClick={() => handlePeriodChange("thisWeek")}
+            className={`bg-gray-800 text-indigo-400 ${
+              selectedPeriod === "thisWeek" ? "border-2 border-indigo-500" : ""
+            }`}
+          >
+            This Week
+          </Button>
+        </ButtonGroup>
         <Dropdown backdrop="blur">
           <DropdownTrigger>
             <Button variant="bordered" className="text-indigo-500">
-              {categories[selectedCategory] as string} <KeyboardArrowDownIcon />
+              {metrics[selectedMetric]} <KeyboardArrowDownIcon />
             </Button>
           </DropdownTrigger>
           <DropdownMenu
             variant="faded"
-            aria-label="Leaderboard Categories"
+            aria-label="Leaderboard Metrics"
             className="bg-gray-900 text-indigo-400"
           >
-            {Object.entries(categories).map(([key, label]) => (
+            {Object.entries(metrics).map(([key, label]) => (
               <DropdownItem
                 key={key}
-                onClick={(e) =>
-                  handleCategoryChange(key as LeaderboardCategory, e)
-                }
+                onClick={(e) => handleMetricChange(key as Metric, e)}
               >
                 {label}
               </DropdownItem>
@@ -138,43 +175,39 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
           </DropdownMenu>
         </Dropdown>
       </div>
-      {/* {[
-        "realmPointsLastWeek",
-        "soloKillsLastWeek",
-        "deathsLastWeek",
-        "irsLastWeek",
-      ].includes(selectedCategory) ? (
-        <div className="text-center py-4">
-          <span className="text-3xl text-gray-500 font-semibold">
-            Coming Soon
-          </span>
-        </div>
-      ) : ( */}
       <>
         <ol className="space-y-4">
           {isLoading
             ? renderSkeletons()
-            : paginatedData.map((item, index) => (
-                <li
-                  key={item.userId}
-                  className="bg-gray-800 p-4 rounded-md hover:bg-gray-700 transition duration-300 ease-in-out transform hover:-translate-y-1"
-                >
-                  <Link
-                    href={`user/${item.userName}/characters`}
-                    className="flex justify-between items-center w-full h-full text-indigo-400 hover:text-indigo-300 font-medium"
+            : paginatedData.map((item, index) => {
+                const metricKey =
+                  selectedPeriod === "total"
+                    ? `total${capitalize(selectedMetric)}`
+                    : `${selectedMetric}${capitalize(selectedPeriod)}`;
+                const value = item[metricKey] as number | undefined;
+
+                return (
+                  <li
+                    key={item.userId}
+                    className="bg-gray-800 p-4 rounded-md hover:bg-gray-700 transition duration-300 ease-in-out transform hover:-translate-y-1"
                   >
-                    <span className="flex-grow flex items-center">
-                      <span className="text-xl mr-2 font-bold">
-                        {startIndex + index + 1}.
+                    <Link
+                      href={`user/${item.userName}/characters`}
+                      className="flex justify-between items-center w-full h-full text-indigo-400 hover:text-indigo-300 font-medium"
+                    >
+                      <span className="flex-grow flex items-center">
+                        <span className="text-xl mr-2 font-bold">
+                          {startIndex + index + 1}.
+                        </span>
+                        <span className="text-lg">{item.userName}</span>
                       </span>
-                      <span className="text-lg">{item.userName}</span>
-                    </span>
-                    <span className="text-white font-bold">
-                      {formatNumber(item[selectedCategory])}
-                    </span>
-                  </Link>
-                </li>
-              ))}
+                      <span className="text-white font-bold">
+                        {formatNumber(value)}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
         </ol>
         <div className="my-4 flex justify-center">
           <Pagination
@@ -191,7 +224,6 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
           />
         </div>
       </>
-      {/* )} */}
     </section>
   );
 };
