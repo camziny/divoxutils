@@ -86,36 +86,32 @@ export default async function handler(
           if (character.deathsLastWeek !== character.totalDeaths) {
             deathsLastWeek += character.deathsLastWeek;
           }
+
           if (
-            character.lastUpdated &&
-            isWithinThisWeek(new Date(character.lastUpdated))
+            character.heraldRealmPoints !== null &&
+            character.totalRealmPoints !== null
           ) {
-            if (
-              character.heraldRealmPoints !== null &&
-              character.totalRealmPoints !== null
-            ) {
-              const rpThisWeek =
-                character.heraldRealmPoints - character.totalRealmPoints;
-              accumulatedRealmPointsThisWeek += rpThisWeek;
-            }
+            const rpThisWeek =
+              character.heraldRealmPoints - character.totalRealmPoints;
+            accumulatedRealmPointsThisWeek += rpThisWeek;
+          }
 
-            if (
-              character.heraldTotalDeaths !== null &&
-              character.totalDeaths !== null
-            ) {
-              const deathsThisWeekValue =
-                character.heraldTotalDeaths - character.totalDeaths;
-              accumulatedDeathsThisWeek += deathsThisWeekValue;
-            }
+          if (
+            character.heraldTotalDeaths !== null &&
+            character.totalDeaths !== null
+          ) {
+            const deathsThisWeekValue =
+              character.heraldTotalDeaths - character.totalDeaths;
+            accumulatedDeathsThisWeek += deathsThisWeekValue;
+          }
 
-            if (
-              character.heraldTotalSoloKills !== null &&
-              character.totalSoloKills !== null
-            ) {
-              const skThisWeek =
-                character.heraldTotalSoloKills - character.totalSoloKills;
-              accumulatedSoloKillsThisWeek += skThisWeek;
-            }
+          if (
+            character.heraldTotalSoloKills !== null &&
+            character.totalSoloKills !== null
+          ) {
+            const skThisWeek =
+              character.heraldTotalSoloKills - character.totalSoloKills;
+            accumulatedSoloKillsThisWeek += skThisWeek;
           }
         });
 
