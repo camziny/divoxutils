@@ -103,6 +103,16 @@ export default async function handler(
             const deathsThisWeekValue =
               character.heraldTotalDeaths - character.totalDeaths;
             accumulatedDeathsThisWeek += deathsThisWeekValue;
+
+            if (user.name === "beibhinn" && deathsThisWeekValue > 0) {
+              console.log(
+                `User: ${user.name} (ID: ${user.id}), Character: ${character.characterName} (ID: ${character.id})`
+              );
+              console.log(`Deaths This Week Calculation:`);
+              console.log(`heraldTotalDeaths: ${character.heraldTotalDeaths}`);
+              console.log(`totalDeaths: ${character.totalDeaths}`);
+              console.log(`deathsThisWeek: ${deathsThisWeekValue}`);
+            }
           }
 
           if (
