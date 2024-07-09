@@ -86,32 +86,37 @@ export default async function handler(
           if (character.deathsLastWeek !== character.totalDeaths) {
             deathsLastWeek += character.deathsLastWeek;
           }
+          if (character.totalRealmPoints === 0) {
+            accumulatedRealmPointsThisWeek += 0;
+            accumulatedDeathsThisWeek += 0;
+            accumulatedSoloKillsThisWeek += 0;
+          } else {
+            if (
+              character.heraldRealmPoints !== null &&
+              character.totalRealmPoints !== null
+            ) {
+              const rpThisWeek =
+                character.heraldRealmPoints - character.totalRealmPoints;
+              accumulatedRealmPointsThisWeek += rpThisWeek;
+            }
 
-          if (
-            character.heraldRealmPoints !== null &&
-            character.totalRealmPoints !== null
-          ) {
-            const rpThisWeek =
-              character.heraldRealmPoints - character.totalRealmPoints;
-            accumulatedRealmPointsThisWeek += rpThisWeek;
-          }
+            if (
+              character.heraldTotalDeaths !== null &&
+              character.totalDeaths !== null
+            ) {
+              const deathsThisWeekValue =
+                character.heraldTotalDeaths - character.totalDeaths;
+              accumulatedDeathsThisWeek += deathsThisWeekValue;
+            }
 
-          if (
-            character.heraldTotalDeaths !== null &&
-            character.totalDeaths !== null
-          ) {
-            const deathsThisWeekValue =
-              character.heraldTotalDeaths - character.totalDeaths;
-            accumulatedDeathsThisWeek += deathsThisWeekValue;
-          }
-
-          if (
-            character.heraldTotalSoloKills !== null &&
-            character.totalSoloKills !== null
-          ) {
-            const skThisWeek =
-              character.heraldTotalSoloKills - character.totalSoloKills;
-            accumulatedSoloKillsThisWeek += skThisWeek;
+            if (
+              character.heraldTotalSoloKills !== null &&
+              character.totalSoloKills !== null
+            ) {
+              const skThisWeek =
+                character.heraldTotalSoloKills - character.totalSoloKills;
+              accumulatedSoloKillsThisWeek += skThisWeek;
+            }
           }
         });
 
