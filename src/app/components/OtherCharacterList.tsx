@@ -82,7 +82,6 @@ export default async function OtherCharacterList({
     return <p>User is not authenticated. Please log in to view characters.</p>;
   }
 
-  const effectiveUserId = userId;
   let detailedCharacters: CharacterData[] = [];
   let userError = null;
 
@@ -91,7 +90,7 @@ export default async function OtherCharacterList({
     : searchParams?.sortOption || "realm";
 
   try {
-    const fetchedCharacters = await fetchCharactersForUser(effectiveUserId);
+    const fetchedCharacters = await fetchCharactersForUser(userId);
     detailedCharacters = sortCharacters(fetchedCharacters, sortOption);
   } catch (error) {
     console.error("Error fetching characters:", error);
@@ -141,7 +140,7 @@ export default async function OtherCharacterList({
                       }
                       initialCharacter={{
                         id: character.id,
-                        userId: userId!,
+                        userId: userId,
                         webId: character.webId,
                       }}
                       heraldBountyPoints={character.heraldBountyPoints}
@@ -149,7 +148,7 @@ export default async function OtherCharacterList({
                       heraldTotalDeaths={character.heraldTotalDeaths}
                       realmPointsLastWeek={character.realmPointsLastWeek}
                       totalRealmPoints={character.totalRealmPoints}
-                      currentUserId={userId!}
+                      currentUserId={userId}
                       ownerId={character.clerkUserId}
                     />
                   ))
@@ -174,7 +173,7 @@ export default async function OtherCharacterList({
               formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
               initialCharacter={{
                 id: character.id,
-                userId: userId!,
+                userId: userId,
                 webId: character.webId,
               }}
               heraldBountyPoints={character.heraldBountyPoints}
@@ -182,7 +181,7 @@ export default async function OtherCharacterList({
               heraldTotalDeaths={character.heraldTotalDeaths}
               realmPointsLastWeek={character.realmPointsLastWeek}
               totalRealmPoints={character.totalRealmPoints}
-              currentUserId={userId!}
+              currentUserId={userId}
               ownerId={character.clerkUserId}
             />
           ))
