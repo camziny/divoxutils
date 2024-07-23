@@ -4,12 +4,19 @@ import CharacterSearchAndAdd from "../components/CharacterSearchAndAdd";
 import { currentUser } from "@clerk/nextjs";
 import Loading from "../loading";
 import ShareProfileButton from "../components/ShareProfileButton";
+import SortOptions from "../components/SortOption";
 
 export const metadata = {
   title: "My Characters - divoxutils",
 };
 
-const CharacterPage: React.FC = async () => {
+interface CharacterPageProps {
+  searchParams: { [key: string]: string | string[] };
+}
+
+const CharacterPage: React.FC<CharacterPageProps> = async ({
+  searchParams,
+}) => {
   const user = await currentUser();
   if (user === null) {
     return <p>User is not logged in.</p>;
@@ -26,8 +33,11 @@ const CharacterPage: React.FC = async () => {
           {user?.username && <ShareProfileButton username={user.username} />}
         </div>
         <Suspense fallback={<Loading />}>
-          <div className="w-full px-4 sm:px-6 lg:px-8">
-            <CharacterList userId={user.id} search="" />
+          <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+            <div className="mb-4">
+              <SortOptions />
+            </div>
+            <CharacterList userId={user.id} searchParams={searchParams} />
           </div>
         </Suspense>
       </div>

@@ -7,10 +7,11 @@ import { CharacterData, Realm } from "@/utils/character";
 
 type OtherCharacterListProps = {
   userId?: string;
+  searchParams: { [key: string]: string | string[] };
 };
 
 async function fetchCharactersForUser(
-  userId: number
+  userId: string
 ): Promise<CharacterData[]> {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
 
@@ -22,8 +23,7 @@ async function fetchCharactersForUser(
         `Fetch response error: ${response.status} - ${JSON.stringify(data)}`
       );
     }
-    const characterDetails = data;
-    return characterDetails;
+    return data;
   } catch (error) {
     console.error("Error fetching characters:", error);
     throw error;
@@ -36,44 +36,63 @@ const realmOrder: Record<Realm, number> = {
   Midgard: 3,
 };
 
-const sortCharacters = (characters: CharacterData[]) => {
-  return characters.sort((a, b) => {
-    if (!(a.realm in realmOrder) || !(b.realm in realmOrder)) {
-      console.error("Invalid realm data:", a.realm, b.realm);
-      return 0;
-    }
-    if (realmOrder[a.realm] < realmOrder[b.realm]) return -1;
-    if (realmOrder[a.realm] > realmOrder[b.realm]) return 1;
-    if (
-      typeof a.heraldRealmPoints !== "number" ||
-      typeof b.heraldRealmPoints !== "number"
-    ) {
-      console.error(
-        "Invalid realm points data:",
-        a.heraldRealmPoints,
-        b.heraldRealmPoints
+const sortCharacters = (characters: CharacterData[], sortOption: string) => {
+  switch (sortOption) {
+    case "realm":
+      return characters.sort((a, b) => {
+        if (!(a.realm in realmOrder) || !(b.realm in realmOrder)) {
+          console.error("Invalid realm data:", a.realm, b.realm);
+          return 0;
+        }
+        if (realmOrder[a.realm] < realmOrder[b.realm]) return -1;
+        if (realmOrder[a.realm] > realmOrder[b.realm]) return 1;
+        if (
+          typeof a.heraldRealmPoints !== "number" ||
+          typeof b.heraldRealmPoints !== "number"
+        ) {
+          console.error(
+            "Invalid realm points data:",
+            a.heraldRealmPoints,
+            b.heraldRealmPoints
+          );
+          return 0;
+        }
+        return b.heraldRealmPoints - a.heraldRealmPoints;
+      });
+
+    case "rank-high-to-low":
+      return characters.sort(
+        (a, b) => b.heraldRealmPoints - a.heraldRealmPoints
       );
-      return 0;
-    }
-    return b.heraldRealmPoints - a.heraldRealmPoints;
-  });
+
+    case "rank-low-to-high":
+      return characters.sort(
+        (a, b) => a.heraldRealmPoints - b.heraldRealmPoints
+      );
+    default:
+      return characters;
+  }
 };
 
-export default async function OtherCharacterList({ userId }: { userId: any }) {
-  const ownerId = userId;
-  const effectiveUserId = ownerId || userId;
-  let detailedCharacters: any = [];
+export default async function OtherCharacterList({
+  userId,
+  searchParams,
+}: OtherCharacterListProps) {
+  if (!userId) {
+    return <p>User is not authenticated. Please log in to view characters.</p>;
+  }
+
+  const effectiveUserId = userId;
+  let detailedCharacters: CharacterData[] = [];
   let userError = null;
 
+  const sortOption = Array.isArray(searchParams?.sortOption)
+    ? searchParams.sortOption[0]
+    : searchParams?.sortOption || "realm";
+
   try {
-    if (effectiveUserId) {
-      const fetchedCharacters = await fetchCharactersForUser(effectiveUserId);
-      detailedCharacters = sortCharacters(fetchedCharacters);
-    } else {
-      userError = (
-        <p>User is not authenticated. Please log in to view characters.</p>
-      );
-    }
+    const fetchedCharacters = await fetchCharactersForUser(effectiveUserId);
+    detailedCharacters = sortCharacters(fetchedCharacters, sortOption);
   } catch (error) {
     console.error("Error fetching characters:", error);
     userError = <p>An error occurred while fetching characters.</p>;
@@ -122,7 +141,7 @@ export default async function OtherCharacterList({ userId }: { userId: any }) {
                       }
                       initialCharacter={{
                         id: character.id,
-                        userId: userId,
+                        userId: userId!,
                         webId: character.webId,
                       }}
                       heraldBountyPoints={character.heraldBountyPoints}
@@ -130,7 +149,7 @@ export default async function OtherCharacterList({ userId }: { userId: any }) {
                       heraldTotalDeaths={character.heraldTotalDeaths}
                       realmPointsLastWeek={character.realmPointsLastWeek}
                       totalRealmPoints={character.totalRealmPoints}
-                      currentUserId={userId}
+                      currentUserId={userId!}
                       ownerId={character.clerkUserId}
                     />
                   ))
@@ -155,7 +174,7 @@ export default async function OtherCharacterList({ userId }: { userId: any }) {
               formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
               initialCharacter={{
                 id: character.id,
-                userId: userId,
+                userId: userId!,
                 webId: character.webId,
               }}
               heraldBountyPoints={character.heraldBountyPoints}
@@ -163,7 +182,7 @@ export default async function OtherCharacterList({ userId }: { userId: any }) {
               heraldTotalDeaths={character.heraldTotalDeaths}
               realmPointsLastWeek={character.realmPointsLastWeek}
               totalRealmPoints={character.totalRealmPoints}
-              currentUserId={userId}
+              currentUserId={userId!}
               ownerId={character.clerkUserId}
             />
           ))
