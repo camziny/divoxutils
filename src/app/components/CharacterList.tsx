@@ -51,45 +51,64 @@ const realmOrder: Record<Realm, number> = {
   Midgard: 3,
 };
 
-const sortCharacters = (characters: CharacterData[]) => {
-  return characters.sort((a, b) => {
-    if (!(a.realm in realmOrder) || !(b.realm in realmOrder)) {
-      console.error("Invalid realm data:", a.realm, b.realm);
-      return 0;
-    }
-    if (realmOrder[a.realm] < realmOrder[b.realm]) return -1;
-    if (realmOrder[a.realm] > realmOrder[b.realm]) return 1;
-    if (
-      typeof a.heraldRealmPoints !== "number" ||
-      typeof b.heraldRealmPoints !== "number"
-    ) {
-      console.error(
-        "Invalid realm points data:",
-        a.heraldRealmPoints,
-        b.heraldRealmPoints
+const sortCharacters = (characters: CharacterData[], sortOption: string) => {
+  switch (sortOption) {
+    case "realm":
+      return characters.sort((a, b) => {
+        if (!(a.realm in realmOrder) || !(b.realm in realmOrder)) {
+          console.error("Invalid realm data:", a.realm, b.realm);
+          return 0;
+        }
+        if (realmOrder[a.realm] < realmOrder[b.realm]) return -1;
+        if (realmOrder[a.realm] > realmOrder[b.realm]) return 1;
+        if (
+          typeof a.heraldRealmPoints !== "number" ||
+          typeof b.heraldRealmPoints !== "number"
+        ) {
+          console.error(
+            "Invalid realm points data:",
+            a.heraldRealmPoints,
+            b.heraldRealmPoints
+          );
+          return 0;
+        }
+        return b.heraldRealmPoints - a.heraldRealmPoints;
+      });
+
+    case "rank-high-to-low":
+      return characters.sort(
+        (a, b) => b.heraldRealmPoints - a.heraldRealmPoints
       );
-      return 0;
-    }
-    return b.heraldRealmPoints - a.heraldRealmPoints;
-  });
+
+    case "rank-low-to-high":
+      return characters.sort(
+        (a, b) => a.heraldRealmPoints - b.heraldRealmPoints
+      );
+    default:
+      return characters;
+  }
 };
 
 export default async function CharacterList({
   userId,
-  search,
+  searchParams,
 }: {
   userId: any;
-  search: string;
+  searchParams: { [key: string]: string | string[] };
 }) {
   const { userId: clerkUserId } = auth();
   const effectiveUserId = userId || clerkUserId;
   let detailedCharacters: any = [];
   let userError = null;
 
+  const sortOption = Array.isArray(searchParams?.sortOption)
+    ? searchParams.sortOption[0]
+    : searchParams?.sortOption || "realm";
+
   try {
     if (effectiveUserId) {
       const fetchedCharacters = await fetchCharactersForUser(effectiveUserId);
-      detailedCharacters = sortCharacters(fetchedCharacters);
+      detailedCharacters = sortCharacters(fetchedCharacters, sortOption);
     } else {
       userError = (
         <p>User is not authenticated. Please log in to view characters.</p>

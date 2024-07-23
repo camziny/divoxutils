@@ -5,10 +5,12 @@ import { Suspense } from "react";
 import Loading from "@/app/loading";
 import type { Metadata, ResolvingMetadata } from "next";
 import ShareProfileButton from "@/app/components/ShareProfileButton";
+import SortOptions from "@/app/components/SortOptions";
 
 interface CharactersPageParams {
   name: string;
   clerkUserId: string;
+  searchParams: { [key: string]: string | string[] };
 }
 
 export async function generateMetadata(
@@ -32,11 +34,10 @@ export async function generateMetadata(
   };
 }
 
-export default async function CharactersPage({
-  params,
-}: {
+const CharactersPage: React.FC<{
   params: CharactersPageParams;
-}) {
+  searchParams: { [key: string]: string | string[] };
+}> = async ({ params, searchParams }) => {
   const { name } = params;
 
   const res = await fetch(
@@ -59,10 +60,18 @@ export default async function CharactersPage({
           </h1>
           <PageReload />
           <Suspense fallback={<Loading />}>
-            <OtherCharacterList userId={user.clerkUserId} />
+            <div className="mb-4 flex flex-col items-center">
+              <SortOptions />
+            </div>
+            <OtherCharacterList
+              userId={user.clerkUserId}
+              searchParams={searchParams}
+            />
           </Suspense>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default CharactersPage;
