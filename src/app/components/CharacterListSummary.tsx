@@ -12,6 +12,8 @@ interface RealmStats {
   death_blows: number;
   solo_kills: number;
   realmPoints: number;
+  realmPointsLastWeek: number;
+  realmPointsThisWeek: number;
 }
 
 interface AggregateStats {
@@ -27,6 +29,7 @@ interface CharacterData {
   totalRealmPoints: number;
   heraldRealmPoints: number;
   heraldName: string;
+  realmPointsLastWeek: number;
   player_kills: {
     total: PlayerKillStats;
     midgard?: PlayerKillStats;
@@ -40,6 +43,8 @@ const initialRealmStats = (): RealmStats => ({
   death_blows: 0,
   solo_kills: 0,
   realmPoints: 0,
+  realmPointsLastWeek: 0,
+  realmPointsThisWeek: 0,
 });
 
 const initialAggregateStats = (): AggregateStats => ({
@@ -52,91 +57,33 @@ const initialAggregateStats = (): AggregateStats => ({
 const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
   characters,
 }) => {
-  const aggregateStats: AggregateStats = {
-    Albion: initialRealmStats(),
-    Hibernia: initialRealmStats(),
-    Midgard: initialRealmStats(),
-    Total: initialRealmStats(),
-  };
+  const aggregateStats: AggregateStats = initialAggregateStats();
 
   characters.forEach((character) => {
     const realm = character.realm;
     const playerKills = character.player_kills.total;
 
     const realmPoints = character.heraldRealmPoints || 0;
+    const realmPointsLastWeek = character.realmPointsLastWeek || 0;
+    const realmPointsThisWeek =
+      character.heraldRealmPoints - character.totalRealmPoints;
 
     if (aggregateStats[realm]) {
       aggregateStats[realm].kills += playerKills.kills;
       aggregateStats[realm].death_blows += playerKills.death_blows;
       aggregateStats[realm].solo_kills += playerKills.solo_kills;
       aggregateStats[realm].realmPoints += realmPoints;
+      aggregateStats[realm].realmPointsLastWeek += realmPointsLastWeek;
+      aggregateStats[realm].realmPointsThisWeek += realmPointsThisWeek;
     }
 
     aggregateStats.Total.kills += playerKills.kills;
     aggregateStats.Total.death_blows += playerKills.death_blows;
     aggregateStats.Total.solo_kills += playerKills.solo_kills;
     aggregateStats.Total.realmPoints += realmPoints;
+    aggregateStats.Total.realmPointsLastWeek += realmPointsLastWeek;
+    aggregateStats.Total.realmPointsThisWeek += realmPointsThisWeek;
   });
-
-  const getOpponentRealms = (realm: number) => {
-    switch (realm) {
-      case 1:
-        return ["2", "3"];
-      case 2:
-        return ["1", "3"];
-      case 3:
-        return ["1", "2"];
-      default:
-        return ["1", "2", "3"];
-    }
-  };
-
-  // characters.forEach((character) => {
-  //   if (
-  //     character &&
-  //     character.detailedCharacter &&
-  //     character.detailedCharacter.realm_war_stats &&
-  //     character.detailedCharacter.realm_war_stats.current
-  //   ) {
-  //     const currentStats = character.detailedCharacter.realm_war_stats.current;
-  //     const realmPointsLastWeek = character.character?.realmPointsLastWeek || 0;
-  //     aggregateStats.totalRPsLastWeek += realmPointsLastWeek;
-
-  //     aggregateStats.totalRPs += currentStats.realm_points;
-
-  //     let realmKey = "";
-
-  //     if (character.detailedCharacter.realm === 1) {
-  //       realmKey = "albion";
-  //       aggregateStats.albionTotalRPs += currentStats.realm_points;
-  //       aggregateStats.albionRPsLastWeek += realmPointsLastWeek;
-  //     } else if (character.detailedCharacter.realm === 2) {
-  //       realmKey = "midgard";
-  //       aggregateStats.midgardTotalRPs += currentStats.realm_points;
-  //       aggregateStats.midgardRPsLastWeek += realmPointsLastWeek;
-  //     } else if (character.detailedCharacter.realm === 3) {
-  //       realmKey = "hibernia";
-  //       aggregateStats.hiberniaTotalRPs += currentStats.realm_points;
-  //       aggregateStats.hiberniaRPsLastWeek += realmPointsLastWeek;
-  //     }
-
-  //     if (realmKey) {
-  //       aggregateStats.player_kills[realmKey].kills +=
-  //         currentStats.player_kills.total.kills;
-  //       aggregateStats.player_kills[realmKey].solo_kills +=
-  //         currentStats.player_kills.total.solo_kills;
-  //       aggregateStats.player_kills[realmKey].death_blows +=
-  //         currentStats.player_kills.total.death_blows;
-  //     }
-
-  //     aggregateStats.player_kills.total.kills +=
-  //       currentStats.player_kills.total.kills;
-  //     aggregateStats.player_kills.total.solo_kills +=
-  //       currentStats.player_kills.total.solo_kills;
-  //     aggregateStats.player_kills.total.death_blows +=
-  //       currentStats.player_kills.total.death_blows;
-  //   }
-  // });
 
   const formatNumber = (num: number | undefined) => {
     return typeof num === "number" && !isNaN(num)
@@ -156,6 +103,15 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
   };
 
   const realms = ["Albion", "Midgard", "Hibernia", "Total"];
+
+  const statsKeys: Record<string, keyof RealmStats> = {
+    Kills: "kills",
+    "Death Blows": "death_blows",
+    "Solo Kills": "solo_kills",
+    "Realm Points": "realmPoints",
+    "Realm Points Last Week": "realmPointsLastWeek",
+    "Realm Points This Week": "realmPointsThisWeek",
+  };
 
   return (
     <TableCell className="bg-gray-900 p-3 sm:p-5" colSpan={9}>
@@ -177,27 +133,46 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
                 {realm}
               </span>
               <div className="space-y-1.5 mt-1">
-                {["Kills", "Death Blows", "Solo Kills", "Realm Points"].map(
-                  (stat, i) => {
-                    let statKey = stat.replace(/ /g, "_").toLowerCase();
-                    if (stat === "Realm Points") {
-                      statKey = "realmPoints";
-                    }
-                    return (
-                      <div
-                        key={i}
-                        className="flex justify-between items-center text-xs sm:text-sm"
-                      >
-                        <span className="font-medium">{stat}:</span>
-                        <span className="w-20 sm:w-24 text-right font-medium">
-                          {formatNumber(
-                            (aggregateStats as any)[realm][statKey]
-                          )}
-                        </span>
-                      </div>
-                    );
-                  }
-                )}
+                {["Kills", "Death Blows", "Solo Kills"].map((stat, i) => {
+                  const statKey = statsKeys[stat as keyof typeof statsKeys];
+                  return (
+                    <div
+                      key={i}
+                      className="flex justify-between items-center text-xs sm:text-sm"
+                    >
+                      <span className="font-medium">{stat}:</span>
+                      <span className="w-20 sm:w-24 text-right font-medium">
+                        {formatNumber(aggregateStats[realm][statKey])}
+                      </span>
+                    </div>
+                  );
+                })}
+                <div>
+                  <div className="flex justify-between items-center text-xs sm:text-sm">
+                    <h3 className="text-sm font-medium">Realm Points:</h3>
+                    <span className="w-20 sm:w-24 text-right font-medium">
+                      {formatNumber(aggregateStats[realm].realmPoints)}
+                    </span>
+                  </div>
+                  <div className="ml-4 space-y-1">
+                    <div className="flex justify-between items-center text-xs sm:text-sm">
+                      <span className="font-medium">Last Week:</span>
+                      <span className="w-20 sm:w-24 text-right font-medium">
+                        {formatNumber(
+                          aggregateStats[realm].realmPointsLastWeek
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs sm:text-sm">
+                      <span className="font-medium">This Week:</span>
+                      <span className="w-20 sm:w-24 text-right font-medium">
+                        {formatNumber(
+                          aggregateStats[realm].realmPointsThisWeek
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           ))}

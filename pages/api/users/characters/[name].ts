@@ -87,8 +87,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
               };
             });
 
-          console.log("API Response Characters:", sortedAndFormattedCharacters);
-
           res.status(200).json({
             user: `${closestUserName}`,
             characters: sortedAndFormattedCharacters,
