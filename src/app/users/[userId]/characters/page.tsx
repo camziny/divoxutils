@@ -8,11 +8,15 @@ interface CharactersPageParams {
   userId: string;
 }
 
+interface CharactersPageProps {
+  params: CharactersPageParams;
+  searchParams: { [key: string]: string | string[] };
+}
+
 export default async function CharactersPage({
   params,
-}: {
-  params: CharactersPageParams;
-}) {
+  searchParams,
+}: CharactersPageProps) {
   const userId = params.userId;
 
   const res = await fetch(
@@ -31,7 +35,7 @@ export default async function CharactersPage({
         </h1>
         <PageReload />
         <Suspense fallback={<Loading />}>
-          <OtherCharacterList userId={userId} />
+          <OtherCharacterList userId={userId} searchParams={searchParams} />
         </Suspense>
       </div>
     </div>

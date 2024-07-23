@@ -10,6 +10,10 @@ import SortOptions from "@/app/components/SortOptions";
 interface CharactersPageParams {
   name: string;
   clerkUserId: string;
+}
+
+interface CharactersPageProps {
+  params: CharactersPageParams;
   searchParams: { [key: string]: string | string[] };
 }
 
@@ -34,10 +38,10 @@ export async function generateMetadata(
   };
 }
 
-const CharactersPage: React.FC<{
-  params: CharactersPageParams;
-  searchParams: { [key: string]: string | string[] };
-}> = async ({ params, searchParams }) => {
+const CharactersPage: React.FC<CharactersPageProps> = async ({
+  params,
+  searchParams = {},
+}) => {
   const { name } = params;
 
   const res = await fetch(
