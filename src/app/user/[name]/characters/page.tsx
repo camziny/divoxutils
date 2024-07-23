@@ -4,8 +4,8 @@ import { PageReload } from "@/app/components/PageReload";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
 import type { Metadata, ResolvingMetadata } from "next";
-import ShareProfileButton from "../../../components/ShareProfileButton";
-import SortOptions from "../../../components/SortOption";
+import ShareProfileButton from "@/app/components/ShareProfileButton";
+import SortOptions from "@/app/components/SortOptions";
 
 interface CharactersPageParams {
   name: string;
@@ -34,13 +34,10 @@ export async function generateMetadata(
   };
 }
 
-export default async function CharactersPage({
-  params,
-  searchParams,
-}: {
+const CharactersPage: React.FC<{
   params: CharactersPageParams;
   searchParams: { [key: string]: string | string[] };
-}) {
+}> = async ({ params, searchParams }) => {
   const { name } = params;
 
   const res = await fetch(
@@ -75,4 +72,6 @@ export default async function CharactersPage({
       </div>
     </div>
   );
-}
+};
+
+export default CharactersPage;

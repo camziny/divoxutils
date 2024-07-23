@@ -4,7 +4,7 @@ import CharacterSearchAndAdd from "../components/CharacterSearchAndAdd";
 import { currentUser } from "@clerk/nextjs";
 import Loading from "../loading";
 import ShareProfileButton from "../components/ShareProfileButton";
-import SortOptions from "../components/SortOption";
+import SortOptions from "../components/SortOptions";
 
 export const metadata = {
   title: "My Characters - divoxutils",
