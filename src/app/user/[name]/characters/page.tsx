@@ -40,7 +40,7 @@ export async function generateMetadata(
 
 const CharactersPage: React.FC<CharactersPageProps> = async ({
   params,
-  searchParams,
+  searchParams = {},
 }) => {
   const { name } = params;
 

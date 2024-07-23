@@ -76,7 +76,7 @@ const sortCharacters = (characters: CharacterData[], sortOption: string) => {
 
 export default async function OtherCharacterList({
   userId,
-  searchParams,
+  searchParams = {},
 }: OtherCharacterListProps) {
   if (!userId) {
     return <p>User is not authenticated. Please log in to view characters.</p>;
