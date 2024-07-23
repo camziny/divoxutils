@@ -23,6 +23,7 @@ const SortOptions = () => {
     const currentParams = new URLSearchParams(window.location.search);
     currentParams.set("sortOption", sortOption);
     router.push(`${window.location.pathname}?${currentParams.toString()}`);
+    router.refresh();
   }, [sortOption, router]);
 
   const handleSortChange = (option: SortOptionKeys) => {
