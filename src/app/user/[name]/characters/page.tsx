@@ -74,7 +74,6 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
   let characters = [];
   try {
     characters = await fetchCharactersForUser(clerkUserId);
-    console.log("Fetched characters:", characters);
   } catch (error) {
     console.error("Error fetching characters:", error);
   }
