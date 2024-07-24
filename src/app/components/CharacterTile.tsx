@@ -161,27 +161,27 @@ const CharacterTile: React.FC<{
             )}
           </IconButton>
         </TableCell>
-        <TableCell className="w-1/4 px-6 text-white text-sm font-semibold">
+        <TableCell className="w-1/4 px-6 text-white text-sm font-semibold !text-white">
           {characterDetails.heraldName}
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold">
+        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
           <div className="max-w-xs truncate">
             {characterDetails.heraldClassName}
           </div>
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-md font-semibold">
+        <TableCell className="w-1/6 px-6 text-white text-md font-semibold !text-white">
           {characterDetails.formattedHeraldRealmPoints || "-"}
         </TableCell>
-        <TableCell className="w-1/4 px-6 text-white text-sm font-semibold">
+        <TableCell className="w-1/4 px-6 text-white text-sm font-semibold !text-white">
           {characterDetails.heraldGuildName || "-"}
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold">
+        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
           {characterDetails.heraldLevel}
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold hidden lg:table-cell">
+        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold hidden lg:table-cell !text-white">
           {characterDetails.heraldRace}
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold">
+        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
           {realm.name}
         </TableCell>
         <TableCell className="w-1/12 px-4">
