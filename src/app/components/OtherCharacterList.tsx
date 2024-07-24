@@ -1,69 +1,37 @@
+"use client";
+import React, { useState } from "react";
 import CharacterTile from "./CharacterTile";
 import CharacterTableHeader from "./CharacterTableHeader";
 import AggregateStatistics from "./CharacterListSummary";
 import MobileCharacterTile from "./MobileCharacterTile";
-import { TableContainer, Paper, TableBody, Table } from "@mui/material";
-import { CharacterData, Realm } from "@/utils/character";
+import { TableContainer, Paper, Table, TableBody } from "@mui/material";
+import { CharacterData } from "@/utils/character";
 import { sortCharacters } from "@/utils/sortCharacters";
+import SortOptions from "./SortOptions";
 
 type OtherCharacterListProps = {
   userId?: string;
+  characters: CharacterData[];
   searchParams: { [key: string]: string | string[] };
 };
 
-async function fetchCharactersForUser(
-  userId: string
-): Promise<CharacterData[]> {
-  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
-
-  try {
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(
-        `Fetch response error: ${response.status} - ${JSON.stringify(data)}`
-      );
-    }
-    return data;
-  } catch (error) {
-    console.error("Error fetching characters:", error);
-    throw error;
-  }
-}
-
-const realmOrder: Record<Realm, number> = {
-  Albion: 1,
-  Hibernia: 2,
-  Midgard: 3,
-};
-
-export default async function OtherCharacterList({
+const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
   userId,
-  searchParams = {},
-}: OtherCharacterListProps) {
-  if (!userId) {
-    return <p>User is not authenticated. Please log in to view characters.</p>;
-  }
+  characters,
+  searchParams,
+}) => {
+  const initialSortOption = (searchParams?.sortOption || "realm") as string;
+  const [sortOption, setSortOption] = useState(initialSortOption);
 
-  let detailedCharacters: CharacterData[] = [];
-  let userError = null;
+  const handleSortChange = (option: string) => {
+    setSortOption(option);
+  };
 
-  const sortOption = Array.isArray(searchParams?.sortOption)
-    ? searchParams.sortOption[0]
-    : searchParams?.sortOption || "realm";
-
-  try {
-    const fetchedCharacters = await fetchCharactersForUser(userId);
-    detailedCharacters = sortCharacters(fetchedCharacters, sortOption);
-  } catch (error) {
-    console.error("Error fetching characters:", error);
-    userError = <p>An error occurred while fetching characters.</p>;
-  }
+  const sortedCharacters = sortCharacters(characters || [], sortOption);
 
   return (
     <div className="flex flex-col items-center w-full max-w-6xl mx-auto">
-      {userError}
-
+      <SortOptions sortOption={sortOption} onSortChange={handleSortChange} />
       <div className="hidden sm:block character-table-container">
         <TableContainer component={Paper}>
           <Table stickyHeader style={{ tableLayout: "fixed" }}>
@@ -80,7 +48,7 @@ export default async function OtherCharacterList({
           >
             <Table style={{ tableLayout: "fixed" }}>
               <TableBody>
-                {detailedCharacters.length === 0 ? (
+                {sortedCharacters.length === 0 ? (
                   <tr>
                     <td
                       colSpan={9}
@@ -92,7 +60,7 @@ export default async function OtherCharacterList({
                     </td>
                   </tr>
                 ) : (
-                  detailedCharacters.map((character: CharacterData) => (
+                  sortedCharacters.map((character: CharacterData) => (
                     <CharacterTile
                       key={character.id}
                       webId={character.webId}
@@ -101,17 +69,13 @@ export default async function OtherCharacterList({
                       formattedHeraldRealmPoints={
                         character.formattedHeraldRealmPoints
                       }
-                      initialCharacter={{
-                        id: character.id,
-                        userId: userId,
-                        webId: character.webId,
-                      }}
+                      initialCharacter={character.initialCharacter}
                       heraldBountyPoints={character.heraldBountyPoints}
                       heraldTotalKills={character.heraldTotalKills}
                       heraldTotalDeaths={character.heraldTotalDeaths}
                       realmPointsLastWeek={character.realmPointsLastWeek}
                       totalRealmPoints={character.totalRealmPoints}
-                      currentUserId={userId}
+                      currentUserId={character.initialCharacter?.userId}
                       ownerId={character.clerkUserId}
                     />
                   ))
@@ -121,36 +85,34 @@ export default async function OtherCharacterList({
           </div>
         </TableContainer>
       </div>
-      <div className="sm:hidden overflow-auto max-h-[500px] w-full">
-        {detailedCharacters.length === 0 ? (
+      <div className="sm:hidden overflow-auto text-white max-h-[500px] w-full">
+        {sortedCharacters.length === 0 ? (
           <div className="text-center py-4 text-white bg-gray-900">
             No characters available
           </div>
         ) : (
-          detailedCharacters.map((character: CharacterData) => (
+          sortedCharacters.map((character: CharacterData) => (
             <MobileCharacterTile
               key={character.id}
               webId={character.webId}
               character={character}
               characterDetails={character}
               formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
-              initialCharacter={{
-                id: character.id,
-                userId: userId,
-                webId: character.webId,
-              }}
+              initialCharacter={character.initialCharacter}
               heraldBountyPoints={character.heraldBountyPoints}
               heraldTotalKills={character.heraldTotalKills}
               heraldTotalDeaths={character.heraldTotalDeaths}
               realmPointsLastWeek={character.realmPointsLastWeek}
               totalRealmPoints={character.totalRealmPoints}
-              currentUserId={userId}
+              currentUserId={character.initialCharacter?.userId}
               ownerId={character.clerkUserId}
             />
           ))
         )}
       </div>
-      <AggregateStatistics characters={detailedCharacters} />
+      <AggregateStatistics characters={sortedCharacters} />
     </div>
   );
-}
+};
+
+export default OtherCharacterList;

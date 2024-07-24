@@ -210,6 +210,7 @@ export type CharacterData = {
   heraldMasterLevel: string;
   clerkUserId: string;
   formattedHeraldRealmPoints: string;
+  userId?: string;
 };
 
 export const createCharacterDetails = (character: CharacterData) => {

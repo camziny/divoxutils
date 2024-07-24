@@ -38,6 +38,22 @@ export async function generateMetadata(
   };
 }
 
+async function fetchCharactersForUser(userId: string) {
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
+
+  const response = await fetch(apiUrl, {});
+  if (!response.ok) {
+    console.error(
+      `Fetch response error: ${response.status} ${response.statusText}`
+    );
+    throw new Error(
+      `Fetch response error: ${response.status} ${response.statusText}`
+    );
+  }
+  const data = await response.json();
+  return data;
+}
+
 const CharactersPage: React.FC<CharactersPageProps> = async ({
   params,
   searchParams = {},
@@ -53,6 +69,15 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
   const userData = await res.json();
 
   const user = userData[0];
+  const clerkUserId = user.clerkUserId;
+
+  let characters = [];
+  try {
+    characters = await fetchCharactersForUser(clerkUserId);
+    console.log("Fetched characters:", characters);
+  } catch (error) {
+    console.error("Error fetching characters:", error);
+  }
 
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
@@ -64,11 +89,9 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
           </h1>
           <PageReload />
           <Suspense fallback={<Loading />}>
-            <div className="mb-4 flex flex-col items-center">
-              <SortOptions />
-            </div>
             <OtherCharacterList
-              userId={user.clerkUserId}
+              userId={clerkUserId}
+              characters={characters}
               searchParams={searchParams}
             />
           </Suspense>
