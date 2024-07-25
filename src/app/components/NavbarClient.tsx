@@ -55,7 +55,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
   };
 
   return (
-    <nav className="bg-gray-800 p-5 text-white">
+    <nav className="text-white">
       <div className="container mx-auto flex flex-wrap justify-between items-center">
         <Link href="/">
           <div className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer">
