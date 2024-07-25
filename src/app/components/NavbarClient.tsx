@@ -94,25 +94,6 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     My Characters
                   </div>
                 </Link>
-                <Link href="/group-builder">
-                  <div
-                    onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
-                  >
-                    <span>Group Builder</span>
-                    <ConstructionIcon className="text-indigo-500 hover:text-indigo-600 ml-1" />
-                  </div>
-                </Link>
-                <Link href={userName ? `/user/${userName}/group` : "#"}>
-                  <div
-                    onClick={userName ? closeMenu : undefined}
-                    className={`px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end ${
-                      !userName ? "cursor-not-allowed" : ""
-                    }`}
-                  >
-                    My Group
-                  </div>
-                </Link>
                 <Link href="/leaderboards">
                   <div
                     onClick={closeMenu}
@@ -142,6 +123,25 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                     />
                   </div>
                 </Link>
+                {/* <Link href="/group-builder">
+                  <div
+                    onClick={closeMenu}
+                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                  >
+                    <span>Group Builder</span>
+                    <ConstructionIcon className="text-indigo-500 hover:text-indigo-600 ml-1" />
+                  </div>
+                </Link>
+                <Link href={userName ? `/user/${userName}/group` : "#"}>
+                  <div
+                    onClick={userName ? closeMenu : undefined}
+                    className={`px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end ${
+                      !userName ? "cursor-not-allowed" : ""
+                    }`}
+                  >
+                    My Group
+                  </div>
+                </Link> */}
                 <div
                   className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
                   onClick={() => setIsUpdateUsernameModalOpen(true)}
