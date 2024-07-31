@@ -11,11 +11,16 @@ export const metadata = {
 };
 
 async function fetchCharactersForUser(userId: string) {
+  console.log("Fetching characters for userId:", userId);
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
+  console.log("API URL:", apiUrl);
   const response = await fetch(apiUrl, {
     cache: "no-store",
   });
   if (!response.ok) {
+    console.error(
+      `Error fetching characters: ${response.status} ${response.statusText}`
+    );
     throw new Error(
       `Fetch response error: ${response.status} ${response.statusText}`
     );
