@@ -43,12 +43,6 @@ async function fetchCharactersForUser(userId: string) {
 
   const response = await fetch(apiUrl, {});
 
-  console.log(`Fetching characters for user with clerkUserId: ${userId}`);
-  console.log(
-    `Response status for ${userId}: ${response.status} ${response.statusText}`
-  );
-  console.log(`Response headers for ${userId}:`, response.headers);
-
   if (!response.ok) {
     console.error(
       `Fetch response error: ${response.status} ${response.statusText}`
@@ -68,8 +62,6 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
 }) => {
   const { name } = params;
 
-  console.log(`Fetching user data for name: ${name}`);
-
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/api/users?name=${name}`
   );
@@ -81,15 +73,9 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
   const user = userData[0];
   const clerkUserId = user.clerkUserId;
 
-  console.log(`Found user with name: ${name}, clerkUserId: ${clerkUserId}`);
-
   let characters = [];
   try {
     characters = await fetchCharactersForUser(clerkUserId);
-    console.log(
-      `Characters fetched for user ${name} (clerkUserId: ${clerkUserId}):`,
-      characters
-    );
   } catch (error) {
     console.error("Error fetching characters:", error);
   }

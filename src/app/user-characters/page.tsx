@@ -11,9 +11,7 @@ export const metadata = {
 };
 
 async function fetchCharactersForUser(userId: string) {
-  console.log("Fetching characters for userId:", userId);
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
-  console.log("API URL:", apiUrl);
   const response = await fetch(apiUrl, {
     cache: "no-store",
   });
