@@ -52,8 +52,6 @@ export default authMiddleware({
     "/api/batchedHeraldUpdate",
     "/api/resetHeraldBatchState",
     "/api/searchUsersAndCharacters",
-    "/api/revalidateTonka/:clerkUserId",
-    "/api/revalidateTonka",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
