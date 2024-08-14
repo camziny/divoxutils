@@ -21,8 +21,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       await userCharacterController.getUserCharactersByUserId(userId);
 
     if (!userCharacters || userCharacters.length === 0) {
-      res.status(404).json({ message: "No characters found for the user." });
-      return;
+      console.log(`No characters found for user ID: ${userId}`);
+      return res.status(200).json([]);
     }
 
     const charactersWithDetails = userCharacters
@@ -36,6 +36,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         const formattedHeraldRealmPoints = formatRealmRankWithLevel(
           getRealmRankForPoints(heraldRealmPoints)
         );
+
+        console.log("User Characters:", userCharacters);
 
         return {
           id: character.id,
