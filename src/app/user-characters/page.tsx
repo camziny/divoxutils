@@ -40,6 +40,9 @@ const CharacterPage: React.FC<CharacterPageProps> = async ({
 
   const characters = await fetchCharactersForUser(user.id);
 
+  console.log("Fetching characters for user ID:", user.id);
+  console.log("Characters fetched:", characters);
+
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
       <div className="flex flex-col items-center mt-8 space-y-4 w-full overflow-x-hidden">
