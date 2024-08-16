@@ -144,7 +144,7 @@ const MobileCharacterTile: React.FC<{
         </TableCell>
       </TableRow>
       {open && (
-        <TableRow className="bg-gray-700">
+        <TableRow className="bg-gray-900">
           <TableCell colSpan={isMobile ? 5 : 9} className="p-0">
             <div className="flex justify-center py-2">
               <CharacterDetails
