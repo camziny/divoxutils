@@ -77,6 +77,7 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
                       totalRealmPoints={character.totalRealmPoints}
                       currentUserId={character.initialCharacter?.userId}
                       ownerId={character.clerkUserId}
+                      showDelete={false}
                     />
                   ))
                 )}
@@ -106,6 +107,7 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
               totalRealmPoints={character.totalRealmPoints}
               currentUserId={character.initialCharacter?.userId}
               ownerId={character.clerkUserId}
+              showDelete={false}
             />
           ))
         )}

@@ -8,6 +8,8 @@ import { TableContainer, Paper, Table, TableBody } from "@mui/material";
 import { CharacterData } from "@/utils/character";
 import { sortCharacters } from "@/utils/sortCharacters";
 import SortOptions from "./SortOptions";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 type CharacterListProps = {
   characters: CharacterData[];
@@ -18,14 +20,57 @@ const CharacterList: React.FC<CharacterListProps> = ({
   characters,
   searchParams,
 }) => {
+  const { user } = useUser();
   const initialSortOption = (searchParams?.sortOption || "realm") as string;
   const [sortOption, setSortOption] = useState(initialSortOption);
+
+  const router = useRouter();
 
   const handleSortChange = (option: string) => {
     setSortOption(option);
   };
 
   const sortedCharacters = sortCharacters(characters, sortOption);
+
+  const handleDelete = async (characterId: number) => {
+    if (!user || !user.id) {
+      console.error("User is not authenticated.");
+      return;
+    }
+
+    const isConfirmed = window.confirm(
+      "Are you sure you want to delete this character?"
+    );
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/userCharacters/${user.id}/${characterId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete the character.");
+      }
+
+      const data = await response.json();
+      alert(data.message);
+      router.refresh();
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Error deleting character:", error.message);
+        alert(error.message);
+      } else {
+        console.error("Unexpected error", error);
+        alert("An unexpected error occurred");
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col items-center w-full max-w-6xl mx-auto">
@@ -75,6 +120,7 @@ const CharacterList: React.FC<CharacterListProps> = ({
                       totalRealmPoints={character.totalRealmPoints}
                       currentUserId={character.initialCharacter?.userId}
                       ownerId={character.clerkUserId}
+                      onDelete={() => handleDelete(character.id)}
                     />
                   ))
                 )}
@@ -104,6 +150,7 @@ const CharacterList: React.FC<CharacterListProps> = ({
               totalRealmPoints={character.totalRealmPoints}
               currentUserId={character.initialCharacter?.userId}
               ownerId={character.clerkUserId}
+              onDelete={() => handleDelete(character.id)} // Pass the delete handler
             />
           ))
         )}

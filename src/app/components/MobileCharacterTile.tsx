@@ -40,6 +40,8 @@ const MobileCharacterTile: React.FC<{
   heraldBountyPoints: any;
   heraldTotalKills: any;
   heraldTotalDeaths: any;
+  showDelete?: boolean;
+  onDelete?: () => void;
 }> = ({
   webId,
   character,
@@ -49,44 +51,16 @@ const MobileCharacterTile: React.FC<{
   totalRealmPoints,
   currentUserId,
   ownerId,
+  onDelete,
+  showDelete = true,
 }) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { userId } = useAuth();
 
   const isOwner = userId === ownerId;
-  const showDeleteIcon = isOwner;
+  const showDeleteIcon = isOwner && showDelete;
   const isMobile = useMediaQuery({ maxWidth: 767 });
-
-  const handleDelete = async (
-    event: React.MouseEvent,
-    characterWebId: string
-  ) => {
-    event.stopPropagation();
-
-    const characterId = initialCharacter.id;
-
-    const isConfirmed = window.confirm(
-      "Are you sure you want to delete this character?"
-    );
-    if (!isConfirmed) return;
-    try {
-      const response = await fetch(
-        `/api/userCharacters/${userId}/${characterId}`,
-        { method: "DELETE" }
-      );
-
-      const data = await response.json();
-
-      alert(data.message);
-      router.refresh();
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Error in handleDelete:", error);
-        alert(error.message);
-      }
-    }
-  };
 
   const getOpponentRealms = (realmName: string) => {
     const realms = ["Albion", "Midgard", "Hibernia"];
@@ -133,11 +107,7 @@ const MobileCharacterTile: React.FC<{
         </TableCell>
         <TableCell className="p-0.5 w-8">
           {showDeleteIcon && isOwner && (
-            <IconButton
-              size="small"
-              onClick={(e) => handleDelete(e, character.webId)}
-              style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
-            >
+            <IconButton size="small" onClick={onDelete}>
               <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
             </IconButton>
           )}
