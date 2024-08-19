@@ -84,7 +84,8 @@ const CharacterTile: React.FC<{
   heraldBountyPoints: any;
   heraldTotalKills: any;
   heraldTotalDeaths: any;
-  onDelete: () => void;
+  onDelete?: () => void;
+  showDelete?: boolean;
 }> = ({
   character,
   characterDetails,
@@ -93,6 +94,7 @@ const CharacterTile: React.FC<{
   totalRealmPoints,
   ownerId,
   onDelete,
+  showDelete = true,
 }) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -102,7 +104,7 @@ const CharacterTile: React.FC<{
 
   const isOwner = userId === ownerId;
 
-  const showDeleteIcon = isOwner;
+  const showDeleteIcon = isOwner && showDelete;
 
   const getOpponentRealms = (realmName: string) => {
     const realms = ["Albion", "Midgard", "Hibernia"];

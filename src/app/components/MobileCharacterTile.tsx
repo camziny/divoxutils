@@ -40,7 +40,8 @@ const MobileCharacterTile: React.FC<{
   heraldBountyPoints: any;
   heraldTotalKills: any;
   heraldTotalDeaths: any;
-  onDelete: () => void;
+  showDelete?: boolean;
+  onDelete?: () => void;
 }> = ({
   webId,
   character,
@@ -51,13 +52,14 @@ const MobileCharacterTile: React.FC<{
   currentUserId,
   ownerId,
   onDelete,
+  showDelete = true,
 }) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const { userId } = useAuth();
 
   const isOwner = userId === ownerId;
-  const showDeleteIcon = isOwner;
+  const showDeleteIcon = isOwner && showDelete;
   const isMobile = useMediaQuery({ maxWidth: 767 });
 
   const getOpponentRealms = (realmName: string) => {
