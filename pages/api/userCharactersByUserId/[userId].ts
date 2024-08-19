@@ -37,8 +37,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           getRealmRankForPoints(heraldRealmPoints)
         );
 
-        console.log("User Characters:", userCharacters);
-
         return {
           id: character.id,
           webId: character.webId,

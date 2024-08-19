@@ -52,7 +52,7 @@ async function fetchCharactersForUser(userId: string) {
     );
   }
   const data = await response.json();
-  console.log(`Fetched data for ${userId}:`, data);
+
   return data;
 }
 

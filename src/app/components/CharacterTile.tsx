@@ -5,7 +5,7 @@ import ExpandCircleDownIcon from "@mui/icons-material/ExpandCircleDown";
 import CharacterDetails from "./CharacterDetails";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { currentUser, useAuth } from "@clerk/nextjs";
 import { Snackbar } from "@mui/material";
 import CharacterTileSkeleton from "./CharacterTileSkeleton";
 import { CharacterData } from "@/utils/character";
@@ -84,6 +84,7 @@ const CharacterTile: React.FC<{
   heraldBountyPoints: any;
   heraldTotalKills: any;
   heraldTotalDeaths: any;
+  onDelete: () => void;
 }> = ({
   character,
   characterDetails,
@@ -91,6 +92,7 @@ const CharacterTile: React.FC<{
   realmPointsLastWeek,
   totalRealmPoints,
   ownerId,
+  onDelete,
 }) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -101,37 +103,6 @@ const CharacterTile: React.FC<{
   const isOwner = userId === ownerId;
 
   const showDeleteIcon = isOwner;
-
-  const handleDelete = async (
-    event: React.MouseEvent,
-    characterWebId: string
-  ) => {
-    event.stopPropagation();
-
-    const characterId = initialCharacter.id;
-
-    const isConfirmed = window.confirm(
-      "Are you sure you want to delete this character?"
-    );
-    if (!isConfirmed) return;
-
-    try {
-      const response = await fetch(
-        `/api/userCharacters/${userId}/${characterId}`,
-        { method: "DELETE" }
-      );
-      const data = await response.json();
-      router.refresh();
-      setSnackbarMessage(data.message);
-      setSnackbarOpen(true);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("Error in handleDelete:", error);
-        setSnackbarMessage(error.message);
-        setSnackbarOpen(true);
-      }
-    }
-  };
 
   const getOpponentRealms = (realmName: string) => {
     const realms = ["Albion", "Midgard", "Hibernia"];
@@ -186,11 +157,7 @@ const CharacterTile: React.FC<{
         </TableCell>
         <TableCell className="w-1/12 px-4">
           {showDeleteIcon && isOwner && (
-            <IconButton
-              size="large"
-              onClick={(e) => handleDelete(e, character.webId)}
-              style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
-            >
+            <IconButton size="small" onClick={onDelete}>
               <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
             </IconButton>
           )}
