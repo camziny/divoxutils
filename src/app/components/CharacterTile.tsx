@@ -124,49 +124,52 @@ const CharacterTile: React.FC<{
   return (
     <>
       <TableRow
-        className={`rounded-xl overflow-hidden shadow-md ${realm.color}`}
+        className={`rounded-xl overflow-hidden shadow-md bg-gray-800 ${realm.color}`}
       >
-        <TableCell colSpan={9} className="p-0">
-          <div className="flex items-center">
-            <IconButton size="small" onClick={() => setOpen(!open)}>
-              {open ? (
-                <ExpandLessIcon className="text-white text-base" />
-              ) : (
-                <ExpandMoreIcon className="text-white text-base" />
-              )}
-            </IconButton>
-            <div className="w-1/4 px-6 text-white text-sm font-semibold">
-              {characterDetails.heraldName}
-            </div>
-            <div className="w-1/6 px-6 text-white text-sm font-semibold">
-              <div className="max-w-xs truncate">
-                {characterDetails.heraldClassName}
-              </div>
-            </div>
-            <div className="w-1/6 px-6 text-white text-md font-semibold">
-              {characterDetails.formattedHeraldRealmPoints || "-"}
-            </div>
-            <div className="w-1/4 px-6 text-white text-sm font-semibold">
-              {characterDetails.heraldGuildName || "-"}
-            </div>
-            <div className="w-1/6 px-6 text-white text-sm font-semibold">
-              {characterDetails.heraldLevel}
-            </div>
-            <div className="w-1/6 px-6 text-white text-sm font-semibold hidden lg:table-cell">
-              {characterDetails.heraldRace}
-            </div>
-            <div className="w-1/6 px-6 text-white text-sm font-semibold">
-              {realm.name}
-            </div>
-            {showDeleteIcon && isOwner && (
-              <IconButton size="small" onClick={onDelete}>
-                <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
-              </IconButton>
+        <TableCell className="w-1/12 px-4">
+          <IconButton size="small" onClick={() => setOpen(!open)}>
+            {open ? (
+              <ExpandLessIcon className="text-white text-base" />
+            ) : (
+              <ExpandMoreIcon className="text-white text-base" />
             )}
+          </IconButton>
+        </TableCell>
+        <TableCell className="w-1/4 px-6 text-white text-sm font-semibold !text-white">
+          {characterDetails.heraldName}
+        </TableCell>
+        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
+          <div className="max-w-xs truncate">
+            {characterDetails.heraldClassName}
           </div>
-
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <div className="bg-gray-900 w-full mt-2 p-4 rounded-lg shadow-md">
+        </TableCell>
+        <TableCell className="w-1/6 px-6 text-white text-md font-semibold !text-white">
+          {characterDetails.formattedHeraldRealmPoints || "-"}
+        </TableCell>
+        <TableCell className="w-1/4 px-6 text-white text-sm font-semibold !text-white">
+          {characterDetails.heraldGuildName || "-"}
+        </TableCell>
+        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
+          {characterDetails.heraldLevel}
+        </TableCell>
+        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold hidden lg:table-cell !text-white">
+          {characterDetails.heraldRace}
+        </TableCell>
+        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
+          {realm.name}
+        </TableCell>
+        <TableCell className="w-1/12 px-4">
+          {showDeleteIcon && isOwner && (
+            <IconButton size="small" onClick={onDelete}>
+              <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
+            </IconButton>
+          )}
+        </TableCell>
+      </TableRow>
+      {open && (
+        <TableRow className="bg-gray-900">
+          <TableCell colSpan={9} className="p-0">
+            <div className="flex justify-center py-2">
               <CharacterDetails
                 character={characterDetails}
                 opponentRealms={opponentRealms}
@@ -175,10 +178,9 @@ const CharacterTile: React.FC<{
                 totalRealmPoints={totalRealmPoints}
               />
             </div>
-          </Collapse>
-        </TableCell>
-      </TableRow>
-
+          </TableCell>
+        </TableRow>
+      )}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
