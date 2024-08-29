@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { TableRow, TableCell, IconButton, Grow, Collapse } from "@mui/material";
+import React, { useState } from "react";
+import { TableRow, TableCell, IconButton } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import CharacterDetails from "./CharacterDetails";
@@ -10,6 +10,7 @@ import { currentUser, useAuth } from "@clerk/nextjs";
 import { Snackbar } from "@mui/material";
 import CharacterTileSkeleton from "./CharacterTileSkeleton";
 import { CharacterData } from "@/utils/character";
+import { motion, AnimatePresence } from "framer-motion";
 
 type KillStats = {
   kills: number;
@@ -166,21 +167,31 @@ const CharacterTile: React.FC<{
           )}
         </TableCell>
       </TableRow>
-      {open && (
-        <TableRow className="bg-gray-900">
-          <TableCell colSpan={9} className="p-0">
-            <div className="flex justify-center py-2">
-              <CharacterDetails
-                character={characterDetails}
-                opponentRealms={opponentRealms}
-                realmPointsLastWeek={realmPointsLastWeek}
-                realmPointsThisWeek={realmPointsThisWeek}
-                totalRealmPoints={totalRealmPoints}
-              />
-            </div>
-          </TableCell>
-        </TableRow>
-      )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <TableRow className="bg-gray-900">
+            <TableCell colSpan={9} className="p-0">
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.15, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="flex justify-center py-2">
+                  <CharacterDetails
+                    character={characterDetails}
+                    opponentRealms={opponentRealms}
+                    realmPointsLastWeek={realmPointsLastWeek}
+                    realmPointsThisWeek={realmPointsThisWeek}
+                    totalRealmPoints={totalRealmPoints}
+                  />
+                </div>
+              </motion.div>
+            </TableCell>
+          </TableRow>
+        )}
+      </AnimatePresence>
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
