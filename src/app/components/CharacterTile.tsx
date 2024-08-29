@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { TableRow, TableCell, IconButton, Grow } from "@mui/material";
-import ExpandCircleDownIcon from "@mui/icons-material/ExpandCircleDown";
+import { TableRow, TableCell, IconButton, Grow, Collapse } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import CharacterDetails from "./CharacterDetails";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useRouter } from "next/navigation";
@@ -123,52 +124,49 @@ const CharacterTile: React.FC<{
   return (
     <>
       <TableRow
-        className={`rounded-xl overflow-hidden shadow-md bg-gray-800 ${realm.color}`}
+        className={`rounded-xl overflow-hidden shadow-md ${realm.color}`}
       >
-        <TableCell className="w-1/12 px-4">
-          <IconButton size="small" onClick={() => setOpen(!open)}>
-            {open ? (
-              <ExpandCircleDownIcon className="text-white text-base" />
-            ) : (
-              <ExpandCircleDownIcon className="text-white text-base" />
-            )}
-          </IconButton>
-        </TableCell>
-        <TableCell className="w-1/4 px-6 text-white text-sm font-semibold !text-white">
-          {characterDetails.heraldName}
-        </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
-          <div className="max-w-xs truncate">
-            {characterDetails.heraldClassName}
-          </div>
-        </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-md font-semibold !text-white">
-          {characterDetails.formattedHeraldRealmPoints || "-"}
-        </TableCell>
-        <TableCell className="w-1/4 px-6 text-white text-sm font-semibold !text-white">
-          {characterDetails.heraldGuildName || "-"}
-        </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
-          {characterDetails.heraldLevel}
-        </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold hidden lg:table-cell !text-white">
-          {characterDetails.heraldRace}
-        </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
-          {realm.name}
-        </TableCell>
-        <TableCell className="w-1/12 px-4">
-          {showDeleteIcon && isOwner && (
-            <IconButton size="small" onClick={onDelete}>
-              <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
+        <TableCell colSpan={9} className="p-0">
+          <div className="flex items-center">
+            <IconButton size="small" onClick={() => setOpen(!open)}>
+              {open ? (
+                <ExpandLessIcon className="text-white text-base" />
+              ) : (
+                <ExpandMoreIcon className="text-white text-base" />
+              )}
             </IconButton>
-          )}
-        </TableCell>
-      </TableRow>
-      {open && (
-        <TableRow className="bg-gray-900">
-          <TableCell colSpan={9} className="p-0">
-            <div className="flex justify-center py-2">
+            <div className="w-1/4 px-6 text-white text-sm font-semibold">
+              {characterDetails.heraldName}
+            </div>
+            <div className="w-1/6 px-6 text-white text-sm font-semibold">
+              <div className="max-w-xs truncate">
+                {characterDetails.heraldClassName}
+              </div>
+            </div>
+            <div className="w-1/6 px-6 text-white text-md font-semibold">
+              {characterDetails.formattedHeraldRealmPoints || "-"}
+            </div>
+            <div className="w-1/4 px-6 text-white text-sm font-semibold">
+              {characterDetails.heraldGuildName || "-"}
+            </div>
+            <div className="w-1/6 px-6 text-white text-sm font-semibold">
+              {characterDetails.heraldLevel}
+            </div>
+            <div className="w-1/6 px-6 text-white text-sm font-semibold hidden lg:table-cell">
+              {characterDetails.heraldRace}
+            </div>
+            <div className="w-1/6 px-6 text-white text-sm font-semibold">
+              {realm.name}
+            </div>
+            {showDeleteIcon && isOwner && (
+              <IconButton size="small" onClick={onDelete}>
+                <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
+              </IconButton>
+            )}
+          </div>
+
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <div className="bg-gray-900 w-full mt-2 p-4 rounded-lg shadow-md">
               <CharacterDetails
                 character={characterDetails}
                 opponentRealms={opponentRealms}
@@ -177,9 +175,10 @@ const CharacterTile: React.FC<{
                 totalRealmPoints={totalRealmPoints}
               />
             </div>
-          </TableCell>
-        </TableRow>
-      )}
+          </Collapse>
+        </TableCell>
+      </TableRow>
+
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}

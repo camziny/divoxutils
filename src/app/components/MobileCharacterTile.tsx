@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { TableRow, TableCell, IconButton } from "@mui/material";
-import ExpandCircleDownIcon from "@mui/icons-material/ExpandCircleDown";
+import ExpandMoreIcon from "@mui/icons-material/ExpandCircleDown";
+import ExpandLessIcon from "@mui/icons-material/ExpandCircleDown";
 import CharacterDetails from "./CharacterDetails";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useRouter } from "next/navigation";
@@ -90,9 +91,9 @@ const MobileCharacterTile: React.FC<{
         <TableCell className="p-0.5 w-8">
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? (
-              <ExpandCircleDownIcon className="text-white text-xs" />
+              <ExpandLessIcon className="text-white text-xs" />
             ) : (
-              <ExpandCircleDownIcon className="text-white text-xs" />
+              <ExpandMoreIcon className="text-white text-xs" />
             )}
           </IconButton>
         </TableCell>
