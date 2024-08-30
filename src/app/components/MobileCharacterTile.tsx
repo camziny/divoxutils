@@ -88,7 +88,10 @@ const MobileCharacterTile: React.FC<{
       <TableRow
         className={`rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 bg-gray-800 ${realm.color}`}
       >
-        <TableCell className="p-0.5 w-8">
+        <TableCell
+          className="p-0.5 w-6"
+          sx={{ padding: "2px", minHeight: "24px", maxHeight: "24px" }}
+        >
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? (
               <ExpandLessIcon className="text-white text-xs" />
@@ -97,16 +100,25 @@ const MobileCharacterTile: React.FC<{
             )}
           </IconButton>
         </TableCell>
-        <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
-          {truncateText(characterDetails.heraldName, 10)}
+        <TableCell
+          className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate"
+          sx={{ width: "40%" }}
+        >
+          {truncateText(characterDetails.heraldName, 15)}
         </TableCell>
-        <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
+        <TableCell
+          className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate"
+          sx={{ width: "25%" }}
+        >
           {truncateText(characterDetails.heraldClassName, 8)}
         </TableCell>
-        <TableCell className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate w-1/4">
+        <TableCell
+          className="text-white text-xs sm:text-xs font-semibold p-0.5 text-center"
+          sx={{ width: "25%" }}
+        >
           {characterDetails.formattedHeraldRealmPoints || "-"}
         </TableCell>
-        <TableCell className="p-0.5 w-8">
+        <TableCell className="p-0.5 w-6 text-center">
           {showDeleteIcon && isOwner && (
             <IconButton size="small" onClick={onDelete}>
               <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
@@ -114,6 +126,7 @@ const MobileCharacterTile: React.FC<{
           )}
         </TableCell>
       </TableRow>
+
       {open && (
         <TableRow className="bg-gray-900">
           <TableCell colSpan={isMobile ? 5 : 9} className="p-0">
