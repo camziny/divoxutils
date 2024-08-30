@@ -127,7 +127,15 @@ const CharacterTile: React.FC<{
       <TableRow
         className={`rounded-xl overflow-hidden shadow-md bg-gray-800 ${realm.color}`}
       >
-        <TableCell className="w-1/12 px-4">
+        <TableCell
+          sx={{
+            padding: "4px",
+            minHeight: "24px",
+            maxHeight: "24px",
+            height: "24px",
+          }}
+          className="w-1/12"
+        >
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? (
               <ExpandLessIcon className="text-white text-base" />
