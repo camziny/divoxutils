@@ -126,55 +126,108 @@ const CharacterTile: React.FC<{
     <>
       <TableRow
         className={`rounded-xl overflow-hidden shadow-md bg-gray-800 ${realm.color}`}
+        sx={{ padding: 0, margin: 0, height: "24px" }}
       >
         <TableCell
+          className="w-1/12 p-0"
           sx={{
-            padding: "4px",
+            padding: "2px",
+            margin: 0,
             minHeight: "24px",
             maxHeight: "24px",
             height: "24px",
           }}
-          className="w-1/12"
         >
-          <IconButton size="small" onClick={() => setOpen(!open)}>
+          <IconButton
+            size="small"
+            onClick={() => setOpen(!open)}
+            sx={{
+              padding: "2px",
+              backgroundColor: "transparent",
+              "&:hover": {
+                backgroundColor: "transparent",
+              },
+            }}
+          >
             {open ? (
-              <ExpandLessIcon className="text-white text-base" />
+              <ExpandLessIcon className="text-white text-xs" />
             ) : (
-              <ExpandMoreIcon className="text-white text-base" />
+              <ExpandMoreIcon className="text-white text-xs" />
             )}
           </IconButton>
         </TableCell>
-        <TableCell className="w-1/4 px-6 text-white text-sm font-semibold !text-white">
+        <TableCell
+          className="w-1/4 !text-white text-xs font-semibold truncate"
+          sx={{
+            padding: "2px",
+            margin: 0,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
           {characterDetails.heraldName}
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
+        <TableCell
+          className="w-1/6 !text-white text-xs font-semibold"
+          sx={{ padding: "2px", margin: 0 }}
+        >
           <div className="max-w-xs truncate">
             {characterDetails.heraldClassName}
           </div>
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-md font-semibold !text-white">
+        <TableCell
+          className="w-1/6 !text-white text-xs font-semibold"
+          sx={{ padding: "2px", margin: 0 }}
+        >
           {characterDetails.formattedHeraldRealmPoints || "-"}
         </TableCell>
-        <TableCell className="w-1/4 px-6 text-white text-sm font-semibold !text-white">
+        <TableCell
+          className="w-1/4 !text-white text-xs font-semibold"
+          sx={{ padding: "2px", margin: 0 }}
+        >
           {characterDetails.heraldGuildName || "-"}
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
+        <TableCell
+          className="w-1/6 !text-white text-xs font-semibold"
+          sx={{ padding: "2px", margin: 0 }}
+        >
           {characterDetails.heraldLevel}
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold hidden lg:table-cell !text-white">
+        <TableCell
+          className="w-1/6 !text-white text-xs font-semibold hidden lg:table-cell"
+          sx={{ padding: "2px", margin: 0 }}
+        >
           {characterDetails.heraldRace}
         </TableCell>
-        <TableCell className="w-1/6 px-6 text-white text-sm font-semibold !text-white">
+        <TableCell
+          className="w-1/6 !text-white text-xs font-semibold"
+          sx={{ padding: "2px", margin: 0 }}
+        >
           {realm.name}
         </TableCell>
-        <TableCell className="w-1/12 px-4">
+        <TableCell
+          className="w-1/12 p-0 text-center"
+          sx={{ padding: "2px", margin: 0 }}
+        >
           {showDeleteIcon && isOwner && (
-            <IconButton size="small" onClick={onDelete}>
-              <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
+            <IconButton
+              size="medium"
+              onClick={onDelete}
+              sx={{
+                padding: "2px",
+                backgroundColor: "transparent",
+                "&:hover": {
+                  backgroundColor: "transparent",
+                },
+              }}
+            >
+              <DeleteIcon style={{ fontSize: 12 }} className="text-white" />
             </IconButton>
           )}
         </TableCell>
       </TableRow>
+
       <AnimatePresence initial={false}>
         {open && (
           <TableRow className="bg-gray-900">
