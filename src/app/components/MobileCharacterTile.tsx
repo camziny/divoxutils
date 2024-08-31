@@ -87,41 +87,60 @@ const MobileCharacterTile: React.FC<{
     <>
       <TableRow
         className={`rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 bg-gray-800 ${realm.color}`}
+        sx={{ minHeight: "18px", maxHeight: "18px", height: "18px" }}
       >
         <TableCell
-          className="p-0.5 w-6"
-          sx={{ padding: "2px", minHeight: "24px", maxHeight: "24px" }}
+          className="p-0.5 w-5"
+          sx={{ padding: "2px", minHeight: "18px", maxHeight: "18px" }}
         >
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? (
-              <ExpandLessIcon className="text-white text-xs" />
+              <ExpandLessIcon className="text-white" style={{ fontSize: 14 }} />
             ) : (
-              <ExpandMoreIcon className="text-white text-xs" />
+              <ExpandMoreIcon className="text-white" style={{ fontSize: 14 }} />
             )}
           </IconButton>
         </TableCell>
         <TableCell
           className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate"
-          sx={{ width: "40%" }}
+          sx={{
+            width: "40%",
+            padding: "2px",
+            minHeight: "18px",
+            maxHeight: "18px",
+          }}
         >
           {truncateText(characterDetails.heraldName, 15)}
         </TableCell>
         <TableCell
           className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate"
-          sx={{ width: "25%" }}
+          sx={{
+            width: "25%",
+            padding: "2px",
+            minHeight: "18px",
+            maxHeight: "18px",
+          }}
         >
           {truncateText(characterDetails.heraldClassName, 8)}
         </TableCell>
         <TableCell
           className="text-white text-xs sm:text-xs font-semibold p-0.5 text-center"
-          sx={{ width: "25%" }}
+          sx={{
+            width: "25%",
+            padding: "2px",
+            minHeight: "18px",
+            maxHeight: "18px",
+          }}
         >
           {characterDetails.formattedHeraldRealmPoints || "-"}
         </TableCell>
-        <TableCell className="p-0.5 w-6 text-center">
+        <TableCell
+          className="p-0.5 w-5 text-center"
+          sx={{ minHeight: "18px", maxHeight: "18px" }}
+        >
           {showDeleteIcon && isOwner && (
             <IconButton size="small" onClick={onDelete}>
-              <DeleteIcon style={{ fontSize: 16 }} className="text-white" />
+              <DeleteIcon className="text-white" style={{ fontSize: 14 }} />{" "}
             </IconButton>
           )}
         </TableCell>
