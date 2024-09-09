@@ -128,16 +128,7 @@ const CharacterTile: React.FC<{
         className={`rounded-xl overflow-hidden shadow-md bg-gray-800 ${realm.color}`}
         sx={{ padding: 0, margin: 0, height: "24px" }}
       >
-        <TableCell
-          className="w-1/12 p-0"
-          sx={{
-            padding: "2px",
-            margin: 0,
-            minHeight: "24px",
-            maxHeight: "24px",
-            height: "24px",
-          }}
-        >
+        <TableCell sx={{ width: "5%", padding: "2px", height: "24px" }}>
           <IconButton
             size="small"
             onClick={() => setOpen(!open)}
@@ -157,58 +148,57 @@ const CharacterTile: React.FC<{
           </IconButton>
         </TableCell>
         <TableCell
-          className="w-1/4 !text-white text-xs font-semibold truncate"
           sx={{
+            width: "20%",
             padding: "2px",
-            margin: 0,
+            height: "24px",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
           }}
+          className="!text-white text-xs font-semibold truncate"
         >
           {characterDetails.heraldName}
         </TableCell>
         <TableCell
-          className="w-1/6 !text-white text-xs font-semibold"
-          sx={{ padding: "2px", margin: 0 }}
+          sx={{ width: "12%", padding: "2px", height: "24px" }}
+          className="!text-white text-xs font-semibold"
         >
-          <div className="max-w-xs truncate">
-            {characterDetails.heraldClassName}
-          </div>
+          <div className="truncate">{characterDetails.heraldClassName}</div>
         </TableCell>
         <TableCell
-          className="w-1/6 !text-white text-xs font-semibold"
-          sx={{ padding: "2px", margin: 0 }}
+          sx={{ width: "12%", padding: "2px", height: "24px" }}
+          className="!text-white text-xs font-semibold"
         >
           {characterDetails.formattedHeraldRealmPoints || "-"}
         </TableCell>
         <TableCell
-          className="w-1/4 !text-white text-xs font-semibold"
-          sx={{ padding: "2px", margin: 0 }}
+          sx={{ width: "18%", padding: "2px", height: "24px" }}
+          className="!text-white text-xs font-semibold"
         >
           {characterDetails.heraldGuildName || "-"}
         </TableCell>
         <TableCell
-          className="w-1/6 !text-white text-xs font-semibold"
-          sx={{ padding: "2px", margin: 0 }}
+          sx={{ width: "8%", padding: "2px", height: "24px" }}
+          className="!text-white text-xs font-semibold"
         >
           {characterDetails.heraldLevel}
         </TableCell>
         <TableCell
-          className="w-1/6 !text-white text-xs font-semibold hidden lg:table-cell"
-          sx={{ padding: "2px", margin: 0 }}
+          sx={{ width: "10%", padding: "2px", height: "24px" }}
+          className="!text-white text-xs font-semibold hidden lg:table-cell"
         >
           {characterDetails.heraldRace}
         </TableCell>
         <TableCell
-          className="w-1/6 !text-white text-xs font-semibold"
-          sx={{ padding: "2px", margin: 0 }}
+          sx={{ width: "10%", padding: "2px", height: "24px" }}
+          className="!text-white text-xs font-semibold"
         >
           {realm.name}
         </TableCell>
         <TableCell
-          className="w-1/12 p-0 text-center"
-          sx={{ padding: "2px", margin: 0 }}
+          sx={{ width: "5%", padding: "2px", height: "24px" }}
+          className="p-0 text-center"
         >
           {showDeleteIcon && isOwner && (
             <IconButton
@@ -227,7 +217,6 @@ const CharacterTile: React.FC<{
           )}
         </TableCell>
       </TableRow>
-
       <AnimatePresence initial={false}>
         {open && (
           <TableRow className="bg-gray-900">
