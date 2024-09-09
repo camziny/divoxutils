@@ -150,7 +150,7 @@ const CharacterList: React.FC<CharacterListProps> = ({
               totalRealmPoints={character.totalRealmPoints}
               currentUserId={character.initialCharacter?.userId}
               ownerId={character.clerkUserId}
-              onDelete={() => handleDelete(character.id)} // Pass the delete handler
+              onDelete={() => handleDelete(character.id)}
             />
           ))
         )}
