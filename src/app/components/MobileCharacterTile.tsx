@@ -87,7 +87,13 @@ const MobileCharacterTile: React.FC<{
     <>
       <TableRow
         className={`rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 bg-gray-800 ${realm.color}`}
-        sx={{ minHeight: "18px", maxHeight: "18px", height: "18px" }}
+        sx={{
+          minHeight: "18px",
+          maxHeight: "18px",
+          height: "18px",
+          "&:last-child td, &:last-child th": { border: 0 },
+          "& td, & th": { borderBottom: "none" },
+        }}
       >
         <TableCell
           className="p-0.5 w-5"
