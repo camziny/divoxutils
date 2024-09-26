@@ -126,7 +126,14 @@ const CharacterTile: React.FC<{
     <>
       <TableRow
         className={`rounded-xl overflow-hidden shadow-md bg-gray-800 ${realm.color}`}
-        sx={{ padding: 0, margin: 0, height: "24px" }}
+        sx={{
+          padding: 0,
+          margin: 0,
+          height: "24px",
+          "&:last-child td, &:last-child th": { border: 0 },
+          "& td, & th": { borderBottom: "none" },
+        }}
+        hover={false}
       >
         <TableCell sx={{ width: "5%", padding: "2px", height: "24px" }}>
           <IconButton
