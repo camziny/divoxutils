@@ -86,6 +86,7 @@ const MobileCharacterTile: React.FC<{
   return (
     <>
       <TableRow
+        onClick={() => setOpen(!open)}
         className={`rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 bg-gray-800 ${realm.color}`}
         sx={{
           minHeight: "18px",
@@ -94,12 +95,19 @@ const MobileCharacterTile: React.FC<{
           "&:last-child td, &:last-child th": { border: 0 },
           "& td, & th": { borderBottom: "none" },
         }}
+        style={{ cursor: "pointer" }}
       >
         <TableCell
           className="p-0.5 w-5"
           sx={{ padding: "2px", minHeight: "18px", maxHeight: "18px" }}
         >
-          <IconButton size="small" onClick={() => setOpen(!open)}>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(!open);
+            }}
+          >
             {open ? (
               <ExpandLessIcon className="text-white" style={{ fontSize: 14 }} />
             ) : (
@@ -145,8 +153,16 @@ const MobileCharacterTile: React.FC<{
           sx={{ minHeight: "18px", maxHeight: "18px" }}
         >
           {showDeleteIcon && isOwner && (
-            <IconButton size="small" onClick={onDelete}>
-              <DeleteIcon className="text-white" style={{ fontSize: 14 }} />{" "}
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onDelete) {
+                  onDelete();
+                }
+              }}
+            >
+              <DeleteIcon className="text-white" style={{ fontSize: 14 }} />
             </IconButton>
           )}
         </TableCell>

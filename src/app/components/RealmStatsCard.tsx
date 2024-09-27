@@ -60,12 +60,14 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
   };
 
   return (
-    <Card className="bg-gray-800 text-white flex flex-col h-full mb-2">
-      <CardHeader className={`${realm.toLowerCase()} text-center`}>
-        {capitalizeRealm(realm)}
+    <Card className="bg-gray-800 text-white flex flex-col">
+      <CardHeader className={`${realm.toLowerCase()} text-center py-1`}>
+        <h3 className="text-base font-semibold m-0">
+          {capitalizeRealm(realm)}
+        </h3>
       </CardHeader>
-      <CardBody className="flex flex-col items-center px-2 text-sm flex-grow">
-        <div className="flex flex-col space-y-2 mb-4 min-h-[50px]">
+      <CardBody className="flex flex-col items-center px-1 text-sm flex-grow justify-between">
+        <div className="flex flex-col items-center space-y-1 mt-1">
           <div className="w-full text-center">
             Kills: <span className="font-bold">{kills}</span>
           </div>
@@ -75,32 +77,31 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
           <div className="w-full text-center">
             Solo Kills: <span className="font-bold">{soloKills}</span>
           </div>
-          <div className="w-full text-center invisible">Placeholder</div>
         </div>
-        <div className="w-full flex flex-col items-center mt-0">
+        <div className="w-full flex flex-col items-center mb-1">
           <CircularProgress
-            size="lg"
+            size="sm"
             strokeWidth={4}
             classNames={{
-              svg: "w-16 h-16 drop-shadow-md",
-              indicator: "success",
+              svg: "w-12 h-12 drop-shadow-md",
+              indicator: "text-indigo-500",
               track: "stroke-white/10",
-              value: "text-xl font-semibold text-white",
+              value: "text-base font-semibold text-white",
             }}
             value={ratioOptions[selectedRatio].value}
             showValueLabel={true}
           />
-          <div className="flex justify-center w-full my-2">
-            <ButtonGroup variant="flat" style={{ width: "95%" }}>
+          <div className="flex justify-center w-full mt-1">
+            <ButtonGroup variant="flat" className="w-full px-1">
               {Object.entries(ratioOptions).map(([key, { label }]) => (
                 <Button
                   key={key}
                   onClick={() => setSelectedRatio(key as RatioKey)}
-                  className={
+                  className={`text-xs py-1 px-2 ${
                     selectedRatio === key
-                      ? "bg-indigo-500/90 text-white text-xs"
-                      : "bg-white text-gray-800 text-xs"
-                  }
+                      ? "bg-indigo-500 text-white"
+                      : "bg-white text-gray-800"
+                  }`}
                 >
                   {label}
                 </Button>

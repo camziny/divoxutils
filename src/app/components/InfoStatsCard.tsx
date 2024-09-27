@@ -23,43 +23,44 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
   realmPointsThisWeek,
 }) => {
   return (
-    <Card className="bg-gray-800 text-white flex flex-col h-full">
-      <CardHeader className="text-center bg-indigo-500">Info</CardHeader>
-      <CardBody className="flex flex-col items-center px-2 text-sm flex-grow">
-        <div className="flex flex-col space-y-2 mb-4 min-h-[50px]">
-          {" "}
-          <div className="text-center my-2">
+    <Card className="bg-gray-800 text-white flex flex-col">
+      <CardHeader className="text-center bg-indigo-500 py-1">
+        <h3 className="text-base font-semibold m-0">Info</h3>
+      </CardHeader>
+      <CardBody className="flex flex-col items-center px-1 text-sm flex-grow justify-between">
+        <div className="flex flex-col items-center space-y-1 mt-1">
+          <div className="text-center">
             Total RP: <span className="font-bold">{totalRP}</span>
           </div>
-          <div className="text-center my-2">
+          <div className="text-center">
             IRS:{" "}
             <span className="font-bold">{irs !== undefined ? irs : "N/A"}</span>
           </div>
-          <div className="text-center my-2">
+          <div className="text-center">
             RPs This Week:{" "}
             <span className="font-bold">
               {totalRP === realmPointsThisWeek ? 0 : realmPointsThisWeek}
             </span>
           </div>
-          <div className="text-center my-2">
+          <div className="text-center">
             RPs Last Week:{" "}
             <span className="font-bold">{realmPointsLastWeek}</span>
           </div>
-          <div className="text-center my-2">
+          <div className="text-center">
             RPs to <span className="font-extrabold">{nextRank}</span>:{" "}
             <span className="font-bold">{rpsToNextRank}</span>
           </div>
         </div>
-        <div className="mt-auto w-full p-2 mb-4">
+        <div className="w-full mt-1 mb-1">
           <Progress
             size="md"
             radius="sm"
             classNames={{
-              base: "max-w-md mx-auto",
+              base: "w-full",
               track: "drop-shadow-md border border-default bg-gray-300",
               indicator: "customIndicator",
-              label: "tracking-wider font-bold text-xl text-gray-400",
-              value: "text-xl font-bold text-indigo-400",
+              label: "tracking-wide font-bold text-base text-gray-400",
+              value: "text-base font-bold text-indigo-400",
             }}
             label={currentRank}
             value={progressPercentage}

@@ -193,7 +193,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   );
 
   return (
-    <TableCell className="bg-gray-900 w-full p-3" colSpan={9}>
+    <TableCell className="bg-gray-900 w-full p-2" colSpan={9}>
       <div className="flex justify-center items-center h-full">
         <div className="sm:hidden w-full">
           <div className="bg-gray-900 rounded-lg mx-0 p-2">

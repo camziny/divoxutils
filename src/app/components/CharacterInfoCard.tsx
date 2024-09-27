@@ -16,12 +16,12 @@ interface CharacterInfoCardProps {
 const CharacterInfoCard: React.FC<CharacterInfoCardProps> = ({ character }) => {
   return (
     <Card className="bg-gray-800 text-white mb-3">
-      <CardHeader className="flex justify-center items-center p-2 mb-0">
+      <CardHeader className="flex justify-center items-center p-1 mb-0">
         <div className="text-xl md:text-2xl font-bold m-0">
           {character.heraldName}
         </div>
       </CardHeader>
-      <CardBody className="pt-0 pb-4 px-4">
+      <CardBody className="pt-0 pb-2 px-2">
         {character.heraldGuildName && (
           <p className="text-sm text-gray-300 font-semibold text-center my-0">
             <span>{`<${character.heraldGuildName}>`}</span>
