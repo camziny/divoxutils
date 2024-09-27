@@ -125,6 +125,7 @@ const CharacterTile: React.FC<{
   return (
     <>
       <TableRow
+        onClick={() => setOpen(!open)}
         className={`rounded-xl overflow-hidden shadow-md bg-gray-800 ${realm.color}`}
         sx={{
           padding: 0,
@@ -134,11 +135,15 @@ const CharacterTile: React.FC<{
           "& td, & th": { borderBottom: "none" },
         }}
         hover={false}
+        style={{ cursor: "pointer" }}
       >
         <TableCell sx={{ width: "5%", padding: "2px", height: "24px" }}>
           <IconButton
             size="small"
-            onClick={() => setOpen(!open)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(!open);
+            }}
             sx={{
               padding: "2px",
               backgroundColor: "transparent",
@@ -210,7 +215,12 @@ const CharacterTile: React.FC<{
           {showDeleteIcon && isOwner && (
             <IconButton
               size="medium"
-              onClick={onDelete}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onDelete) {
+                  onDelete();
+                }
+              }}
               sx={{
                 padding: "2px",
                 backgroundColor: "transparent",
