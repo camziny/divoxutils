@@ -128,7 +128,6 @@ const CharacterList: React.FC<CharacterListProps> = ({
           </Table>
         </TableContainer>
       </div>
-
       <div className="sm:hidden overflow-auto max-h-[500px] w-full">
         {sortedCharacters.length === 0 ? (
           <div className="text-center py-4 text-white bg-gray-900">
