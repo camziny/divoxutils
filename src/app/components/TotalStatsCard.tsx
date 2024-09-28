@@ -45,20 +45,20 @@ const TotalStatsCard: React.FC<TotalStatsCardProps> = ({
   return (
     <Card className="bg-gray-800 text-white flex flex-col">
       <CardHeader className="text-center bg-gray-700 py-1">
-        <h3 className="text-base font-semibold m-0">Total</h3>
+        <h3 className="text-sm font-semibold m-0">Total</h3>
       </CardHeader>
       <CardBody className="flex flex-col items-center px-1 text-sm flex-grow justify-between">
         <div className="flex flex-col items-center space-y-1 mt-1">
-          <div className="w-full text-center">
+          <div className="w-full text-center text-xs">
             Kills: <span className="font-bold">{kills}</span>
           </div>
-          <div className="w-full text-center">
+          <div className="w-full text-center text-xs">
             Death Blows: <span className="font-bold">{deathBlows}</span>
           </div>
-          <div className="w-full text-center">
+          <div className="w-full text-center text-xs">
             Solo Kills: <span className="font-bold">{soloKills}</span>
           </div>
-          <div className="w-full text-center">
+          <div className="w-full text-center text-xs">
             Deaths: <span className="font-bold">{deaths}</span>
           </div>
         </div>
