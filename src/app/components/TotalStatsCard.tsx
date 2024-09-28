@@ -81,11 +81,12 @@ const TotalStatsCard: React.FC<TotalStatsCardProps> = ({
                 <Button
                   key={key}
                   onClick={() => setSelectedPercentage(key as PercentageKey)}
-                  className={`text-xs py-1 px-2 ${
+                  className={`text-xs py-0.5 px-1 ${
                     selectedPercentage === key
                       ? "bg-indigo-500 text-white"
                       : "bg-white text-gray-800"
                   }`}
+                  style={{ minHeight: "auto", height: "24px" }}
                 >
                   {label}
                 </Button>

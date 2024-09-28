@@ -95,11 +95,12 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
                 <Button
                   key={key}
                   onClick={() => setSelectedRatio(key as RatioKey)}
-                  className={`text-xs py-1 px-2 ${
+                  className={`text-xs py-0.5 px-1 ${
                     selectedRatio === key
                       ? "bg-indigo-500 text-white"
                       : "bg-white text-gray-800"
                   }`}
+                  style={{ minHeight: "auto", height: "24px" }}
                 >
                   {label}
                 </Button>
