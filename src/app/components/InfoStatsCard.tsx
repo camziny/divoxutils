@@ -25,28 +25,28 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
   return (
     <Card className="bg-gray-800 text-white flex flex-col">
       <CardHeader className="text-center bg-indigo-500 py-1">
-        <h3 className="text-base font-semibold m-0">Info</h3>
+        <h3 className="text-sm font-semibold m-0">Info</h3>
       </CardHeader>
       <CardBody className="flex flex-col items-center px-1 text-sm flex-grow justify-between">
         <div className="flex flex-col items-center space-y-1 mt-1">
-          <div className="text-center">
+          <div className="text-center text-xs">
             Total RP: <span className="font-bold">{totalRP}</span>
           </div>
-          <div className="text-center">
+          <div className="text-center text-xs">
             IRS:{" "}
             <span className="font-bold">{irs !== undefined ? irs : "N/A"}</span>
           </div>
-          <div className="text-center">
+          <div className="text-center text-xs">
             RPs This Week:{" "}
             <span className="font-bold">
               {totalRP === realmPointsThisWeek ? 0 : realmPointsThisWeek}
             </span>
           </div>
-          <div className="text-center">
+          <div className="text-center text-xs">
             RPs Last Week:{" "}
-            <span className="font-bold">{realmPointsLastWeek}</span>
+            <span className="font-bold text-xs">{realmPointsLastWeek}</span>
           </div>
-          <div className="text-center">
+          <div className="text-center text-xs">
             RPs to <span className="font-extrabold">{nextRank}</span>:{" "}
             <span className="font-bold">{rpsToNextRank}</span>
           </div>

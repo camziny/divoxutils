@@ -62,19 +62,17 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
   return (
     <Card className="bg-gray-800 text-white flex flex-col">
       <CardHeader className={`${realm.toLowerCase()} text-center py-1`}>
-        <h3 className="text-base font-semibold m-0">
-          {capitalizeRealm(realm)}
-        </h3>
+        <h3 className="text-sm font-semibold m-0">{capitalizeRealm(realm)}</h3>
       </CardHeader>
       <CardBody className="flex flex-col items-center px-1 text-sm flex-grow justify-between">
         <div className="flex flex-col items-center space-y-1 mt-1">
-          <div className="w-full text-center">
+          <div className="w-full text-center text-xs">
             Kills: <span className="font-bold">{kills}</span>
           </div>
-          <div className="w-full text-center">
+          <div className="w-full text-center text-xs">
             Death Blows: <span className="font-bold">{deathBlows}</span>
           </div>
-          <div className="w-full text-center">
+          <div className="w-full text-center text-xs">
             Solo Kills: <span className="font-bold">{soloKills}</span>
           </div>
         </div>
@@ -97,11 +95,12 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
                 <Button
                   key={key}
                   onClick={() => setSelectedRatio(key as RatioKey)}
-                  className={`text-xs py-1 px-2 ${
+                  className={`text-xs py-0.5 px-1 ${
                     selectedRatio === key
                       ? "bg-indigo-500 text-white"
                       : "bg-white text-gray-800"
                   }`}
+                  style={{ minHeight: "auto", height: "24px" }}
                 >
                   {label}
                 </Button>
