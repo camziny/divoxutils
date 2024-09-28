@@ -150,20 +150,47 @@ const MobileCharacterTile: React.FC<{
         </TableCell>
         <TableCell
           className="p-0.5 w-5 text-center"
-          sx={{ minHeight: "18px", maxHeight: "18px" }}
+          sx={{
+            height: "18px",
+            padding: "0",
+            overflow: "hidden",
+          }}
         >
           {showDeleteIcon && isOwner && (
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onDelete) {
-                  onDelete();
-                }
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
               }}
             >
-              <DeleteIcon className="text-white" style={{ fontSize: 14 }} />
-            </IconButton>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onDelete) {
+                    onDelete();
+                  }
+                }}
+                sx={{
+                  padding: 0,
+                  margin: 0,
+                  minWidth: 0,
+                  minHeight: 0,
+                  lineHeight: 1,
+                  backgroundColor: "transparent",
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                  },
+                }}
+              >
+                <DeleteIcon
+                  className="text-white"
+                  style={{ fontSize: 14, lineHeight: 1 }}
+                />
+              </IconButton>
+            </div>
           )}
         </TableCell>
       </TableRow>
