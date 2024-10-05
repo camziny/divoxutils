@@ -135,7 +135,7 @@ const CharacterTile: React.FC<{
           "& td, & th": { borderBottom: "none" },
         }}
         hover={false}
-        style={{ cursor: "pointer" }}
+        style={{ cursor: "pointer", width: "100%" }}
       >
         <TableCell sx={{ width: "5%", padding: "2px", height: "24px" }}>
           <IconButton
