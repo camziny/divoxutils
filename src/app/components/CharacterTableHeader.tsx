@@ -51,6 +51,12 @@ const CharacterTableHeader = () => {
         Realm
       </TableCell>
       <TableCell
+        sx={{ width: "10%", padding: "6px", minWidth: "80px" }}
+        className="!bg-gray-900 !text-white"
+      >
+        Server
+      </TableCell>
+      <TableCell
         sx={{ width: "5%", padding: "6px", minWidth: "30px", maxWidth: "50px" }}
         className="!bg-gray-900 !text-white"
       />

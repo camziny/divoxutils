@@ -30,6 +30,9 @@ const CharacterInfoCard: React.FC<CharacterInfoCardProps> = ({ character }) => {
         <p className="text-xs text-gray-300 font-semibold text-center mt-1">
           {`${character.heraldRace} ${character.heraldClassName}, Lvl ${character.heraldLevel}`}
         </p>
+        <p className="text-xs text-gray-300 font-semibold text-center mt-1">
+          {`${character.heraldServerName}`}
+        </p>
       </CardBody>
     </Card>
   );

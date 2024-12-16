@@ -38,7 +38,7 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
   const sortedCharacters = sortCharacters(characters || [], sortOption);
 
   return (
-    <div className="flex flex-col items-center w-full max-w-6xl mx-auto">
+    <div className="flex flex-col items-center w-full max-w-6xl mx-auto bg-gray-900">
       <SortOptions sortOption={sortOption} onSortChange={handleSortChange} />
       <div className="hidden sm:block character-table-container w-full">
         <TableContainer component={Paper} sx={{ maxHeight: 1000 }}>
@@ -76,6 +76,7 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
                     totalRealmPoints={character.totalRealmPoints}
                     currentUserId={character.initialCharacter?.userId}
                     ownerId={character.clerkUserId}
+                    heraldServerName={character.heraldServerName}
                     showDelete={false}
                   />
                 ))
@@ -104,6 +105,7 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
               realmPointsLastWeek={character.realmPointsLastWeek}
               totalRealmPoints={character.totalRealmPoints}
               currentUserId={character.initialCharacter?.userId}
+              heraldServerName={character.heraldServerName}
               ownerId={character.clerkUserId}
               showDelete={false}
             />

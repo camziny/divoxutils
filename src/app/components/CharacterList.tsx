@@ -81,7 +81,7 @@ const CharacterList: React.FC<CharacterListProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-6xl mx-auto">
+    <div className="flex flex-col items-center w-full max-w-6xl">
       <SortOptions sortOption={sortOption} onSortChange={handleSortChange} />
 
       <div className="hidden sm:block w-full">
@@ -120,6 +120,7 @@ const CharacterList: React.FC<CharacterListProps> = ({
                     totalRealmPoints={character.totalRealmPoints}
                     currentUserId={character.initialCharacter?.userId}
                     ownerId={character.clerkUserId}
+                    heraldServerName={character.heraldServerName}
                     onDelete={() => handleDelete(character.id)}
                   />
                 ))
@@ -149,6 +150,7 @@ const CharacterList: React.FC<CharacterListProps> = ({
               totalRealmPoints={character.totalRealmPoints}
               currentUserId={character.initialCharacter?.userId}
               ownerId={character.clerkUserId}
+              heraldServerName={character.heraldServerName}
               onDelete={() => handleDelete(character.id)}
             />
           ))
