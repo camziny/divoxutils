@@ -41,6 +41,7 @@ const MobileCharacterTile: React.FC<{
   heraldBountyPoints: any;
   heraldTotalKills: any;
   heraldTotalDeaths: any;
+  heraldServerName: string;
   showDelete?: boolean;
   onDelete?: () => void;
 }> = ({

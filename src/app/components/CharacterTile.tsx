@@ -11,6 +11,8 @@ import { Snackbar } from "@mui/material";
 import CharacterTileSkeleton from "./CharacterTileSkeleton";
 import { CharacterData } from "@/utils/character";
 import { motion, AnimatePresence } from "framer-motion";
+import { Tooltip, TooltipProps } from "@mui/material";
+import { styled } from "@mui/material/styles";
 
 type KillStats = {
   kills: number;
@@ -86,6 +88,7 @@ const CharacterTile: React.FC<{
   heraldBountyPoints: any;
   heraldTotalKills: any;
   heraldTotalDeaths: any;
+  heraldServerName: string;
   onDelete?: () => void;
   showDelete?: boolean;
 }> = ({
@@ -121,6 +124,18 @@ const CharacterTile: React.FC<{
 
   const realmPointsThisWeek =
     characterDetails.heraldRealmPoints - totalRealmPoints;
+
+  const CustomTooltip = styled(({ className, ...props }: TooltipProps) => (
+    <Tooltip {...props} classes={{ popper: className }} />
+  ))({
+    [`& .MuiTooltip-tooltip`]: {
+      backgroundColor: "#1a1a1a",
+      color: "#ffffff",
+      fontSize: "0.875rem",
+      borderRadius: "4px",
+      padding: "8px",
+    },
+  });
 
   return (
     <>
@@ -170,7 +185,9 @@ const CharacterTile: React.FC<{
           }}
           className="!text-white text-xs font-semibold truncate"
         >
-          {characterDetails.heraldName}
+          <CustomTooltip title={characterDetails.heraldName} arrow>
+            <span>{characterDetails.heraldName}</span>
+          </CustomTooltip>
         </TableCell>
         <TableCell
           sx={{ width: "12%", padding: "2px", height: "24px" }}
@@ -209,6 +226,12 @@ const CharacterTile: React.FC<{
           {realm.name}
         </TableCell>
         <TableCell
+          sx={{ width: "10%", padding: "2px", height: "24px" }}
+          className="!text-white text-xs font-semibold"
+        >
+          {characterDetails.heraldServerName}
+        </TableCell>
+        <TableCell
           sx={{ width: "5%", padding: "2px", height: "24px" }}
           className="p-0 text-center"
         >
@@ -237,7 +260,7 @@ const CharacterTile: React.FC<{
       <AnimatePresence initial={false}>
         {open && (
           <TableRow className="bg-gray-900">
-            <TableCell colSpan={9} className="p-0">
+            <TableCell colSpan={10} className="p-0">
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
