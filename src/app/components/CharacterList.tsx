@@ -85,7 +85,20 @@ const CharacterList: React.FC<CharacterListProps> = ({
       <SortOptions sortOption={sortOption} onSortChange={handleSortChange} />
 
       <div className="hidden sm:block w-full">
-        <TableContainer component={Paper} sx={{ maxHeight: 1000 }}>
+        <TableContainer 
+          component={Paper} 
+          sx={{ 
+            maxHeight: 1000,
+            background: 'linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%)',
+            backdropFilter: 'blur(8px)',
+            boxShadow: 'none',
+            borderRadius: '16px',
+            '& .MuiTable-root': {
+              borderCollapse: 'separate',
+              borderSpacing: '0 1px'
+            }
+          }}
+        >
           <Table stickyHeader style={{ tableLayout: "fixed" }}>
             <TableHead>
               <CharacterTableHeader />

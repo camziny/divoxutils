@@ -33,6 +33,7 @@
     "bcrypt": "^5.1.1",
     "bootstrap-icons": "^1.11.1",
     "cookie": "^0.5.0",
+    "dotenv": "^16.4.7",
     "embla-carousel": "^8.0.0-rc14",
     "embla-carousel-react": "^8.0.0-rc14",
     "font-awesome": "^4.7.0",
@@ -74,5 +75,8 @@
     "postcss": "latest",
     "tailwindcss": "latest",
     "typescript": "^5.2.2"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }

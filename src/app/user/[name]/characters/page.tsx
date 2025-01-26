@@ -6,6 +6,7 @@ import Loading from "@/app/loading";
 import type { Metadata, ResolvingMetadata } from "next";
 import ShareProfileButton from "@/app/components/ShareProfileButton";
 import SortOptions from "@/app/components/SortOptions";
+import { PrismaClient } from "@prisma/client";
 
 interface CharactersPageParams {
   name: string;
@@ -17,21 +18,25 @@ interface CharactersPageProps {
   searchParams: { [key: string]: string | string[] };
 }
 
+const prisma = new PrismaClient();
+
 export async function generateMetadata(
   { params }: { params: CharactersPageParams },
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const { name } = params;
-
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/users?name=${name}`
-  );
-  if (!res.ok) {
-    throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-  }
-  const userData = await res.json();
+  const userData = await prisma.user.findMany({
+    where: {
+      name: params.name,
+    },
+  });
 
   const user = userData[0];
+  
+  if (!user) {
+    return {
+      title: "User Not Found - divoxutils",
+    };
+  }
 
   return {
     title: `${user.name} - divoxutils`,
@@ -60,17 +65,23 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
   params,
   searchParams = {},
 }) => {
-  const { name } = params;
-
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/users?name=${name}`
-  );
-  if (!res.ok) {
-    throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-  }
-  const userData = await res.json();
+  const userData = await prisma.user.findMany({
+    where: {
+      name: params.name,
+    },
+  });
 
   const user = userData[0];
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <h1 className="text-xl font-bold text-gray-200 mb-2">User Not Found</h1>
+        <p className="text-gray-400">The user &ldquo;{params.name}&rdquo; does not exist.</p>
+      </div>
+    );
+  }
+
   const clerkUserId = user.clerkUserId;
 
   let characters = [];
@@ -86,7 +97,7 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
         <div className="max-w-screen-lg mx-auto">
           <h1 className="text-3xl font-bold text-indigo-400 mb-4 text-center flex items-center gap-2 justify-center">
             {user.name}
-            <ShareProfileButton username={user.name} />
+            <ShareProfileButton username={user?.name ?? ''} />
           </h1>
           <PageReload />
           <Suspense fallback={<Loading />}>

@@ -25,35 +25,27 @@ const userCharacters = [
     clerkUserId: "user_123",
   },
   {
-    characterId: 5,
-    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
-  },
-  {
-    characterId: 7,
-    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
-  },
-  {
-    characterId: 8,
-    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
-  },
-  {
-    characterId: 9,
-    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
-  },
-  {
-    characterId: 10,
-    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
-  },
-  {
-    characterId: 11,
-    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
-  },
-  {
-    characterId: 13,
-    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
-  },
-  {
     characterId: 14,
+    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
+  },
+  {
+    characterId: 15,
+    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
+  },
+  {
+    characterId: 16,
+    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
+  },
+  {
+    characterId: 17,
+    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
+  },
+  {
+    characterId: 18,
+    clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
+  },
+  {
+    characterId: 19,
     clerkUserId: "user_2XJ2G6uNp3SZazCERjN0HJEdlGa",
   },
 ];
@@ -369,21 +361,36 @@ const characters = [...charactersSet1, ...charactersSet2];
 
 async function main() {
   console.log("Seeding Users...");
-  await prisma.user.createMany({
-    data: users,
-    skipDuplicates: true,
-  });
+  for (const user of users) {
+    await prisma.user.upsert({
+      where: { id: user.id },
+      update: user,
+      create: user,
+    });
+  }
 
   console.log("Seeding Characters...");
-  await prisma.character.createMany({
-    data: characters,
-    skipDuplicates: true,
-  });
+  for (const character of characters) {
+    await prisma.character.upsert({
+      where: { id: character.id },
+      update: character,
+      create: character,
+    });
+  }
+
   console.log("Seeding UserCharacters...");
-  await prisma.userCharacter.createMany({
-    data: userCharacters,
-    skipDuplicates: true,
-  });
+  for (const userChar of userCharacters) {
+    await prisma.userCharacter.upsert({
+      where: {
+        characterId_clerkUserId: {
+          characterId: userChar.characterId,
+          clerkUserId: userChar.clerkUserId,
+        },
+      },
+      update: userChar,
+      create: userChar,
+    });
+  }
 
   console.log("Seeding complete!");
 }
