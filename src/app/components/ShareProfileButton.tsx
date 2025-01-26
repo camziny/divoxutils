@@ -4,7 +4,7 @@ import IosShareIcon from "@mui/icons-material/IosShare";
 import { toast } from "react-toastify";
 
 interface ShareProfileButtonProps {
-  username: string;
+  username: string | null;
 }
 
 const ShareProfileButton: React.FC<ShareProfileButtonProps> = ({

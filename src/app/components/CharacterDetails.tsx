@@ -196,9 +196,9 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
     <TableCell className="bg-gray-900 w-full p-2" colSpan={9}>
       <div className="flex justify-center items-center h-full">
         <div className="sm:hidden w-full">
-          <div className="bg-gray-900 rounded-lg mx-0 p-2">
-            <CharacterInfoCard character={character} />
-            <div className="mb-2 w-full">
+          <div className="bg-gray-900 rounded-lg mx-auto p-2 max-w-[240px]">
+            <div className="space-y-2">
+              <CharacterInfoCard character={character} />
               <InfoStatsCard
                 totalRP={formatNumber(realmPoints)}
                 irs={formatNumber(
@@ -215,10 +215,8 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                     : realmPointsLastWeek
                 )}
               />
-            </div>
-            <div className="mb-2 w-full">
               <TotalStatsCard
-                kills={formatNumber(character.player_kills?.total?.kills || 0)}
+                kills={formatNumber(totalKills)}
                 deathBlows={formatNumber(
                   character.player_kills?.total?.death_blows || 0
                 )}
@@ -231,8 +229,6 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                 dbPerKillPercentage={dbPerKillPercentage}
                 skPerKillPercentage={skPerKillPercentage}
               />
-            </div>
-            <div className="mb-2 w-full">
               {opponentRealms.map((realm) => {
                 const realmKey =
                   realm.toLowerCase() as keyof typeof character.player_kills;

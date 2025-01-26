@@ -38,10 +38,23 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
   const sortedCharacters = sortCharacters(characters || [], sortOption);
 
   return (
-    <div className="flex flex-col items-center w-full max-w-6xl mx-auto bg-gray-900">
+    <div className="flex flex-col items-center w-full max-w-6xl">
       <SortOptions sortOption={sortOption} onSortChange={handleSortChange} />
-      <div className="hidden sm:block character-table-container w-full">
-        <TableContainer component={Paper} sx={{ maxHeight: 1000 }}>
+      <div className="hidden sm:block w-full">
+        <TableContainer 
+          component={Paper} 
+          sx={{ 
+            maxHeight: 1000,
+            background: 'linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%)',
+            backdropFilter: 'blur(8px)',
+            boxShadow: 'none',
+            borderRadius: '16px',
+            '& .MuiTable-root': {
+              borderCollapse: 'separate',
+              borderSpacing: '0 1px'
+            }
+          }}
+        >
           <Table stickyHeader style={{ tableLayout: "fixed" }}>
             <TableHead>
               <CharacterTableHeader />
@@ -49,20 +62,17 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
             <TableBody>
               {sortedCharacters.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={9}
-                    className="text-center py-4 text-white bg-gray-900"
-                  >
+                  <TableCell colSpan={9} className="text-center py-4">
                     <div>
                       <strong>No characters available</strong>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                sortedCharacters.map((character: CharacterData) => (
+                sortedCharacters.map((character) => (
                   <CharacterTile
-                    key={character.id}
-                    webId={character.webId}
+                    key={character.webId ?? ''}
+                    webId={character.webId ?? ''}
                     character={character}
                     characterDetails={character}
                     formattedHeraldRealmPoints={
@@ -85,34 +95,40 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
           </Table>
         </TableContainer>
       </div>
-      <div className="sm:hidden overflow-auto text-white max-h-[500px] w-full">
+      <div className="sm:hidden w-full">
         {sortedCharacters.length === 0 ? (
           <div className="text-center py-4 text-white bg-gray-900">
             No characters available
           </div>
         ) : (
-          sortedCharacters.map((character: CharacterData) => (
-            <MobileCharacterTile
-              key={character.id}
-              webId={character.webId}
-              character={character}
-              characterDetails={character}
-              formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
-              initialCharacter={character.initialCharacter}
-              heraldBountyPoints={character.heraldBountyPoints}
-              heraldTotalKills={character.heraldTotalKills}
-              heraldTotalDeaths={character.heraldTotalDeaths}
-              realmPointsLastWeek={character.realmPointsLastWeek}
-              totalRealmPoints={character.totalRealmPoints}
-              currentUserId={character.initialCharacter?.userId}
-              heraldServerName={character.heraldServerName}
-              ownerId={character.clerkUserId}
-              showDelete={false}
-            />
-          ))
+          <>
+            <div className="overflow-auto max-h-[500px]">
+              {sortedCharacters.map((character: CharacterData) => (
+                <MobileCharacterTile
+                  key={character.id}
+                  webId={character.webId ?? ''}
+                  character={character}
+                  characterDetails={character}
+                  formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
+                  initialCharacter={character.initialCharacter}
+                  heraldBountyPoints={character.heraldBountyPoints}
+                  heraldTotalKills={character.heraldTotalKills}
+                  heraldTotalDeaths={character.heraldTotalDeaths}
+                  realmPointsLastWeek={character.realmPointsLastWeek}
+                  totalRealmPoints={character.totalRealmPoints}
+                  currentUserId={character.initialCharacter?.userId}
+                  heraldServerName={character.heraldServerName}
+                  ownerId={character.clerkUserId}
+                  showDelete={false}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
-      <AggregateStatistics characters={sortedCharacters} />
+            <div className="flex justify-center items-center">
+            <AggregateStatistics characters={sortedCharacters} />
+            </div>
     </div>
   );
 };

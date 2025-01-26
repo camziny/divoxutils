@@ -24,15 +24,15 @@ type KillStats = {
   solo_kills: number;
 };
 
-const MobileCharacterTile: React.FC<{
+interface MobileCharacterTileProps {
   character: CharacterData;
   characterDetails: CharacterData;
   initialCharacter: {
     id: number;
     userId: string;
-    webId: string;
+    webId: string | null;
   };
-  webId: string;
+  webId: string | null;
   realmPointsLastWeek: number;
   totalRealmPoints: number;
   currentUserId: string;
@@ -44,7 +44,9 @@ const MobileCharacterTile: React.FC<{
   heraldServerName: string;
   showDelete?: boolean;
   onDelete?: () => void;
-}> = ({
+}
+
+const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   webId,
   character,
   characterDetails,

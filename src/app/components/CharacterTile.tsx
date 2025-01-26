@@ -77,9 +77,9 @@ const CharacterTile: React.FC<{
   initialCharacter: {
     id: number;
     userId: string;
-    webId: string;
+    webId: string | null;
   };
-  webId: string;
+  webId: string | null;
   realmPointsLastWeek: number;
   totalRealmPoints: number;
   currentUserId: string;
@@ -141,18 +141,31 @@ const CharacterTile: React.FC<{
     <>
       <TableRow
         onClick={() => setOpen(!open)}
-        className={`rounded-xl overflow-hidden shadow-md bg-gray-800 ${realm.color}`}
+        className={`
+          transition-all duration-200 ease-in-out
+          hover:bg-opacity-90
+          ${open ? 'bg-opacity-100' : 'bg-opacity-80'}
+          ${realm.color}
+          border-l-4 ${getRealmBorderColor(realm.name)}
+        `}
         sx={{
           padding: 0,
           margin: 0,
-          height: "24px",
+          height: "28px",
           "&:last-child td, &:last-child th": { border: 0 },
-          "& td, & th": { borderBottom: "none" },
+          "& td, & th": { 
+            borderBottom: "none",
+            transition: "all 0.2s ease-in-out",
+            padding: "2px 4px",
+          },
+          "&:hover td": {
+            backgroundColor: "rgba(0, 0, 0, 0.1)"
+          }
         }}
         hover={false}
         style={{ cursor: "pointer", width: "100%" }}
       >
-        <TableCell sx={{ width: "5%", padding: "2px", height: "24px" }}>
+        <TableCell sx={{ width: "5%", padding: "2px", height: "20px" }}>
           <IconButton
             size="small"
             onClick={(e) => {
@@ -178,7 +191,7 @@ const CharacterTile: React.FC<{
           sx={{
             width: "20%",
             padding: "2px",
-            height: "24px",
+            height: "20px",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -190,49 +203,49 @@ const CharacterTile: React.FC<{
           </CustomTooltip>
         </TableCell>
         <TableCell
-          sx={{ width: "12%", padding: "2px", height: "24px" }}
+          sx={{ width: "12%", padding: "2px", height: "20px" }}
           className="!text-white text-xs font-semibold"
         >
           <div className="truncate">{characterDetails.heraldClassName}</div>
         </TableCell>
         <TableCell
-          sx={{ width: "12%", padding: "2px", height: "24px" }}
+          sx={{ width: "12%", padding: "2px", height: "20px" }}
           className="!text-white text-xs font-semibold"
         >
           {characterDetails.formattedHeraldRealmPoints || "-"}
         </TableCell>
         <TableCell
-          sx={{ width: "18%", padding: "2px", height: "24px" }}
+          sx={{ width: "18%", padding: "2px", height: "20px" }}
           className="!text-white text-xs font-semibold"
         >
           {characterDetails.heraldGuildName || "-"}
         </TableCell>
         <TableCell
-          sx={{ width: "8%", padding: "2px", height: "24px" }}
+          sx={{ width: "8%", padding: "2px", height: "20px" }}
           className="!text-white text-xs font-semibold"
         >
           {characterDetails.heraldLevel}
         </TableCell>
         <TableCell
-          sx={{ width: "10%", padding: "2px", height: "24px" }}
+          sx={{ width: "10%", padding: "2px", height: "20px" }}
           className="!text-white text-xs font-semibold hidden lg:table-cell"
         >
           {characterDetails.heraldRace}
         </TableCell>
         <TableCell
-          sx={{ width: "10%", padding: "2px", height: "24px" }}
+          sx={{ width: "10%", padding: "2px", height: "20px" }}
           className="!text-white text-xs font-semibold"
         >
           {realm.name}
         </TableCell>
         <TableCell
-          sx={{ width: "10%", padding: "2px", height: "24px" }}
+          sx={{ width: "10%", padding: "2px", height: "20px" }}
           className="!text-white text-xs font-semibold"
         >
           {characterDetails.heraldServerName}
         </TableCell>
         <TableCell
-          sx={{ width: "5%", padding: "2px", height: "24px" }}
+          sx={{ width: "5%", padding: "2px", height: "20px" }}
           className="p-0 text-center"
         >
           {showDeleteIcon && isOwner && (
@@ -290,6 +303,19 @@ const CharacterTile: React.FC<{
       />
     </>
   );
+};
+
+const getRealmBorderColor = (realm: string) => {
+  switch (realm) {
+    case "Albion":
+      return "border-red-600";
+    case "Midgard":
+      return "border-blue-600";
+    case "Hibernia":
+      return "border-green-600";
+    default:
+      return "border-gray-600";
+  }
 };
 
 export default CharacterTile;
