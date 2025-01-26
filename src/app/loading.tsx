@@ -3,9 +3,9 @@ import React from "react";
 
 export default function Loading() {
   return (
-    <div className="flex flex-col justify-start items-center min-h-screen bg-gray-900 text-white" style={{ paddingTop: "20vh" }}>
-      <div className="relative">
-        <div className="w-16 h-16 relative">
+    <div className="flex flex-col items-center justify-start min-h-screen bg-gray-900 text-white" style={{ paddingTop: "20vh" }}>
+      <div className="relative w-full max-w-md mx-auto px-4">
+        <div className="w-16 h-16 relative mx-auto">
           <div className="absolute inset-0 border-4 border-indigo-500/30 rounded-full"></div>
           
           <div className="absolute inset-0 border-4 border-transparent border-t-indigo-500 rounded-full animate-spin"></div>
