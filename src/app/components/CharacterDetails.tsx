@@ -196,7 +196,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
     <TableCell className="bg-gray-900 w-full p-2" colSpan={9}>
       <div className="flex justify-center items-center h-full">
         <div className="sm:hidden w-full">
-          <div className="bg-gray-900 rounded-lg mx-auto p-2 max-w-[240px]">
+          <div className="bg-gray-900 rounded-lg mx-auto p-2 max-w-[260px]">
             <div className="space-y-2">
               <CharacterInfoCard character={character} />
               <InfoStatsCard
