@@ -46,6 +46,7 @@ export default async function batchedLeaderboardUpdate(
 
   if (req.method === "POST") {
     const batchSize = 100;
+    let checkedCount = 0;
     let updatedCount = 0;
     let failedCount = 0;
 
@@ -69,6 +70,7 @@ export default async function batchedLeaderboardUpdate(
     });
 
     for (const character of characters) {
+      checkedCount++;
       try {
         const apiUrl = `https://api.camelotherald.com/character/info/${character.webId}`;
         const response = await fetch(apiUrl);
@@ -87,32 +89,50 @@ export default async function batchedLeaderboardUpdate(
             const deathsDiff =
               currentStats.player_kills.total.deaths - character.totalDeaths;
 
-            let updateData = {
-              totalRealmPoints: currentStats.realm_points,
-              totalSoloKills: currentStats.player_kills.total.solo_kills,
-              totalDeaths: currentStats.player_kills.total.deaths,
-              realmPointsLastWeek: 0,
-              soloKillsLastWeek: 0,
-              deathsLastWeek: 0,
-              lastUpdated: new Date(),
-            };
+            let updateData: any = {};
+
+            if (character.totalRealmPoints !== currentStats.realm_points) {
+              updateData.totalRealmPoints = currentStats.realm_points;
+            }
+            if (character.totalSoloKills !== currentStats.player_kills.total.solo_kills) {
+              updateData.totalSoloKills = currentStats.player_kills.total.solo_kills;
+            }
+            if (character.totalDeaths !== currentStats.player_kills.total.deaths) {
+              updateData.totalDeaths = currentStats.player_kills.total.deaths;
+            }
+
+            let weeklyRealmPoints = 0;
+            let weeklySoloKills = 0;
+            let weeklyDeaths = 0;
 
             if (
               characterLastUpdated < currentUpdateStartTime &&
               characterLastUpdated <= gracePeriodEndTime
             ) {
-              updateData.realmPointsLastWeek =
-                realmPointsDiff > 0 ? realmPointsDiff : 0;
-              updateData.soloKillsLastWeek =
-                soloKillsDiff > 0 ? soloKillsDiff : 0;
-              updateData.deathsLastWeek = deathsDiff > 0 ? deathsDiff : 0;
+              weeklyRealmPoints = realmPointsDiff > 0 ? realmPointsDiff : 0;
+              weeklySoloKills = soloKillsDiff > 0 ? soloKillsDiff : 0;
+              weeklyDeaths = deathsDiff > 0 ? deathsDiff : 0;
             }
 
-            await prisma.character.update({
-              where: { id: character.id },
-              data: updateData,
-            });
-            updatedCount++;
+            if (character.realmPointsLastWeek !== weeklyRealmPoints) {
+              updateData.realmPointsLastWeek = weeklyRealmPoints;
+            }
+            if (character.soloKillsLastWeek !== weeklySoloKills) {
+              updateData.soloKillsLastWeek = weeklySoloKills;
+            }
+            if (character.deathsLastWeek !== weeklyDeaths) {
+              updateData.deathsLastWeek = weeklyDeaths;
+            }
+
+            updateData.lastUpdated = new Date();
+
+            if (Object.keys(updateData).length > 0) {
+              await prisma.character.update({
+                where: { id: character.id },
+                data: updateData,
+              });
+              updatedCount++;
+            }
           }
         }
       } catch (error) {
@@ -131,6 +151,7 @@ export default async function batchedLeaderboardUpdate(
 
     res.status(200).json({
       message: "Batch update process completed",
+      checkedCharacters: checkedCount,
       updatedCharacters: updatedCount,
       failedUpdates: failedCount,
     });
