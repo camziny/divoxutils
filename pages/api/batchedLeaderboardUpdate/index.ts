@@ -126,12 +126,17 @@ export default async function batchedLeaderboardUpdate(
 
             updateData.lastUpdated = new Date();
 
-            if (Object.keys(updateData).length > 0) {
+            if (Object.keys(updateData).length > 1) {
               await prisma.character.update({
                 where: { id: character.id },
                 data: updateData,
               });
               updatedCount++;
+            } else {
+              await prisma.character.update({
+                where: { id: character.id },
+                data: { lastUpdated: new Date() },
+              });
             }
           }
         }
