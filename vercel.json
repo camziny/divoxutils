@@ -1,11 +1,7 @@
 {
-  "functions": {
-    "pages/api/**/*.ts": {
-      "regions": [
-        "iad1",
-        "lhr1",
-        "sin1"
-      ]
-    }
-  }
+  "regions": [
+    "iad1",
+    "lhr1",
+    "sin1"
+  ]
 }
