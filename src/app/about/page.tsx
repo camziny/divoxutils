@@ -1,21 +1,26 @@
-import { FaTwitch, FaDiscord, FaPaypal } from "react-icons/fa";
+import React from "react";
+import { FaTwitch, FaDiscord } from "react-icons/fa";
+import { BiCoffee } from "react-icons/bi";
 
 export const metadata = {
   title: "About - divoxutils",
 };
 
-const links = [
+const socialAndSupportData = [
   {
-    icon: <FaTwitch className="mx-auto text-indigo-600 h-16 w-16" />,
-    link: "https://www.twitch.tv/divoxzy",
+    name: "Twitch",
+    icon: <FaTwitch className="mx-auto text-indigo-500 h-16 w-16" />,
+    link: "https://www.twitch.tv/divox",
   },
   {
+    name: "Discord",
     icon: <FaDiscord className="mx-auto text-indigo-500 h-16 w-16" />,
-    link: "https://discordapp.com/users/.divox",
+    link: "https://discord.gg/divox",
   },
   {
-    icon: <FaPaypal className="mx-auto text-indigo-500 h-16 w-16" />,
-    link: "https://www.paypal.com/donate/?business=3TUFNCTEM67K2&no_recurring=0&currency_code=USD",
+    name: "Ko-fi",
+    icon: <BiCoffee className="mx-auto text-indigo-500 h-16 w-16" />,
+    link: "https://ko-fi.com/divox#checkoutModal",
   },
 ];
 
@@ -55,8 +60,8 @@ const AboutPage = () => {
           </p>
           <p className="text-base sm:text-lg leading-relaxed">
             Building and enhancing divoxutils is a labor of love and dedication.
-            If you&apos;d like to support the development of future features,
-            consider contributing through the PayPal link below.
+            If you&apos;ve found this tool helpful, please
+            consider contributing through the Ko-fi link below.
           </p>
           <p className="text-base sm:text-lg leading-relaxed">
             Your support doesn&apos;t end with financial contributions. Join the
@@ -66,7 +71,7 @@ const AboutPage = () => {
           </p>
         </section>
         <div className="text-center mt-8 p-4">
-          {links.map((item, index) => (
+          {socialAndSupportData.map((item, index) => (
             <a
               key={index}
               href={item.link}

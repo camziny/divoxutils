@@ -1,25 +1,25 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
-import { FaTwitch, FaDiscord, FaPaypal } from "react-icons/fa";
+import { FaTwitch, FaDiscord, FaCoffee } from "react-icons/fa";
 import cn from "classnames";
 
 export default function HomeCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const slides = [
     {
+      text: "Support this project",
+      icon: <FaCoffee className="mx-auto text-indigo-500 h-16 w-16" />,
+      link: "https://ko-fi.com/divox#checkoutModal",
+    },
+    {
       text: "Follow me on Twitch",
-      icon: <FaTwitch className="mx-auto text-indigo-600 h-16 w-16" />,
-      link: "https://www.twitch.tv/divoxzy",
+      icon: <FaTwitch className="mx-auto text-indigo-500 h-16 w-16" />,
+      link: "https://www.twitch.tv/divox",
     },
     {
       text: "Suggestions and feedback",
       icon: <FaDiscord className="mx-auto text-indigo-500 h-16 w-16" />,
-      link: "https://discordapp.com/users/.divox",
-    },
-    {
-      text: "Support this project",
-      icon: <FaPaypal className="mx-auto text-indigo-500 h-16 w-16" />,
-      link: "https://www.paypal.com/donate/?business=3TUFNCTEM67K2&no_recurring=0&currency_code=USD",
+      link: "https://discord.gg/divox",
     },
   ];
 

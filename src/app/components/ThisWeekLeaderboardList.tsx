@@ -126,36 +126,37 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
 
   return (
     <section className="max-w-3xl mx-auto px-6">
-      <div className="mb-4 flex flex-col items-center">
+      <div className="mb-6 flex flex-col items-center">
         <ButtonGroup className="mb-4 relative">
           <Button
             onClick={() => handlePeriodChange("total")}
-            className={`bg-gray-800 text-indigo-400 ${
-              selectedPeriod === "total" ? "border-2  border-indigo-500" : ""
+            className={`bg-gray-800 text-indigo-400 hover:bg-gray-700 transition-colors ${
+              selectedPeriod === "total" ? "border-2 border-indigo-500 bg-indigo-900/30" : ""
             }`}
           >
             Total
           </Button>
           <Button
             onClick={() => handlePeriodChange("lastWeek")}
-            className={`bg-gray-800 text-indigo-400 ${
-              selectedPeriod === "lastWeek" ? "border-2 border-indigo-500" : ""
+            className={`bg-gray-800 text-indigo-400 hover:bg-gray-700 transition-colors ${
+              selectedPeriod === "lastWeek" ? "border-2 border-indigo-500 bg-indigo-900/30" : ""
             }`}
           >
             Last Week
           </Button>
           <Button
             onClick={() => handlePeriodChange("thisWeek")}
-            className={`bg-gray-800 text-indigo-400 ${
-              selectedPeriod === "thisWeek" ? "border-2 border-indigo-500" : ""
+            className={`bg-gray-800 text-indigo-400 hover:bg-gray-700 transition-colors ${
+              selectedPeriod === "thisWeek" ? "border-2 border-indigo-500 bg-indigo-900/30" : ""
             }`}
           >
             This Week
           </Button>
         </ButtonGroup>
+        
         <Dropdown backdrop="blur">
           <DropdownTrigger>
-            <Button variant="bordered" className="text-indigo-500">
+            <Button variant="bordered" className="text-indigo-500 border-indigo-500/50 hover:border-indigo-400">
               {metrics[selectedMetric]} <KeyboardArrowDownIcon />
             </Button>
           </DropdownTrigger>
@@ -175,6 +176,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
           </DropdownMenu>
         </Dropdown>
       </div>
+      
       <>
         <ol className="space-y-4">
           {isLoading
@@ -189,19 +191,19 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                 return (
                   <li
                     key={item.userId}
-                    className="bg-gray-800 p-4 rounded-md hover:bg-gray-700 transition duration-300 ease-in-out transform hover:-translate-y-1"
+                    className="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg border border-gray-700/50 hover:border-indigo-500/30"
                   >
                     <Link
                       href={`user/${item.userName}/characters`}
                       className="flex justify-between items-center w-full h-full text-indigo-400 hover:text-indigo-300 font-medium"
                     >
                       <span className="flex-grow flex items-center">
-                        <span className="text-xl mr-2 font-bold">
-                          {startIndex + index + 1}.
+                        <span className="text-xl mr-4 font-bold text-indigo-500 bg-indigo-500/10 rounded-full w-8 h-8 flex items-center justify-center text-sm">
+                          {startIndex + index + 1}
                         </span>
                         <span className="text-lg">{item.userName}</span>
                       </span>
-                      <span className="text-white font-bold">
+                      <span className="text-white font-bold text-lg">
                         {formatNumber(value)}
                       </span>
                     </Link>
@@ -209,17 +211,19 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                 );
               })}
         </ol>
-        <div className="my-4 flex justify-center">
+        
+        <div className="my-8 flex justify-center">
           <Pagination
             total={Math.ceil(data.length / itemsPerPage)}
             initialPage={1}
             onChange={(page) => setCurrentPage(page)}
+            showControls
             classNames={{
-              wrapper:
-                "gap-0 overflow-visible h-8 rounded border border-divider",
-              item: "w-8 h-8 text-small rounded-none bg-transparent text-white",
-              cursor:
-                "bg-gradient-to-b shadow-lg from-default-500 to-default-800 dark:from-default-300 dark:to-default-100 text-white font-bold",
+              wrapper: "gap-2 overflow-visible h-10 rounded-xl bg-gray-800/50 p-2 backdrop-blur-sm border border-gray-700/50",
+              item: "w-10 h-8 text-small rounded-lg bg-gray-800 border border-gray-700/50 text-gray-300 hover:bg-indigo-600 hover:text-white transition-all duration-200",
+              cursor: "bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold shadow-lg border-0 hover:from-indigo-600 hover:to-purple-700",
+              prev: "w-10 h-8 rounded-lg bg-gray-800 border border-gray-700/50 text-gray-300 hover:bg-indigo-600 hover:text-white transition-all duration-200",
+              next: "w-10 h-8 rounded-lg bg-gray-800 border border-gray-700/50 text-gray-300 hover:bg-indigo-600 hover:text-white transition-all duration-200",
             }}
           />
         </div>
