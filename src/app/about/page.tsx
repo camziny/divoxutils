@@ -59,9 +59,12 @@ const AboutPage = () => {
             with your thoughts via Discord, available through the link below.
           </p>
           <p className="text-base sm:text-lg leading-relaxed">
-            Building and enhancing divoxutils is a labor of love and dedication.
-            If you&apos;ve found this tool helpful, please
-            consider contributing through the Ko-fi link below.
+            I&apos;m passionate about building and enhancing divoxutils, but it also 
+            comes with real costs—server hosting, database maintenance, and 
+            infrastructure to keep the service running smoothly for all users.
+            If you&apos;ve found this tool helpful, please consider contributing 
+            through the Ko-fi link below to help cover these operational costs 
+            and support future development.
           </p>
           <p className="text-base sm:text-lg leading-relaxed">
             Your support doesn&apos;t end with financial contributions. Join the
