@@ -126,36 +126,37 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
 
   return (
     <section className="max-w-3xl mx-auto px-6">
-      <div className="mb-4 flex flex-col items-center">
+      <div className="mb-6 flex flex-col items-center">
         <ButtonGroup className="mb-4 relative">
           <Button
             onClick={() => handlePeriodChange("total")}
-            className={`bg-gray-800 text-indigo-400 ${
-              selectedPeriod === "total" ? "border-2  border-indigo-500" : ""
+            className={`bg-gray-800 text-indigo-400 hover:bg-gray-700 transition-colors ${
+              selectedPeriod === "total" ? "border-2 border-indigo-500 bg-indigo-900/30" : ""
             }`}
           >
             Total
           </Button>
           <Button
             onClick={() => handlePeriodChange("lastWeek")}
-            className={`bg-gray-800 text-indigo-400 ${
-              selectedPeriod === "lastWeek" ? "border-2 border-indigo-500" : ""
+            className={`bg-gray-800 text-indigo-400 hover:bg-gray-700 transition-colors ${
+              selectedPeriod === "lastWeek" ? "border-2 border-indigo-500 bg-indigo-900/30" : ""
             }`}
           >
             Last Week
           </Button>
           <Button
             onClick={() => handlePeriodChange("thisWeek")}
-            className={`bg-gray-800 text-indigo-400 ${
-              selectedPeriod === "thisWeek" ? "border-2 border-indigo-500" : ""
+            className={`bg-gray-800 text-indigo-400 hover:bg-gray-700 transition-colors ${
+              selectedPeriod === "thisWeek" ? "border-2 border-indigo-500 bg-indigo-900/30" : ""
             }`}
           >
             This Week
           </Button>
         </ButtonGroup>
+        
         <Dropdown backdrop="blur">
           <DropdownTrigger>
-            <Button variant="bordered" className="text-indigo-500">
+            <Button variant="bordered" className="text-indigo-500 border-indigo-500/50 hover:border-indigo-400">
               {metrics[selectedMetric]} <KeyboardArrowDownIcon />
             </Button>
           </DropdownTrigger>
@@ -175,6 +176,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
           </DropdownMenu>
         </Dropdown>
       </div>
+      
       <>
         <ol className="space-y-4">
           {isLoading
@@ -189,7 +191,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                 return (
                   <li
                     key={item.userId}
-                    className="bg-gray-800 p-4 rounded-md hover:bg-gray-700 transition duration-300 ease-in-out transform hover:-translate-y-1"
+                    className="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg border border-gray-700/50 hover:border-indigo-500/30"
                   >
                     <Link
                       href={`user/${item.userName}/characters`}
@@ -209,17 +211,19 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                 );
               })}
         </ol>
-        <div className="my-4 flex justify-center">
+        
+        <div className="my-8 flex justify-center">
           <Pagination
             total={Math.ceil(data.length / itemsPerPage)}
             initialPage={1}
             onChange={(page) => setCurrentPage(page)}
+            showControls
             classNames={{
-              wrapper:
-                "gap-0 overflow-visible h-8 rounded border border-divider",
-              item: "w-8 h-8 text-small rounded-none bg-transparent text-white",
-              cursor:
-                "bg-gradient-to-b shadow-lg from-default-500 to-default-800 dark:from-default-300 dark:to-default-100 text-white font-bold",
+              wrapper: "gap-1 overflow-visible h-10 rounded-lg bg-gray-800/50 p-2 border border-gray-700/50",
+              item: "w-10 h-8 text-small rounded-md bg-transparent text-gray-300 hover:bg-gray-700 transition-colors",
+              cursor: "bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-500",
+              prev: "w-10 h-8 rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-indigo-400 transition-colors",
+              next: "w-10 h-8 rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-indigo-400 transition-colors",
             }}
           />
         </div>

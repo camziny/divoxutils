@@ -55,18 +55,18 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
   };
 
   return (
-    <nav className="text-white">
+    <nav className="text-white p-4">
       <div className="container mx-auto flex flex-wrap justify-between items-center">
         <Link href="/">
-          <div className="flex items-center px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer">
-            <HomeIcon />
-            <span className="ml-1">Home</span>
+          <div className="group flex items-center px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10">
+            <HomeIcon className="text-indigo-400 group-hover:text-indigo-300 transition-colors duration-300" />
+            <span className="ml-2 font-semibold group-hover:text-white transition-colors duration-300">Home</span>
           </div>
         </Link>
 
         <button
           onClick={toggleMenu}
-          className="text-white lg:hidden focus:outline-none focus:ring-2 focus:ring-gray-600 p-2 rounded hover:bg-gray-700"
+          className="text-white lg:hidden focus:outline-none focus:ring-2 focus:ring-indigo-500/50 p-3 rounded-xl hover:bg-white/10 transition-all duration-300 border border-transparent hover:border-indigo-500/30"
         >
           {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
@@ -75,13 +75,13 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
             isMenuOpen ? "flex" : "hidden"
           } lg:flex flex-col lg:flex-row flex-grow justify-between items-center w-full lg:w-auto`}
         >
-          <div className="flex flex-col lg:flex-row lg:space-x-4 mt-4 md:mt-0 w-full lg:w-auto lg:ml-auto">
+          <div className="flex flex-col lg:flex-row lg:space-x-2 mt-4 md:mt-0 w-full lg:w-auto lg:ml-auto">
             <Link href="/about">
               <div
                 onClick={closeMenu}
-                className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
               >
-                About
+                <span className="font-medium group-hover:text-white transition-colors duration-300">About</span>
               </div>
             </Link>
             {isUserSignedIn && (
@@ -89,66 +89,47 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <Link href="/user-characters">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
                   >
-                    My Characters
+                    <span className="font-medium group-hover:text-white transition-colors duration-300">My Characters</span>
                   </div>
                 </Link>
                 <Link href="/leaderboards">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
                   >
-                    Leaderboards
+                    <span className="font-medium group-hover:text-white transition-colors duration-300">Leaderboards</span>
                   </div>
                 </Link>
                 <Link href="/search">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
                   >
-                    <span>Search</span>
-                    <SearchIcon className="text-indigo-500 hover:text-indigo-600 ml-1" />
+                    <span className="font-medium group-hover:text-white transition-colors duration-300">Search</span>
+                    <SearchIcon className="text-indigo-400 group-hover:text-indigo-300 ml-2 transition-colors duration-300" />
                   </div>
                 </Link>
                 <Link href="/discord">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
                   >
-                    <span>Discord Bot</span>
+                    <span className="font-medium group-hover:text-white transition-colors duration-300">Discord Bot</span>
                     <FaDiscord
-                      className="text-indigo-500 hover:text-indigo-600 ml-2"
-                      size={20}
+                      className="text-indigo-400 group-hover:text-indigo-300 ml-2 transition-colors duration-300"
+                      size={18}
                     />
                   </div>
                 </Link>
-                {/* <Link href="/group-builder">
-                  <div
-                    onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
-                  >
-                    <span>Group Builder</span>
-                    <ConstructionIcon className="text-indigo-500 hover:text-indigo-600 ml-1" />
-                  </div>
-                </Link>
-                <Link href={userName ? `/user/${userName}/group` : "#"}>
-                  <div
-                    onClick={userName ? closeMenu : undefined}
-                    className={`px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end ${
-                      !userName ? "cursor-not-allowed" : ""
-                    }`}
-                  >
-                    My Group
-                  </div>
-                </Link> */}
                 <div
-                  className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                  className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
                   onClick={() => setIsUpdateUsernameModalOpen(true)}
                 >
-                  <span className="mr-1 font-semibold">{userName}</span>
+                  <span className="mr-2 font-semibold group-hover:text-white transition-colors duration-300">{userName}</span>
                   {userName && (
-                    <EditIcon className="text-indigo-500 hover:text-indigo-600" />
+                    <EditIcon className="text-indigo-400 group-hover:text-indigo-300 transition-colors duration-300" />
                   )}
                 </div>
                 <UpdateUsernameModal
@@ -163,51 +144,53 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <Link href="/leaderboards">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
                   >
-                    Leaderboards
+                    <span className="font-medium group-hover:text-white transition-colors duration-300">Leaderboards</span>
                   </div>
                 </Link>
                 <Link href="/search">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
                   >
-                    <span>Search</span>
-                    <SearchIcon className="text-indigo-500 hover:text-indigo-600 ml-1" />
+                    <span className="font-medium group-hover:text-white transition-colors duration-300">Search</span>
+                    <SearchIcon className="text-indigo-400 group-hover:text-indigo-300 ml-2 transition-colors duration-300" />
                   </div>
                 </Link>
                 <Link href="/discord">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
                   >
-                    <span>Discord Bot</span>
+                    <span className="font-medium group-hover:text-white transition-colors duration-300">Discord Bot</span>
                     <FaDiscord
-                      className="text-indigo-500 hover:text-indigo-600 ml-2"
-                      size={20}
+                      className="text-indigo-400 group-hover:text-indigo-300 ml-2 transition-colors duration-300"
+                      size={18}
                     />
                   </div>
                 </Link>
                 <Link href="/sign-in">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
                   >
-                    Sign In
+                    <span className="font-medium group-hover:text-white transition-colors duration-300">Sign In</span>
                   </div>
                 </Link>
                 <Link href="/sign-up">
                   <div
                     onClick={closeMenu}
-                    className="px-3 py-2 rounded hover:bg-gray-700 transition-colors cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end"
+                    className="group px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:shadow-lg hover:shadow-indigo-500/25"
                   >
-                    Register
+                    <span className="font-semibold text-white">Register</span>
                   </div>
                 </Link>
               </>
             )}
-            <UserButton afterSignOutUrl="/" />
+            <div className="ml-2">
+              <UserButton afterSignOutUrl="/" />
+            </div>
           </div>
         </div>
       </div>
