@@ -217,10 +217,13 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
             total={Math.ceil(data.length / itemsPerPage)}
             initialPage={1}
             onChange={(page) => setCurrentPage(page)}
+            showControls
             classNames={{
               wrapper: "gap-1 overflow-visible h-10 rounded-lg bg-gray-800/50 p-2 border border-gray-700/50",
-              item: "w-10 h-8 text-small rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-white transition-colors",
+              item: "w-10 h-8 text-small rounded-md bg-transparent text-gray-300 hover:bg-gray-700 transition-colors",
               cursor: "bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-500",
+              prev: "w-10 h-8 rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-indigo-400 transition-colors",
+              next: "w-10 h-8 rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-indigo-400 transition-colors",
             }}
           />
         </div>
