@@ -218,9 +218,9 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
             initialPage={1}
             onChange={(page) => setCurrentPage(page)}
             classNames={{
-              wrapper: "gap-0 overflow-visible h-8 rounded border border-divider",
-              item: "w-8 h-8 text-small rounded-none bg-transparent text-white",
-              cursor: "bg-gradient-to-b shadow-lg from-default-500 to-default-800 dark:from-default-300 dark:to-default-100 text-white font-bold",
+              wrapper: "gap-1 overflow-visible h-10 rounded-lg bg-gray-800/50 p-2 border border-gray-700/50",
+              item: "w-10 h-8 text-small rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-white transition-colors",
+              cursor: "bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-500",
             }}
           />
         </div>

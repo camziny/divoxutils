@@ -13,7 +13,7 @@ export default function HomePage() {
       <div className="container mx-auto p-8">
         <header className="text-center py-16">
           <div className="relative">
-            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black mb-4 tracking-tight">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black mb-4 tracking-tight">
               <Link href="/user/divox/characters">
                 <div className="group inline-block relative">
                   <span className="text-indigo-400 hover:text-indigo-300 transition-all duration-300 transform group-hover:scale-105">
