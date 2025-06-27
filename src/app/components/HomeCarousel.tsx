@@ -8,17 +8,20 @@ export default function HomeCarousel() {
   const slides = [
     {
       text: "Support this project",
-      icon: <FaCoffee className="mx-auto text-indigo-500 h-16 w-16" />,
+      description: "Help keep divoxutils running",
+      icon: <FaCoffee className="mx-auto text-indigo-400 h-12 w-12 drop-shadow-lg" />,
       link: "https://ko-fi.com/divox#checkoutModal",
     },
     {
       text: "Follow me on Twitch",
-      icon: <FaTwitch className="mx-auto text-indigo-500 h-16 w-16" />,
+      description: "Join the community",
+      icon: <FaTwitch className="mx-auto text-indigo-400 h-12 w-12 drop-shadow-lg" />,
       link: "https://www.twitch.tv/divox",
     },
     {
       text: "Suggestions and feedback",
-      icon: <FaDiscord className="mx-auto text-indigo-500 h-16 w-16" />,
+      description: "Share your ideas",
+      icon: <FaDiscord className="mx-auto text-indigo-400 h-12 w-12 drop-shadow-lg" />,
       link: "https://discord.gg/divox",
     },
   ];
@@ -32,53 +35,62 @@ export default function HomeCarousel() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length);
-    }, 4000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [slides.length]);
 
   return (
-    <div className="carousel-container relative bg-gray-900 rounded-lg overflow-hidden shadow-lg my-8 mx-auto w-11/12 sm:w-3/4">
-      <div
-        className="carousel-track flex transition-transform duration-1000 ease-in-out"
-        style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-        ref={carouselRef}
-      >
-        {slides.map((slide, index) => (
-          <div
-            className="carousel-slide w-full flex-shrink-0 flex flex-col items-center justify-center text-center"
-            key={index}
-            style={{ backgroundColor: "#1A202C" }}
-          >
-            <a
-              href={slide.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-20 h-full w-full flex flex-col items-center justify-center"
+    <div className="relative my-12 mx-auto max-w-2xl">
+      <div className="relative bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-sm rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50">
+        <div
+          className="flex transition-transform duration-700 ease-out"
+          style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+          ref={carouselRef}
+        >
+          {slides.map((slide, index) => (
+            <div
+              className="w-full flex-shrink-0"
+              key={index}
             >
-              <p className="carousel-text text-lg font-semibold text-white mb-2">
-                {slide.text}
-              </p>
-              <div className="carousel-icon text-6xl my-2">{slide.icon}</div>
-            </a>
+              <a
+                href={slide.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-12 sm:p-16 h-full w-full flex flex-col items-center justify-center text-center group transition-all duration-300 hover:bg-white/5"
+              >
+                <div className="mb-6 transform transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">
+                  {slide.icon}
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 tracking-tight">
+                  {slide.text}
+                </h3>
+                <p className="text-gray-400 text-sm sm:text-base font-medium opacity-90">
+                  {slide.description}
+                </p>
+              </a>
+            </div>
+          ))}
+        </div>
+        
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
+          <div className="flex space-x-3">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                aria-label={`Go to slide ${index + 1}`}
+                className={cn(
+                  "transition-all duration-300 ease-out rounded-full border-2",
+                  {
+                    "w-8 h-2 bg-indigo-500 border-indigo-500 shadow-lg shadow-indigo-500/25": index === currentSlide,
+                    "w-2 h-2 bg-transparent border-gray-600 hover:border-gray-400": index !== currentSlide,
+                  }
+                )}
+              />
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="carousel-controls absolute bottom-0 left-1/2 transform -translate-x-1/2 p-4">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => goToSlide(index)}
-            aria-label={`Slide ${index + 1}`}
-            className={cn(
-              "carousel-dot rounded-full w-3 h-3 mx-2 transition duration-300 ease-out",
-              {
-                "bg-indigo-500": index === currentSlide,
-                "bg-gray-700": index !== currentSlide,
-              }
-            )}
-          />
-        ))}
+        </div>
       </div>
     </div>
   );

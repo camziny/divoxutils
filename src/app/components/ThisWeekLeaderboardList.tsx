@@ -198,12 +198,12 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                       className="flex justify-between items-center w-full h-full text-indigo-400 hover:text-indigo-300 font-medium"
                     >
                       <span className="flex-grow flex items-center">
-                        <span className="text-xl mr-4 font-bold text-indigo-500 bg-indigo-500/10 rounded-full w-8 h-8 flex items-center justify-center text-sm">
-                          {startIndex + index + 1}
+                        <span className="text-xl mr-2 font-bold">
+                          {startIndex + index + 1}.
                         </span>
                         <span className="text-lg">{item.userName}</span>
                       </span>
-                      <span className="text-white font-bold text-lg">
+                      <span className="text-white font-bold">
                         {formatNumber(value)}
                       </span>
                     </Link>
@@ -217,13 +217,10 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
             total={Math.ceil(data.length / itemsPerPage)}
             initialPage={1}
             onChange={(page) => setCurrentPage(page)}
-            showControls
             classNames={{
-              wrapper: "gap-2 overflow-visible h-10 rounded-xl bg-gray-800/50 p-2 backdrop-blur-sm border border-gray-700/50",
-              item: "w-10 h-8 text-small rounded-lg bg-gray-800 border border-gray-700/50 text-gray-300 hover:bg-indigo-600 hover:text-white transition-all duration-200",
-              cursor: "bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold shadow-lg border-0 hover:from-indigo-600 hover:to-purple-700",
-              prev: "w-10 h-8 rounded-lg bg-gray-800 border border-gray-700/50 text-gray-300 hover:bg-indigo-600 hover:text-white transition-all duration-200",
-              next: "w-10 h-8 rounded-lg bg-gray-800 border border-gray-700/50 text-gray-300 hover:bg-indigo-600 hover:text-white transition-all duration-200",
+              wrapper: "gap-0 overflow-visible h-8 rounded border border-divider",
+              item: "w-8 h-8 text-small rounded-none bg-transparent text-white",
+              cursor: "bg-gradient-to-b shadow-lg from-default-500 to-default-800 dark:from-default-300 dark:to-default-100 text-white font-bold",
             }}
           />
         </div>
