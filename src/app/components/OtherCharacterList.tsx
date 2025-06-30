@@ -97,33 +97,32 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
       </div>
       <div className="sm:hidden w-full">
         {sortedCharacters.length === 0 ? (
-          <div className="text-center py-4 text-white bg-gray-900">
-            No characters available
+          <div className="text-center py-8 text-white bg-gray-900/80 backdrop-blur-sm rounded-lg mx-2">
+            <div className="text-lg font-semibold">No characters available</div>
+            <div className="text-gray-400 text-sm mt-2">This user hasn&apos;t added any characters yet.</div>
           </div>
         ) : (
-          <>
-            <div className="overflow-auto max-h-[500px]">
-              {sortedCharacters.map((character: CharacterData) => (
-                <MobileCharacterTile
-                  key={character.id}
-                  webId={character.webId ?? ''}
-                  character={character}
-                  characterDetails={character}
-                  formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
-                  initialCharacter={character.initialCharacter}
-                  heraldBountyPoints={character.heraldBountyPoints}
-                  heraldTotalKills={character.heraldTotalKills}
-                  heraldTotalDeaths={character.heraldTotalDeaths}
-                  realmPointsLastWeek={character.realmPointsLastWeek}
-                  totalRealmPoints={character.totalRealmPoints}
-                  currentUserId={character.initialCharacter?.userId}
-                  heraldServerName={character.heraldServerName}
-                  ownerId={character.clerkUserId}
-                  showDelete={false}
-                />
-              ))}
-            </div>
-          </>
+          <div className="max-h-[500px] overflow-y-auto">
+            {sortedCharacters.map((character: CharacterData) => (
+              <MobileCharacterTile
+                key={character.id}
+                webId={character.webId ?? ''}
+                character={character}
+                characterDetails={character}
+                formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
+                initialCharacter={character.initialCharacter}
+                heraldBountyPoints={character.heraldBountyPoints}
+                heraldTotalKills={character.heraldTotalKills}
+                heraldTotalDeaths={character.heraldTotalDeaths}
+                realmPointsLastWeek={character.realmPointsLastWeek}
+                totalRealmPoints={character.totalRealmPoints}
+                currentUserId={character.initialCharacter?.userId}
+                heraldServerName={character.heraldServerName}
+                ownerId={character.clerkUserId}
+                showDelete={false}
+              />
+            ))}
+          </div>
         )}
       </div>
             <div className="flex justify-center items-center">
