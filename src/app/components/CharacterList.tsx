@@ -87,8 +87,8 @@ const CharacterList: React.FC<CharacterListProps> = ({
       <div className="hidden sm:block w-full">
         <TableContainer 
           component={Paper} 
+          className="max-h-[60vh] lg:max-h-[70vh] xl:max-h-[75vh]"
           sx={{ 
-            maxHeight: 1000,
             background: 'linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%)',
             backdropFilter: 'blur(8px)',
             boxShadow: 'none',
@@ -142,34 +142,39 @@ const CharacterList: React.FC<CharacterListProps> = ({
           </Table>
         </TableContainer>
       </div>
-      <div className="sm:hidden overflow-auto max-h-[500px] w-full">
+      <div className="sm:hidden w-full">
         {sortedCharacters.length === 0 ? (
-          <div className="text-center py-4 text-white bg-gray-900">
-            No characters available
+          <div className="text-center py-8 text-white bg-gray-900/80 backdrop-blur-sm rounded-lg mx-2">
+            <div className="text-lg font-semibold">No characters available</div>
+            <div className="text-gray-400 text-sm mt-2">Add some characters to get started!</div>
           </div>
         ) : (
-          sortedCharacters.map((character: CharacterData) => (
-            <MobileCharacterTile
-              key={character.id}
-              webId={character.webId}
-              character={character}
-              characterDetails={character}
-              formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
-              initialCharacter={character.initialCharacter}
-              heraldBountyPoints={character.heraldBountyPoints}
-              heraldTotalKills={character.heraldTotalKills}
-              heraldTotalDeaths={character.heraldTotalDeaths}
-              realmPointsLastWeek={character.realmPointsLastWeek}
-              totalRealmPoints={character.totalRealmPoints}
-              currentUserId={character.initialCharacter?.userId}
-              ownerId={character.clerkUserId}
-              heraldServerName={character.heraldServerName}
-              onDelete={() => handleDelete(character.id)}
-            />
-          ))
+          <div>
+            {sortedCharacters.map((character: CharacterData) => (
+              <MobileCharacterTile
+                key={character.id}
+                webId={character.webId}
+                character={character}
+                characterDetails={character}
+                formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
+                initialCharacter={character.initialCharacter}
+                heraldBountyPoints={character.heraldBountyPoints}
+                heraldTotalKills={character.heraldTotalKills}
+                heraldTotalDeaths={character.heraldTotalDeaths}
+                realmPointsLastWeek={character.realmPointsLastWeek}
+                totalRealmPoints={character.totalRealmPoints}
+                currentUserId={character.initialCharacter?.userId}
+                ownerId={character.clerkUserId}
+                heraldServerName={character.heraldServerName}
+                onDelete={() => handleDelete(character.id)}
+              />
+            ))}
+          </div>
         )}
       </div>
-      <AggregateStatistics characters={sortedCharacters} />
+      <div className="mt-4">
+        <AggregateStatistics characters={sortedCharacters} />
+      </div>
     </div>
   );
 };

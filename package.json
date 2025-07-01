@@ -7,7 +7,8 @@
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed:from-prod": "node scripts/seedFromProduction.js"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",

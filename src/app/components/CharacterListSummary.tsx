@@ -92,9 +92,9 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
   };
 
   const realmColors: Record<string, string> = {
-    Albion: "albion",
-    Midgard: "midgard",
-    Hibernia: "hibernia",
+    Albion: "bg-gradient-to-r from-red-800/20 to-red-700/20",
+    Midgard: "bg-gradient-to-r from-blue-800/20 to-blue-700/20",
+    Hibernia: "bg-gradient-to-r from-green-800/20 to-green-700/20",
     Total: "bg-gray-600",
   };
 

@@ -142,10 +142,8 @@ const CharacterTile: React.FC<{
       <TableRow
         onClick={() => setOpen(!open)}
         className={`
-          transition-all duration-200 ease-in-out
-          hover:bg-opacity-90
-          ${open ? 'bg-opacity-100' : 'bg-opacity-80'}
-          ${realm.color}
+          cursor-pointer
+          ${getRealmGradientClass(realm.name)}
           border-l-4 ${getRealmBorderColor(realm.name)}
         `}
         sx={{
@@ -155,11 +153,7 @@ const CharacterTile: React.FC<{
           "&:last-child td, &:last-child th": { border: 0 },
           "& td, & th": { 
             borderBottom: "none",
-            transition: "all 0.2s ease-in-out",
             padding: "2px 4px",
-          },
-          "&:hover td": {
-            backgroundColor: "rgba(0, 0, 0, 0.1)"
           }
         }}
         hover={false}
@@ -278,7 +272,7 @@ const CharacterTile: React.FC<{
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeInOut" }}
+                transition={{ duration: 0.1, ease: "easeOut" }}
                 className="overflow-hidden"
               >
                 <div className="flex justify-center py-2">
@@ -315,6 +309,19 @@ const getRealmBorderColor = (realm: string) => {
       return "border-green-600";
     default:
       return "border-gray-600";
+  }
+};
+
+const getRealmGradientClass = (realm: string) => {
+  switch (realm) {
+    case "Albion":
+      return "bg-gradient-to-r from-red-800/20 to-red-700/20";
+    case "Midgard":
+      return "bg-gradient-to-r from-blue-800/20 to-blue-700/20";
+    case "Hibernia":
+      return "bg-gradient-to-r from-green-800/20 to-green-700/20";
+    default:
+      return "bg-gray-800/20";
   }
 };
 

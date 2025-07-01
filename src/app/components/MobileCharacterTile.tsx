@@ -1,28 +1,16 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { TableRow, TableCell, IconButton } from "@mui/material";
+import React, { useState } from "react";
+import { IconButton } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandCircleDown";
 import ExpandLessIcon from "@mui/icons-material/ExpandCircleDown";
-import CharacterDetails from "./CharacterDetails";
+import MobileCharacterDetails from "./MobileCharacterDetails";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import {
   getRealmNameAndColor,
-  getRealmRanks,
-  getRealmRankForPoints,
-  formatRealmRankWithLevel,
 } from "@/utils/character";
-import { useMediaQuery } from "react-responsive";
 import MobileCharacterTileSkeleton from "./MobileCharacterTileSkeleton";
 import { CharacterData } from "@/utils/character";
-
-type KillStats = {
-  kills: number;
-  deaths: number;
-  death_blows: number;
-  solo_kills: number;
-};
 
 interface MobileCharacterTileProps {
   character: CharacterData;
@@ -58,13 +46,11 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   onDelete,
   showDelete = true,
 }) => {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const { userId } = useAuth();
 
   const isOwner = userId === ownerId;
   const showDeleteIcon = isOwner && showDelete;
-  const isMobile = useMediaQuery({ maxWidth: 767 });
 
   const getOpponentRealms = (realmName: string) => {
     const realms = ["Albion", "Midgard", "Hibernia"];
@@ -75,6 +61,20 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
 
   const realm = getRealmNameAndColor(characterDetails.realm);
   const opponentRealms = getOpponentRealms(characterDetails.realm);
+
+  // Match CharacterTile colors exactly
+  const getRealmGradientClass = (realmName: string) => {
+    switch (realmName) {
+      case "Albion":
+        return "bg-gradient-to-r from-red-800/20 to-red-700/20";
+      case "Midgard":
+        return "bg-gradient-to-r from-blue-800/20 to-blue-700/20";
+      case "Hibernia":
+        return "bg-gradient-to-r from-green-800/20 to-green-700/20";
+      default:
+        return "bg-gray-800/20";
+    }
+  };
 
   const truncateText = (text: string, maxLength: number) => {
     if (!text) return "N/A";
@@ -87,133 +87,73 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
     characterDetails.heraldRealmPoints - totalRealmPoints;
 
   return (
-    <>
-      <TableRow
+    <div className="mb-1 mx-3">
+      <div
+        className={`relative overflow-hidden rounded-lg shadow-sm ${getRealmGradientClass(realm.name)} cursor-pointer`}
         onClick={() => setOpen(!open)}
-        className={`rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 bg-gray-800 ${realm.color}`}
-        sx={{
-          minHeight: "18px",
-          maxHeight: "18px",
-          height: "18px",
-          "&:last-child td, &:last-child th": { border: 0 },
-          "& td, & th": { borderBottom: "none" },
-        }}
-        style={{ cursor: "pointer" }}
       >
-        <TableCell
-          className="p-0.5 w-5"
-          sx={{ padding: "2px", minHeight: "18px", maxHeight: "18px" }}
-        >
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(!open);
-            }}
-          >
-            {open ? (
-              <ExpandLessIcon className="text-white" style={{ fontSize: 14 }} />
-            ) : (
-              <ExpandMoreIcon className="text-white" style={{ fontSize: 14 }} />
-            )}
-          </IconButton>
-        </TableCell>
-        <TableCell
-          className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate"
-          sx={{
-            width: "40%",
-            padding: "2px",
-            minHeight: "18px",
-            maxHeight: "18px",
-          }}
-        >
-          {truncateText(characterDetails.heraldName, 15)}
-        </TableCell>
-        <TableCell
-          className="text-white text-xs sm:text-xs font-semibold p-0.5 truncate"
-          sx={{
-            width: "25%",
-            padding: "2px",
-            minHeight: "18px",
-            maxHeight: "18px",
-          }}
-        >
-          {truncateText(characterDetails.heraldClassName, 8)}
-        </TableCell>
-        <TableCell
-          className="text-white text-xs sm:text-xs font-semibold p-0.5 text-center"
-          sx={{
-            width: "25%",
-            padding: "2px",
-            minHeight: "18px",
-            maxHeight: "18px",
-          }}
-        >
-          {characterDetails.formattedHeraldRealmPoints || "-"}
-        </TableCell>
-        <TableCell
-          className="p-0.5 w-5 text-center"
-          sx={{
-            height: "18px",
-            padding: "0",
-            overflow: "hidden",
-          }}
-        >
-          {showDeleteIcon && isOwner && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-              }}
-            >
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onDelete) {
-                    onDelete();
-                  }
-                }}
-                sx={{
-                  padding: 0,
-                  margin: 0,
-                  minWidth: 0,
-                  minHeight: 0,
-                  lineHeight: 1,
-                  backgroundColor: "transparent",
-                  "&:hover": {
-                    backgroundColor: "transparent",
-                  },
-                }}
-              >
-                <DeleteIcon
-                  className="text-white"
-                  style={{ fontSize: 14, lineHeight: 1 }}
-                />
-              </IconButton>
-            </div>
-          )}
-        </TableCell>
-      </TableRow>
-
-      {open && (
-        <TableRow className="bg-gray-900">
-          <TableCell colSpan={isMobile ? 5 : 9} className="p-0">
-            <div className="flex justify-center py-2">
-              <CharacterDetails
-                character={characterDetails}
-                opponentRealms={opponentRealms}
-                realmPointsLastWeek={realmPointsLastWeek}
-                realmPointsThisWeek={realmPointsThisWeek}
-                totalRealmPoints={totalRealmPoints}
+        <div className="flex items-center px-3 py-1.5">
+          {/* Expand/Collapse Button */}
+          <div className="mr-2">
+            <div className={`transform transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+              <ExpandMoreIcon 
+                className="text-white/70" 
+                style={{ fontSize: 18 }} 
               />
             </div>
-          </TableCell>
-        </TableRow>
+          </div>
+          
+          {/* Character Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0 pr-2">
+                <h4 className="text-white font-medium text-sm leading-tight truncate">
+                  {characterDetails.heraldName || "Unknown"}
+                </h4>
+                <p className="text-gray-300 text-xs">
+                  {characterDetails.heraldClassName || "Unknown"}
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="text-right">
+                  <div className="text-white font-bold text-sm">
+                    {characterDetails.formattedHeraldRealmPoints || "0"}
+                  </div>
+                  <div className="text-gray-300 text-xs">
+                    {characterDetails.heraldServerName || "Unknown"}
+                  </div>
+                </div>
+                
+                {showDeleteIcon && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onDelete) onDelete();
+                    }}
+                    className="p-1 rounded-md"
+                  >
+                    <DeleteIcon className="text-red-400" style={{ fontSize: 16 }} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {open && (
+        <div className="mt-1 animate-in slide-in-from-top-2 duration-200">
+          <MobileCharacterDetails
+            character={characterDetails}
+            opponentRealms={opponentRealms}
+            realmPointsLastWeek={realmPointsLastWeek}
+            realmPointsThisWeek={realmPointsThisWeek}
+            totalRealmPoints={totalRealmPoints}
+          />
+        </div>
       )}
-    </>
+    </div>
   );
 };
 

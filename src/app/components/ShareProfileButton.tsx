@@ -1,22 +1,28 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import { toast } from "react-toastify";
+import CheckIcon from "@mui/icons-material/Check";
 
 interface ShareProfileButtonProps {
-  username: string | null;
+  username: string;
 }
 
 const ShareProfileButton: React.FC<ShareProfileButtonProps> = ({
   username,
 }) => {
+  const [copied, setCopied] = useState(false);
+
   const handleShareClick = () => {
     const url = `${window.location.origin}/user/${username}/characters`;
     navigator.clipboard.writeText(url).then(() => {
-      toast(`${username}'s shareable profile link copied to clipboard`, {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      
+      toast(`Profile link copied to clipboard`, {
         position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: false,
+        autoClose: 2000,
+        hideProgressBar: true,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
@@ -28,9 +34,20 @@ const ShareProfileButton: React.FC<ShareProfileButtonProps> = ({
   return (
     <button
       onClick={handleShareClick}
-      className="bg-gray-900 text-indigo-400 hover:bg-gray-800 rounded-lg active:bg-gray-700 transition duration-300 ease-in-out flex items-center p-1"
+      className="
+        flex items-center justify-center
+        bg-gray-800 hover:bg-gray-700
+        text-gray-400 hover:text-white
+        border border-gray-700 hover:border-gray-600
+        rounded-lg p-2
+        transition-colors duration-200
+      "
     >
-      <IosShareIcon style={{ fontSize: "1.60rem", verticalAlign: "middle" }} />
+      {copied ? (
+        <CheckIcon style={{ fontSize: "1.2rem" }} />
+      ) : (
+        <IosShareIcon style={{ fontSize: "1.2rem" }} />
+      )}
     </button>
   );
 };

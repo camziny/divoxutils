@@ -52,17 +52,17 @@ body {
 }
 
 .albion {
-  background-color: #97233f;
+  background: linear-gradient(to right, rgba(153, 27, 27, 0.2), rgba(185, 28, 28, 0.2));
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .midgard {
-  background-color: #004170;
+  background: linear-gradient(to right, rgba(30, 58, 138, 0.2), rgba(29, 78, 216, 0.2));
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .hibernia {
-  background-color: #00674b;
+  background: linear-gradient(to right, rgba(22, 101, 52, 0.2), rgba(21, 128, 61, 0.2));
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
