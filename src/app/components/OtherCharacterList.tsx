@@ -102,7 +102,7 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
             <div className="text-gray-400 text-sm mt-2">This user hasn&apos;t added any characters yet.</div>
           </div>
         ) : (
-          <div className="max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
+          <div>
             {sortedCharacters.map((character: CharacterData) => (
               <MobileCharacterTile
                 key={character.id}
@@ -125,9 +125,9 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
           </div>
         )}
       </div>
-            <div className="flex justify-center items-center">
-            <AggregateStatistics characters={sortedCharacters} />
-            </div>
+      <div className="flex justify-center items-center mt-4">
+        <AggregateStatistics characters={sortedCharacters} />
+      </div>
     </div>
   );
 };

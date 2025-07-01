@@ -53,31 +53,27 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
   };
 
   return (
-    <div className="bg-gray-900/95 backdrop-blur-sm rounded-xl p-3 mx-3 shadow-lg">
-      <div className="text-center mb-3 pb-3 border-b border-gray-800">
-        <h3 className="text-lg font-semibold text-white">{character.heraldName}</h3>
-        <p className="text-sm text-gray-400">
-          {character.heraldClassName} • Level {character.heraldLevel || "50"}
+    <div className="bg-gray-900/95 rounded-xl p-3 mx-3 shadow-lg">
+      <div className="text-center mb-2 pb-2 border-b border-gray-800">
+        <h3 className="text-base font-semibold text-white">{character.heraldName}</h3>
+        <p className="text-xs text-gray-400">
+          {character.heraldClassName} • Lvl {character.heraldLevel || "50"}
+          {character.heraldGuildName && ` • <${character.heraldGuildName}>`}
         </p>
-        {character.heraldGuildName && (
-          <p className="text-xs text-gray-500 mt-0.5">&lt;{character.heraldGuildName}&gt;</p>
-        )}
       </div>
 
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-medium text-white">{currentRankFormatted}</span>
-          <span className="text-xs text-gray-400 transition-all duration-300">
+          <span className="text-xs text-gray-400">
             {animatedProgress.toFixed(1)}%
           </span>
         </div>
         <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden mb-1">
           <div 
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-1000 ease-out relative overflow-hidden"
+            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-1000 ease-out"
             style={{ width: `${animatedProgress}%` }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-          </div>
+          />
         </div>
         <div className="text-center text-xs text-gray-400">
           {formatNumber(nextRankPoints - realmPoints)} RPs to {nextRankFormatted}
@@ -199,16 +195,6 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
           );
         })}
       </div>
-
-      <style jsx>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-shimmer {
-          animation: shimmer 2s infinite;
-        }
-      `}</style>
     </div>
   );
 };

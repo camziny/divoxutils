@@ -142,12 +142,9 @@ const CharacterTile: React.FC<{
       <TableRow
         onClick={() => setOpen(!open)}
         className={`
-          transition-all duration-200 ease-in-out cursor-pointer
-          hover:shadow-md hover:scale-[1.005]
-          ${open ? 'shadow-lg scale-[1.005]' : 'shadow-sm'}
+          cursor-pointer
           ${getRealmGradientClass(realm.name)}
           border-l-4 ${getRealmBorderColor(realm.name)}
-          backdrop-blur-sm
         `}
         sx={{
           padding: 0,
@@ -156,12 +153,7 @@ const CharacterTile: React.FC<{
           "&:last-child td, &:last-child th": { border: 0 },
           "& td, & th": { 
             borderBottom: "none",
-            transition: "all 0.2s ease-in-out",
             padding: "2px 4px",
-            backdropFilter: "blur(4px)",
-          },
-          "&:hover": {
-            transform: "translateY(-1px)",
           }
         }}
         hover={false}
@@ -280,7 +272,7 @@ const CharacterTile: React.FC<{
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.15, ease: "easeInOut" }}
+                transition={{ duration: 0.1, ease: "easeOut" }}
                 className="overflow-hidden"
               >
                 <div className="flex justify-center py-2">

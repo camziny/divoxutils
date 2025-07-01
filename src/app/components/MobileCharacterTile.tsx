@@ -62,13 +62,19 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   const realm = getRealmNameAndColor(characterDetails.realm);
   const opponentRealms = getOpponentRealms(characterDetails.realm);
 
-  // Enhanced realm colors for better visibility
-  const enhancedRealmColors = {
-    'bg-red-500': 'bg-red-800',
-    'bg-blue-500': 'bg-blue-800', 
-    'bg-green-500': 'bg-green-800',
+  // Match CharacterTile colors exactly
+  const getRealmGradientClass = (realmName: string) => {
+    switch (realmName) {
+      case "Albion":
+        return "bg-gradient-to-r from-red-800/20 to-red-700/20";
+      case "Midgard":
+        return "bg-gradient-to-r from-blue-800/20 to-blue-700/20";
+      case "Hibernia":
+        return "bg-gradient-to-r from-green-800/20 to-green-700/20";
+      default:
+        return "bg-gray-800/20";
+    }
   };
-  const realmColor = enhancedRealmColors[realm.color as keyof typeof enhancedRealmColors] || realm.color;
 
   const truncateText = (text: string, maxLength: number) => {
     if (!text) return "N/A";
@@ -83,55 +89,53 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   return (
     <div className="mb-1 mx-3">
       <div
-        className={`relative overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-all duration-200 bg-gray-800 ${realmColor} cursor-pointer group`}
+        className={`relative overflow-hidden rounded-lg shadow-sm ${getRealmGradientClass(realm.name)} cursor-pointer`}
         onClick={() => setOpen(!open)}
       >
-        <div className="bg-gradient-to-r from-gray-900/75 to-gray-900/60 backdrop-blur-sm">
-          <div className="flex items-center px-3 py-1.5">
-            {/* Expand/Collapse Button */}
-            <div className="mr-2">
-              <div className={`transform transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
-                <ExpandMoreIcon 
-                  className="text-white/70 hover:text-white" 
-                  style={{ fontSize: 18 }} 
-                />
-              </div>
+        <div className="flex items-center px-3 py-1.5">
+          {/* Expand/Collapse Button */}
+          <div className="mr-2">
+            <div className={`transform transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+              <ExpandMoreIcon 
+                className="text-white/70" 
+                style={{ fontSize: 18 }} 
+              />
             </div>
-            
-            {/* Character Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0 pr-2">
-                  <h4 className="text-white font-medium text-sm leading-tight truncate">
-                    {characterDetails.heraldName || "Unknown"}
-                  </h4>
-                  <p className="text-gray-300 text-xs">
-                    {characterDetails.heraldClassName || "Unknown"}
-                  </p>
+          </div>
+          
+          {/* Character Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0 pr-2">
+                <h4 className="text-white font-medium text-sm leading-tight truncate">
+                  {characterDetails.heraldName || "Unknown"}
+                </h4>
+                <p className="text-gray-300 text-xs">
+                  {characterDetails.heraldClassName || "Unknown"}
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="text-right">
+                  <div className="text-white font-bold text-sm">
+                    {characterDetails.formattedHeraldRealmPoints || "0"}
+                  </div>
+                  <div className="text-gray-300 text-xs">
+                    {characterDetails.heraldServerName || "Unknown"}
+                  </div>
                 </div>
                 
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="text-right">
-                    <div className="text-white font-bold text-sm">
-                      {characterDetails.formattedHeraldRealmPoints || "0"}
-                    </div>
-                    <div className="text-gray-300 text-xs">
-                      {characterDetails.heraldServerName || "Unknown"}
-                    </div>
-                  </div>
-                  
-                  {showDeleteIcon && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onDelete) onDelete();
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-md hover:bg-red-500/20"
-                    >
-                      <DeleteIcon className="text-red-400" style={{ fontSize: 16 }} />
-                    </button>
-                  )}
-                </div>
+                {showDeleteIcon && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onDelete) onDelete();
+                    }}
+                    className="p-1 rounded-md"
+                  >
+                    <DeleteIcon className="text-red-400" style={{ fontSize: 16 }} />
+                  </button>
+                )}
               </div>
             </div>
           </div>
