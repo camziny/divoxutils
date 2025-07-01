@@ -142,11 +142,12 @@ const CharacterTile: React.FC<{
       <TableRow
         onClick={() => setOpen(!open)}
         className={`
-          transition-all duration-200 ease-in-out
-          hover:bg-opacity-90
-          ${open ? 'bg-opacity-100' : 'bg-opacity-80'}
-          ${realm.color}
+          transition-all duration-200 ease-in-out cursor-pointer
+          hover:shadow-md hover:scale-[1.005]
+          ${open ? 'shadow-lg scale-[1.005]' : 'shadow-sm'}
+          ${getRealmGradientClass(realm.name)}
           border-l-4 ${getRealmBorderColor(realm.name)}
+          backdrop-blur-sm
         `}
         sx={{
           padding: 0,
@@ -157,9 +158,10 @@ const CharacterTile: React.FC<{
             borderBottom: "none",
             transition: "all 0.2s ease-in-out",
             padding: "2px 4px",
+            backdropFilter: "blur(4px)",
           },
-          "&:hover td": {
-            backgroundColor: "rgba(0, 0, 0, 0.1)"
+          "&:hover": {
+            transform: "translateY(-1px)",
           }
         }}
         hover={false}
@@ -315,6 +317,19 @@ const getRealmBorderColor = (realm: string) => {
       return "border-green-600";
     default:
       return "border-gray-600";
+  }
+};
+
+const getRealmGradientClass = (realm: string) => {
+  switch (realm) {
+    case "Albion":
+      return "bg-gradient-to-r from-red-800/20 to-red-700/20";
+    case "Midgard":
+      return "bg-gradient-to-r from-blue-800/20 to-blue-700/20";
+    case "Hibernia":
+      return "bg-gradient-to-r from-green-800/20 to-green-700/20";
+    default:
+      return "bg-gray-800/20";
   }
 };
 

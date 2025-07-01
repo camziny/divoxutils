@@ -29,9 +29,9 @@ type RealmColorsType = {
 type RatioKey = "dbPerKill" | "skPerKill";
 
 const realmColors: RealmColorsType = {
-  albion: "bg-red-500",
-  midgard: "bg-blue-500",
-  hibernia: "bg-green-500",
+  albion: "bg-gradient-to-r from-red-800/20 to-red-700/20",
+  midgard: "bg-gradient-to-r from-blue-800/20 to-blue-700/20",
+  hibernia: "bg-gradient-to-r from-green-800/20 to-green-700/20",
   total: "bg-gray-600",
 };
 

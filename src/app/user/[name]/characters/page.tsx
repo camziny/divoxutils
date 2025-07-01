@@ -93,20 +93,27 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
 
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
-      <div className="p-4 md:p-8 lg:p-12">
-        <div className="max-w-screen-lg mx-auto">
-          <h1 className="text-3xl font-bold text-indigo-400 mb-4 text-center flex items-center gap-2 justify-center">
-            {user.name}
-            <ShareProfileButton username={user?.name ?? ''} />
-          </h1>
-          <PageReload />
-          <Suspense fallback={<Loading />}>
-            <OtherCharacterList
-              userId={clerkUserId}
-              characters={characters}
-              searchParams={searchParams}
-            />
-          </Suspense>
+      <div className="relative">
+        <div className="absolute top-4 right-4 z-10">
+          <ShareProfileButton username={user?.name ?? ''} />
+        </div>
+        
+        <div className="p-4 md:p-8 lg:p-12">
+          <div className="max-w-screen-lg mx-auto">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                {user.name}
+              </h1>
+            </div>
+            <PageReload />
+            <Suspense fallback={<Loading />}>
+              <OtherCharacterList
+                userId={clerkUserId}
+                characters={characters}
+                searchParams={searchParams}
+              />
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>

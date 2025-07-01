@@ -15,15 +15,19 @@ const SortOptions: React.FC<{
   onSortChange: (option: string) => void;
 }> = ({ sortOption, onSortChange }) => {
   return (
-    <div className="flex flex-row items-center mb-4">
-      <ButtonGroup className="relative">
+    <div className="flex flex-col sm:flex-row items-center justify-center mb-6 space-y-2 sm:space-y-0">
+      <ButtonGroup className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
         {Object.entries(sortOptions).map(([key, label]) => (
           <Button
             key={key}
             onClick={() => onSortChange(key)}
-            className={`bg-gray-800 text-indigo-400 ${
-              sortOption === key ? "border-2 border-indigo-500" : ""
-            }`}
+            className={`
+              px-4 py-2 text-sm font-medium transition-colors duration-200
+              ${sortOption === key 
+                ? 'bg-indigo-600 text-white' 
+                : 'bg-transparent text-gray-300 hover:text-white hover:bg-gray-700'
+              }
+            `}
           >
             {label}
           </Button>

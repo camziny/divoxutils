@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { CharacterData } from "@/utils/character";
 import { 
   getRealmRankForPoints,
@@ -29,10 +29,19 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
   const currentRankFormatted = formatRealmRankWithLevel(currentRank);
   const nextRankFormatted = formatRealmRankWithLevel(currentRank + 1);
   
-  const totalKills = character.heraldTotalKills || 0;
-  const totalDeaths = character.heraldTotalDeaths || 0;
-  const totalDeathBlows = character.heraldTotalDeathBlows || 0;
-  const totalSoloKills = character.heraldTotalSoloKills || 0;
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnimatedProgress(progressPercentage);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [progressPercentage]);
+  
+  const totalKills = character.player_kills?.total?.kills || 0;
+  const totalDeaths = character.player_kills?.total?.deaths || 0;
+  const totalDeathBlows = character.player_kills?.total?.death_blows || 0;
+  const totalSoloKills = character.player_kills?.total?.solo_kills || 0;
   
   const irs = totalDeaths === 0 ? 0 : Math.round(realmPoints / totalDeaths);
   const dbPerKillRatio = totalKills === 0 ? 0 : ((totalDeathBlows / totalKills) * 100).toFixed(1);
@@ -58,13 +67,17 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-medium text-white">{currentRankFormatted}</span>
-          <span className="text-xs text-gray-400">{progressPercentage.toFixed(1)}%</span>
+          <span className="text-xs text-gray-400 transition-all duration-300">
+            {animatedProgress.toFixed(1)}%
+          </span>
         </div>
-        <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden mb-1">
+        <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden mb-1">
           <div 
-            className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
-          />
+            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-1000 ease-out relative overflow-hidden"
+            style={{ width: `${animatedProgress}%` }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+          </div>
         </div>
         <div className="text-center text-xs text-gray-400">
           {formatNumber(nextRankPoints - realmPoints)} RPs to {nextRankFormatted}
@@ -103,7 +116,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
 
       <div className="space-y-1.5">
         <div className="bg-gray-800/30 rounded-lg p-2">
-          <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-white">Total</span>
             <div className="flex gap-3 text-xs">
               <span className="bg-gray-700/50 px-2 py-0.5 rounded text-gray-300">
@@ -115,20 +128,20 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
             </div>
           </div>
           <div className="grid grid-cols-4 gap-2 text-center">
-            <div>
-              <div className="text-xs text-gray-400">Kills</div>
+            <div className="bg-gray-700/30 rounded-md py-2 px-1">
+              <div className="text-xs text-gray-400 mb-1">Kills</div>
               <div className="text-sm font-semibold text-white">{formatNumber(totalKills)}</div>
             </div>
-            <div>
-              <div className="text-xs text-gray-400">Deaths</div>
+            <div className="bg-gray-700/30 rounded-md py-2 px-1">
+              <div className="text-xs text-gray-400 mb-1">Deaths</div>
               <div className="text-sm font-semibold text-white">{formatNumber(totalDeaths)}</div>
             </div>
-            <div>
-              <div className="text-xs text-gray-400">DBs</div>
+            <div className="bg-gray-700/30 rounded-md py-2 px-1">
+              <div className="text-xs text-gray-400 mb-1">DBs</div>
               <div className="text-sm font-semibold text-white">{formatNumber(totalDeathBlows)}</div>
             </div>
-            <div>
-              <div className="text-xs text-gray-400">SKs</div>
+            <div className="bg-gray-700/30 rounded-md py-2 px-1">
+              <div className="text-xs text-gray-400 mb-1">SKs</div>
               <div className="text-sm font-semibold text-white">{formatNumber(totalSoloKills)}</div>
             </div>
           </div>
@@ -136,10 +149,12 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
 
         {opponentRealms.map((realm) => {
           const realmLower = realm.toLowerCase();
-          const kills = character[`herald${realm}Kills` as keyof CharacterData] as number || 0;
-          const deaths = character[`herald${realm}Deaths` as keyof CharacterData] as number || 0;
-          const deathBlows = character[`herald${realm}DeathBlows` as keyof CharacterData] as number || 0;
-          const soloKills = character[`herald${realm}SoloKills` as keyof CharacterData] as number || 0;
+          const realmKey = realmLower as keyof typeof character.player_kills;
+          const realmStats = character.player_kills?.[realmKey];
+          
+          const kills = realmStats?.kills || 0;
+          const deathBlows = realmStats?.death_blows || 0;
+          const soloKills = realmStats?.solo_kills || 0;
           
           const realmDbRatio = kills === 0 ? 0 : ((deathBlows / kills) * 100).toFixed(1);
           const realmSkRatio = kills === 0 ? 0 : ((soloKills / kills) * 100).toFixed(1);
@@ -154,7 +169,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
             <div key={realm} className={`bg-gradient-to-r ${realmColorMap[realmLower]} rounded-lg p-2`}>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm font-medium text-white">{realm}</span>
-                <div className="flex gap-3 text-xs">
+                <div className="flex gap-2 text-xs">
                   <span className="bg-gray-700/50 px-2 py-0.5 rounded text-gray-300">
                     DB {realmDbRatio}%
                   </span>
@@ -163,28 +178,37 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div>
-                  <div className="text-xs text-gray-400">Kills</div>
-                  <div className="text-sm font-semibold text-white">{formatNumber(kills)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">Deaths</div>
-                  <div className="text-sm font-semibold text-white">{formatNumber(deaths)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">DBs</div>
-                  <div className="text-sm font-semibold text-white">{formatNumber(deathBlows)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-400">SKs</div>
-                  <div className="text-sm font-semibold text-white">{formatNumber(soloKills)}</div>
+              
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-3 gap-1.5">
+                  <div className="bg-gray-800/30 rounded-md py-1.5 px-1 text-center">
+                    <div className="text-xs text-gray-400">Kills</div>
+                    <div className="text-sm font-semibold text-white">{formatNumber(kills)}</div>
+                  </div>
+                  <div className="bg-gray-800/30 rounded-md py-1.5 px-1 text-center">
+                    <div className="text-xs text-gray-400">DBs</div>
+                    <div className="text-sm font-semibold text-white">{formatNumber(deathBlows)}</div>
+                  </div>
+                  <div className="bg-gray-800/30 rounded-md py-1.5 px-1 text-center">
+                    <div className="text-xs text-gray-400">SKs</div>
+                    <div className="text-sm font-semibold text-white">{formatNumber(soloKills)}</div>
+                  </div>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+      `}</style>
     </div>
   );
 };

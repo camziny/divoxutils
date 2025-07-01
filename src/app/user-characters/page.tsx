@@ -42,22 +42,33 @@ const CharacterPage: React.FC<CharacterPageProps> = async ({
 
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
-      <div className="flex flex-col items-center mt-8 space-y-4 w-full overflow-x-hidden">
-        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <CharacterSearchAndAdd />
-        </div>
-        <div className="text-2xl sm:text-3xl font-bold text-indigo-400 mb-4 sm:mb-6 flex items-center gap-2">
-          {user?.username}
-          {user?.username && <ShareProfileButton username={user.username} />}
-        </div>
-        <Suspense fallback={<Loading />}>
-          <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-            <CharacterList
-              characters={characters}
-              searchParams={searchParams}
-            />
+      <div className="relative">
+        {user?.username && (
+          <div className="absolute top-4 right-4 z-10">
+            <ShareProfileButton username={user.username} />
           </div>
-        </Suspense>
+        )}
+        
+        <div className="flex flex-col items-center mt-8 space-y-6 w-full overflow-x-hidden">
+          <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <CharacterSearchAndAdd />
+          </div>
+          
+          <div className="text-center">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">
+              {user?.username}
+            </h1>
+          </div>
+
+          <Suspense fallback={<Loading />}>
+            <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+              <CharacterList
+                characters={characters}
+                searchParams={searchParams}
+              />
+            </div>
+          </Suspense>
+        </div>
       </div>
     </div>
   );

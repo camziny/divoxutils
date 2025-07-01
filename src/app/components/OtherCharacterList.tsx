@@ -43,8 +43,8 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
       <div className="hidden sm:block w-full">
         <TableContainer 
           component={Paper} 
+          className="max-h-[60vh] lg:max-h-[70vh] xl:max-h-[75vh]"
           sx={{ 
-            maxHeight: 1000,
             background: 'linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%)',
             backdropFilter: 'blur(8px)',
             boxShadow: 'none',
@@ -102,7 +102,7 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
             <div className="text-gray-400 text-sm mt-2">This user hasn&apos;t added any characters yet.</div>
           </div>
         ) : (
-          <div className="max-h-[500px] overflow-y-auto">
+          <div className="max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
             {sortedCharacters.map((character: CharacterData) => (
               <MobileCharacterTile
                 key={character.id}
