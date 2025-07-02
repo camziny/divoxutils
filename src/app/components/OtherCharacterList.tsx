@@ -102,7 +102,7 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
             <div className="text-gray-400 text-sm mt-2">This user hasn&apos;t added any characters yet.</div>
           </div>
         ) : (
-          <div>
+          <div className="max-h-[60vh] overflow-y-auto rounded-lg">
             {sortedCharacters.map((character: CharacterData) => (
               <MobileCharacterTile
                 key={character.id}

@@ -115,55 +115,58 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
 
   return (
     <TableCell className="bg-gray-900/90 backdrop-blur-sm p-2 sm:p-4" colSpan={9}>
-      <div className="text-center mb-3">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-200 bg-clip-text">
+      <div className="text-center mb-2 sm:mb-3">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-200 bg-clip-text">
           Aggregate Statistics
         </h2>
       </div>
       <div className="flex justify-center items-center">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 w-full">
           {realms.map((realm) => (
             <div
               key={realm}
-              className="bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 text-white p-2"
+              className="bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 text-white p-2 sm:p-3"
             >
               <span
-                className={`inline-block py-0.5 px-2 rounded-md ${realmColors[realm]} uppercase text-sm font-semibold tracking-wide w-full text-center`}
+                className={`inline-block py-1 px-2 sm:px-3 rounded-md ${realmColors[realm]} uppercase text-xs sm:text-sm font-semibold tracking-wide w-full text-center`}
               >
                 {realm}
               </span>
-              <div className="space-y-1 mt-1.5">
+              <div className="space-y-1 sm:space-y-1.5 mt-1.5 sm:mt-2">
                 {["Kills", "Death\u00A0Blows", "Solo Kills"].map((stat, i) => {
                   const statKey = statsKeys[stat.replace('\u00A0', ' ') as keyof typeof statsKeys];
                   return (
                     <div
                       key={i}
-                      className="flex justify-between items-center text-sm bg-gray-700/30 rounded px-2 py-0.5 whitespace-nowrap"
+                      className="flex justify-between items-center text-xs sm:text-sm bg-gray-700/30 rounded px-2 sm:px-3 py-0.5 sm:py-1 whitespace-nowrap"
                     >
-                      <span className="text-gray-300">{stat}:</span>
-                      <span className="font-medium text-gray-100 ml-4 w-28 text-right">
+                      <span className="text-gray-300 text-xs sm:text-sm">{stat}:</span>
+                      <span className="font-medium text-gray-100 ml-2 sm:ml-4 text-xs sm:text-sm text-right">
                         {formatNumber(aggregateStats[realm][statKey])}
                       </span>
                     </div>
                   );
                 })}
-                <div className="bg-gray-700/30 rounded p-1.5">
-                  <div className="flex justify-between items-center text-sm whitespace-nowrap">
-                    <span className="text-gray-300">Realm Points:</span>
-                    <span className="font-medium text-gray-100 ml-4 w-28 text-right">
+                <div className="bg-gray-700/30 rounded p-1.5 sm:p-2">
+                  <div className="flex justify-between items-center text-xs sm:text-sm whitespace-nowrap">
+                    <span className="text-gray-300 text-xs sm:text-sm">
+                      <span className="xl:hidden">RPs:</span>
+                      <span className="hidden xl:inline">Realm Points:</span>
+                    </span>
+                    <span className="font-medium text-gray-100 ml-2 sm:ml-4 text-xs sm:text-sm text-right">
                       {formatNumber(aggregateStats[realm].realmPoints)}
                     </span>
                   </div>
-                  <div className="mt-1 space-y-1 pl-2 border-l border-gray-600/50">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-400">Last Week:</span>
-                      <span className="font-medium text-gray-200 ml-4 w-28 text-right">
+                  <div className="mt-1 sm:mt-1.5 space-y-0.5 sm:space-y-1 pl-2 sm:pl-3 border-l border-gray-600/50">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-[11px] sm:text-xs">Last Week:</span>
+                      <span className="font-medium text-gray-200 ml-2 sm:ml-4 text-[11px] sm:text-xs text-right">
                         {formatNumber(aggregateStats[realm].realmPointsLastWeek)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-400">This Week:</span>
-                      <span className="font-medium text-gray-200 ml-4 w-28 text-right">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-[11px] sm:text-xs">This Week:</span>
+                      <span className="font-medium text-gray-200 ml-2 sm:ml-4 text-[11px] sm:text-xs text-right">
                         {formatNumber(aggregateStats[realm].realmPointsThisWeek)}
                       </span>
                     </div>
