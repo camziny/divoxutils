@@ -19,6 +19,7 @@ import {
   PlayerKills,
   RealmType,
 } from "@/utils/character";
+import { useEffect, useState } from "react";
 
 type KillStats = {
   kills: number;
@@ -185,6 +186,34 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
     nextRankPoints
   );
 
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+  const [animatedPercentage, setAnimatedPercentage] = useState(0);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const startTime = Date.now();
+      const duration = 1000;
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        setAnimatedProgress(progressPercentage * easeOut);
+        setAnimatedPercentage(progressPercentage * easeOut);
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+      animate();
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [progressPercentage]);
+
   return (
     <TableCell className="bg-gray-900 w-full p-2" colSpan={9}>
       <div className="flex justify-center items-center h-full">
@@ -200,7 +229,8 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                 rpsToNextRank={formatNumber(pointsUntilNextRank)}
                 currentRank={currentRankFormatted}
                 nextRank={nextRankFormatted}
-                progressPercentage={progressPercentage}
+                progressPercentage={animatedPercentage}
+                progressBarWidth={animatedProgress}
                 realmPointsThisWeek={formatNumber(realmPointsThisWeek)}
                 realmPointsLastWeek={formatNumber(
                   realmPointsLastWeek === totalRealmPoints
@@ -312,7 +342,8 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                   rpsToNextRank={formatNumber(pointsUntilNextRank)}
                   currentRank={currentRankFormatted}
                   nextRank={nextRankFormatted}
-                  progressPercentage={progressPercentage}
+                  progressPercentage={animatedPercentage}
+                  progressBarWidth={animatedProgress}
                   realmPointsThisWeek={formatNumber(realmPointsThisWeek)}
                   realmPointsLastWeek={formatNumber(
                     realmPointsLastWeek === totalRealmPoints
