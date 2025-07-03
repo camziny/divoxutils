@@ -30,12 +30,31 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
   const nextRankFormatted = formatRealmRankWithLevel(currentRank + 1);
   
   const [animatedProgress, setAnimatedProgress] = useState(0);
+  const [animatedPercentage, setAnimatedPercentage] = useState(0);
   
   useEffect(() => {
     const timer = setTimeout(() => {
-      setAnimatedProgress(progressPercentage);
+      const startTime = Date.now();
+      const duration = 1000;
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        setAnimatedProgress(progressPercentage * easeOut);
+        setAnimatedPercentage(progressPercentage * easeOut);
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+      animate();
     }, 100);
-    return () => clearTimeout(timer);
+    
+    return () => {
+      clearTimeout(timer);
+    };
   }, [progressPercentage]);
   
   const totalKills = character.player_kills?.total?.kills || 0;
@@ -54,29 +73,35 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
 
   return (
     <div className="bg-gray-900/95 rounded-xl p-3 mx-3 shadow-lg">
-      <div className="text-center mb-2 pb-2 border-b border-gray-800">
-        <h3 className="text-base font-semibold text-white">{character.heraldName}</h3>
-        <p className="text-xs text-gray-400">
-          {character.heraldClassName} • Lvl {character.heraldLevel || "50"}
-          {character.heraldGuildName && ` • <${character.heraldGuildName}>`}
-        </p>
+      <div className="text-center mb-3 pb-2 border-b border-gray-800">
+        <h3 className="text-base font-semibold text-white mb-1">{character.heraldName}</h3>
+        {character.heraldGuildName && (
+          <div className="text-xs text-indigo-300 mb-1">
+            &lt;{character.heraldGuildName}&gt;
+          </div>
+        )}
+        <div className="text-xs text-gray-400 space-x-2">
+          <span className="text-indigo-300">{character.heraldClassName}</span>
+          <span>•</span>
+          <span>{character.heraldLevel || "50"}</span>
+        </div>
       </div>
 
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-medium text-white">{currentRankFormatted}</span>
-          <span className="text-xs text-gray-400">
-            {animatedProgress.toFixed(1)}%
+          <span className="text-sm font-medium text-indigo-400">
+            {animatedPercentage.toFixed(1)}%
           </span>
         </div>
         <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden mb-1">
           <div 
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-1000 ease-out"
+            className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600"
             style={{ width: `${animatedProgress}%` }}
           />
         </div>
         <div className="text-center text-xs text-gray-400">
-          {formatNumber(nextRankPoints - realmPoints)} RPs to {nextRankFormatted}
+          <span className="text-gray-300">{formatNumber(nextRankPoints - realmPoints)} RP</span> to <span className="text-indigo-300 text-sm">{nextRankFormatted}</span>
         </div>
       </div>
 
