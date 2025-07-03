@@ -8,6 +8,7 @@ interface InfoStatsCardProps {
   currentRank: string;
   nextRank: string;
   progressPercentage: number;
+  progressBarWidth?: number;
   realmPointsLastWeek: string;
   realmPointsThisWeek: string;
 }
@@ -19,9 +20,12 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
   nextRank,
   currentRank,
   progressPercentage,
+  progressBarWidth,
   realmPointsLastWeek,
   realmPointsThisWeek,
 }) => {
+  const barWidth = progressBarWidth !== undefined ? progressBarWidth : progressPercentage;
+  
   return (
     <Card className="bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 shadow-xl text-gray-100">
       <CardHeader className="text-center py-0.5 bg-gradient-to-r from-indigo-500/90 to-indigo-700/90">
@@ -57,20 +61,18 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
           </div>
         </div>
         <div className="w-full mt-1">
-          <Progress
-            size="md"
-            radius="sm"
-            classNames={{
-              base: "w-full",
-              track: "drop-shadow-md border border-gray-700/50 bg-gray-900/50",
-              indicator: "bg-gradient-to-r from-indigo-500 to-indigo-700",
-              label: "tracking-wide font-bold text-sm text-gray-300",
-              value: "text-sm font-bold text-indigo-300",
-            }}
-            label={currentRank}
-            value={progressPercentage}
-            showValueLabel={true}
-          />
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm font-medium text-gray-300">{currentRank}</span>
+            <span className="text-sm font-medium text-indigo-400">
+              {progressPercentage.toFixed(1)}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-900/50 rounded-full h-2 overflow-hidden border border-gray-700/50">
+            <div 
+              className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600"
+              style={{ width: `${barWidth}%` }}
+            />
+          </div>
           <div className="text-center text-xs mt-1 text-gray-400">
             <span className="font-bold text-indigo-400">{rpsToNextRank}</span> RPs to {nextRank}
           </div>
