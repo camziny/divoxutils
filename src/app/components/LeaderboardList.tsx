@@ -127,58 +127,77 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   return (
     <section className="max-w-3xl mx-auto px-6">
       <div className="mb-6 flex flex-col items-center">
-        <ButtonGroup className="mb-4 relative">
-          <Button
-            onClick={() => handlePeriodChange("total")}
-            className={`bg-gray-800 text-indigo-400 hover:bg-gray-700 transition-colors ${
-              selectedPeriod === "total" ? "border-2 border-indigo-500 bg-indigo-900/30" : ""
-            }`}
-          >
-            Total
-          </Button>
-          <Button
-            onClick={() => handlePeriodChange("lastWeek")}
-            className={`bg-gray-800 text-indigo-400 hover:bg-gray-700 transition-colors ${
-              selectedPeriod === "lastWeek" ? "border-2 border-indigo-500 bg-indigo-900/30" : ""
-            }`}
-          >
-            Last Week
-          </Button>
-          <Button
-            onClick={() => handlePeriodChange("thisWeek")}
-            className={`bg-gray-800 text-indigo-400 hover:bg-gray-700 transition-colors ${
-              selectedPeriod === "thisWeek" ? "border-2 border-indigo-500 bg-indigo-900/30" : ""
-            }`}
-          >
-            This Week
-          </Button>
-        </ButtonGroup>
-        
-        <Dropdown backdrop="blur">
-          <DropdownTrigger>
-            <Button variant="bordered" className="text-indigo-500 border-indigo-500/50 hover:border-indigo-400">
-              {metrics[selectedMetric]} <KeyboardArrowDownIcon />
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <ButtonGroup className="shadow-sm">
+            <Button
+              onClick={() => handlePeriodChange("total")}
+              className={`
+                px-4 py-2 text-sm font-medium transition-colors duration-200
+                ${selectedPeriod === "total" 
+                  ? "bg-indigo-600 text-white border-indigo-600" 
+                  : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
+                }
+              `}
+            >
+              Total
             </Button>
-          </DropdownTrigger>
-          <DropdownMenu
-            variant="faded"
-            aria-label="Leaderboard Metrics"
-            className="bg-gray-900 text-indigo-400"
-          >
-            {Object.entries(metrics).map(([key, label]) => (
-              <DropdownItem
-                key={key}
-                onClick={(e) => handleMetricChange(key as Metric, e)}
+            <Button
+              onClick={() => handlePeriodChange("lastWeek")}
+              className={`
+                px-4 py-2 text-sm font-medium transition-colors duration-200 border-l-0
+                ${selectedPeriod === "lastWeek" 
+                  ? "bg-indigo-600 text-white border-indigo-600" 
+                  : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
+                }
+              `}
+            >
+              Last Week
+            </Button>
+            <Button
+              onClick={() => handlePeriodChange("thisWeek")}
+              className={`
+                px-4 py-2 text-sm font-medium transition-colors duration-200 border-l-0
+                ${selectedPeriod === "thisWeek" 
+                  ? "bg-indigo-600 text-white border-indigo-600" 
+                  : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
+                }
+              `}
+            >
+              This Week
+            </Button>
+          </ButtonGroup>
+          
+          <Dropdown>
+            <DropdownTrigger>
+              <Button 
+                variant="bordered" 
+                className="px-4 py-2 text-sm font-medium bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white transition-colors duration-200 shadow-sm min-w-[140px] justify-between"
               >
-                {label}
-              </DropdownItem>
-            ))}
-          </DropdownMenu>
-        </Dropdown>
+                {metrics[selectedMetric]} 
+                <KeyboardArrowDownIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              variant="flat"
+              aria-label="Leaderboard Metrics"
+              className="bg-gray-800 border border-gray-600 shadow-lg rounded-lg min-w-[140px]"
+            >
+              {Object.entries(metrics).map(([key, label]) => (
+                <DropdownItem
+                  key={key}
+                  onClick={(e) => handleMetricChange(key as Metric, e)}
+                  className="px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-150"
+                >
+                  {label}
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
+        </div>
       </div>
-      
+
       <>
-        <ol className="space-y-4">
+        <ol className="space-y-3">
           {isLoading
             ? renderSkeletons()
             : paginatedData.map((item, index) => {
@@ -191,19 +210,21 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                 return (
                   <li
                     key={item.userId}
-                    className="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg border border-gray-700/50 hover:border-indigo-500/30"
+                    className="group bg-gray-800/90 backdrop-blur-sm rounded-lg border border-gray-700/60 hover:border-indigo-500/50 transition-all duration-200 hover:bg-gray-700/90 shadow-sm hover:shadow-md"
                   >
                     <Link
                       href={`user/${item.userName}/characters`}
-                      className="flex justify-between items-center w-full h-full text-indigo-400 hover:text-indigo-300 font-medium"
+                      className="flex justify-between items-center w-full h-full p-4 text-gray-300 hover:text-white transition-colors duration-200"
                     >
-                      <span className="flex-grow flex items-center">
-                        <span className="text-xl mr-2 font-bold">
-                          {startIndex + index + 1}.
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-indigo-500/20 text-indigo-400 font-semibold text-sm border border-indigo-500/30 group-hover:bg-indigo-600/80 group-hover:text-white group-hover:border-indigo-400/50 transition-all duration-200">
+                          {startIndex + index + 1}
+                        </div>
+                        <span className="text-base font-medium text-gray-200 group-hover:text-indigo-300 transition-colors duration-200">
+                          {item.userName}
                         </span>
-                        <span className="text-lg">{item.userName}</span>
-                      </span>
-                      <span className="text-white font-bold">
+                      </div>
+                      <span className="text-base font-semibold text-indigo-300 group-hover:text-white transition-colors duration-200">
                         {formatNumber(value)}
                       </span>
                     </Link>
@@ -219,9 +240,9 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
             onChange={(page) => setCurrentPage(page)}
             showControls
             classNames={{
-              wrapper: "gap-1 overflow-visible h-10 rounded-lg bg-gray-800/50 p-2 border border-gray-700/50",
-              item: "w-10 h-8 text-small rounded-md bg-transparent text-gray-300 hover:bg-gray-700 transition-colors",
-              cursor: "bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-500",
+              wrapper: "gap-1 overflow-visible h-10 rounded-lg bg-gray-800/60 p-2 border border-gray-700/60",
+              item: "w-10 h-8 text-small rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-white transition-colors",
+              cursor: "bg-indigo-600 text-white font-semibold shadow-md",
               prev: "w-10 h-8 rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-indigo-400 transition-colors",
               next: "w-10 h-8 rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-indigo-400 transition-colors",
             }}
