@@ -217,14 +217,14 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                       className="flex justify-between items-center w-full h-full p-4 text-gray-300 hover:text-white transition-colors duration-200"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-gray-700/60 text-gray-400 font-semibold text-sm group-hover:bg-indigo-600/80 group-hover:text-white transition-all duration-200">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-indigo-500/20 text-indigo-400 font-semibold text-sm border border-indigo-500/30 group-hover:bg-indigo-600/80 group-hover:text-white group-hover:border-indigo-400/50 transition-all duration-200">
                           {startIndex + index + 1}
                         </div>
-                        <span className="text-base font-medium group-hover:text-indigo-300 transition-colors duration-200">
+                        <span className="text-base font-medium text-gray-200 group-hover:text-indigo-300 transition-colors duration-200">
                           {item.userName}
                         </span>
                       </div>
-                      <span className="text-base font-semibold text-white">
+                      <span className="text-base font-semibold text-indigo-300 group-hover:text-white transition-colors duration-200">
                         {formatNumber(value)}
                       </span>
                     </Link>
