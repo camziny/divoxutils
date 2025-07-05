@@ -9,24 +9,26 @@ import {
   Button,
   useDisclosure,
 } from "@nextui-org/react";
-import InfoIcon from "@mui/icons-material/Info";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 export default function App() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   return (
     <>
-      <div className="flex justify-center items-center space-x-4">
-        <Button
-          onPress={onOpen}
-          size="sm"
-          className="flex items-center justify-center bg-gray-900/90 text-indigo-500"
-          endContent={<InfoIcon />}
-        >
-          <h1 className="text-3xl font-bold text-white text-center">
+      <div className="relative mb-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-white mb-1">
             Leaderboards
           </h1>
-        </Button>
+        </div>
+        <button
+          onClick={onOpen}
+          className="absolute top-0 right-0 text-gray-500 hover:text-gray-300 transition-colors duration-200 p-2 rounded-lg hover:bg-gray-800/30"
+          title="Update Schedule"
+        >
+          <InfoOutlinedIcon className="w-5 h-5" />
+        </button>
       </div>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalContent className="bg-gray-900">
