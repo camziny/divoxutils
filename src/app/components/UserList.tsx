@@ -116,8 +116,8 @@ const UserList: React.FC = () => {
             </div>
             
             <div className="sm:hidden text-center mt-1.5">
-              <div className="inline-flex items-center text-xs text-gray-400 bg-gray-800/20 px-2.5 py-1 rounded-full border border-gray-700/30">
-                <span>← Swipe for more →</span>
+              <div className="inline-flex items-center text-xs text-gray-500 bg-gray-800/15 px-2.5 py-0.5 rounded-full">
+                <span>← Swipe →</span>
               </div>
             </div>
           </div>
