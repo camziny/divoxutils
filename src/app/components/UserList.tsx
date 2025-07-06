@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import CircularProgress from "@mui/material/CircularProgress";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import UserListSkeleton from "./UserListSkeleton";
 import useDebounce from "./UseDebounce";
 
@@ -45,6 +45,8 @@ async function fetchUsers(): Promise<GroupedUsers> {
 const UserList: React.FC = () => {
   const [groupedUsers, setGroupedUsers] = useState<GroupedUsers>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [navTopPosition, setNavTopPosition] = useState<number>(200);
+  const userListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const getUsers = async () => {
@@ -61,6 +63,20 @@ const UserList: React.FC = () => {
     getUsers();
   }, []);
 
+  useEffect(() => {
+    const updateNavPosition = () => {
+      if (userListRef.current) {
+        const rect = userListRef.current.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        setNavTopPosition(rect.top + scrollTop);
+      }
+    };
+
+    updateNavPosition();
+    window.addEventListener('resize', updateNavPosition);
+    return () => window.removeEventListener('resize', updateNavPosition);
+  }, [groupedUsers]);
+
   const alphabet = Object.keys(groupedUsers).sort();
 
   if (isLoading) {
@@ -76,55 +92,72 @@ const UserList: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
-      <div className="sticky top-20 z-30 bg-gray-900/98 backdrop-blur-sm -mx-2 px-2 shadow-lg">
-        <div className="container mx-auto py-2">
-          <div className="relative">
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-900 via-gray-900/80 to-transparent pointer-events-none z-10 sm:hidden" />
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-900 via-gray-900/80 to-transparent pointer-events-none z-10 sm:hidden" />
-            
-            <div 
-              className="overflow-x-auto [&::-webkit-scrollbar]:hidden scroll-smooth"
-              style={{
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                WebkitOverflowScrolling: 'touch'
-              }}
-            >
-              <div className="flex gap-1 sm:gap-1.5 justify-start sm:justify-center min-w-max px-10 sm:px-4">
-                {alphabet.map((letter, index) => (
-                  <a
-                    key={letter}
-                    href={`#group-${letter}`}
-                    className="relative text-gray-400 hover:text-white bg-gray-800/60 hover:bg-indigo-500/25 border border-gray-700/30 hover:border-indigo-500/50 px-2 py-1 rounded-md transition-all duration-200 font-medium text-xs min-w-[28px] text-center flex-shrink-0 shadow-sm hover:shadow-indigo-500/10 active:scale-95"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const element = document.getElementById(`group-${letter}`);
-                      if (element) {
-                        const navbarHeight = 80;
-                        const stickyNavHeight = 50;
-                        const yOffset = -(navbarHeight + stickyNavHeight + 10);
-                        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                        window.scrollTo({ top: y, behavior: 'smooth' });
-                      }
-                    }}
-                  >
-                    {letter}
-                  </a>
-                ))}
-              </div>
-            </div>
-            
-            <div className="sm:hidden text-center mt-1">
-              <div className="inline-flex items-center text-xs text-gray-500 bg-gray-800/15 px-2.5 py-0.5 rounded-full">
-                <span>← Swipe →</span>
-              </div>
-            </div>
+    <div className="w-full relative">
+      <div className="hidden sm:block sticky top-20 z-30 bg-gray-900/98 backdrop-blur-sm -mx-2 px-2 shadow-lg">
+        <div className="container mx-auto py-2 px-4">
+          <div className="flex flex-wrap justify-center gap-1 max-w-2xl mx-auto">
+            {alphabet.map((letter) => (
+              <a
+                key={letter}
+                href={`#group-${letter}`}
+                className="text-gray-400 hover:text-white bg-gray-800/60 hover:bg-indigo-500/25 border border-gray-700/30 hover:border-indigo-500/50 px-2 py-1 rounded-md transition-all duration-200 font-medium text-xs min-w-[28px] text-center shadow-sm hover:shadow-indigo-500/10 active:scale-95"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const element = document.getElementById(`group-${letter}`);
+                  if (element) {
+                    const navbarHeight = 80;
+                    const stickyNavHeight = 50;
+                    const yOffset = -(navbarHeight + stickyNavHeight + 10);
+                    const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                  }
+                }}
+              >
+                {letter}
+              </a>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="px-2 mt-6">
+      <div 
+        className="sm:hidden fixed right-0 bottom-2 z-30"
+        style={{ top: `${navTopPosition}px` }}
+      >
+        <div className="flex flex-col h-full max-h-[calc(100vh-220px)] overflow-y-auto 
+          [&::-webkit-scrollbar]:w-[3px] 
+          [&::-webkit-scrollbar-track]:bg-transparent 
+          [&::-webkit-scrollbar-thumb]:bg-gray-600/50 
+          [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="flex flex-col gap-[1px] pr-0.5 py-1">
+            {alphabet.map((letter) => (
+              <a
+                key={letter}
+                href={`#group-${letter}`}
+                className="text-[9px] xs:text-[10px] leading-tight text-gray-400 hover:text-white 
+                  px-1 xs:px-1.5 py-[3px] xs:py-1 
+                  rounded-l transition-colors duration-150 
+                  font-medium text-center 
+                  active:scale-95 min-w-[18px] xs:min-w-[20px]"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const element = document.getElementById(`group-${letter}`);
+                  if (element) {
+                    const navbarHeight = 80;
+                    const yOffset = -navbarHeight - 10;
+                    const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                  }
+                }}
+              >
+                {letter}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div ref={userListRef} className="px-2 mt-4 sm:mt-6">
         {alphabet.map((letter, index) => {
           return (
             <div
