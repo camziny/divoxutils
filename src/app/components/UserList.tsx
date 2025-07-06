@@ -78,8 +78,9 @@ const UserList: React.FC = () => {
   return (
     <div className="w-full">
       <div className="hidden sm:block sticky top-20 z-30 bg-gray-900/98 backdrop-blur-sm -mx-2 px-2 shadow-lg">
-        <div className="container mx-auto py-1.5 px-4">
-          <div className="flex flex-nowrap justify-center gap-0.5 max-w-none overflow-x-auto 
+        <div className="container mx-auto py-1.5 px-2 sm:px-4">
+          <div className="flex flex-wrap sm:flex-nowrap justify-center gap-0.5 sm:gap-1 max-w-none 
+            sm:overflow-x-auto
             [&::-webkit-scrollbar]:h-1
             [&::-webkit-scrollbar-track]:bg-transparent
             [&::-webkit-scrollbar-thumb]:bg-gray-600/50
@@ -88,7 +89,11 @@ const UserList: React.FC = () => {
               <a
                 key={letter}
                 href={`#group-${letter}`}
-                className="text-gray-400 hover:text-white bg-gray-800/60 hover:bg-indigo-500/25 border border-gray-700/30 hover:border-indigo-500/50 px-1.5 py-0.5 rounded transition-all duration-200 font-medium text-xs min-w-[24px] text-center shadow-sm hover:shadow-indigo-500/10 active:scale-95 whitespace-nowrap flex-shrink-0"
+                className="text-gray-400 hover:text-white bg-gray-800/60 hover:bg-indigo-500/25 border border-gray-700/30 hover:border-indigo-500/50 
+                  px-1 sm:px-1.5 md:px-2 py-0.5 rounded transition-all duration-200 font-medium 
+                  text-[10px] sm:text-xs min-w-[20px] sm:min-w-[24px] md:min-w-[28px] 
+                  text-center shadow-sm hover:shadow-indigo-500/10 active:scale-95 
+                  whitespace-nowrap flex-shrink-0"
                 onClick={(e) => {
                   e.preventDefault();
                   const element = document.getElementById(`group-${letter}`);
