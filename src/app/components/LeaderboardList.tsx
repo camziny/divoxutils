@@ -242,7 +242,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
             classNames={{
               wrapper: "gap-1 overflow-visible h-10 rounded-lg bg-gray-800/60 p-2 border border-gray-700/60",
               item: "w-10 h-8 text-small rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-white transition-colors",
-              cursor: "bg-indigo-600 text-white font-semibold shadow-md",
+              cursor: "bg-indigo-500 text-white font-semibold shadow-md hover:bg-indigo-400",
               prev: "w-10 h-8 rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-indigo-400 transition-colors",
               next: "w-10 h-8 rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-indigo-400 transition-colors",
             }}

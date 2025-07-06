@@ -68,18 +68,22 @@ const UserList: React.FC = () => {
   }
 
   if (alphabet.length === 0) {
-    return <div>No users available</div>;
+    return (
+      <div className="text-center py-8">
+        <div className="text-gray-400">No users available</div>
+      </div>
+    );
   }
 
   return (
-    <div className="w-full mt-8 px-2 relative">
-      <div className="sticky top-0 left-0 z-10 bg-gray-900 py-2">
-        <div className="flex justify-center flex-wrap mb-4 overflow-x-auto">
+    <div className="w-full mt-0 px-2 relative">
+      <div className="sticky top-0 left-0 z-10 bg-gray-900 py-3 border-b border-gray-700/30">
+        <div className="flex justify-center flex-wrap gap-2 overflow-x-auto max-w-4xl mx-auto">
           {alphabet.map((letter) => (
             <a
               key={letter}
               href={`#group-${letter}`}
-              className="text-indigo-500 hover:text-indigo-400 mx-1"
+              className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 px-2 py-1 rounded-md transition-all duration-200 font-medium text-sm min-w-[28px] text-center"
             >
               {letter}
             </a>
@@ -87,31 +91,31 @@ const UserList: React.FC = () => {
         </div>
       </div>
 
-      <div className="overflow-y-auto w-full">
+      <div className="overflow-y-auto w-full mt-4">
         {alphabet.map((letter, index) => {
           const isNotFirst = index !== 0;
           return (
             <div
               key={letter}
               id={`group-${letter}`}
-              className={`${isNotFirst ? "pt-14 -mt-14" : ""} mb-4`}
+              className={`${isNotFirst ? "pt-14 -mt-14" : ""} mb-6`}
             >
               <h3
-                className={`font-bold text-xl text-white mb-2 ${
-                  isNotFirst ? "sticky top-14 bg-gray-900" : ""
+                className={`font-semibold text-lg text-white mb-3 ${
+                  isNotFirst ? "sticky top-14 bg-gray-900 py-2" : ""
                 }`}
               >
                 {letter}
               </h3>
-              <ul className="divide-y divide-gray-700">
+              <div className="space-y-1">
                 {groupedUsers[letter].map((user) => (
                   <Link key={user.id} href={`user/${user.name}/characters`}>
-                    <li className="text-indigo-400 hover:text-indigo-300 cursor-pointer p-2 bg-gray-800 hover:bg-gray-700 transition-colors rounded-md">
+                    <div className="text-indigo-400 hover:text-indigo-300 hover:bg-gray-800/30 cursor-pointer py-2 px-3 rounded-md transition-all duration-200 text-sm">
                       {user.name}
-                    </li>
+                    </div>
                   </Link>
                 ))}
-              </ul>
+              </div>
             </div>
           );
         })}
