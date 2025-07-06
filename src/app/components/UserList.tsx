@@ -76,35 +76,49 @@ const UserList: React.FC = () => {
   }
 
   return (
-    <div className="w-full mt-0 px-2 relative">
-      <div className="sticky top-0 left-0 z-10 bg-gray-900 py-3 border-b border-gray-700/30">
-        <div className="flex justify-center flex-wrap gap-2 overflow-x-auto max-w-4xl mx-auto">
-          {alphabet.map((letter) => (
-            <a
-              key={letter}
-              href={`#group-${letter}`}
-              className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 px-2 py-1 rounded-md transition-all duration-200 font-medium text-sm min-w-[28px] text-center"
-            >
-              {letter}
-            </a>
-          ))}
+    <div className="w-full">
+      <div className="sticky top-0 z-50 bg-gray-900 border-b border-gray-700/30 -mx-2 px-2">
+        <div className="container mx-auto py-2">
+          <div 
+            className="overflow-x-auto [&::-webkit-scrollbar]:hidden"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+          >
+            <div className="flex gap-1 sm:gap-2 justify-center min-w-max px-2">
+              {alphabet.map((letter) => (
+                <a
+                  key={letter}
+                  href={`#group-${letter}`}
+                  className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 px-2 py-1 rounded-md transition-all duration-200 font-medium text-xs sm:text-sm min-w-[24px] sm:min-w-[28px] text-center flex-shrink-0"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const element = document.getElementById(`group-${letter}`);
+                    if (element) {
+                      const yOffset = -60;
+                      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                      window.scrollTo({ top: y, behavior: 'smooth' });
+                    }
+                  }}
+                >
+                  {letter}
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="overflow-y-auto w-full mt-4">
+      <div className="px-2 mt-4">
         {alphabet.map((letter, index) => {
-          const isNotFirst = index !== 0;
           return (
             <div
               key={letter}
               id={`group-${letter}`}
-              className={`${isNotFirst ? "pt-14 -mt-14" : ""} mb-6`}
+              className="mb-6"
             >
-              <h3
-                className={`font-semibold text-lg text-white mb-3 ${
-                  isNotFirst ? "sticky top-14 bg-gray-900 py-2" : ""
-                }`}
-              >
+              <h3 className="font-semibold text-lg text-white mb-3">
                 {letter}
               </h3>
               <div className="space-y-1">
