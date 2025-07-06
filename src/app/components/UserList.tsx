@@ -78,7 +78,7 @@ const UserList: React.FC = () => {
   return (
     <div className="w-full">
       <div className="sticky top-20 z-30 bg-gray-900/98 backdrop-blur-sm -mx-2 px-2 shadow-lg">
-        <div className="container mx-auto py-3">
+        <div className="container mx-auto py-2">
           <div className="relative">
             <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-900 via-gray-900/80 to-transparent pointer-events-none z-10 sm:hidden" />
             <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-900 via-gray-900/80 to-transparent pointer-events-none z-10 sm:hidden" />
@@ -91,18 +91,18 @@ const UserList: React.FC = () => {
                 WebkitOverflowScrolling: 'touch'
               }}
             >
-              <div className="flex gap-1.5 sm:gap-2 justify-start sm:justify-center min-w-max px-10 sm:px-4">
+              <div className="flex gap-1 sm:gap-1.5 justify-start sm:justify-center min-w-max px-10 sm:px-4">
                 {alphabet.map((letter, index) => (
                   <a
                     key={letter}
                     href={`#group-${letter}`}
-                    className="relative text-gray-300 hover:text-white bg-gray-800/80 hover:bg-indigo-500/30 border border-gray-700/40 hover:border-indigo-500/60 px-3 py-2 rounded-lg transition-all duration-200 font-semibold text-sm min-w-[36px] text-center flex-shrink-0 shadow-sm hover:shadow-indigo-500/20 hover:shadow-md active:scale-95"
+                    className="relative text-gray-400 hover:text-white bg-gray-800/60 hover:bg-indigo-500/25 border border-gray-700/30 hover:border-indigo-500/50 px-2 py-1 rounded-md transition-all duration-200 font-medium text-xs min-w-[28px] text-center flex-shrink-0 shadow-sm hover:shadow-indigo-500/10 active:scale-95"
                     onClick={(e) => {
                       e.preventDefault();
                       const element = document.getElementById(`group-${letter}`);
                       if (element) {
                         const navbarHeight = 80;
-                        const stickyNavHeight = 60;
+                        const stickyNavHeight = 50;
                         const yOffset = -(navbarHeight + stickyNavHeight + 10);
                         const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
                         window.scrollTo({ top: y, behavior: 'smooth' });
@@ -115,7 +115,7 @@ const UserList: React.FC = () => {
               </div>
             </div>
             
-            <div className="sm:hidden text-center mt-1.5">
+            <div className="sm:hidden text-center mt-1">
               <div className="inline-flex items-center text-xs text-gray-500 bg-gray-800/15 px-2.5 py-0.5 rounded-full">
                 <span>← Swipe →</span>
               </div>
@@ -124,7 +124,7 @@ const UserList: React.FC = () => {
         </div>
       </div>
 
-      <div className="px-2 mt-8">
+      <div className="px-2 mt-6">
         {alphabet.map((letter, index) => {
           return (
             <div
