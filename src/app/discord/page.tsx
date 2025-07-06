@@ -32,12 +32,12 @@ const DiscordPage = () => {
           <div className="pt-4">
             <a
               href="https://discord.com/api/oauth2/authorize?client_id=1204568123584552960&permissions=0&scope=bot%20applications.commands"
-              className="inline-flex items-center justify-center bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              className="inline-flex items-center justify-center bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <FaDiscord className="mr-3" size={32} />
-              <span className="text-lg">Add divoxutils Bot</span>
+              <FaDiscord className="mr-2" size={24} />
+              <span className="text-base">Add divoxutils Bot</span>
             </a>
           </div>
         </div>
