@@ -67,7 +67,7 @@ function sortLeaderboardData(
       ? `total${capitalize(selectedMetric)}`
       : `${selectedMetric}${capitalize(selectedPeriod)}`;
 
-  return leaderboardData.sort(
+  return [...leaderboardData].sort(
     (a, b) => (b[metricKey] as number) - (a[metricKey] as number)
   );
 }
