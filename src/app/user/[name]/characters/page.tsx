@@ -5,8 +5,7 @@ import { Suspense } from "react";
 import Loading from "@/app/loading";
 import type { Metadata, ResolvingMetadata } from "next";
 import ShareProfileButton from "@/app/components/ShareProfileButton";
-import SortOptions from "@/app/components/SortOptions";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../../../../../prisma/prismaClient";
 
 const CharacterListOptimized = dynamic(
   () => import("@/app/components/CharacterListOptimized"),
@@ -20,15 +19,12 @@ const CharacterListOptimized = dynamic(
 
 interface CharactersPageParams {
   name: string;
-  clerkUserId: string;
 }
 
 interface CharactersPageProps {
   params: CharactersPageParams;
   searchParams: { [key: string]: string | string[] };
 }
-
-const prisma = new PrismaClient();
 
 export async function generateMetadata(
   { params }: { params: CharactersPageParams },
