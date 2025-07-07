@@ -1,5 +1,5 @@
 import React from "react";
-import LeaderboardList from "@/app/components/LeaderboardList";
+import LeaderboardWrapper from "@/app/components/LeaderboardWrapper";
 import LeaderboardTooltip from "@/app/components/LeaderboardTooltip";
 
 export const metadata = {
@@ -10,8 +10,13 @@ async function fetchLeaderboardData() {
   try {
     const apiUrl = `${
       process.env.NEXT_PUBLIC_API_URL
-    }/api/leaderboard?timestamp=${new Date().getTime()}`;
-    const response = await fetch(apiUrl);
+    }/api/leaderboard`;
+    const response = await fetch(apiUrl, {
+      next: { 
+        revalidate: 60,
+        tags: ['leaderboard']
+      }
+    });
 
     if (!response.ok) {
       throw new Error(
@@ -37,7 +42,7 @@ export default async function LeaderboardPage() {
           <div className="mb-6">
             <LeaderboardTooltip />
           </div>
-          <LeaderboardList data={leaderboardData} />
+          <LeaderboardWrapper data={leaderboardData} />
         </div>
       </div>
     </div>

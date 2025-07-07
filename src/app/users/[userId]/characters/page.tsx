@@ -1,8 +1,15 @@
 import React from "react";
-import OtherCharacterList from "@/app/components/OtherCharacterList";
+import dynamic from "next/dynamic";
 import { PageReload } from "@/app/components/PageReload";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
+
+const CharacterListOptimized = dynamic(
+  () => import("@/app/components/CharacterListOptimized"),
+  {
+    loading: () => <Loading />,
+  }
+);
 
 interface CharactersPageParams {
   userId: string;
@@ -16,9 +23,15 @@ interface CharactersPageProps {
 async function fetchCharactersForUser(userId: string) {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
   const response = await fetch(apiUrl, {
-    cache: "no-store",
+    next: {
+      revalidate: 60,
+      tags: [`other-characters-${userId}`],
+    },
   });
   if (!response.ok) {
+    console.error(
+      `Fetch response error: ${response.status} ${response.statusText}`
+    );
     throw new Error(
       `Fetch response error: ${response.status} ${response.statusText}`
     );
@@ -33,7 +46,13 @@ export default async function CharactersPage({
   const userId = params.userId;
 
   const userRes = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`
+    `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`,
+    {
+      next: {
+        revalidate: 300,
+        tags: [`user-${userId}`],
+      },
+    }
   );
   if (!userRes.ok) {
     throw new Error(
@@ -53,10 +72,10 @@ export default async function CharactersPage({
           </h1>
           <PageReload />
           <Suspense fallback={<Loading />}>
-            <OtherCharacterList
-              userId={userId}
+            <CharacterListOptimized
               characters={characters}
               searchParams={searchParams}
+              showDelete={false}
             />
           </Suspense>
         </div>

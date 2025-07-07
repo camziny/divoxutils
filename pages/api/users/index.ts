@@ -9,6 +9,8 @@ export const handleGetUsers = async (
   switch (req.method) {
     case "GET":
       try {
+        res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+        
         const name = req.query.name;
         const characterName = req.query.characterName;
         if (characterName && typeof characterName === "string") {

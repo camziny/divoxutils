@@ -1,5 +1,6 @@
 import React from "react";
-import UserSearchResults from "@/app/components/UserSearchResults";
+import UserListWrapper from "@/app/components/UserListWrapper";
+import UserAndCharacterNameSearch from "@/app/components/UserAndCharacterSearchResults";
 
 export const metadata = {
   title: "Search Users - divoxutils",
@@ -8,7 +9,14 @@ export const metadata = {
 const SearchPage = () => {
   return (
     <div className="bg-gray-900 min-h-screen">
-      <UserSearchResults />
+      <div className="flex flex-col items-center justify-center pt-10 pb-4">
+        <div className="w-full max-w-xl lg:max-w-2xl px-2">
+          <UserAndCharacterNameSearch />
+        </div>
+      </div>
+      <div className="w-full">
+        <UserListWrapper />
+      </div>
     </div>
   );
 };

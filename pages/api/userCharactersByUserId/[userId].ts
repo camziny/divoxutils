@@ -16,6 +16,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
+  res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
+
   try {
     const userCharacters =
       await userCharacterController.getUserCharactersByUserId(userId);

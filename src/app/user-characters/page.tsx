@@ -1,10 +1,20 @@
 import React from "react";
-import CharacterList from "../components/CharacterList";
+import dynamic from "next/dynamic";
 import CharacterSearchAndAdd from "../components/CharacterSearchAndAdd";
 import { currentUser } from "@clerk/nextjs";
 import { Suspense } from "react";
 import Loading from "../loading";
 import ShareProfileButton from "../components/ShareProfileButton";
+
+const CharacterListOptimized = dynamic(
+  () => import("../components/CharacterListOptimized"),
+  {
+    loading: () => {
+      const CharacterListSkeleton = require("../components/CharacterListSkeleton").default;
+      return <CharacterListSkeleton />;
+    },
+  }
+);
 
 export const metadata = {
   title: "My Characters - divoxutils",
@@ -13,7 +23,10 @@ export const metadata = {
 async function fetchCharactersForUser(userId: string) {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
   const response = await fetch(apiUrl, {
-    cache: "no-store",
+    next: {
+      revalidate: 30,
+      tags: [`user-characters-${userId}`],
+    },
   });
   if (!response.ok) {
     console.error(
@@ -62,9 +75,10 @@ const CharacterPage: React.FC<CharacterPageProps> = async ({
 
           <Suspense fallback={<Loading />}>
             <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-              <CharacterList
+              <CharacterListOptimized
                 characters={characters}
                 searchParams={searchParams}
+                showDelete={true}
               />
             </div>
           </Suspense>
