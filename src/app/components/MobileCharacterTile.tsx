@@ -137,9 +137,9 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
                     className="p-1 rounded-md disabled:opacity-50"
                   >
                     {isDeleting ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-400"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-400"></div>
                     ) : (
-                      <DeleteIcon className="text-red-400 hover:text-red-300" style={{ fontSize: 16 }} />
+                      <DeleteIcon className="text-gray-400 hover:text-indigo-400 transition-colors" style={{ fontSize: 16 }} />
                     )}
                   </button>
                 )}

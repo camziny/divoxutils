@@ -268,7 +268,7 @@ const CharacterTile: React.FC<{
               {isDeleting ? (
                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
               ) : (
-                <DeleteIcon style={{ fontSize: 12 }} className="text-white hover:text-red-400" />
+                <DeleteIcon style={{ fontSize: 12 }} className="text-white hover:text-indigo-400 transition-colors" />
               )}
             </IconButton>
           )}

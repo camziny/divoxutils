@@ -8,6 +8,7 @@ import { sortCharacters } from "@/utils/sortCharacters";
 import SortOptions from "./SortOptions";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { Button } from "@nextui-org/react";
 import {
   TableContainer,
   Paper,
@@ -48,6 +49,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   const [isPending, startTransition] = useTransition();
   const [deletingCharacterId, setDeletingCharacterId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<{ id: number; name: string } | null>(null);
   const initialSortOption = (searchParams?.sortOption || "realm") as string;
   const [sortOption, setSortOption] = useState(initialSortOption);
 
@@ -68,54 +70,46 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         return;
       }
 
-      const isConfirmed = window.confirm(
-        `Are you sure you want to delete "${characterName}"?`
+      setConfirmDelete({ id: characterId, name: characterName });
+    },
+    [user]
+  );
+
+  const confirmDeleteAction = useCallback(async () => {
+    if (!confirmDelete || !user) return;
+    
+    const { id: characterId, name: characterName } = confirmDelete;
+    setConfirmDelete(null);
+    setDeletingCharacterId(characterId);
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        `/api/userCharacters/${user.id}/${characterId}`,
+        {
+          method: "DELETE",
+        }
       );
 
-      if (!isConfirmed) {
-        return;
+      if (!response.ok) {
+        throw new Error("Failed to delete the character.");
       }
 
-      setDeletingCharacterId(characterId);
-      setMessage("");
-
-      try {
-        const response = await fetch(
-          `/api/userCharacters/${user.id}/${characterId}`,
-          {
-            method: "DELETE",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to delete the character.");
-        }
-
-        const data = await response.json();
-        setMessage(`Successfully deleted "${characterName}"!`);
-        setTimeout(() => setMessage(""), 3000);
-        
-        startTransition(() => {
-          const currentPath = window.location.pathname;
-          const searchParams = new URLSearchParams(window.location.search);
-          searchParams.set('refresh', 'true');
-          router.push(`${currentPath}?${searchParams.toString()}`);
-          
-          setTimeout(() => {
-            searchParams.delete('refresh');
-            router.replace(`${currentPath}${searchParams.toString() ? '?' + searchParams.toString() : ''}`);
-          }, 100);
-        });
-      } catch (error) {
-        console.error("Error deleting character:", error);
-        setMessage(error instanceof Error ? error.message : "Failed to delete character");
-        setTimeout(() => setMessage(""), 5000);
-      } finally {
-        setDeletingCharacterId(null);
-      }
-    },
-    [user, router, startTransition]
-  );
+      const data = await response.json();
+      setMessage(`Successfully deleted ${characterName}`);
+      
+      setTimeout(() => {
+        setMessage("");
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error("Error deleting character:", error);
+      setMessage(error instanceof Error ? error.message : "Failed to delete character");
+      setTimeout(() => setMessage(""), 5000);
+    } finally {
+      setDeletingCharacterId(null);
+    }
+  }, [confirmDelete, user]);
 
   const EmptyState = memo(() => (
     <div className="text-center py-8 text-white bg-gray-900/80 backdrop-blur-sm rounded-lg mx-2">
@@ -225,23 +219,48 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
 
       {message && (
         <div className="mt-4 p-3 text-center bg-gray-800 border border-gray-600 rounded-lg">
-          <span className={`text-sm ${
-            message.includes('Successfully') ? 'text-green-400' : 'text-red-400'
-          }`}>
-            {message}
-          </span>
+          <span className="text-sm text-gray-300">{message}</span>
         </div>
       )}
 
       {isPending && (
-        <div className="mt-4 p-3 text-center bg-gray-800 border border-gray-600 rounded-lg">
-          <span className="text-sm text-blue-400">Refreshing...</span>
+        <div className="mt-4 p-3 text-center">
+          <div className="inline-flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-500"></div>
+            <span className="text-sm text-gray-400">Updating...</span>
+          </div>
         </div>
       )}
 
       <div className="mt-4">
         <AggregateStatistics characters={sortedCharacters} />
       </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg border border-gray-600 max-w-sm w-full mx-4">
+            <h3 className="text-white font-semibold mb-4">Delete Character</h3>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to delete <span className="text-white font-medium">{confirmDelete.name}</span>?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="bordered"
+                onClick={() => setConfirmDelete(null)}
+                className="border-gray-600 text-gray-400 hover:text-gray-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmDeleteAction}
+                className="bg-gray-700 hover:bg-gray-600 text-white"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

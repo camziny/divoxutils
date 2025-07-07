@@ -189,28 +189,17 @@ function CharacterSearchAndAdd() {
       }
 
       const count = selectedCharacters.size;
-      setMessage(`Successfully added ${count === 1 ? "1 character" : `${count} characters`}!`);
-      
-      setTimeout(() => setMessage(""), 3000);
+      setMessage(`Successfully added ${count} character${count !== 1 ? 's' : ''}`);
       
       setSelectedCharacters(new Set());
       setSearchResults([]);
       setName("");
       setHasSearched(false);
       
-      startTransition(() => {
-        // Force cache refresh by adding query parameter
-        const currentPath = window.location.pathname;
-        const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set('refresh', 'true');
-        router.push(`${currentPath}?${searchParams.toString()}`);
-        
-        // Remove the refresh param after a short delay to restore normal caching
-        setTimeout(() => {
-          searchParams.delete('refresh');
-          router.replace(`${currentPath}${searchParams.toString() ? '?' + searchParams.toString() : ''}`);
-        }, 100);
-      });
+      setTimeout(() => {
+        setMessage("");
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error("Error adding characters:", error);
       setMessage(error instanceof Error ? error.message : "Failed to add characters");
@@ -246,8 +235,13 @@ function CharacterSearchAndAdd() {
           onChange={(e) => setName(e.target.value)}
           className="flex-1"
           classNames={{
-            input: "text-white",
-            inputWrapper: "bg-gray-800 border-gray-600"
+            input: "text-white bg-transparent",
+            inputWrapper: [
+              "bg-gray-800",
+              "border-gray-600",
+              "data-[hover=true]:bg-gray-700",
+              "group-data-[focused=true]:bg-gray-800"
+            ].join(" ")
           }}
         />
         
@@ -278,8 +272,11 @@ function CharacterSearchAndAdd() {
       )}
 
       {isSearching && (
-        <div className="text-center py-4 text-gray-400">
-          Searching...
+        <div className="text-center py-8">
+          <div className="inline-flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
+            <span className="text-gray-400">Searching characters...</span>
+          </div>
         </div>
       )}
 
@@ -354,19 +351,28 @@ function CharacterSearchAndAdd() {
               onClick={handleAddCharacters}
               disabled={!hasSelections || isLoading}
               className={`
+                flex items-center space-x-2
                 ${hasSelections && !isLoading
                   ? 'bg-gray-700 hover:bg-gray-600 text-white'
                   : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                 }
               `}
             >
-              {isLoading ? "Adding..." : `Add${hasSelections ? ` (${selectedCharacters.size})` : ""}`}
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Adding...</span>
+                </>
+              ) : (
+                <span>Add{hasSelections ? ` (${selectedCharacters.size})` : ""}</span>
+              )}
             </Button>
             
             <Button
               onClick={handleClear}
               variant="bordered"
               className="border-gray-600 text-gray-400 hover:text-gray-300"
+              disabled={isLoading}
             >
               Clear
             </Button>
