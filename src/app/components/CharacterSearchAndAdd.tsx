@@ -1,18 +1,7 @@
 "use client";
-import React, { useState, useEffect, useTransition, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { 
-  Search, 
-  Plus, 
-  X, 
-  Check, 
-  Loader2, 
-  Users, 
-  AlertCircle,
-  CheckSquare,
-  Square
-} from "lucide-react";
 import useDebounce from "./UseDebounce";
 import {
   Input,
@@ -21,10 +10,6 @@ import {
   DropdownMenu,
   DropdownItem,
   Button,
-  Card,
-  CardBody,
-  Chip,
-  Progress
 } from "@nextui-org/react";
 import CharacterSearchAndAddTooltip from "./CharacterSearchAndAddTooltip";
 
@@ -66,71 +51,6 @@ type CharacterType = {
   heraldMasterLevel: string;
 };
 
-const CharacterItem = React.memo(({ 
-  character, 
-  isSelected, 
-  onToggle,
-  formattedRealmRank 
-}: {
-  character: CharacterType;
-  isSelected: boolean;
-  onToggle: (character: CharacterType) => void;
-  formattedRealmRank: string;
-}) => (
-  <Card
-    isPressable
-    onPress={() => onToggle(character)}
-    className={`
-      mb-3 transition-all duration-200 cursor-pointer
-      ${isSelected 
-        ? 'bg-indigo-950/50 border-indigo-500/50 border-2' 
-        : 'bg-gray-800/50 hover:bg-gray-700/50 border-gray-700/50 border'
-      }
-    `}
-  >
-    <CardBody className="p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3 flex-1">
-          <div className="flex-shrink-0">
-            {isSelected ? (
-              <CheckSquare className="w-5 h-5 text-indigo-400" />
-            ) : (
-              <Square className="w-5 h-5 text-gray-500" />
-            )}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-white font-medium truncate pr-2">
-                {character.name}
-              </h3>
-              <Chip 
-                size="sm" 
-                variant="flat" 
-                color="secondary"
-                className="bg-indigo-500/20 text-indigo-300"
-              >
-                RR {formattedRealmRank}
-              </Chip>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-400">
-                Lvl {character.level} {character.class_name}
-              </span>
-              <span className="text-gray-500 text-xs">
-                {character.guild_info?.guild_name || "No Guild"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </CardBody>
-  </Card>
-));
-
-CharacterItem.displayName = 'CharacterItem';
-
 function CharacterSearchAndAdd() {
   const { userId } = useAuth();
   const router = useRouter();
@@ -142,9 +62,7 @@ function CharacterSearchAndAdd() {
   const [searchResults, setSearchResults] = useState<CharacterType[]>([]);
   const [selectedCharacters, setSelectedCharacters] = useState<Set<string>>(new Set());
   const [hasSearched, setHasSearched] = useState(false);
-  const [searchError, setSearchError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [message, setMessage] = useState("");
 
   const debouncedSearchTerm = useDebounce(name, 300);
 
@@ -205,16 +123,16 @@ function CharacterSearchAndAdd() {
     const performSearch = async () => {
       if (debouncedSearchTerm.length < 3) {
         if (debouncedSearchTerm.length > 0) {
-          setSearchError("Please enter at least 3 characters");
+          setMessage("Please enter at least 3 characters");
         } else {
-          setSearchError("");
+          setMessage("");
         }
         setSearchResults([]);
         setHasSearched(false);
         return;
       }
 
-      setSearchError("");
+      setMessage("");
       setHasSearched(true);
       setIsSearching(true);
       
@@ -227,7 +145,7 @@ function CharacterSearchAndAdd() {
         }
       } catch (error) {
         console.error("Error fetching characters:", error);
-        setSearchError("Failed to search characters. Please try again.");
+        setMessage("Failed to search characters. Please try again.");
       } finally {
         setIsSearching(false);
       }
@@ -236,39 +154,27 @@ function CharacterSearchAndAdd() {
     performSearch();
   }, [debouncedSearchTerm, cluster, fetchCharacters]);
 
-  const handleToggleCharacter = useCallback((character: CharacterType) => {
+  const handleToggleCharacter = useCallback((characterId: string) => {
     setSelectedCharacters(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(character.character_web_id)) {
-        newSet.delete(character.character_web_id);
+      if (newSet.has(characterId)) {
+        newSet.delete(characterId);
       } else {
-        newSet.add(character.character_web_id);
+        newSet.add(characterId);
       }
       return newSet;
     });
   }, []);
 
-  const handleSelectAll = useCallback(() => {
-    const allIds = new Set(searchResults.map(char => char.character_web_id));
-    setSelectedCharacters(allIds);
-  }, [searchResults]);
-
-  const handleDeselectAll = useCallback(() => {
-    setSelectedCharacters(new Set());
-  }, []);
-
-  const selectedCharactersList = useMemo(() => {
-    return searchResults.filter(char => selectedCharacters.has(char.character_web_id));
-  }, [searchResults, selectedCharacters]);
-
   const handleAddCharacters = useCallback(async () => {
-    if (selectedCharacters.size === 0) return;
+    if (selectedCharacters.size === 0 || !userId) return;
     
     setIsAdding(true);
-    setSearchError("");
+    setMessage("");
 
     try {
       const webIds = Array.from(selectedCharacters);
+      
       const response = await fetch("/api/characters/add", {
         method: "POST",
         headers: {
@@ -283,12 +189,9 @@ function CharacterSearchAndAdd() {
       }
 
       const count = selectedCharacters.size;
-      setSuccessMessage(
-        `Successfully added ${count === 1 ? "1 character" : `${count} characters`}!`
-      );
-      setShowSuccess(true);
+      setMessage(`Successfully added ${count === 1 ? "1 character" : `${count} characters`}!`);
       
-      setTimeout(() => setShowSuccess(false), 4000);
+      setTimeout(() => setMessage(""), 3000);
       
       setSelectedCharacters(new Set());
       setSearchResults([]);
@@ -300,188 +203,164 @@ function CharacterSearchAndAdd() {
       });
     } catch (error) {
       console.error("Error adding characters:", error);
-      setSearchError(error instanceof Error ? error.message : "Failed to add characters");
+      setMessage(error instanceof Error ? error.message : "Failed to add characters");
     } finally {
       setIsAdding(false);
     }
-  }, [selectedCharacters, router]);
+  }, [selectedCharacters, router, userId, startTransition]);
 
-  const handleClearSearch = useCallback(() => {
+  const handleClear = useCallback(() => {
     setSearchResults([]);
     setName("");
     setSelectedCharacters(new Set());
     setHasSearched(false);
-    setSearchError("");
+    setMessage("");
   }, []);
 
   const servers = { ywain: "Ywain" };
-
-  const isMinimumLength = name.length >= 3;
   const hasResults = searchResults.length > 0;
   const hasSelections = selectedCharacters.size > 0;
-  const allSelected = hasResults && selectedCharacters.size === searchResults.length;
+  const isLoading = isAdding || isPending;
 
   return (
-    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-2">
-          <Users className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-lg font-semibold text-white">Add Characters</h2>
-        </div>
+    <div className="bg-gray-900 p-4 rounded-lg">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold text-white">Add Characters</h2>
         <CharacterSearchAndAddTooltip />
       </div>
 
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <Input
-              placeholder="Search character name..."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              startContent={<Search className="w-4 h-4 text-gray-400" />}
-              classNames={{
-                input: "text-white placeholder:text-gray-500",
-                inputWrapper: [
-                  "bg-gray-800/50",
-                  "border-gray-600",
-                  "hover:border-gray-500",
-                  "group-data-[focused=true]:border-indigo-500",
-                  "group-data-[focused=true]:bg-gray-800/80"
-                ]
-              }}
-            />
-          </div>
-          
-          <Dropdown>
-            <DropdownTrigger>
-              <Button 
-                variant="bordered" 
-                className="bg-gray-800/50 border-gray-600 text-gray-300 hover:bg-gray-700/50"
-              >
-                {servers[cluster as keyof typeof servers]}
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              selectedKeys={[cluster]}
-              onSelectionChange={(keys) => setCluster(Array.from(keys)[0] as string)}
-              className="bg-gray-800"
-            >
-              {Object.entries(servers).map(([key, label]) => (
-                <DropdownItem key={key} className="text-gray-300">
-                  {label}
-                </DropdownItem>
-              ))}
-            </DropdownMenu>
-          </Dropdown>
-        </div>
-
-        {searchError && (
-          <div className="flex items-center space-x-2 text-red-400 bg-red-900/20 border border-red-800/50 rounded-lg p-3">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm">{searchError}</span>
-          </div>
-        )}
-
-        {showSuccess && (
-          <div className="flex items-center space-x-2 text-green-400 bg-green-900/20 border border-green-800/50 rounded-lg p-3">
-            <Check className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm">{successMessage}</span>
-          </div>
-        )}
-
-        {isSearching && (
-          <div className="flex flex-col items-center justify-center py-8 space-y-3">
-            <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
-            <p className="text-gray-400 text-sm">Searching characters...</p>
-          </div>
-        )}
-
-        {!isSearching && hasSearched && !hasResults && isMinimumLength && (
-          <div className="text-center py-8">
-            <p className="text-gray-400">No characters found matching &ldquo;{name}&rdquo;</p>
-          </div>
-        )}
-
-        {hasResults && (
-          <>
-            <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <span className="text-white font-medium">
-                    {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
-                  </span>
-                  {hasSelections && (
-                    <span className="text-indigo-400 text-sm">
-                      {selectedCharacters.size} selected
-                    </span>
-                  )}
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  {hasResults && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={allSelected ? handleDeselectAll : handleSelectAll}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      {allSelected ? "Deselect All" : "Select All"}
-                    </Button>
-                  )}
-                  
-                  <Button
-                    size="sm"
-                    color="primary"
-                    isDisabled={!hasSelections || isAdding}
-                    isLoading={isAdding}
-                    onClick={handleAddCharacters}
-                    startContent={!isAdding ? <Plus className="w-4 h-4" /> : null}
-                  >
-                    {isAdding ? "Adding..." : `Add ${hasSelections ? `(${selectedCharacters.size})` : ""}`}
-                  </Button>
-                  
-                  <Button
-                    size="sm"
-                    variant="light"
-                    onClick={handleClearSearch}
-                    startContent={<X className="w-4 h-4" />}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    Clear
-                  </Button>
-                </div>
-              </div>
-
-              {isAdding && (
-                <div className="mt-3">
-                  <Progress 
-                    size="sm" 
-                    isIndeterminate 
-                    color="primary"
-                    className="w-full"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {searchResults.map((character) => {
-                const realmRank = getRealmRankForPoints(character.realm_points);
-                const formattedRealmRank = formatRealmRankWithLevel(realmRank);
-                return (
-                  <CharacterItem
-                    key={character.character_web_id}
-                    character={character}
-                    isSelected={selectedCharacters.has(character.character_web_id)}
-                    onToggle={handleToggleCharacter}
-                    formattedRealmRank={formattedRealmRank}
-                  />
-                );
-              })}
-            </div>
-          </>
-        )}
+      <div className="flex gap-2 mb-4">
+        <Input
+          placeholder="Character name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="flex-1"
+          classNames={{
+            input: "text-white",
+            inputWrapper: "bg-gray-800 border-gray-600"
+          }}
+        />
+        
+        <Dropdown>
+          <DropdownTrigger>
+            <Button variant="bordered" className="bg-gray-800 border-gray-600 text-gray-300">
+              {servers[cluster as keyof typeof servers]}
+            </Button>
+          </DropdownTrigger>
+          <DropdownMenu
+            selectedKeys={[cluster]}
+            onSelectionChange={(keys) => setCluster(Array.from(keys)[0] as string)}
+            className="bg-gray-800"
+          >
+            {Object.entries(servers).map(([key, label]) => (
+              <DropdownItem key={key} className="text-gray-300">
+                {label}
+              </DropdownItem>
+            ))}
+          </DropdownMenu>
+        </Dropdown>
       </div>
+
+      {message && (
+        <div className="mb-4 p-2 text-sm text-center text-gray-300 bg-gray-800 rounded">
+          {message}
+        </div>
+      )}
+
+      {isSearching && (
+        <div className="text-center py-4 text-gray-400">
+          Searching...
+        </div>
+      )}
+
+      {!isSearching && hasSearched && !hasResults && name.length >= 3 && (
+        <div className="text-center py-4 text-gray-400">
+          No characters found
+        </div>
+      )}
+
+      {hasResults && (
+        <>
+          <div className="mb-4 text-sm text-gray-400">
+            {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+            {hasSelections && ` • ${selectedCharacters.size} selected`}
+          </div>
+
+          <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
+            {searchResults.map((character) => {
+              const realmRank = getRealmRankForPoints(character.realm_points);
+              const formattedRealmRank = formatRealmRankWithLevel(realmRank);
+              const isSelected = selectedCharacters.has(character.character_web_id);
+              
+              return (
+                <div
+                  key={character.character_web_id}
+                  onClick={() => handleToggleCharacter(character.character_web_id)}
+                  className={`
+                    p-3 rounded cursor-pointer transition-colors
+                    ${isSelected 
+                      ? 'bg-gray-700 border-l-4 border-indigo-500' 
+                      : 'bg-gray-800 hover:bg-gray-750'
+                    }
+                  `}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleCharacter(character.character_web_id)}
+                          className="flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-medium truncate">
+                            {character.name}
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            Lvl {character.level} {character.class_name}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <div className="text-sm text-indigo-400">
+                        RR {formattedRealmRank}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {character.guild_info?.guild_name || "No Guild"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              onClick={handleAddCharacters}
+              disabled={!hasSelections || isLoading}
+              className={`
+                ${hasSelections && !isLoading
+                  ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                }
+              `}
+            >
+              {isLoading ? "Adding..." : `Add${hasSelections ? ` (${selectedCharacters.size})` : ""}`}
+            </Button>
+            
+            <Button
+              onClick={handleClear}
+              variant="bordered"
+              className="border-gray-600 text-gray-400 hover:text-gray-300"
+            >
+              Clear
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
