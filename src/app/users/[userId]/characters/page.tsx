@@ -7,7 +7,10 @@ import Loading from "@/app/loading";
 const CharacterListOptimized = dynamic(
   () => import("@/app/components/CharacterListOptimized"),
   {
-    loading: () => <Loading />,
+    loading: () => {
+      const CharacterListSkeleton = require("@/app/components/CharacterListSkeleton").default;
+      return <CharacterListSkeleton />;
+    },
   }
 );
 

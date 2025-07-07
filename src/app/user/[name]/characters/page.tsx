@@ -11,7 +11,10 @@ import { PrismaClient } from "@prisma/client";
 const CharacterListOptimized = dynamic(
   () => import("@/app/components/CharacterListOptimized"),
   {
-    loading: () => <Loading />,
+    loading: () => {
+      const CharacterListSkeleton = require("@/app/components/CharacterListSkeleton").default;
+      return <CharacterListSkeleton />;
+    },
   }
 );
 
