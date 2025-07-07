@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo, useCallback, memo } from "react";
+import React, { useState, useMemo, useCallback, memo, useTransition } from "react";
 import dynamic from "next/dynamic";
 import CharacterTableHeader from "./CharacterTableHeader";
 import CharacterListSkeleton from "./CharacterListSkeleton";
@@ -45,6 +45,9 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
 }) => {
   const { user } = useUser();
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [deletingCharacterId, setDeletingCharacterId] = useState<number | null>(null);
+  const [message, setMessage] = useState("");
   const initialSortOption = (searchParams?.sortOption || "realm") as string;
   const [sortOption, setSortOption] = useState(initialSortOption);
 
@@ -58,19 +61,23 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   }, []);
 
   const handleDelete = useCallback(
-    async (characterId: number) => {
+    async (characterId: number, characterName: string) => {
       if (!user || !user.id) {
-        console.error("User is not authenticated.");
+        setMessage("You must be logged in to delete characters");
+        setTimeout(() => setMessage(""), 3000);
         return;
       }
 
       const isConfirmed = window.confirm(
-        "Are you sure you want to delete this character?"
+        `Are you sure you want to delete "${characterName}"?`
       );
 
       if (!isConfirmed) {
         return;
       }
+
+      setDeletingCharacterId(characterId);
+      setMessage("");
 
       try {
         const response = await fetch(
@@ -85,19 +92,21 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         }
 
         const data = await response.json();
-        alert(data.message);
-        router.refresh();
+        setMessage(`Successfully deleted "${characterName}"!`);
+        setTimeout(() => setMessage(""), 3000);
+        
+        startTransition(() => {
+          router.refresh();
+        });
       } catch (error) {
-        if (error instanceof Error) {
-          console.error("Error deleting character:", error.message);
-          alert(error.message);
-        } else {
-          console.error("Unexpected error", error);
-          alert("An unexpected error occurred");
-        }
+        console.error("Error deleting character:", error);
+        setMessage(error instanceof Error ? error.message : "Failed to delete character");
+        setTimeout(() => setMessage(""), 5000);
+      } finally {
+        setDeletingCharacterId(null);
       }
     },
-    [user, router]
+    [user, router, startTransition]
   );
 
   const EmptyState = memo(() => (
@@ -171,7 +180,8 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
                   ownerId={character.clerkUserId}
                   heraldServerName={character.heraldServerName}
                   showDelete={showDelete}
-                  onDelete={showDelete ? () => handleDelete(character.id) : undefined}
+                  onDelete={showDelete ? () => handleDelete(character.id, character.heraldName) : undefined}
+                  isDeleting={deletingCharacterId === character.id}
                 />
               ))}
             </TableBody>
@@ -198,11 +208,28 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
               ownerId={character.clerkUserId}
               heraldServerName={character.heraldServerName}
               showDelete={showDelete}
-              onDelete={showDelete ? () => handleDelete(character.id) : undefined}
+              onDelete={showDelete ? () => handleDelete(character.id, character.heraldName) : undefined}
+              isDeleting={deletingCharacterId === character.id}
             />
           ))}
         </div>
       </div>
+
+      {message && (
+        <div className="mt-4 p-3 text-center bg-gray-800 border border-gray-600 rounded-lg">
+          <span className={`text-sm ${
+            message.includes('Successfully') ? 'text-green-400' : 'text-red-400'
+          }`}>
+            {message}
+          </span>
+        </div>
+      )}
+
+      {isPending && (
+        <div className="mt-4 p-3 text-center bg-gray-800 border border-gray-600 rounded-lg">
+          <span className="text-sm text-blue-400">Refreshing...</span>
+        </div>
+      )}
 
       <div className="mt-4">
         <AggregateStatistics characters={sortedCharacters} />
