@@ -34,7 +34,7 @@ type CharacterListProps = {
   characters: CharacterData[];
   searchParams: { [key: string]: string | string[] };
   showDelete?: boolean;
-  userId?: string; // For additional permission checks if needed
+  userId?: string;
 };
 
 const CharacterListOptimized: React.FC<CharacterListProps> = ({
@@ -96,7 +96,15 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         setTimeout(() => setMessage(""), 3000);
         
         startTransition(() => {
-          router.refresh();
+          const currentPath = window.location.pathname;
+          const searchParams = new URLSearchParams(window.location.search);
+          searchParams.set('refresh', 'true');
+          router.push(`${currentPath}?${searchParams.toString()}`);
+          
+          setTimeout(() => {
+            searchParams.delete('refresh');
+            router.replace(`${currentPath}${searchParams.toString() ? '?' + searchParams.toString() : ''}`);
+          }, 100);
         });
       } catch (error) {
         console.error("Error deleting character:", error);
