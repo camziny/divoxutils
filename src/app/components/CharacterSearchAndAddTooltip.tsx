@@ -20,10 +20,10 @@ export default function App() {
         <Button
           onPress={onOpen}
           size="sm"
-          className="bg-gray-900/90 text-indigo-500"
-          endContent={<InfoIcon />}
+          className="bg-gray-900/90 text-indigo-500 p-2"
+          isIconOnly
         >
-          <h1 className="text-xl font-bold text-white">Add Characters</h1>
+          <InfoIcon />
         </Button>
       </div>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>

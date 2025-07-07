@@ -91,6 +91,7 @@ const CharacterTile: React.FC<{
   heraldServerName: string;
   onDelete?: () => void;
   showDelete?: boolean;
+  isDeleting?: boolean;
 }> = ({
   character,
   characterDetails,
@@ -100,6 +101,7 @@ const CharacterTile: React.FC<{
   ownerId,
   onDelete,
   showDelete = true,
+  isDeleting = false,
 }) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -247,19 +249,27 @@ const CharacterTile: React.FC<{
               size="medium"
               onClick={(e) => {
                 e.stopPropagation();
-                if (onDelete) {
+                if (onDelete && !isDeleting) {
                   onDelete();
                 }
               }}
+              disabled={isDeleting}
               sx={{
                 padding: "2px",
                 backgroundColor: "transparent",
                 "&:hover": {
                   backgroundColor: "transparent",
                 },
+                "&:disabled": {
+                  backgroundColor: "transparent",
+                },
               }}
             >
-              <DeleteIcon style={{ fontSize: 12 }} className="text-white" />
+              {isDeleting ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+              ) : (
+                <DeleteIcon style={{ fontSize: 12 }} className="text-white hover:text-red-400" />
+              )}
             </IconButton>
           )}
         </TableCell>
