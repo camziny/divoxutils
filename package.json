@@ -41,6 +41,7 @@
     "framer-motion": "^10.18.0",
     "jsonwebtoken": "^9.0.2",
     "lodash.debounce": "^4.0.8",
+    "lucide-react": "^0.525.0",
     "next": "latest",
     "next-auth": "^4.23.2",
     "next-themes": "^0.2.1",
