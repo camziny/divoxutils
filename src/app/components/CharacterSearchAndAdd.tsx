@@ -1,14 +1,18 @@
 "use client";
-import React, { useState, useEffect, useTransition } from "react";
-import { Snackbar } from "@mui/material";
+import React, { useState, useEffect, useTransition, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined";
-import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
-import CircularProgress from "@mui/material/CircularProgress";
-import InfoIcon from "@mui/icons-material/Info";
-import { Tooltip } from "@mui/material";
-import ClickAwayListener from "@mui/material/ClickAwayListener";
+import { 
+  Search, 
+  Plus, 
+  X, 
+  Check, 
+  Loader2, 
+  Users, 
+  AlertCircle,
+  CheckSquare,
+  Square
+} from "lucide-react";
 import useDebounce from "./UseDebounce";
 import {
   Input,
@@ -17,8 +21,11 @@ import {
   DropdownMenu,
   DropdownItem,
   Button,
+  Card,
+  CardBody,
+  Chip,
+  Progress
 } from "@nextui-org/react";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import CharacterSearchAndAddTooltip from "./CharacterSearchAndAddTooltip";
 
 type CharacterType = {
@@ -59,69 +66,158 @@ type CharacterType = {
   heraldMasterLevel: string;
 };
 
-type UserType = {
-  sessionToken: string;
-};
+const CharacterItem = React.memo(({ 
+  character, 
+  isSelected, 
+  onToggle,
+  formattedRealmRank 
+}: {
+  character: CharacterType;
+  isSelected: boolean;
+  onToggle: (character: CharacterType) => void;
+  formattedRealmRank: string;
+}) => (
+  <Card
+    isPressable
+    onPress={() => onToggle(character)}
+    className={`
+      mb-3 transition-all duration-200 cursor-pointer
+      ${isSelected 
+        ? 'bg-indigo-950/50 border-indigo-500/50 border-2' 
+        : 'bg-gray-800/50 hover:bg-gray-700/50 border-gray-700/50 border'
+      }
+    `}
+  >
+    <CardBody className="p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3 flex-1">
+          <div className="flex-shrink-0">
+            {isSelected ? (
+              <CheckSquare className="w-5 h-5 text-indigo-400" />
+            ) : (
+              <Square className="w-5 h-5 text-gray-500" />
+            )}
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-white font-medium truncate pr-2">
+                {character.name}
+              </h3>
+              <Chip 
+                size="sm" 
+                variant="flat" 
+                color="secondary"
+                className="bg-indigo-500/20 text-indigo-300"
+              >
+                RR {formattedRealmRank}
+              </Chip>
+            </div>
+            
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-400">
+                Lvl {character.level} {character.class_name}
+              </span>
+              <span className="text-gray-500 text-xs">
+                {character.guild_info?.guild_name || "No Guild"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </CardBody>
+  </Card>
+));
 
-type RealmNames = {
-  [key: number]: string;
-};
-
-const getRealmName = (realmId: number): string => {
-  const realmNames: RealmNames = {
-    1: "Albion",
-    2: "Midgard",
-    3: "Hibernia",
-  };
-  return realmNames[realmId] || "Unknown";
-};
+CharacterItem.displayName = 'CharacterItem';
 
 function CharacterSearchAndAdd() {
   const { userId } = useAuth();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [isFetching, setIsFetching] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState("");
   const [cluster, setCluster] = useState("ywain");
   const [searchResults, setSearchResults] = useState<CharacterType[]>([]);
-  const [selectedCharacters, setSelectedCharacters] = useState<CharacterType[]>(
-    []
-  );
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [addedCount, setAddedCount] = useState<number>(0);
+  const [selectedCharacters, setSelectedCharacters] = useState<Set<string>>(new Set());
   const [hasSearched, setHasSearched] = useState(false);
-  const [charactersAdded, setCharactersAdded] = useState(false);
   const [searchError, setSearchError] = useState("");
-  const [invalidSearchAttempted, setInvalidSearchAttempted] = useState(false);
-  const [open, setOpen] = useState(false);
-  const debouncedSearchTerm = useDebounce(name, 500);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  const handleTooltipToggle = () => {
-    setOpen(!open);
-  };
+  const debouncedSearchTerm = useDebounce(name, 300);
 
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const realmRanksMap = useMemo(() => {
+    const realmRanks = new Map<number, number>();
+    for (let rr = 0; rr < 100; rr++) {
+      realmRanks.set(
+        rr + 11,
+        (50 * Math.pow(rr, 3) + 75 * Math.pow(rr, 2) + 25 * rr) / 6
+      );
+    }
+    const hardcodedRanks: [number, number][] = [
+      [111, 9111713], [112, 10114001], [113, 11226541], [114, 12461460],
+      [115, 13832221], [116, 15353765], [117, 17042680], [118, 18917374],
+      [119, 20998286], [120, 23308097], [121, 25871988], [122, 28717906],
+      [123, 31876876], [124, 35383333], [125, 39275499], [126, 43595804],
+      [127, 48391343], [128, 53714390], [129, 59622973], [130, 66181501],
+      [131, 73461466], [132, 81542227], [133, 90511872], [134, 100468178],
+      [135, 111519678], [136, 123786843], [137, 137403395], [138, 152517769],
+      [139, 169294723], [140, 187917143],
+    ];
 
-  const fetchCharacters = async (name: string, cluster: string) => {
+    for (const [rank, points] of hardcodedRanks) {
+      realmRanks.set(rank, points);
+    }
+
+    return realmRanks;
+  }, []);
+
+  const getRealmRankForPoints = useCallback((points: number) => {
+    let rank = 0;
+    for (const [rr, requiredPoints] of Array.from(realmRanksMap)) {
+      if (points >= requiredPoints) {
+        rank = rr;
+      } else {
+        break;
+      }
+    }
+    return rank;
+  }, [realmRanksMap]);
+
+  const formatRealmRankWithLevel = useCallback((rank: number) => {
+    const rankString = rank.toString();
+    return `${rankString.slice(0, -1)}L${rankString.slice(-1)}`;
+  }, []);
+
+  const fetchCharacters = useCallback(async (name: string, cluster: string) => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/characters/search?name=${name}&cluster=${cluster}`,
-      {}
+      `${process.env.NEXT_PUBLIC_API_URL}/api/characters/search?name=${name}&cluster=${cluster}`
     );
+    if (!response.ok) {
+      throw new Error(`Search failed: ${response.statusText}`);
+    }
     return response.json();
-  };
+  }, []);
 
   useEffect(() => {
     const performSearch = async () => {
       if (debouncedSearchTerm.length < 3) {
-        setInvalidSearchAttempted(debouncedSearchTerm.length > 0);
+        if (debouncedSearchTerm.length > 0) {
+          setSearchError("Please enter at least 3 characters");
+        } else {
+          setSearchError("");
+        }
         setSearchResults([]);
+        setHasSearched(false);
         return;
       }
-      setInvalidSearchAttempted(false);
+
+      setSearchError("");
       setHasSearched(true);
-      setIsFetching(true);
+      setIsSearching(true);
+      
       try {
         const results = await fetchCharacters(debouncedSearchTerm, cluster);
         if (results && results.results) {
@@ -131,21 +227,48 @@ function CharacterSearchAndAdd() {
         }
       } catch (error) {
         console.error("Error fetching characters:", error);
+        setSearchError("Failed to search characters. Please try again.");
       } finally {
-        setIsFetching(false);
+        setIsSearching(false);
       }
     };
 
     performSearch();
-  }, [debouncedSearchTerm, cluster]);
+  }, [debouncedSearchTerm, cluster, fetchCharacters]);
 
-  const saveCharacters = async () => {
-    setIsFetching(true);
-    const webIds = selectedCharacters.map(
-      (character) => character.character_web_id
-    );
+  const handleToggleCharacter = useCallback((character: CharacterType) => {
+    setSelectedCharacters(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(character.character_web_id)) {
+        newSet.delete(character.character_web_id);
+      } else {
+        newSet.add(character.character_web_id);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    const allIds = new Set(searchResults.map(char => char.character_web_id));
+    setSelectedCharacters(allIds);
+  }, [searchResults]);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedCharacters(new Set());
+  }, []);
+
+  const selectedCharactersList = useMemo(() => {
+    return searchResults.filter(char => selectedCharacters.has(char.character_web_id));
+  }, [searchResults, selectedCharacters]);
+
+  const handleAddCharacters = useCallback(async () => {
+    if (selectedCharacters.size === 0) return;
+    
+    setIsAdding(true);
+    setSearchError("");
 
     try {
+      const webIds = Array.from(selectedCharacters);
       const response = await fetch("/api/characters/add", {
         method: "POST",
         headers: {
@@ -156,320 +279,209 @@ function CharacterSearchAndAdd() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to add character");
+        throw new Error(data.error || "Failed to add characters");
       }
 
-      router.refresh();
-      setSnackbarOpen(true);
-      setAddedCount(selectedCharacters.length);
-      setSelectedCharacters([]);
-      setCharactersAdded(true);
-    } catch (error) {
-      console.error("Error saving characters:", error);
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
-  const handleAddToList = async () => {
-    const numSelected = selectedCharacters.length;
-    try {
-      await saveCharacters();
-      setIsFetching(false);
-      setAddedCount(numSelected);
-      setSnackbarOpen(true);
-      setSelectedCharacters([]);
+      const count = selectedCharacters.size;
+      setSuccessMessage(
+        `Successfully added ${count === 1 ? "1 character" : `${count} characters`}!`
+      );
+      setShowSuccess(true);
+      
+      setTimeout(() => setShowSuccess(false), 4000);
+      
+      setSelectedCharacters(new Set());
       setSearchResults([]);
       setName("");
       setHasSearched(false);
-      setInvalidSearchAttempted(false);
-      router.refresh();
+      
+      startTransition(() => {
+        router.refresh();
+      });
     } catch (error) {
-      console.error("Failed to add to list:", error);
+      console.error("Error adding characters:", error);
+      setSearchError(error instanceof Error ? error.message : "Failed to add characters");
+    } finally {
+      setIsAdding(false);
     }
-  };
+  }, [selectedCharacters, router]);
 
-  const handleSnackbarClose = (
-    event: React.SyntheticEvent | Event,
-    reason?: string
-  ) => {
-    if (reason === "clickaway") {
-      return;
-    }
-    setSnackbarOpen(false);
-    setAddedCount(0);
-  };
-
-  function getRealmRanks(): Map<number, number> {
-    const realmRanks = new Map<number, number>();
-    for (let rr = 0; rr < 100; rr++) {
-      realmRanks.set(
-        rr + 11,
-        (50 * Math.pow(rr, 3) + 75 * Math.pow(rr, 2) + 25 * rr) / 6
-      );
-    }
-    const hardcodedRanks: [number, number][] = [
-      [111, 9111713],
-      [112, 10114001],
-      [113, 11226541],
-      [114, 12461460],
-      [115, 13832221],
-      [116, 15353765],
-      [117, 17042680],
-      [118, 18917374],
-      [119, 20998286],
-      [120, 23308097],
-      [121, 25871988],
-      [122, 28717906],
-      [123, 31876876],
-      [124, 35383333],
-      [125, 39275499],
-      [126, 43595804],
-      [127, 48391343],
-      [128, 53714390],
-      [129, 59622973],
-      [130, 66181501],
-      [131, 73461466],
-      [132, 81542227],
-      [133, 90511872],
-      [134, 100468178],
-      [135, 111519678],
-      [136, 123786843],
-      [137, 137403395],
-      [138, 152517769],
-      [139, 169294723],
-      [140, 187917143],
-    ];
-
-    for (const [rank, points] of hardcodedRanks) {
-      realmRanks.set(rank, points);
-    }
-
-    return realmRanks;
-  }
-
-  const realmRanksMap: any = getRealmRanks();
-
-  const getRealmRankForPoints = (points: number) => {
-    let rank = 0;
-    for (const [rr, requiredPoints] of realmRanksMap) {
-      if (points >= requiredPoints) {
-        rank = rr;
-      } else {
-        break;
-      }
-    }
-    return rank;
-  };
-
-  const formatRealmRankWithLevel = (rank: number) => {
-    const rankString = rank.toString();
-    return `${rankString.slice(0, -1)}L${rankString.slice(-1)}`;
-  };
-
-  const cancelSearch = () => {
+  const handleClearSearch = useCallback(() => {
     setSearchResults([]);
     setName("");
-    setCluster("ywain");
-    setSelectedCharacters([]);
+    setSelectedCharacters(new Set());
     setHasSearched(false);
-    setIsFetching(false);
-  };
+    setSearchError("");
+  }, []);
 
-  function handleServerChange(server: string) {
-    setCluster(server);
-  }
+  const servers = { ywain: "Ywain" };
 
-  const servers = {
-    ywain: "Ywain",
-  };
+  const isMinimumLength = name.length >= 3;
+  const hasResults = searchResults.length > 0;
+  const hasSelections = selectedCharacters.size > 0;
+  const allSelected = hasResults && selectedCharacters.size === searchResults.length;
 
   return (
-    <div className="bg-gray-900 p-4 rounded-lg">
-      <div className="flex justify-between mb-2">
+    <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center space-x-2">
+          <Users className="w-5 h-5 text-indigo-400" />
+          <h2 className="text-lg font-semibold text-white">Add Characters</h2>
+        </div>
         <CharacterSearchAndAddTooltip />
       </div>
-      <div className="flex flex-wrap items-center mb-2 space-x-2">
-        <div className="relative flex-1">
-          <Input
-            size="sm"
-            type="text"
-            placeholder="Character Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            classNames={{
-              label: "text-gray-500 dark:text-gray-300",
-              input: [
-                "bg-transparent",
-                "text-gray-800 dark:text-gray-200",
-                "placeholder:text-gray-400 dark:placeholder:text-gray-500",
-              ],
-              innerWrapper: "bg-transparent",
-              inputWrapper: [
-                "shadow-xl",
-                "bg-gray-800",
-                "dark:bg-gray-700",
-                "hover:bg-gray-700 dark:hover:bg-gray-600",
-                "group-data-[focused=true]:bg-gray-800 dark:group-data-[focused=true]:bg-gray-700",
-                "focus:border-indigo-600",
-                "!cursor-text",
-              ],
-            }}
-          />
-        </div>
-        <div>
+
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <Input
+              placeholder="Search character name..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              startContent={<Search className="w-4 h-4 text-gray-400" />}
+              classNames={{
+                input: "text-white placeholder:text-gray-500",
+                inputWrapper: [
+                  "bg-gray-800/50",
+                  "border-gray-600",
+                  "hover:border-gray-500",
+                  "group-data-[focused=true]:border-indigo-500",
+                  "group-data-[focused=true]:bg-gray-800/80"
+                ]
+              }}
+            />
+          </div>
+          
           <Dropdown>
             <DropdownTrigger>
-              <Button
-                color="primary"
-                className="text-indigo-500 bg-gray-800 border-indigo-500"
+              <Button 
+                variant="bordered" 
+                className="bg-gray-800/50 border-gray-600 text-gray-300 hover:bg-gray-700/50"
               >
-                {servers[cluster as keyof typeof servers] ||
-                  "Select a Cluster..."}
-                <KeyboardArrowDownIcon />
+                {servers[cluster as keyof typeof servers]}
               </Button>
             </DropdownTrigger>
             <DropdownMenu
-              variant="faded"
-              aria-label="Server Selection"
-              className="bg-gray-900 text-indigo-400"
+              selectedKeys={[cluster]}
+              onSelectionChange={(keys) => setCluster(Array.from(keys)[0] as string)}
+              className="bg-gray-800"
             >
               {Object.entries(servers).map(([key, label]) => (
-                <DropdownItem
-                  key={key}
-                  onClick={() => handleServerChange(key)}
-                  className="hover:bg-gray-700"
-                >
+                <DropdownItem key={key} className="text-gray-300">
                   {label}
                 </DropdownItem>
               ))}
             </DropdownMenu>
           </Dropdown>
         </div>
-      </div>
-      {isFetching && (
-        <div className="mt-4 flex justify-center">
-          <CircularProgress className="text-indigo-500" />
-        </div>
-      )}
-      {invalidSearchAttempted && (
-        <div className="mt-4 text-white text-center">
-          Please enter at least 3 characters to perform a search
-        </div>
-      )}
-      {!isFetching &&
-        hasSearched &&
-        name.length >= 3 &&
-        searchResults.length === 0 &&
-        !charactersAdded && (
-          <div className="mt-4 text-white text-center">No Results Found</div>
-        )}
-      {hasSearched && searchResults.length > 0 && (
-        <div className="p-2">
-          <h2 className="text-lg font-bold mb-4">Select Characters to Add</h2>
-          <ul>
-            {searchResults.map((character) => {
-              const realmRankPoints = character.realm_points;
-              const realmRank = getRealmRankForPoints(realmRankPoints);
-              const formattedRealmRank = formatRealmRankWithLevel(realmRank);
-              const isSelected = selectedCharacters.some(
-                (char) => char.character_web_id === character.character_web_id
-              );
-              const itemClass = isSelected
-                ? "mb-2 bg-indigo-900/70 p-2 rounded-md text-white"
-                : "mb-2 bg-gray-800 p-2 rounded-md text-gray-300";
-              const toggleCharacterSelection = () => {
-                setSelectedCharacters((prevSelected) => {
-                  if (isSelected) {
-                    return prevSelected.filter(
-                      (char) =>
-                        char.character_web_id !== character.character_web_id
-                    );
-                  } else {
-                    return [...prevSelected, character];
-                  }
-                });
-              };
-              return (
-                <li key={character.character_web_id} className={itemClass}>
-                  <div
-                    className="flex flex-col sm:flex-row items-start sm:items-center cursor-pointer"
-                    onClick={toggleCharacterSelection}
-                  >
-                    <div className="flex items-center w-full">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={toggleCharacterSelection}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mr-2"
-                      />
-                      <div className="flex-grow">
-                        <span className="text-white block truncate">
-                          {character.name}
-                        </span>
-                        <span className="text-gray-500 text-xs block truncate">
-                          Lvl {character.level} {character.class_name}
-                        </span>
-                      </div>
-                      <span className="text-indigo-500 text-xs sm:text-sm ml-auto">
-                        RR: {formattedRealmRank}
-                      </span>
-                    </div>
-                    <div className="text-gray-400 text-xs sm:text-sm w-full mt-1 sm:mt-0 sm:ml-2">
-                      Guild: {character.guild_info?.guild_name || "N/A"}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
 
-      {searchResults.length > 0 && (
-        <div className="flex justify-center mt-4 space-x-4">
-          <button
-            disabled={selectedCharacters.length === 0}
-            onClick={handleAddToList}
-            className={`flex items-center space-x-2 text-md font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-300 ${
-              selectedCharacters.length === 0
-                ? "opacity-50 cursor-not-allowed bg-gray-400"
-                : "bg-indigo-400 hover:bg-indigo-500 text-white"
-            }`}
-          >
-            <AddCircleOutlinedIcon />
-            <span>Add</span>
-          </button>
-          <button
-            onClick={cancelSearch}
-            className="flex items-center space-x-2 text-md font-semibold bg-red-400 text-white py-2 px-4 rounded-lg hover:bg-red-500 shadow-md transition-all duration-300"
-          >
-            <CancelOutlinedIcon />
-            <span>Cancel</span>
-          </button>
-        </div>
-      )}
-      <Snackbar
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-        message={`Successfully added ${
-          addedCount === 1 ? "1 character" : `${addedCount} characters`
-        }!`}
-        action={
-          <button
-            onClick={() => setSnackbarOpen(false)}
-            className="text-gray-300 hover:text-gray-500"
-          >
-            X
-          </button>
-        }
-      />
+        {searchError && (
+          <div className="flex items-center space-x-2 text-red-400 bg-red-900/20 border border-red-800/50 rounded-lg p-3">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm">{searchError}</span>
+          </div>
+        )}
+
+        {showSuccess && (
+          <div className="flex items-center space-x-2 text-green-400 bg-green-900/20 border border-green-800/50 rounded-lg p-3">
+            <Check className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm">{successMessage}</span>
+          </div>
+        )}
+
+        {isSearching && (
+          <div className="flex flex-col items-center justify-center py-8 space-y-3">
+            <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
+            <p className="text-gray-400 text-sm">Searching characters...</p>
+          </div>
+        )}
+
+        {!isSearching && hasSearched && !hasResults && isMinimumLength && (
+          <div className="text-center py-8">
+            <p className="text-gray-400">No characters found matching &ldquo;{name}&rdquo;</p>
+          </div>
+        )}
+
+        {hasResults && (
+          <>
+            <div className="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <span className="text-white font-medium">
+                    {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+                  </span>
+                  {hasSelections && (
+                    <span className="text-indigo-400 text-sm">
+                      {selectedCharacters.size} selected
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {hasResults && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={allSelected ? handleDeselectAll : handleSelectAll}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      {allSelected ? "Deselect All" : "Select All"}
+                    </Button>
+                  )}
+                  
+                  <Button
+                    size="sm"
+                    color="primary"
+                    isDisabled={!hasSelections || isAdding}
+                    isLoading={isAdding}
+                    onClick={handleAddCharacters}
+                    startContent={!isAdding ? <Plus className="w-4 h-4" /> : null}
+                  >
+                    {isAdding ? "Adding..." : `Add ${hasSelections ? `(${selectedCharacters.size})` : ""}`}
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="light"
+                    onClick={handleClearSearch}
+                    startContent={<X className="w-4 h-4" />}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+
+              {isAdding && (
+                <div className="mt-3">
+                  <Progress 
+                    size="sm" 
+                    isIndeterminate 
+                    color="primary"
+                    className="w-full"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {searchResults.map((character) => {
+                const realmRank = getRealmRankForPoints(character.realm_points);
+                const formattedRealmRank = formatRealmRankWithLevel(realmRank);
+                return (
+                  <CharacterItem
+                    key={character.character_web_id}
+                    character={character}
+                    isSelected={selectedCharacters.has(character.character_web_id)}
+                    onToggle={handleToggleCharacter}
+                    formattedRealmRank={formattedRealmRank}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
