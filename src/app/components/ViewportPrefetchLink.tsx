@@ -22,6 +22,9 @@ export function ViewportPrefetchLink({
   const [hasBeenSeen, setHasBeenSeen] = useState(false);
 
   useEffect(() => {
+    const currentRef = linkRef.current;
+    if (!currentRef) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -37,14 +40,10 @@ export function ViewportPrefetchLink({
       }
     );
 
-    if (linkRef.current) {
-      observer.observe(linkRef.current);
-    }
+    observer.observe(currentRef);
 
     return () => {
-      if (linkRef.current) {
-        observer.unobserve(linkRef.current);
-      }
+      observer.unobserve(currentRef);
     };
   }, [threshold, rootMargin, hasBeenSeen]);
 

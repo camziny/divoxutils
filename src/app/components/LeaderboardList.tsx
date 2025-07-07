@@ -53,6 +53,25 @@ const periods = {
 type Metric = keyof typeof metrics;
 type Period = keyof typeof periods;
 
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function sortLeaderboardData(
+  leaderboardData: LeaderboardItem[],
+  selectedMetric: Metric,
+  selectedPeriod: Period
+) {
+  const metricKey =
+    selectedPeriod === "total"
+      ? `total${capitalize(selectedMetric)}`
+      : `${selectedMetric}${capitalize(selectedPeriod)}`;
+
+  return leaderboardData.sort(
+    (a, b) => (b[metricKey] as number) - (a[metricKey] as number)
+  );
+}
+
 const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const [selectedMetric, setSelectedMetric] = useState<Metric>("realmPoints");
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("total");
@@ -102,25 +121,6 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
       ? "N/A"
       : new Intl.NumberFormat("en-US").format(number);
   };
-
-  function sortLeaderboardData(
-    leaderboardData: LeaderboardItem[],
-    selectedMetric: Metric,
-    selectedPeriod: Period
-  ) {
-    const metricKey =
-      selectedPeriod === "total"
-        ? `total${capitalize(selectedMetric)}`
-        : `${selectedMetric}${capitalize(selectedPeriod)}`;
-
-    return leaderboardData.sort(
-      (a, b) => (b[metricKey] as number) - (a[metricKey] as number)
-    );
-  }
-
-  function capitalize(s: string) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
 
   return (
     <section className="max-w-3xl mx-auto px-6">
