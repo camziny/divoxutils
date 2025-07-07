@@ -20,11 +20,11 @@ export const metadata = {
   title: "My Characters - divoxutils",
 };
 
-async function fetchCharactersForUser(userId: string) {
+async function fetchCharactersForUser(userId: string, bustCache?: boolean) {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
   const response = await fetch(apiUrl, {
     next: {
-      revalidate: 30,
+      revalidate: bustCache ? 0 : 30,
       tags: [`user-characters-${userId}`],
     },
   });
@@ -51,7 +51,9 @@ const CharacterPage: React.FC<CharacterPageProps> = async ({
     return <p>User is not logged in.</p>;
   }
 
-  const characters = await fetchCharactersForUser(user.id);
+  // Check if we should bust cache (after delete/add operations)
+  const bustCache = searchParams.refresh === 'true';
+  const characters = await fetchCharactersForUser(user.id, bustCache);
 
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
