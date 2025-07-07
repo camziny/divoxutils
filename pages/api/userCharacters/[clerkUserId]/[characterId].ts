@@ -1,7 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { revalidateTag } from "next/cache";
 import * as userCharacterController from "../../../../src/controllers/userCharacterController";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { clerkUserId, characterId: characterIdStr } = req.query;
 
   const characterId = parseInt(characterIdStr as string, 10);
@@ -67,6 +68,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           clerkUserId: clerkUserId as string,
           characterId,
         });
+
+        revalidateTag(`user-characters-${clerkUserId}`);
+        revalidateTag(`other-characters-${clerkUserId}`);
+        
         res.status(200).json({ message: "Character successfully deleted" });
       } catch (error) {
         console.error(
@@ -85,4 +90,4 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       res.setHeader("Allow", ["GET", "DELETE"]);
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
-};
+}

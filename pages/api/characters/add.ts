@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
+import { revalidateTag } from "next/cache";
 import prisma from "../../../prisma/prismaClient";
 import fetch from "node-fetch";
 import { realmMapping } from "@/controllers/characterController";
@@ -71,7 +72,7 @@ async function upsertCharacter(char: any) {
   });
 }
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const authDetails = getAuth(req);
   const clerkUserId = authDetails.userId;
 
@@ -122,6 +123,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       })
     );
 
+    revalidateTag(`user-characters-${clerkUserId}`);
+    revalidateTag(`other-characters-${clerkUserId}`);
+
     res.status(201).json(characters);
   } catch (error: any) {
     console.error(`Failed to process characters: ${error}`);
@@ -129,4 +133,4 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       .status(500)
       .json({ error: "Internal server error", details: error.message });
   }
-};
+}
