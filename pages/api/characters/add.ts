@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { revalidateTag } from "next/cache";
 import prisma from "../../../prisma/prismaClient";
 import fetch from "node-fetch";
 import { realmMapping } from "@/controllers/characterController";
@@ -123,9 +122,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     );
 
-    revalidateTag(`user-characters-${clerkUserId}`);
-    revalidateTag(`other-characters-${clerkUserId}`);
-
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.status(201).json(characters);
   } catch (error: any) {
     console.error(`Failed to process characters: ${error}`);

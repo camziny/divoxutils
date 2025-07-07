@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { revalidateTag } from "next/cache";
 import * as userCharacterController from "../../../../src/controllers/userCharacterController";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -69,9 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           characterId,
         });
 
-        revalidateTag(`user-characters-${clerkUserId}`);
-        revalidateTag(`other-characters-${clerkUserId}`);
-        
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.status(200).json({ message: "Character successfully deleted" });
       } catch (error) {
         console.error(
