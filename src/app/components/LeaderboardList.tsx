@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import React, { useState, useEffect, useMemo } from "react";
+import { HoverPrefetchLink } from "./HoverPrefetchLink";
+import { ViewportPrefetchLink } from "./ViewportPrefetchLink";
 import {
   Dropdown,
   DropdownTrigger,
@@ -52,32 +53,55 @@ const periods = {
 type Metric = keyof typeof metrics;
 type Period = keyof typeof periods;
 
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function sortLeaderboardData(
+  leaderboardData: LeaderboardItem[],
+  selectedMetric: Metric,
+  selectedPeriod: Period
+) {
+  const metricKey =
+    selectedPeriod === "total"
+      ? `total${capitalize(selectedMetric)}`
+      : `${selectedMetric}${capitalize(selectedPeriod)}`;
+
+  return [...leaderboardData].sort(
+    (a, b) => (b[metricKey] as number) - (a[metricKey] as number)
+  );
+}
+
 const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const [selectedMetric, setSelectedMetric] = useState<Metric>("realmPoints");
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("total");
 
-  useEffect(() => {}, [selectedMetric, selectedPeriod, data]);
+  const processedData = useMemo(() => {
+    return data.map((item) => {
+      const totalIrs =
+        item.totalDeaths > 0
+          ? Math.round(item.totalRealmPoints / item.totalDeaths)
+          : item.totalRealmPoints;
+      return { ...item, totalIrs };
+    });
+  }, [data]);
 
-  const processedData = data.map((item) => {
-    const totalIrs =
-      item.totalDeaths > 0
-        ? Math.round(item.totalRealmPoints / item.totalDeaths)
-        : item.totalRealmPoints;
-    return { ...item, totalIrs };
-  });
-
-  const sortedLeaderboardData = sortLeaderboardData(
-    processedData,
-    selectedMetric,
-    selectedPeriod
-  );
+  const sortedLeaderboardData = useMemo(() => {
+    return sortLeaderboardData(processedData, selectedMetric, selectedPeriod);
+  }, [processedData, selectedMetric, selectedPeriod]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedData = sortedLeaderboardData.slice(startIndex, endIndex);
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedLeaderboardData.slice(startIndex, endIndex);
+  }, [sortedLeaderboardData, currentPage]);
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(data.length / itemsPerPage);
+  }, [data.length]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -97,25 +121,6 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
       ? "N/A"
       : new Intl.NumberFormat("en-US").format(number);
   };
-
-  function sortLeaderboardData(
-    leaderboardData: LeaderboardItem[],
-    selectedMetric: Metric,
-    selectedPeriod: Period
-  ) {
-    const metricKey =
-      selectedPeriod === "total"
-        ? `total${capitalize(selectedMetric)}`
-        : `${selectedMetric}${capitalize(selectedPeriod)}`;
-
-    return leaderboardData.sort(
-      (a, b) => (b[metricKey] as number) - (a[metricKey] as number)
-    );
-  }
-
-  function capitalize(s: string) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
 
   return (
     <section className="max-w-3xl mx-auto px-6">
@@ -196,13 +201,16 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
               ? `total${capitalize(selectedMetric)}`
               : `${selectedMetric}${capitalize(selectedPeriod)}`;
           const value = item[metricKey] as number | undefined;
+          const startIndex = (currentPage - 1) * itemsPerPage;
+          const isTopFive = index < 5;
+          const LinkComponent = isTopFive ? HoverPrefetchLink : ViewportPrefetchLink;
 
           return (
             <li
               key={item.userId}
               className="group bg-gray-800/90 backdrop-blur-sm rounded-lg border border-gray-700/60 hover:border-indigo-500/50 transition-all duration-200 hover:bg-gray-700/90 shadow-sm hover:shadow-md"
             >
-              <Link
+              <LinkComponent
                 href={`user/${item.userName}/characters`}
                 className="flex justify-between items-center w-full h-full p-4 text-gray-300 hover:text-white transition-colors duration-200"
               >
@@ -217,7 +225,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                 <span className="text-base font-semibold text-indigo-300 group-hover:text-white transition-colors duration-200">
                   {formatNumber(value)}
                 </span>
-              </Link>
+              </LinkComponent>
             </li>
           );
         })}
@@ -225,7 +233,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
       
       <div className="my-8 flex justify-center">
         <Pagination
-          total={Math.ceil(data.length / itemsPerPage)}
+          total={totalPages}
           initialPage={1}
           onChange={(page) => setCurrentPage(page)}
           showControls

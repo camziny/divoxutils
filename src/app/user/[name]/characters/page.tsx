@@ -1,24 +1,30 @@
 import React from "react";
-import OtherCharacterList from "@/app/components/OtherCharacterList";
+import dynamic from "next/dynamic";
 import { PageReload } from "@/app/components/PageReload";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
 import type { Metadata, ResolvingMetadata } from "next";
 import ShareProfileButton from "@/app/components/ShareProfileButton";
-import SortOptions from "@/app/components/SortOptions";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../../../../../prisma/prismaClient";
+
+const CharacterListOptimized = dynamic(
+  () => import("@/app/components/CharacterListOptimized"),
+  {
+    loading: () => {
+      const CharacterListSkeleton = require("@/app/components/CharacterListSkeleton").default;
+      return <CharacterListSkeleton />;
+    },
+  }
+);
 
 interface CharactersPageParams {
   name: string;
-  clerkUserId: string;
 }
 
 interface CharactersPageProps {
   params: CharactersPageParams;
   searchParams: { [key: string]: string | string[] };
 }
-
-const prisma = new PrismaClient();
 
 export async function generateMetadata(
   { params }: { params: CharactersPageParams },
@@ -46,7 +52,12 @@ export async function generateMetadata(
 async function fetchCharactersForUser(userId: string) {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
 
-  const response = await fetch(apiUrl, {});
+  const response = await fetch(apiUrl, {
+    next: {
+      revalidate: 60,
+      tags: [`other-characters-${userId}`],
+    },
+  });
 
   if (!response.ok) {
     console.error(
@@ -107,10 +118,10 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
             </div>
             <PageReload />
             <Suspense fallback={<Loading />}>
-              <OtherCharacterList
-                userId={clerkUserId}
+              <CharacterListOptimized
                 characters={characters}
                 searchParams={searchParams}
+                showDelete={false}
               />
             </Suspense>
           </div>
