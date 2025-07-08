@@ -5,6 +5,8 @@ import { currentUser } from "@clerk/nextjs";
 import { Suspense } from "react";
 import Loading from "../loading";
 import ShareProfileButton from "../components/ShareProfileButton";
+import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs";
 
 const CharacterListOptimized = dynamic(
   () => import("../components/CharacterListOptimized"),
@@ -20,11 +22,11 @@ export const metadata = {
   title: "My Characters - divoxutils",
 };
 
-async function fetchCharactersForUser(userId: string, bustCache?: boolean) {
+async function fetchCharactersForUser(userId: string) {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
   const response = await fetch(apiUrl, {
     next: {
-      revalidate: bustCache ? 0 : 30,
+      revalidate: 0, 
       tags: [`user-characters-${userId}`],
     },
   });
@@ -39,55 +41,52 @@ async function fetchCharactersForUser(userId: string, bustCache?: boolean) {
   return await response.json();
 }
 
-interface CharacterPageProps {
+interface UserCharactersPageProps {
   searchParams: { [key: string]: string | string[] };
 }
 
-const CharacterPage: React.FC<CharacterPageProps> = async ({
-  searchParams,
+const UserCharactersPage: React.FC<UserCharactersPageProps> = async ({
+  searchParams = {},
 }) => {
-  const user = await currentUser();
-  if (user === null) {
-    return <p>User is not logged in.</p>;
+  const { userId } = auth();
+
+  if (!userId) {
+    redirect("/sign-in");
   }
 
-  // Check if we should bust cache (after delete/add operations)
-  const bustCache = searchParams.refresh === 'true';
-  const characters = await fetchCharactersForUser(user.id, bustCache);
+  const characters = await fetchCharactersForUser(userId);
+
+  const user = await currentUser();
 
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
       <div className="relative">
-        {user?.username && (
-          <div className="absolute top-4 right-4 z-10">
-            <ShareProfileButton username={user.username} />
-          </div>
-        )}
+        <div className="absolute top-4 right-4 z-10">
+          <ShareProfileButton username={user?.username ?? ''} />
+        </div>
         
-        <div className="flex flex-col items-center mt-8 space-y-6 w-full overflow-x-hidden">
-          <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <CharacterSearchAndAdd />
-          </div>
-          
-          <div className="text-center">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">
-              {user?.username}
-            </h1>
-          </div>
-
-          <Suspense fallback={<Loading />}>
-            <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-              <CharacterListOptimized
-                characters={characters}
-                searchParams={searchParams}
-                showDelete={true}
-              />
+        <div className="p-4 md:p-8 lg:p-12">
+          <div className="max-w-screen-lg mx-auto">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                My Characters
+              </h1>
             </div>
-          </Suspense>
+            <CharacterSearchAndAdd />
+            <div className="mt-6">
+              <Suspense fallback={<Loading />}>
+                <CharacterListOptimized
+                  characters={characters}
+                  searchParams={searchParams}
+                  showDelete={true}
+                />
+              </Suspense>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default CharacterPage;
+export default UserCharactersPage;

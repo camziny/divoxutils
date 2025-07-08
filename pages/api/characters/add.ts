@@ -28,7 +28,7 @@ async function upsertCharacter(char: any) {
     heraldRace: char.race,
     heraldClassName: char.class_name,
     heraldLevel: char.level,
-    heraldGuildName: char.guild_name,
+    heraldGuildName: char.guild_info?.guild_name || char.guild_name || null,
     heraldRealmPoints: char.realm_war_stats.current.realm_points,
     heraldBountyPoints: char.realm_war_stats.current.bounty_points,
     heraldTotalKills: char.realm_war_stats.current.player_kills.total.kills,

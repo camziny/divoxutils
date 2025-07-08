@@ -111,7 +111,8 @@ function CharacterSearchAndAdd() {
 
   const fetchCharacters = useCallback(async (name: string, cluster: string) => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/characters/search?name=${name}&cluster=${cluster}`
+      `${process.env.NEXT_PUBLIC_API_URL}/api/characters/search?name=${name}&cluster=${cluster}`,
+      { cache: 'no-store' } // Ensure fresh search results
     );
     if (!response.ok) {
       throw new Error(`Search failed: ${response.statusText}`);
@@ -181,6 +182,7 @@ function CharacterSearchAndAdd() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ webIds }),
+        cache: 'no-store',
       });
 
       const data = await response.json();
@@ -189,31 +191,24 @@ function CharacterSearchAndAdd() {
       }
 
       const count = selectedCharacters.size;
-      setMessage(`Successfully added ${count === 1 ? "1 character" : `${count} characters`}!`);
+      setMessage(`Successfully added ${count} character${count !== 1 ? 's' : ''}`);
       
-      setTimeout(() => setMessage(""), 3000);
-      
+      // Clear form immediately
       setSelectedCharacters(new Set());
       setSearchResults([]);
       setName("");
       setHasSearched(false);
       
+      // Refresh the page to show new characters
       startTransition(() => {
-        // Force cache refresh by adding query parameter
-        const currentPath = window.location.pathname;
-        const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set('refresh', 'true');
-        router.push(`${currentPath}?${searchParams.toString()}`);
-        
-        // Remove the refresh param after a short delay to restore normal caching
-        setTimeout(() => {
-          searchParams.delete('refresh');
-          router.replace(`${currentPath}${searchParams.toString() ? '?' + searchParams.toString() : ''}`);
-        }, 100);
+        router.refresh();
       });
+      
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       console.error("Error adding characters:", error);
       setMessage(error instanceof Error ? error.message : "Failed to add characters");
+      setTimeout(() => setMessage(""), 5000);
     } finally {
       setIsAdding(false);
     }
@@ -246,8 +241,13 @@ function CharacterSearchAndAdd() {
           onChange={(e) => setName(e.target.value)}
           className="flex-1"
           classNames={{
-            input: "text-white",
-            inputWrapper: "bg-gray-800 border-gray-600"
+            input: "text-white bg-transparent",
+            inputWrapper: [
+              "bg-gray-800",
+              "border-gray-600",
+              "data-[hover=true]:bg-gray-700",
+              "group-data-[focused=true]:bg-gray-800"
+            ].join(" ")
           }}
         />
         
@@ -272,14 +272,17 @@ function CharacterSearchAndAdd() {
       </div>
 
       {message && (
-        <div className="mb-4 p-2 text-sm text-center text-gray-300 bg-gray-800 rounded">
-          {message}
+        <div className="fixed bottom-4 right-4 z-50 p-4 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-w-sm">
+          <span className="text-sm text-white">{message}</span>
         </div>
       )}
 
       {isSearching && (
-        <div className="text-center py-4 text-gray-400">
-          Searching...
+        <div className="text-center py-8">
+          <div className="inline-flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
+            <span className="text-gray-400">Searching characters...</span>
+          </div>
         </div>
       )}
 
@@ -354,19 +357,28 @@ function CharacterSearchAndAdd() {
               onClick={handleAddCharacters}
               disabled={!hasSelections || isLoading}
               className={`
+                flex items-center space-x-2
                 ${hasSelections && !isLoading
                   ? 'bg-gray-700 hover:bg-gray-600 text-white'
                   : 'bg-gray-800 text-gray-500 cursor-not-allowed'
                 }
               `}
             >
-              {isLoading ? "Adding..." : `Add${hasSelections ? ` (${selectedCharacters.size})` : ""}`}
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Adding...</span>
+                </>
+              ) : (
+                <span>Add{hasSelections ? ` (${selectedCharacters.size})` : ""}</span>
+              )}
             </Button>
             
             <Button
               onClick={handleClear}
               variant="bordered"
               className="border-gray-600 text-gray-400 hover:text-gray-300"
+              disabled={isLoading}
             >
               Clear
             </Button>
