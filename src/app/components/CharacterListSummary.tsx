@@ -30,7 +30,10 @@ interface CharacterData {
   heraldRealmPoints: number;
   heraldName: string;
   realmPointsLastWeek: number;
-  player_kills: {
+  heraldTotalKills?: number;
+  heraldTotalDeathBlows?: number;
+  heraldTotalSoloKills?: number;
+  player_kills?: {
     total: PlayerKillStats;
     midgard?: PlayerKillStats;
     albion?: PlayerKillStats;
@@ -61,7 +64,13 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
 
   characters.forEach((character) => {
     const realm = character.realm;
-    const playerKills = character.player_kills.total;
+    
+    // Safe access to player_kills with fallback values
+    const playerKills = character.player_kills?.total || {
+      kills: character.heraldTotalKills || 0,
+      death_blows: character.heraldTotalDeathBlows || 0,
+      solo_kills: character.heraldTotalSoloKills || 0
+    };
 
     const realmPoints = character.heraldRealmPoints || 0;
     const realmPointsLastWeek = character.realmPointsLastWeek || 0;

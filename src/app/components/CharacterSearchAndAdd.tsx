@@ -111,7 +111,8 @@ function CharacterSearchAndAdd() {
 
   const fetchCharacters = useCallback(async (name: string, cluster: string) => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/characters/search?name=${name}&cluster=${cluster}`
+      `${process.env.NEXT_PUBLIC_API_URL}/api/characters/search?name=${name}&cluster=${cluster}`,
+      { cache: 'no-store' } // Ensure fresh search results
     );
     if (!response.ok) {
       throw new Error(`Search failed: ${response.statusText}`);
@@ -181,6 +182,7 @@ function CharacterSearchAndAdd() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ webIds }),
+        cache: 'no-store',
       });
 
       const data = await response.json();
@@ -191,18 +193,22 @@ function CharacterSearchAndAdd() {
       const count = selectedCharacters.size;
       setMessage(`Successfully added ${count} character${count !== 1 ? 's' : ''}`);
       
+      // Clear form immediately
       setSelectedCharacters(new Set());
       setSearchResults([]);
       setName("");
       setHasSearched(false);
       
-      setTimeout(() => {
-        setMessage("");
-        window.location.reload();
-      }, 1000);
+      // Refresh the page to show new characters
+      startTransition(() => {
+        router.refresh();
+      });
+      
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       console.error("Error adding characters:", error);
       setMessage(error instanceof Error ? error.message : "Failed to add characters");
+      setTimeout(() => setMessage(""), 5000);
     } finally {
       setIsAdding(false);
     }
@@ -266,8 +272,8 @@ function CharacterSearchAndAdd() {
       </div>
 
       {message && (
-        <div className="mb-4 p-2 text-sm text-center text-gray-300 bg-gray-800 rounded">
-          {message}
+        <div className="fixed bottom-4 right-4 z-50 p-4 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-w-sm">
+          <span className="text-sm text-white">{message}</span>
         </div>
       )}
 
