@@ -86,6 +86,19 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
       console.log("First user data:", data[0]);
       console.log("Available keys:", Object.keys(data[0]));
     }
+    
+    // Test direct API call
+    fetch('/api/leaderboard')
+      .then(res => res.json())
+      .then(apiData => {
+        console.log("Direct API call - first user:", apiData[0]);
+        console.log("Direct API - death blows present:", {
+          totalDeathBlows: apiData[0]?.totalDeathBlows !== undefined,
+          deathBlowsLastWeek: apiData[0]?.deathBlowsLastWeek !== undefined,
+          deathBlowsThisWeek: apiData[0]?.deathBlowsThisWeek !== undefined
+        });
+      })
+      .catch(err => console.error("Direct API call failed:", err));
   }, [data]);
 
   const processedData = useMemo(() => {

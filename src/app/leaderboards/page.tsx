@@ -11,8 +11,15 @@ async function fetchLeaderboardData() {
     const apiUrl = `${
       process.env.NEXT_PUBLIC_API_URL
     }/api/leaderboard`;
+    
+    console.log("Fetching from API URL:", apiUrl);
+    console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
+    
     const response = await fetch(apiUrl, {
-      cache: 'no-store' // Disable caching temporarily
+      next: { 
+        revalidate: 60,
+        tags: ['leaderboard']
+      }
     });
 
     if (!response.ok) {
@@ -22,6 +29,12 @@ async function fetchLeaderboardData() {
     }
 
     const data = await response.json();
+    console.log("First user from API:", data[0]);
+    console.log("Death blows fields present:", {
+      totalDeathBlows: data[0]?.totalDeathBlows !== undefined,
+      deathBlowsLastWeek: data[0]?.deathBlowsLastWeek !== undefined,
+      deathBlowsThisWeek: data[0]?.deathBlowsThisWeek !== undefined
+    });
     return data;
   } catch (error) {
     console.error("Error fetching leaderboard data:", error);
