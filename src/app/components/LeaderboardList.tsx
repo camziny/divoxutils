@@ -25,6 +25,9 @@ interface LeaderboardItem {
   totalDeaths: number;
   deathsLastWeek: number;
   deathsThisWeek: number;
+  totalDeathBlows: number;
+  deathBlowsLastWeek: number;
+  deathBlowsThisWeek: number;
   irs: number;
   irsLastWeek: number;
   irsThisWeek: number;
@@ -41,6 +44,7 @@ const metrics = {
   realmPoints: "Realm Points",
   soloKills: "Solo Kills",
   deaths: "Deaths",
+  deathBlows: "Death Blows",
   irs: "IRS",
 };
 
@@ -122,6 +126,15 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
       : new Intl.NumberFormat("en-US").format(number);
   };
 
+  const showDeathBlowsMessage = selectedMetric === "deathBlows" && selectedPeriod !== "total";
+  const deathBlowsMessageDate = new Date();
+  deathBlowsMessageDate.setDate(deathBlowsMessageDate.getDate() + 14);
+  const formattedDate = deathBlowsMessageDate.toLocaleDateString('en-US', { 
+    month: 'long', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+
   return (
     <section className="max-w-3xl mx-auto px-6">
       <div className="mb-6 flex flex-col items-center">
@@ -193,6 +206,20 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
           </Dropdown>
         </div>
       </div>
+
+      {showDeathBlowsMessage && (
+        <div className="mb-6 p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-lg">
+          <p className="text-sm text-gray-300 text-center">
+            <span className="text-indigo-400 font-semibold">Death Blows tracking is new!</span>
+            <br />
+            Weekly data will be accurately reflected starting {formattedDate}.
+            <br />
+            <span className="text-xs text-gray-400 mt-1 block">
+              Total death blows are available now.
+            </span>
+          </p>
+        </div>
+      )}
 
       <ol className="space-y-3">
         {paginatedData.map((item, index) => {

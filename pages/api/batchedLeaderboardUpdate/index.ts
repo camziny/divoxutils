@@ -12,6 +12,8 @@ interface CharacterUpdateData {
   soloKillsLastWeek: number;
   totalDeaths: number;
   deathsLastWeek: number;
+  totalDeathBlows: number;
+  deathBlowsLastWeek: number;
   lastUpdated: Date;
 }
 
@@ -88,6 +90,9 @@ export default async function batchedLeaderboardUpdate(
               character.totalSoloKills;
             const deathsDiff =
               currentStats.player_kills.total.deaths - character.totalDeaths;
+            const deathBlowsDiff =
+              currentStats.player_kills.total.death_blows -
+              character.totalDeathBlows;
 
             let updateData: any = {};
 
@@ -100,10 +105,14 @@ export default async function batchedLeaderboardUpdate(
             if (character.totalDeaths !== currentStats.player_kills.total.deaths) {
               updateData.totalDeaths = currentStats.player_kills.total.deaths;
             }
+            if (character.totalDeathBlows !== currentStats.player_kills.total.death_blows) {
+              updateData.totalDeathBlows = currentStats.player_kills.total.death_blows;
+            }
 
             let weeklyRealmPoints = 0;
             let weeklySoloKills = 0;
             let weeklyDeaths = 0;
+            let weeklyDeathBlows = 0;
 
             if (
               characterLastUpdated < currentUpdateStartTime &&
@@ -112,6 +121,7 @@ export default async function batchedLeaderboardUpdate(
               weeklyRealmPoints = realmPointsDiff > 0 ? realmPointsDiff : 0;
               weeklySoloKills = soloKillsDiff > 0 ? soloKillsDiff : 0;
               weeklyDeaths = deathsDiff > 0 ? deathsDiff : 0;
+              weeklyDeathBlows = deathBlowsDiff > 0 ? deathBlowsDiff : 0;
             }
 
             if (character.realmPointsLastWeek !== weeklyRealmPoints) {
@@ -122,6 +132,9 @@ export default async function batchedLeaderboardUpdate(
             }
             if (character.deathsLastWeek !== weeklyDeaths) {
               updateData.deathsLastWeek = weeklyDeaths;
+            }
+            if (character.deathBlowsLastWeek !== weeklyDeathBlows) {
+              updateData.deathBlowsLastWeek = weeklyDeathBlows;
             }
 
             updateData.lastUpdated = new Date();

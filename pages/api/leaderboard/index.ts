@@ -21,13 +21,16 @@ export default async function handler(
                   totalRealmPoints: true,
                   totalSoloKills: true,
                   totalDeaths: true,
+                  totalDeathBlows: true,
                   deathsLastWeek: true,
+                  deathBlowsLastWeek: true,
                   realmPointsLastWeek: true,
                   soloKillsLastWeek: true,
                   lastUpdated: true,
                   heraldRealmPoints: true,
                   heraldTotalDeaths: true,
                   heraldTotalSoloKills: true,
+                  heraldTotalDeathBlows: true,
                 },
               },
             },
@@ -47,19 +50,23 @@ export default async function handler(
         let totalPoints = 0;
         let totalSoloKills = 0;
         let totalDeaths = 0;
+        let totalDeathBlows = 0;
         let deathsLastWeek = 0;
+        let deathBlowsLastWeek = 0;
         let realmPointsLastWeek = 0;
         let soloKillsLastWeek = 0;
         let latestUpdate: Date | null = null;
 
         let realmPointsThisWeek = 0;
         let deathsThisWeek = 0;
+        let deathBlowsThisWeek = 0;
         let soloKillsThisWeek = 0;
         let irsThisWeek = 0;
 
         let accumulatedRealmPointsThisWeek = 0;
         let accumulatedDeathsThisWeek = 0;
         let accumulatedSoloKillsThisWeek = 0;
+        let accumulatedDeathBlowsThisWeek = 0;
 
         const processedCharacterIds = new Set<number>();
 
@@ -76,6 +83,7 @@ export default async function handler(
           totalPoints += character.totalRealmPoints;
           totalSoloKills += character.totalSoloKills;
           totalDeaths += character.totalDeaths;
+          totalDeathBlows += character.totalDeathBlows;
 
           if (character.realmPointsLastWeek !== character.totalRealmPoints) {
             realmPointsLastWeek += character.realmPointsLastWeek;
@@ -86,10 +94,14 @@ export default async function handler(
           if (character.deathsLastWeek !== character.totalDeaths) {
             deathsLastWeek += character.deathsLastWeek;
           }
+          if (character.deathBlowsLastWeek !== character.totalDeathBlows) {
+            deathBlowsLastWeek += character.deathBlowsLastWeek;
+          }
           if (character.totalRealmPoints === 0) {
             accumulatedRealmPointsThisWeek += 0;
             accumulatedDeathsThisWeek += 0;
             accumulatedSoloKillsThisWeek += 0;
+            accumulatedDeathBlowsThisWeek += 0;
           } else {
             if (
               character.heraldRealmPoints !== null &&
@@ -117,12 +129,22 @@ export default async function handler(
                 character.heraldTotalSoloKills - character.totalSoloKills;
               accumulatedSoloKillsThisWeek += skThisWeek;
             }
+
+            if (
+              character.heraldTotalDeathBlows !== null &&
+              character.totalDeathBlows !== null
+            ) {
+              const dbThisWeek =
+                character.heraldTotalDeathBlows - character.totalDeathBlows;
+              accumulatedDeathBlowsThisWeek += dbThisWeek;
+            }
           }
         });
 
         realmPointsThisWeek = Math.max(0, accumulatedRealmPointsThisWeek);
         deathsThisWeek = Math.max(0, accumulatedDeathsThisWeek);
         soloKillsThisWeek = Math.max(0, accumulatedSoloKillsThisWeek);
+        deathBlowsThisWeek = Math.max(0, accumulatedDeathBlowsThisWeek);
 
         irsThisWeek =
           deathsThisWeek > 0
@@ -144,7 +166,9 @@ export default async function handler(
           totalRealmPoints: totalPoints,
           totalSoloKills: totalSoloKills,
           totalDeaths: totalDeaths,
+          totalDeathBlows: totalDeathBlows,
           deathsLastWeek: deathsLastWeek,
+          deathBlowsLastWeek: deathBlowsLastWeek,
           realmPointsLastWeek: realmPointsLastWeek,
           soloKillsLastWeek: soloKillsLastWeek,
           irs: irs,
@@ -153,6 +177,7 @@ export default async function handler(
           realmPointsThisWeek: realmPointsThisWeek,
           deathsThisWeek: deathsThisWeek,
           soloKillsThisWeek: soloKillsThisWeek,
+          deathBlowsThisWeek: deathBlowsThisWeek,
           irsThisWeek: irsThisWeek,
         };
       });

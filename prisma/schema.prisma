@@ -48,6 +48,8 @@ model Character {
   soloKillsLastWeek       Int    @default(0)
   totalDeaths             Int    @default(0)
   deathsLastWeek          Int    @default(0)
+  totalDeathBlows         Int    @default(0)
+  deathBlowsLastWeek      Int    @default(0)
   lastUpdated             DateTime? @default(now())
   nameLastUpdated         DateTime? @default(now())
   heraldCharacterWebId    String?
