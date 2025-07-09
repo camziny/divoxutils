@@ -12,10 +12,7 @@ async function fetchLeaderboardData() {
       process.env.NEXT_PUBLIC_API_URL
     }/api/leaderboard`;
     const response = await fetch(apiUrl, {
-      next: { 
-        revalidate: 60,
-        tags: ['leaderboard']
-      }
+      cache: 'no-store' // Disable caching temporarily
     });
 
     if (!response.ok) {
