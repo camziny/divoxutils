@@ -234,6 +234,12 @@ function CharacterSearchAndAdd() {
         <CharacterSearchAndAddTooltip />
       </div>
 
+      <div className="mb-4 px-1">
+        <div className="bg-gray-800/50 border border-gray-600/30 text-gray-400 px-3 py-2 rounded-md text-xs flex items-center gap-2">
+          <span>Note: Performance improvements are currently underway. Your character list may take a moment to update after adding / deleting characters. Thanks for your patience!</span>
+        </div>
+      </div>
+
       <div className="flex gap-2 mb-4">
         <Input
           placeholder="Character name"
