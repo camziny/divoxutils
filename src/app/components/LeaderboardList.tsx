@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import { ViewportPrefetchLink } from "./ViewportPrefetchLink";
 import {
@@ -78,8 +79,34 @@ function sortLeaderboardData(
 }
 
 const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
-  const [selectedMetric, setSelectedMetric] = useState<Metric>("realmPoints");
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>("total");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const selectedMetric = (searchParams?.get('metric') as Metric) || 'realmPoints';
+  const selectedPeriod = (searchParams?.get('period') as Period) || 'total';
+  const pageString = searchParams?.get('page') || '1';
+  const currentPage = parseInt(pageString, 10);
+
+  const updateURL = (updates: { metric?: Metric; period?: Period; page?: number }) => {
+    const newSearchParams = new URLSearchParams(searchParams?.toString() || '');
+    
+    if (updates.metric !== undefined) {
+      newSearchParams.set('metric', updates.metric);
+    }
+    if (updates.period !== undefined) {
+      newSearchParams.set('period', updates.period);
+    }
+    if (updates.page !== undefined) {
+      newSearchParams.set('page', updates.page.toString());
+    }
+
+    const queryString = newSearchParams.toString();
+    const currentPath = pathname || '/';
+    const newURL = queryString ? `${currentPath}?${queryString}` : currentPath;
+    
+    router.replace(newURL, { scroll: false });
+  };
 
   const processedData = useMemo(() => {
     return data.map((item) => {
@@ -95,7 +122,6 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
     return sortLeaderboardData(processedData, selectedMetric, selectedPeriod);
   }, [processedData, selectedMetric, selectedPeriod]);
 
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
   const paginatedData = useMemo(() => {
@@ -108,17 +134,28 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
     return Math.ceil(data.length / itemsPerPage);
   }, [data.length]);
 
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      const newSearchParams = new URLSearchParams(searchParams?.toString() || '');
+      newSearchParams.set('page', '1');
+      const queryString = newSearchParams.toString();
+      const currentPath = pathname || '/';
+      const newURL = queryString ? `${currentPath}?${queryString}` : currentPath;
+      router.replace(newURL, { scroll: false });
+    }
+  }, [currentPage, totalPages, searchParams, pathname, router]);
+
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    updateURL({ page });
   };
 
   const handleMetricChange = (metric: Metric, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedMetric(metric);
+    updateURL({ metric, page: 1 });
   };
 
   const handlePeriodChange = (period: Period) => {
-    setSelectedPeriod(period);
+    updateURL({ period, page: 1 });
   };
 
   const formatNumber = (number: number | undefined) => {
@@ -265,7 +302,8 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
             <Pagination
               total={totalPages}
               initialPage={1}
-              onChange={(page) => setCurrentPage(page)}
+              page={currentPage}
+              onChange={handlePageChange}
               showControls
               classNames={{
                 wrapper: "gap-1 overflow-visible h-10 rounded-lg bg-gray-800/60 p-2 border border-gray-700/60",
