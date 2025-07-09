@@ -6,11 +6,34 @@ export const metadata = {
   title: "Leaderboards - divoxutils",
 };
 
-async function fetchLeaderboardData() {
+interface LeaderboardItem {
+  userId: number;
+  clerkUserId: string;
+  userName: string;
+  totalRealmPoints: number;
+  realmPointsLastWeek: number;
+  realmPointsThisWeek: number;
+  totalSoloKills: number;
+  soloKillsLastWeek: number;
+  soloKillsThisWeek: number;
+  totalDeaths: number;
+  deathsLastWeek: number;
+  deathsThisWeek: number;
+  totalDeathBlows: number;
+  deathBlowsLastWeek: number;
+  deathBlowsThisWeek: number;
+  irs: number;
+  irsLastWeek: number;
+  irsThisWeek: number;
+  lastUpdated: Date | null;
+}
+
+async function fetchLeaderboardData(): Promise<LeaderboardItem[]> {
   try {
     const apiUrl = `${
       process.env.NEXT_PUBLIC_API_URL
     }/api/leaderboard`;
+    
     const response = await fetch(apiUrl, {
       next: { 
         revalidate: 60,
@@ -24,7 +47,7 @@ async function fetchLeaderboardData() {
       );
     }
 
-    const data = await response.json();
+    const data: LeaderboardItem[] = await response.json();
     return data;
   } catch (error) {
     console.error("Error fetching leaderboard data:", error);

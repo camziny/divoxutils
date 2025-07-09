@@ -15,6 +15,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 interface LeaderboardItem {
   userId: number;
+  clerkUserId: string;
   userName: string;
   totalRealmPoints: number;
   realmPointsLastWeek: number;
@@ -25,12 +26,15 @@ interface LeaderboardItem {
   totalDeaths: number;
   deathsLastWeek: number;
   deathsThisWeek: number;
+  totalDeathBlows: number;
+  deathBlowsLastWeek: number;
+  deathBlowsThisWeek: number;
   irs: number;
   irsLastWeek: number;
   irsThisWeek: number;
-  lastUpdated: Date;
+  lastUpdated: Date | null;
   totalIrs?: number;
-  [key: string]: number | string | Date | undefined;
+  [key: string]: number | string | Date | null | undefined;
 }
 
 interface LeaderboardListProps {
@@ -41,6 +45,7 @@ const metrics = {
   realmPoints: "Realm Points",
   soloKills: "Solo Kills",
   deaths: "Deaths",
+  deathBlows: "Death Blows",
   irs: "IRS",
 };
 

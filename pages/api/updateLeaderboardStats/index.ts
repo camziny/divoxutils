@@ -49,6 +49,9 @@ export default async function handler(
               character.totalSoloKills;
             const deathsLastWeek =
               currentStats.player_kills.total.deaths - character.totalDeaths;
+            const deathBlowsLastWeek =
+              currentStats.player_kills.total.death_blows -
+              character.totalDeathBlows;
 
             await prisma.character.update({
               where: { webId: character.webId },
@@ -59,6 +62,8 @@ export default async function handler(
                 soloKillsLastWeek,
                 totalDeaths: currentStats.player_kills.total.deaths,
                 deathsLastWeek,
+                totalDeathBlows: currentStats.player_kills.total.death_blows,
+                deathBlowsLastWeek,
               },
             });
           }
