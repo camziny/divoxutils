@@ -3,6 +3,7 @@ import LeaderboardList from './LeaderboardList';
 
 interface LeaderboardItem {
   userId: number;
+  clerkUserId: string;
   userName: string;
   totalRealmPoints: number;
   realmPointsLastWeek: number;
@@ -19,7 +20,7 @@ interface LeaderboardItem {
   irs: number;
   irsLastWeek: number;
   irsThisWeek: number;
-  lastUpdated: Date;
+  lastUpdated: Date | null;
 }
 
 interface LeaderboardWrapperProps {
@@ -27,16 +28,9 @@ interface LeaderboardWrapperProps {
 }
 
 export default function LeaderboardWrapper({ data }: LeaderboardWrapperProps) {
-  console.log("LeaderboardWrapper received data:", data);
-  console.log("First item death blows fields:", {
-    totalDeathBlows: data[0]?.totalDeathBlows,
-    deathBlowsLastWeek: data[0]?.deathBlowsLastWeek,
-    deathBlowsThisWeek: data[0]?.deathBlowsThisWeek
-  });
-  
   const processedData = data.map((item) => ({
     ...item,
-    lastUpdated: new Date(item.lastUpdated),
+    lastUpdated: item.lastUpdated ? new Date(item.lastUpdated) : null,
   }));
 
   return <LeaderboardList data={processedData} />;

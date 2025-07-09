@@ -15,6 +15,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 interface LeaderboardItem {
   userId: number;
+  clerkUserId: string;
   userName: string;
   totalRealmPoints: number;
   realmPointsLastWeek: number;
@@ -31,9 +32,9 @@ interface LeaderboardItem {
   irs: number;
   irsLastWeek: number;
   irsThisWeek: number;
-  lastUpdated: Date;
+  lastUpdated: Date | null;
   totalIrs?: number;
-  [key: string]: number | string | Date | undefined;
+  [key: string]: number | string | Date | null | undefined;
 }
 
 interface LeaderboardListProps {

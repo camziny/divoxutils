@@ -15,6 +15,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 interface LeaderboardItem {
   userId: number;
+  clerkUserId: string;
   userName: string;
   totalRealmPoints: number;
   realmPointsLastWeek: number;
@@ -31,9 +32,9 @@ interface LeaderboardItem {
   irs: number;
   irsLastWeek: number;
   irsThisWeek: number;
-  lastUpdated: Date;
+  lastUpdated: Date | null;
   totalIrs?: number;
-  [key: string]: number | string | Date | undefined;
+  [key: string]: number | string | Date | null | undefined;
 }
 
 interface LeaderboardListProps {
@@ -79,27 +80,6 @@ function sortLeaderboardData(
 const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const [selectedMetric, setSelectedMetric] = useState<Metric>("realmPoints");
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("total");
-
-  // Debug logging
-  React.useEffect(() => {
-    if (data.length > 0) {
-      console.log("First user data:", data[0]);
-      console.log("Available keys:", Object.keys(data[0]));
-    }
-    
-    // Test direct API call
-    fetch('/api/leaderboard')
-      .then(res => res.json())
-      .then(apiData => {
-        console.log("Direct API call - first user:", apiData[0]);
-        console.log("Direct API - death blows present:", {
-          totalDeathBlows: apiData[0]?.totalDeathBlows !== undefined,
-          deathBlowsLastWeek: apiData[0]?.deathBlowsLastWeek !== undefined,
-          deathBlowsThisWeek: apiData[0]?.deathBlowsThisWeek !== undefined
-        });
-      })
-      .catch(err => console.error("Direct API call failed:", err));
-  }, [data]);
 
   const processedData = useMemo(() => {
     return data.map((item) => {
@@ -249,20 +229,6 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
               ? `total${capitalize(selectedMetric)}`
               : `${selectedMetric}${capitalize(selectedPeriod)}`;
           const value = item[metricKey] as number | undefined;
-          
-          // Debug logging for death blows
-          if (selectedMetric === "deathBlows" && index === 0) {
-            console.log("Death blows debug:", {
-              selectedMetric,
-              selectedPeriod,
-              metricKey,
-              value,
-              itemKeys: Object.keys(item),
-              totalDeathBlows: item.totalDeathBlows,
-              deathBlowsThisWeek: item.deathBlowsThisWeek,
-              deathBlowsLastWeek: item.deathBlowsLastWeek
-            });
-          }
           
           const startIndex = (currentPage - 1) * itemsPerPage;
           const isTopFive = index < 5;

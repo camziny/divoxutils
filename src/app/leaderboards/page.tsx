@@ -6,14 +6,33 @@ export const metadata = {
   title: "Leaderboards - divoxutils",
 };
 
-async function fetchLeaderboardData() {
+interface LeaderboardItem {
+  userId: number;
+  clerkUserId: string;
+  userName: string;
+  totalRealmPoints: number;
+  realmPointsLastWeek: number;
+  realmPointsThisWeek: number;
+  totalSoloKills: number;
+  soloKillsLastWeek: number;
+  soloKillsThisWeek: number;
+  totalDeaths: number;
+  deathsLastWeek: number;
+  deathsThisWeek: number;
+  totalDeathBlows: number;
+  deathBlowsLastWeek: number;
+  deathBlowsThisWeek: number;
+  irs: number;
+  irsLastWeek: number;
+  irsThisWeek: number;
+  lastUpdated: Date | null;
+}
+
+async function fetchLeaderboardData(): Promise<LeaderboardItem[]> {
   try {
     const apiUrl = `${
       process.env.NEXT_PUBLIC_API_URL
     }/api/leaderboard`;
-    
-    console.log("Fetching from API URL:", apiUrl);
-    console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
     
     const response = await fetch(apiUrl, {
       next: { 
@@ -28,13 +47,7 @@ async function fetchLeaderboardData() {
       );
     }
 
-    const data = await response.json();
-    console.log("First user from API:", data[0]);
-    console.log("Death blows fields present:", {
-      totalDeathBlows: data[0]?.totalDeathBlows !== undefined,
-      deathBlowsLastWeek: data[0]?.deathBlowsLastWeek !== undefined,
-      deathBlowsThisWeek: data[0]?.deathBlowsThisWeek !== undefined
-    });
+    const data: LeaderboardItem[] = await response.json();
     return data;
   } catch (error) {
     console.error("Error fetching leaderboard data:", error);
