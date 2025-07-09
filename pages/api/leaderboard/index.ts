@@ -5,12 +5,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log("🚀 Leaderboard API called at:", new Date().toISOString());
-  
   if (req.method === "GET") {
-    console.log("📊 Processing GET request for leaderboard");
     try {
-      console.log("🔍 About to query database for leaderboard data");
       const leaderboardData = await prisma.user.findMany({
         select: {
           id: true,
@@ -41,13 +37,6 @@ export default async function handler(
           },
         },
       });
-      
-      console.log("✅ Database query completed, found", leaderboardData.length, "users");
-
-      // Debug logging
-      if (leaderboardData.length > 0 && leaderboardData[0].characters.length > 0) {
-        console.log("First user's first character data:", JSON.stringify(leaderboardData[0].characters[0].character, null, 2));
-      }
 
       const isWithinThisWeek = (date: Date) => {
         const now = new Date();
@@ -196,23 +185,12 @@ export default async function handler(
       aggregatedLeaderboardData.sort(
         (a, b) => b.totalRealmPoints - a.totalRealmPoints
       );
-      
-      // Debug logging for aggregated data
-      if (aggregatedLeaderboardData.length > 0) {
-        console.log("First aggregated user data:", JSON.stringify(aggregatedLeaderboardData[0], null, 2));
-      }
-      
       res.status(200).json(aggregatedLeaderboardData);
     } catch (error) {
-      console.error("❌ Failed to fetch leaderboard data:", error);
-      console.error("Error details:", {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : 'No stack trace'
-      });
+      console.error("Failed to fetch leaderboard data:", error);
       res.status(500).json({ message: "Error fetching leaderboard data" });
     }
   } else {
-    console.log("🚫 Method not allowed:", req.method);
     res.setHeader("Allow", ["GET"]);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }

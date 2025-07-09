@@ -80,6 +80,14 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const [selectedMetric, setSelectedMetric] = useState<Metric>("realmPoints");
   const [selectedPeriod, setSelectedPeriod] = useState<Period>("total");
 
+  // Debug logging
+  React.useEffect(() => {
+    if (data.length > 0) {
+      console.log("First user data:", data[0]);
+      console.log("Available keys:", Object.keys(data[0]));
+    }
+  }, [data]);
+
   const processedData = useMemo(() => {
     return data.map((item) => {
       const totalIrs =
@@ -228,6 +236,21 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
               ? `total${capitalize(selectedMetric)}`
               : `${selectedMetric}${capitalize(selectedPeriod)}`;
           const value = item[metricKey] as number | undefined;
+          
+          // Debug logging for death blows
+          if (selectedMetric === "deathBlows" && index === 0) {
+            console.log("Death blows debug:", {
+              selectedMetric,
+              selectedPeriod,
+              metricKey,
+              value,
+              itemKeys: Object.keys(item),
+              totalDeathBlows: item.totalDeathBlows,
+              deathBlowsThisWeek: item.deathBlowsThisWeek,
+              deathBlowsLastWeek: item.deathBlowsLastWeek
+            });
+          }
+          
           const startIndex = (currentPage - 1) * itemsPerPage;
           const isTopFive = index < 5;
           const LinkComponent = isTopFive ? HoverPrefetchLink : ViewportPrefetchLink;
