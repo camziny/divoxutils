@@ -38,6 +38,11 @@ export default async function handler(
         },
       });
 
+      // Debug logging
+      if (leaderboardData.length > 0 && leaderboardData[0].characters.length > 0) {
+        console.log("First user's first character data:", JSON.stringify(leaderboardData[0].characters[0].character, null, 2));
+      }
+
       const isWithinThisWeek = (date: Date) => {
         const now = new Date();
         const startOfThisWeek = new Date(now);
@@ -185,6 +190,12 @@ export default async function handler(
       aggregatedLeaderboardData.sort(
         (a, b) => b.totalRealmPoints - a.totalRealmPoints
       );
+      
+      // Debug logging for aggregated data
+      if (aggregatedLeaderboardData.length > 0) {
+        console.log("First aggregated user data:", JSON.stringify(aggregatedLeaderboardData[0], null, 2));
+      }
+      
       res.status(200).json(aggregatedLeaderboardData);
     } catch (error) {
       console.error("Failed to fetch leaderboard data:", error);
