@@ -128,8 +128,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   };
 
   const showDeathBlowsMessage = selectedMetric === "deathBlows" && selectedPeriod !== "total";
-  const deathBlowsMessageDate = new Date();
-  deathBlowsMessageDate.setDate(deathBlowsMessageDate.getDate() + 14);
+  const deathBlowsMessageDate = new Date('2024-07-27');
   const formattedDate = deathBlowsMessageDate.toLocaleDateString('en-US', { 
     month: 'long', 
     day: 'numeric', 
