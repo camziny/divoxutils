@@ -5,8 +5,12 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log("🚀 Leaderboard API called at:", new Date().toISOString());
+  
   if (req.method === "GET") {
+    console.log("📊 Processing GET request for leaderboard");
     try {
+      console.log("🔍 About to query database for leaderboard data");
       const leaderboardData = await prisma.user.findMany({
         select: {
           id: true,
@@ -37,6 +41,8 @@ export default async function handler(
           },
         },
       });
+      
+      console.log("✅ Database query completed, found", leaderboardData.length, "users");
 
       // Debug logging
       if (leaderboardData.length > 0 && leaderboardData[0].characters.length > 0) {
@@ -198,10 +204,15 @@ export default async function handler(
       
       res.status(200).json(aggregatedLeaderboardData);
     } catch (error) {
-      console.error("Failed to fetch leaderboard data:", error);
+      console.error("❌ Failed to fetch leaderboard data:", error);
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
       res.status(500).json({ message: "Error fetching leaderboard data" });
     }
   } else {
+    console.log("🚫 Method not allowed:", req.method);
     res.setHeader("Allow", ["GET"]);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
