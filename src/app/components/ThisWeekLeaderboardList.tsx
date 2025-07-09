@@ -25,6 +25,9 @@ interface LeaderboardItem {
   totalDeaths: number;
   deathsLastWeek: number;
   deathsThisWeek: number;
+  totalDeathBlows: number;
+  deathBlowsLastWeek: number;
+  deathBlowsThisWeek: number;
   irs: number;
   irsLastWeek: number;
   irsThisWeek: number;
@@ -41,6 +44,7 @@ const metrics = {
   realmPoints: "Realm Points",
   soloKills: "Solo Kills",
   deaths: "Deaths",
+  deathBlows: "Death Blows",
   irs: "IRS",
 };
 
