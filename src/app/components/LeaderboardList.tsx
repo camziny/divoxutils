@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import { ViewportPrefetchLink } from "./ViewportPrefetchLink";
@@ -82,55 +82,35 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  
-  const initialParams: Record<string, string> = {};
-  if (searchParams) {
-    Array.from(searchParams.entries()).forEach(([key, value]) => {
-      initialParams[key] = value;
-    });
-  }
-  const lastKnownParamsRef = useRef<Record<string, string>>(initialParams);
-  
-  const currentParams = useMemo(() => {
-    const params: Record<string, string> = {};
-    if (searchParams) {
-      Array.from(searchParams.entries()).forEach(([key, value]) => {
-        params[key] = value;
-      });
-      lastKnownParamsRef.current = { ...params };
-    }
-    return Object.keys(params).length > 0 ? params : lastKnownParamsRef.current;
-  }, [searchParams]);
 
-  const selectedMetric = (searchParams?.get('metric') || lastKnownParamsRef.current.metric || 'realmPoints') as Metric;
-  const selectedPeriod = (searchParams?.get('period') || lastKnownParamsRef.current.period || 'total') as Period;
-  const pageString = searchParams?.get('page') || lastKnownParamsRef.current.page || '1';
+  const selectedMetric = (searchParams?.get('metric') as Metric) || 'realmPoints';
+  const selectedPeriod = (searchParams?.get('period') as Period) || 'total';
+  const pageString = searchParams?.get('page') || '1';
   const currentPage = parseInt(pageString, 10);
 
   const updateURL = (updates: { metric?: Metric; period?: Period; page?: number }) => {
-    const newParams = { ...currentParams };
+    const currentUrl = new URL(window.location.href);
+    const urlParams = new URLSearchParams(currentUrl.search);
     
     if (updates.metric !== undefined) {
-      newParams.metric = updates.metric;
-    } else if (!newParams.metric) {
-      newParams.metric = 'realmPoints';
+      urlParams.set('metric', updates.metric);
     }
-    
     if (updates.period !== undefined) {
-      newParams.period = updates.period;
-    } else if (!newParams.period) {
-      newParams.period = 'total';
+      urlParams.set('period', updates.period);
     }
-    
     if (updates.page !== undefined) {
-      newParams.page = updates.page.toString();
+      urlParams.set('page', updates.page.toString());
     }
-
-    const queryString = new URLSearchParams(newParams).toString();
-    const currentPath = pathname || '/';
-    const newURL = queryString ? `${currentPath}?${queryString}` : currentPath;
     
-    router.replace(newURL, { scroll: false });
+    if (!urlParams.has('metric')) {
+      urlParams.set('metric', 'realmPoints');
+    }
+    if (!urlParams.has('period')) {
+      urlParams.set('period', 'total');
+    }
+    
+    const newUrl = `${pathname}?${urlParams.toString()}`;
+    router.push(newUrl, { scroll: false });
   };
 
   const processedData = useMemo(() => {
@@ -161,42 +141,44 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
-      const newParams = { ...currentParams };
+      const currentUrl = new URL(window.location.href);
+      const urlParams = new URLSearchParams(currentUrl.search);
       
-      if (!newParams.metric) {
-        newParams.metric = 'realmPoints';
-      }
-      if (!newParams.period) {
-        newParams.period = 'total';
-      }
-      newParams.page = '1';
+      urlParams.set('page', '1');
       
-      const queryString = new URLSearchParams(newParams).toString();
-      const currentPath = pathname || '/';
-      const newURL = queryString ? `${currentPath}?${queryString}` : currentPath;
-      router.replace(newURL, { scroll: false });
+      if (!urlParams.has('metric')) {
+        urlParams.set('metric', selectedMetric);
+      }
+      if (!urlParams.has('period')) {
+        urlParams.set('period', selectedPeriod);
+      }
+      
+      const newUrl = `${pathname}?${urlParams.toString()}`;
+      router.push(newUrl, { scroll: false });
     }
-  }, [currentPage, totalPages, currentParams, pathname, router]);
+  }, [currentPage, totalPages, pathname, router, selectedMetric, selectedPeriod]);
 
   const handlePageChange = (page: number) => {
-    console.log('Pagination clicked, current params:', currentParams);
-    console.log('Going to page:', page);
+    const currentUrl = new URL(window.location.href);
+    const currentUrlParams = new URLSearchParams(currentUrl.search);
     
-    const preservedParams = {
-      metric: currentParams.metric || selectedMetric,
-      period: currentParams.period || selectedPeriod,
-      page: page.toString()
-    };
+    const newUrlParams = new URLSearchParams();
     
-    console.log('Preserved params:', preservedParams);
+    currentUrlParams.forEach((value, key) => {
+      newUrlParams.set(key, value);
+    });
     
-    const queryString = new URLSearchParams(preservedParams).toString();
-    const currentPath = pathname || '/';
-    const newURL = `${currentPath}?${queryString}`;
+    newUrlParams.set('page', page.toString());
     
-    console.log('New URL:', newURL);
+    if (!newUrlParams.has('metric')) {
+      newUrlParams.set('metric', selectedMetric);
+    }
+    if (!newUrlParams.has('period')) {
+      newUrlParams.set('period', selectedPeriod);
+    }
     
-    router.replace(newURL, { scroll: false });
+    const newUrl = `${pathname}?${newUrlParams.toString()}`;
+    router.push(newUrl, { scroll: false });
   };
 
   const handleMetricChange = (metric: Metric, e: React.MouseEvent) => {
