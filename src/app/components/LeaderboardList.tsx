@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import { ViewportPrefetchLink } from "./ViewportPrefetchLink";
@@ -89,29 +89,28 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const currentPage = parseInt(pageString, 10);
 
   const updateURL = (updates: { metric?: Metric; period?: Period; page?: number }) => {
-    const newSearchParams = new URLSearchParams();
-    
-    if (searchParams) {
-      Array.from(searchParams.entries()).forEach(([key, value]) => {
-        newSearchParams.set(key, value);
-      });
-    }
+    const currentUrl = new URL(window.location.href);
+    const urlParams = new URLSearchParams(currentUrl.search);
     
     if (updates.metric !== undefined) {
-      newSearchParams.set('metric', updates.metric);
+      urlParams.set('metric', updates.metric);
     }
     if (updates.period !== undefined) {
-      newSearchParams.set('period', updates.period);
+      urlParams.set('period', updates.period);
     }
     if (updates.page !== undefined) {
-      newSearchParams.set('page', updates.page.toString());
+      urlParams.set('page', updates.page.toString());
     }
-
-    const queryString = newSearchParams.toString();
-    const currentPath = pathname || '/';
-    const newURL = queryString ? `${currentPath}?${queryString}` : currentPath;
     
-    router.replace(newURL, { scroll: false });
+    if (!urlParams.has('metric')) {
+      urlParams.set('metric', 'realmPoints');
+    }
+    if (!urlParams.has('period')) {
+      urlParams.set('period', 'total');
+    }
+    
+    const newUrl = `${pathname}?${urlParams.toString()}`;
+    router.push(newUrl, { scroll: false });
   };
 
   const processedData = useMemo(() => {
@@ -142,24 +141,44 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
-      const newSearchParams = new URLSearchParams();
+      const currentUrl = new URL(window.location.href);
+      const urlParams = new URLSearchParams(currentUrl.search);
       
-      if (searchParams) {
-        Array.from(searchParams.entries()).forEach(([key, value]) => {
-          newSearchParams.set(key, value);
-        });
+      urlParams.set('page', '1');
+      
+      if (!urlParams.has('metric')) {
+        urlParams.set('metric', selectedMetric);
+      }
+      if (!urlParams.has('period')) {
+        urlParams.set('period', selectedPeriod);
       }
       
-      newSearchParams.set('page', '1');
-      const queryString = newSearchParams.toString();
-      const currentPath = pathname || '/';
-      const newURL = queryString ? `${currentPath}?${queryString}` : currentPath;
-      router.replace(newURL, { scroll: false });
+      const newUrl = `${pathname}?${urlParams.toString()}`;
+      router.push(newUrl, { scroll: false });
     }
-  }, [currentPage, totalPages, searchParams, pathname, router]);
+  }, [currentPage, totalPages, pathname, router, selectedMetric, selectedPeriod]);
 
   const handlePageChange = (page: number) => {
-    updateURL({ page });
+    const currentUrl = new URL(window.location.href);
+    const currentUrlParams = new URLSearchParams(currentUrl.search);
+    
+    const newUrlParams = new URLSearchParams();
+    
+    currentUrlParams.forEach((value, key) => {
+      newUrlParams.set(key, value);
+    });
+    
+    newUrlParams.set('page', page.toString());
+    
+    if (!newUrlParams.has('metric')) {
+      newUrlParams.set('metric', selectedMetric);
+    }
+    if (!newUrlParams.has('period')) {
+      newUrlParams.set('period', selectedPeriod);
+    }
+    
+    const newUrl = `${pathname}?${newUrlParams.toString()}`;
+    router.push(newUrl, { scroll: false });
   };
 
   const handleMetricChange = (metric: Metric, e: React.MouseEvent) => {
