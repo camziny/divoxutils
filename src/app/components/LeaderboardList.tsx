@@ -89,7 +89,13 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const currentPage = parseInt(pageString, 10);
 
   const updateURL = (updates: { metric?: Metric; period?: Period; page?: number }) => {
-    const newSearchParams = new URLSearchParams(searchParams?.toString() || '');
+    const newSearchParams = new URLSearchParams();
+    
+    if (searchParams) {
+      Array.from(searchParams.entries()).forEach(([key, value]) => {
+        newSearchParams.set(key, value);
+      });
+    }
     
     if (updates.metric !== undefined) {
       newSearchParams.set('metric', updates.metric);
@@ -136,7 +142,14 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
-      const newSearchParams = new URLSearchParams(searchParams?.toString() || '');
+      const newSearchParams = new URLSearchParams();
+      
+      if (searchParams) {
+        Array.from(searchParams.entries()).forEach(([key, value]) => {
+          newSearchParams.set(key, value);
+        });
+      }
+      
       newSearchParams.set('page', '1');
       const queryString = newSearchParams.toString();
       const currentPath = pathname || '/';
@@ -301,7 +314,6 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
           <div className="my-8 flex justify-center">
             <Pagination
               total={totalPages}
-              initialPage={1}
               page={currentPage}
               onChange={handlePageChange}
               showControls
