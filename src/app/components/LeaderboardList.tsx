@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import { ViewportPrefetchLink } from "./ViewportPrefetchLink";
@@ -82,6 +82,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const lastKnownParamsRef = useRef<Record<string, string>>({});
   
   const currentParams = useMemo(() => {
     const params: Record<string, string> = {};
@@ -89,8 +90,9 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
       Array.from(searchParams.entries()).forEach(([key, value]) => {
         params[key] = value;
       });
+      lastKnownParamsRef.current = { ...params };
     }
-    return params;
+    return Object.keys(params).length > 0 ? params : lastKnownParamsRef.current;
   }, [searchParams]);
 
   const selectedMetric = (searchParams?.get('metric') as Metric) || 'realmPoints';
@@ -101,8 +103,8 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const updateURL = (updates: { metric?: Metric; period?: Period; page?: number }) => {
     const newParams = { ...currentParams };
     
-    newParams.metric = updates.metric || selectedMetric;
-    newParams.period = updates.period || selectedPeriod;
+    newParams.metric = updates.metric || currentParams.metric || selectedMetric;
+    newParams.period = updates.period || currentParams.period || selectedPeriod;
     if (updates.page !== undefined) {
       newParams.page = updates.page.toString();
     }
@@ -143,8 +145,8 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       const newParams = { ...currentParams };
-      newParams.metric = selectedMetric;
-      newParams.period = selectedPeriod;
+      newParams.metric = currentParams.metric || selectedMetric;
+      newParams.period = currentParams.period || selectedPeriod;
       newParams.page = '1';
       
       const queryString = new URLSearchParams(newParams).toString();
