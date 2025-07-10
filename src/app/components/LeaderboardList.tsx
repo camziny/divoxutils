@@ -82,6 +82,16 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  
+  const currentParams = useMemo(() => {
+    const params: Record<string, string> = {};
+    if (searchParams) {
+      Array.from(searchParams.entries()).forEach(([key, value]) => {
+        params[key] = value;
+      });
+    }
+    return params;
+  }, [searchParams]);
 
   const selectedMetric = (searchParams?.get('metric') as Metric) || 'realmPoints';
   const selectedPeriod = (searchParams?.get('period') as Period) || 'total';
@@ -89,25 +99,15 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const currentPage = parseInt(pageString, 10);
 
   const updateURL = (updates: { metric?: Metric; period?: Period; page?: number }) => {
-    const newSearchParams = new URLSearchParams();
+    const newParams = { ...currentParams };
     
-    if (searchParams) {
-      Array.from(searchParams.entries()).forEach(([key, value]) => {
-        newSearchParams.set(key, value);
-      });
-    }
-    
-    if (updates.metric !== undefined) {
-      newSearchParams.set('metric', updates.metric);
-    }
-    if (updates.period !== undefined) {
-      newSearchParams.set('period', updates.period);
-    }
+    newParams.metric = updates.metric || selectedMetric;
+    newParams.period = updates.period || selectedPeriod;
     if (updates.page !== undefined) {
-      newSearchParams.set('page', updates.page.toString());
+      newParams.page = updates.page.toString();
     }
 
-    const queryString = newSearchParams.toString();
+    const queryString = new URLSearchParams(newParams).toString();
     const currentPath = pathname || '/';
     const newURL = queryString ? `${currentPath}?${queryString}` : currentPath;
     
@@ -142,21 +142,17 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
-      const newSearchParams = new URLSearchParams();
+      const newParams = { ...currentParams };
+      newParams.metric = selectedMetric;
+      newParams.period = selectedPeriod;
+      newParams.page = '1';
       
-      if (searchParams) {
-        Array.from(searchParams.entries()).forEach(([key, value]) => {
-          newSearchParams.set(key, value);
-        });
-      }
-      
-      newSearchParams.set('page', '1');
-      const queryString = newSearchParams.toString();
+      const queryString = new URLSearchParams(newParams).toString();
       const currentPath = pathname || '/';
       const newURL = queryString ? `${currentPath}?${queryString}` : currentPath;
       router.replace(newURL, { scroll: false });
     }
-  }, [currentPage, totalPages, searchParams, pathname, router]);
+  }, [currentPage, totalPages, currentParams, selectedMetric, selectedPeriod, pathname, router]);
 
   const handlePageChange = (page: number) => {
     updateURL({ page });
