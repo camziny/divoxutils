@@ -112,7 +112,7 @@ function CharacterSearchAndAdd() {
   const fetchCharacters = useCallback(async (name: string, cluster: string) => {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/characters/search?name=${name}&cluster=${cluster}`,
-      { cache: 'no-store' } // Ensure fresh search results
+      { cache: 'no-store' }
     );
     if (!response.ok) {
       throw new Error(`Search failed: ${response.statusText}`);
