@@ -196,8 +196,8 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
       : new Intl.NumberFormat("en-US").format(number);
   };
 
-  const showDeathBlowsMessage = selectedMetric === "deathBlows" && selectedPeriod !== "total";
-  const deathBlowsMessageDate = new Date('2025-07-27');
+  const showDeathBlowsMessage = selectedMetric === "deathBlows" && selectedPeriod === "lastWeek";
+  const deathBlowsMessageDate = new Date('2025-07-21T12:00:00');
   const formattedDate = deathBlowsMessageDate.toLocaleDateString('en-US', { 
     month: 'long', 
     day: 'numeric', 
@@ -279,12 +279,12 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
       {showDeathBlowsMessage && (
         <div className="mb-6 p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-lg">
           <p className="text-sm text-gray-300 text-center">
-            <span className="text-indigo-400 font-semibold">Death Blows tracking is new!</span>
+            <span className="text-indigo-400 font-semibold">Death Blows &quot;Last Week&quot; data will be available soon!</span>
             <br />
             Weekly data will be accurately reflected starting {formattedDate}.
             <br />
             <span className="text-xs text-gray-400 mt-1 block">
-              Total death blows are available now.
+              Total and &quot;This Week&quot; death blows are available now.
             </span>
           </p>
         </div>
