@@ -86,7 +86,8 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
         if (element) {
           const navbarHeight = 80;
           const stickyNavHeight = 40;
-          const yOffset = -(navbarHeight + stickyNavHeight + 10);
+          const searchAreaHeight = 140;
+          const yOffset = -(navbarHeight + stickyNavHeight + searchAreaHeight + 10);
           const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
           window.scrollTo({ top: y, behavior: 'smooth' });
         }
@@ -118,7 +119,8 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
     if (element) {
       const navbarHeight = 80;
       const stickyNavHeight = 40;
-      const yOffset = -(navbarHeight + stickyNavHeight + 10);
+      const searchAreaHeight = 140; // Container padding + search component + margins
+      const yOffset = -(navbarHeight + stickyNavHeight + searchAreaHeight + 10);
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
       updateURLSection(letter);
