@@ -47,11 +47,6 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
               </span>
             </div>
           </div>
-          <div className="w-full text-center text-xs p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-gray-300">RPs This Week:</span>
-              <span className="font-bold text-gray-100">{realmPointsThisWeek}</span>
-            </div>
           </div>
           <div className="w-full text-center text-xs p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
             <div className="flex items-center justify-between px-2">
@@ -59,6 +54,11 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
               <span className="font-bold text-gray-100">{realmPointsLastWeek}</span>
             </div>
           </div>
+          <div className="w-full text-center text-xs p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-gray-300">RPs This Week:</span>
+              <span className="font-bold text-gray-100">{realmPointsThisWeek}</span>
+            </div>
         </div>
         <div className="w-full mt-1">
           <div className="flex items-center justify-between mb-1">
