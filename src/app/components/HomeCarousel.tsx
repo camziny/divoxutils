@@ -16,13 +16,13 @@ export default function HomeCarousel() {
       text: "Follow me on Twitch",
       description: "Join the community",
       icon: <FaTwitch className="mx-auto text-indigo-400 h-12 w-12 drop-shadow-lg" />,
-      link: "https://www.twitch.tv/divox",
+      link: "https://www.twitch.tv/divoxzy",
     },
     {
       text: "Suggestions and feedback",
       description: "Share your ideas",
       icon: <FaDiscord className="mx-auto text-indigo-400 h-12 w-12 drop-shadow-lg" />,
-      link: "https://discord.gg/divox",
+      link: "https://discord.com/users/310750671576236033",
     },
   ];
 
