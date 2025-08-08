@@ -9,12 +9,12 @@ const socialAndSupportData = [
   {
     name: "Twitch",
     icon: <FaTwitch className="mx-auto text-indigo-400 h-16 w-16 drop-shadow-lg" />,
-    link: "https://www.twitch.tv/divox",
+    link: "https://www.twitch.tv/divoxzy",
   },
   {
     name: "Discord",
     icon: <FaDiscord className="mx-auto text-indigo-400 h-16 w-16 drop-shadow-lg" />,
-    link: "https://discord.gg/divox",
+    link: "https://discord.com/users/310750671576236033",
   },
   {
     name: "Ko-fi",
