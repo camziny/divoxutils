@@ -24,7 +24,18 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
   realmPointsLastWeek,
   realmPointsThisWeek,
 }) => {
-  const barWidth = progressBarWidth !== undefined ? progressBarWidth : progressPercentage;
+  const isMaxRank = currentRank?.trim() === "14L0";
+  const displayProgress = isMaxRank ? 0 : progressPercentage;
+  const barWidth = isMaxRank
+    ? 0
+    : progressBarWidth !== undefined
+    ? progressBarWidth
+    : progressPercentage;
+  const normalizedThisWeek = (() => {
+    const numeric = Number(String(realmPointsThisWeek).replace(/,/g, "").trim());
+    if (Number.isFinite(numeric) && numeric < 0) return "0";
+    return realmPointsThisWeek;
+  })();
   
   return (
     <Card className="bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 shadow-xl text-gray-100">
@@ -57,14 +68,14 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
           <div className="w-full text-center text-xs p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
             <div className="flex items-center justify-between px-2">
               <span className="text-gray-300">RPs This Week:</span>
-              <span className="font-bold text-gray-100">{realmPointsThisWeek}</span>
+              <span className="font-bold text-gray-100">{normalizedThisWeek}</span>
             </div>
         </div>
         <div className="w-full mt-1">
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-medium text-gray-300">{currentRank}</span>
             <span className="text-sm font-medium text-indigo-400">
-              {progressPercentage.toFixed(1)}%
+              {displayProgress.toFixed(1)}%
             </span>
           </div>
           <div className="w-full bg-gray-900/50 rounded-full h-2 overflow-hidden border border-gray-700/50">
@@ -73,9 +84,11 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
               style={{ width: `${barWidth}%` }}
             />
           </div>
-          <div className="text-center text-xs mt-1 text-gray-400">
-            <span className="font-bold text-indigo-400">{rpsToNextRank}</span> RPs to {nextRank}
-          </div>
+          {!isMaxRank && (
+            <div className="text-center text-xs mt-1 text-gray-400">
+              <span className="font-bold text-indigo-400">{rpsToNextRank}</span> RPs to {nextRank}
+            </div>
+          )}
         </div>
       </CardBody>
     </Card>
