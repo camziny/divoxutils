@@ -4,6 +4,7 @@ import { IconButton } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandCircleDown";
 import ExpandLessIcon from "@mui/icons-material/ExpandCircleDown";
 import MobileCharacterDetails from "./MobileCharacterDetails";
+import { getRealmRankForPoints, formatRealmRankWithLevel } from "@/utils/character";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useAuth } from "@clerk/nextjs";
 import {
@@ -88,6 +89,10 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   const realmPointsThisWeek =
     characterDetails.heraldRealmPoints - totalRealmPoints;
 
+  const formattedRank = formatRealmRankWithLevel(
+    getRealmRankForPoints(characterDetails.heraldRealmPoints || 0)
+  );
+
   return (
     <div className="mb-1 mx-3">
       <div
@@ -120,7 +125,7 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
               <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="text-right">
                   <div className="text-white font-bold text-sm">
-                    {characterDetails.formattedHeraldRealmPoints || "0"}
+                    {formattedRank || "0"}
                   </div>
                   <div className="text-gray-300 text-xs">
                     {characterDetails.heraldServerName || "Unknown"}

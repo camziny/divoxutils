@@ -75,9 +75,7 @@ const OtherCharacterList: React.FC<OtherCharacterListProps> = ({
                     webId={character.webId ?? ''}
                     character={character}
                     characterDetails={character}
-                    formattedHeraldRealmPoints={
-                      character.formattedHeraldRealmPoints
-                    }
+                    formattedHeraldRealmPoints={character.formattedHeraldRealmPoints}
                     initialCharacter={character.initialCharacter}
                     heraldBountyPoints={character.heraldBountyPoints}
                     heraldTotalKills={character.heraldTotalKills}
