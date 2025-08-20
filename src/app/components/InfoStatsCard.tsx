@@ -24,7 +24,7 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
   realmPointsLastWeek,
   realmPointsThisWeek,
 }) => {
-  const isMaxRank = currentRank?.trim() === "14L0";
+  const isMaxRank = currentRank?.trim() === "16L0";
   const displayProgress = isMaxRank ? 0 : progressPercentage;
   const barWidth = isMaxRank
     ? 0

@@ -5,7 +5,7 @@ import {
   formatRealmRankWithLevel,
   calculateProgressPercentage,
   getRealmRanks
-} from "./RealmRank";
+} from "@/utils/character";
 
 interface MobileCharacterDetailsProps {
   character: CharacterData;
