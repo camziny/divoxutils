@@ -7,6 +7,7 @@ export default authMiddleware({
     "/about",
     "/sign-in",
     "/sign-up",
+    "/realm-ranks",
     "/user-characters",
     "/api/clerk-webhook",
     "/api/characters",

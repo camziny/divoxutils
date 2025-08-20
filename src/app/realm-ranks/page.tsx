@@ -1,4 +1,5 @@
 import React from "react";
+import EstimatedInfoDialog from "./EstimatedInfoDialog";
 import { getRealmRanks } from "@/utils/character";
 
 const estimated: Record<string, string> = {
@@ -41,7 +42,7 @@ export default function RealmRanksPage() {
       .map(([n, pts]) => ({ rank: formatRankKey(n), points: new Intl.NumberFormat().format(pts) }));
 
   const rowsActual = Array.from(realmRanksMap)
-    .filter(([n]) => n >= 11 && n <= 160)
+    .filter(([n]) => n >= 11 && n <= 140)
     .map(([n, pts]) => ({ rank: formatRankKey(n), points: new Intl.NumberFormat().format(pts) }));
   const estimatedRows = Object.entries(estimated).map(([rank, points]) => ({ rank, points }));
 
@@ -66,8 +67,9 @@ export default function RealmRanksPage() {
         <div className="space-y-6">
           <div className="bg-gray-800/50 rounded-2xl border border-gray-700/30 shadow-xl overflow-hidden">
             <div className="bg-gray-800/60 border-b border-gray-700/50 px-4 py-3">
-              <h3 className="text-sm font-semibold text-indigo-300">Estimated Ranks (14L1 - 16L0)</h3>
-              <p className="text-xs text-gray-300 mt-1">Best-guess projections from 14L1 through the cap of 16L0.</p>
+              <h3 className="text-sm font-semibold text-indigo-300">Estimated Ranks</h3>
+              <p className="text-xs text-gray-300 mt-1">Best-guess projections based on exponential progression with ~1.11× growth per rank.</p>
+              <EstimatedInfoDialog />
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full">
@@ -94,8 +96,7 @@ export default function RealmRanksPage() {
 
           <div className="bg-gray-800/50 rounded-2xl border border-gray-700/30 shadow-xl overflow-hidden">
             <div className="bg-gray-800/60 border-b border-gray-700/50 px-4 py-3">
-            <h3 className="text-sm font-semibold text-indigo-300">Realm Ranks (1L1 - 16L0)</h3>
-            <p className="text-xs text-gray-300 mt-1">Official and calculated realm point requirements through 16L0.</p>
+            <h3 className="text-sm font-semibold text-indigo-300">Realm Ranks</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full">
