@@ -2,26 +2,36 @@ import React from "react";
 import { getRealmRanks } from "@/utils/character";
 
 const estimated: Record<string, string> = {
-  "14L1": "208,588,033",
-  "14L2": "231,532,727",
-  "14L3": "257,001,346",
-  "14L4": "285,271,524",
-  "14L5": "316,651,435",
-  "14L6": "351,483,152",
-  "14L7": "390,146,276",
-  "14L8": "433,062,164",
-  "14L9": "480,698,522",
-  "15L0": "533,574,504",
-  "15L1": "592,266,371",
-  "15L2": "657,413,773",
-  "15L3": "729,726,722",
-  "15L4": "809,993,331",
-  "15L5": "899,088,405",
-  "15L6": "997,982,978",
-  "15L7": "1,107,754,898",
-  "15L8": "1,229,600,576",
-  "15L9": "1,364,848,028",
-  "16L0": "1,514,971,352",
+  "16L1": "1,683,070,036",
+  "16L2": "1,870,999,140",
+  "16L3": "2,080,699,945",
+  "16L4": "2,313,578,939",
+  "16L5": "2,571,776,433",
+  "16L6": "2,857,653,401",
+  "16L7": "3,174,891,956",
+  "16L8": "3,526,631,252",
+  "16L9": "3,916,594,839",
+  "17L0": "4,349,899,761",
+  "17L1": "5,231,477,351",
+  "17L2": "5,809,641,159",
+  "17L3": "6,448,716,016",
+  "17L4": "7,156,187,678",
+  "17L5": "7,942,008,433",
+  "17L6": "8,816,609,361",
+  "17L7": "9,792,070,380",
+  "17L8": "10,881,277,822",
+  "17L9": "12,099,405,724",
+  "18L0": "13,464,346,255",
+  "18L1": "14,997,920,824",
+  "18L2": "16,727,312,717",
+  "18L3": "18,683,044,072",
+  "18L4": "20,901,348,840",
+  "18L5": "23,423,483,884",
+  "18L6": "26,295,832,383",
+  "18L7": "29,575,415,742",
+  "18L8": "33,333,957,436",
+  "18L9": "37,667,353,273",
+  "19L0": "42,684,191,713",
 };
 
 function formatRankKey(numeric: number): string {
@@ -41,7 +51,7 @@ export default function RealmRanksPage() {
       .map(([n, pts]) => ({ rank: formatRankKey(n), points: new Intl.NumberFormat().format(pts) }));
 
   const rowsActual = Array.from(realmRanksMap)
-    .filter(([n]) => n >= 11 && n <= 140)
+    .filter(([n]) => n >= 11 && n <= 160)
     .map(([n, pts]) => ({ rank: formatRankKey(n), points: new Intl.NumberFormat().format(pts) }));
   const estimatedRows = Object.entries(estimated).map(([rank, points]) => ({ rank, points }));
 
@@ -66,8 +76,8 @@ export default function RealmRanksPage() {
         <div className="space-y-6">
           <div className="bg-gray-800/50 rounded-2xl border border-gray-700/30 shadow-xl overflow-hidden">
             <div className="bg-gray-800/60 border-b border-gray-700/50 px-4 py-3">
-              <h3 className="text-sm font-semibold text-indigo-300">Estimated Ranks</h3>
-              <p className="text-xs text-gray-300 mt-1">Best-guess projections based on an exponential progression with ~1.11× growth per rank.</p>
+              <h3 className="text-sm font-semibold text-indigo-300">Estimated Ranks (16L1+)</h3>
+              <p className="text-xs text-gray-300 mt-1">Best-guess projections for extremely high ranks based on exponential progression with ~1.11× growth per rank.</p>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full">
@@ -94,7 +104,8 @@ export default function RealmRanksPage() {
 
           <div className="bg-gray-800/50 rounded-2xl border border-gray-700/30 shadow-xl overflow-hidden">
             <div className="bg-gray-800/60 border-b border-gray-700/50 px-4 py-3">
-            <h3 className="text-sm font-semibold text-indigo-300">Realm Ranks</h3>
+            <h3 className="text-sm font-semibold text-indigo-300">Realm Ranks (1L1 - 16L0)</h3>
+            <p className="text-xs text-gray-300 mt-1">Official and calculated realm point requirements through 16L0.</p>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full">
