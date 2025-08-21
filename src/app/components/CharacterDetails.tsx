@@ -1,11 +1,11 @@
 import React from "react";
 import { TableCell } from "@mui/material";
-import RealmRank, {
+import {
   getRealmRankForPoints,
   getRealmRanks,
   calculateProgressPercentage,
   formatRealmRankWithLevel,
-} from "./RealmRank";
+} from "@/utils/character";
 import LinearProgress from "@mui/material/LinearProgress";
 import { Progress, CircularProgress } from "@nextui-org/react";
 import TotalStatsCard from "./TotalStatsCard";
@@ -151,7 +151,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
       : undefined;
   const currentRank = getRealmRankForPoints(realmPoints);
   const nextRankPoints = getRealmRanks().get(currentRank + 1) || 0;
-  const pointsUntilNextRank = nextRankPoints - realmPoints;
+  const pointsUntilNextRank = Math.max(nextRankPoints - realmPoints, 0);
   const currentRankNumber = getRealmRankForPoints(character.heraldRealmPoints);
   const nextRankFormatted = formatRealmRankWithLevel(currentRankNumber + 1);
   const currentRankFormatted = formatRealmRankWithLevel(currentRank);

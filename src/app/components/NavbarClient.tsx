@@ -84,6 +84,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 <span className="font-medium group-hover:text-white transition-colors duration-300">About</span>
               </div>
             </Link>
+            
             {isUserSignedIn && (
               <>
                 <Link href="/user-characters">
@@ -121,6 +122,14 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                       className="text-indigo-400 group-hover:text-indigo-300 ml-2 transition-colors duration-300"
                       size={18}
                     />
+                  </div>
+                </Link>
+                <Link href="/realm-ranks">
+                  <div
+                    onClick={closeMenu}
+                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
+                  >
+                    <span className="font-medium group-hover:text-white transition-colors duration-300">Realm Ranks</span>
                   </div>
                 </Link>
                 <div
@@ -168,6 +177,14 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                       className="text-indigo-400 group-hover:text-indigo-300 ml-2 transition-colors duration-300"
                       size={18}
                     />
+                  </div>
+                </Link>
+                <Link href="/realm-ranks">
+                  <div
+                    onClick={closeMenu}
+                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
+                  >
+                    <span className="font-medium group-hover:text-white transition-colors duration-300">Realm Ranks</span>
                   </div>
                 </Link>
                 <Link href="/sign-in">

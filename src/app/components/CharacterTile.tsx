@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { currentUser, useAuth } from "@clerk/nextjs";
 import { Snackbar } from "@mui/material";
 import CharacterTileSkeleton from "./CharacterTileSkeleton";
-import { CharacterData } from "@/utils/character";
+import { CharacterData, getRealmRankForPoints, formatRealmRankWithLevel } from "@/utils/character";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipProps } from "@mui/material";
 import { styled } from "@mui/material/styles";
@@ -127,6 +127,10 @@ const CharacterTile: React.FC<{
   const realmPointsThisWeek =
     characterDetails.heraldRealmPoints - totalRealmPoints;
 
+  const formattedRank = formatRealmRankWithLevel(
+    getRealmRankForPoints(characterDetails.heraldRealmPoints || 0)
+  );
+
   const CustomTooltip = styled(({ className, ...props }: TooltipProps) => (
     <Tooltip {...props} classes={{ popper: className }} />
   ))({
@@ -208,7 +212,7 @@ const CharacterTile: React.FC<{
           sx={{ width: "12%", padding: "2px", height: "20px" }}
           className="!text-white text-xs font-semibold"
         >
-          {characterDetails.formattedHeraldRealmPoints || "-"}
+          {formattedRank || "-"}
         </TableCell>
         <TableCell
           sx={{ width: "18%", padding: "2px", height: "20px" }}
