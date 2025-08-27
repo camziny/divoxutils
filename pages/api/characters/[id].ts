@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as characterController from "../../../src/controllers/characterController";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { id } = req.query;
 
   if (typeof id !== "string") {
@@ -60,3 +60,5 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 };
+
+export default handler;

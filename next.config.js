@@ -9,9 +9,6 @@ const nextConfig = {
   httpAgentOptions: {
     keepAlive: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
 }
 
 module.exports = nextConfig

@@ -7,7 +7,7 @@ interface EmailObject {
   email_address: string;
 }
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   console.log(
     JSON.stringify({
       level: "info",
@@ -130,3 +130,5 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export default handler;

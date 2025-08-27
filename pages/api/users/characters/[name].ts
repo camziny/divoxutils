@@ -15,7 +15,7 @@ import {
 } from "@/utils/group";
 import { findClosestMatch } from "@/utils/levenshtein";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const apiSecret = process.env.DISCORD_BOT_API_KEY;
   const apiKey = req.headers["x-api-key"];
 
@@ -109,3 +109,5 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 };
+
+export default handler;
