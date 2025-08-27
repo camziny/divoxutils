@@ -3,7 +3,7 @@ import * as userController from "../../../src/controllers/userController";
 import { getUserByClerkUserId } from "../../../src/controllers/userController";
 import { clerkClient } from "@clerk/nextjs";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { clerkUserId, id } = req.query;
 
   switch (req.method) {
@@ -62,3 +62,5 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 };
+
+export default handler;

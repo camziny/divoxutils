@@ -3,7 +3,7 @@ import * as characterController from "../../../src/controllers/characterControll
 import { getAuth } from "@clerk/nextjs/server";
 import prisma from "../../../prisma/prismaClient";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const authDetails = getAuth(req);
   const clerkUserId = authDetails.userId;
 
@@ -63,6 +63,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 };
+
+export default handler;
 
 function handleError(res: NextApiResponse, error: any) {
   if (error instanceof Error) {

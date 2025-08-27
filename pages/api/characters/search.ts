@@ -1,7 +1,7 @@
 import { NextApiResponse, NextApiRequest } from "next";
 import { fetchCharacterDetails } from "../../../src/controllers/characterController";
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === "GET") {
     try {
       const { name, cluster } = req.query;
@@ -22,3 +22,5 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 };
+
+export default handler;
