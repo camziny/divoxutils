@@ -17,22 +17,19 @@ const CharacterListOptimized = dynamic(
   }
 );
 
-interface CharactersPageParams {
-  name: string;
-}
-
 interface CharactersPageProps {
-  params: CharactersPageParams;
-  searchParams: { [key: string]: string | string[] };
+  params?: Promise<any>;
+  searchParams?: Promise<any>;
 }
 
 export async function generateMetadata(
-  { params }: { params: CharactersPageParams },
+  { params }: { params: Promise<any> },
   parent: ResolvingMetadata
 ): Promise<Metadata> {
+  const resolvedParams = await params;
   const userData = await prisma.user.findMany({
     where: {
-      name: params.name,
+      name: resolvedParams.name,
     },
   });
 
@@ -72,13 +69,12 @@ async function fetchCharactersForUser(userId: string) {
   return data;
 }
 
-const CharactersPage: React.FC<CharactersPageProps> = async ({
-  params,
-  searchParams = {},
-}) => {
+const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => {
+  const resolvedParams = (await (params ?? Promise.resolve({}))) as { name?: string };
+  const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as Record<string, string | string[]>;
   const userData = await prisma.user.findMany({
     where: {
-      name: params.name,
+      name: resolvedParams.name as string,
     },
   });
 
@@ -88,7 +84,7 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <h1 className="text-xl font-bold text-gray-200 mb-2">User Not Found</h1>
-        <p className="text-gray-400">The user &ldquo;{params.name}&rdquo; does not exist.</p>
+        <p className="text-gray-400">The user &ldquo;{resolvedParams.name}&rdquo; does not exist.</p>
       </div>
     );
   }
@@ -120,7 +116,7 @@ const CharactersPage: React.FC<CharactersPageProps> = async ({
             <Suspense fallback={<Loading />}>
               <CharacterListOptimized
                 characters={characters}
-                searchParams={searchParams}
+                searchParams={resolvedSearchParams}
                 showDelete={false}
               />
             </Suspense>

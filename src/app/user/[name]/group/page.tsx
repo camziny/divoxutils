@@ -6,17 +6,13 @@ import LockOpenIcon from "@mui/icons-material/LockOpen";
 import LockIcon from "@mui/icons-material/Lock";
 import { GroupUser } from "@/utils/group";
 
-interface GroupPageParams {
-  name: string;
-  clerkUserId: string;
-}
-
 export default async function GroupPage({
   params,
 }: {
-  params: GroupPageParams;
+  params?: Promise<any>;
 }) {
-  const { name } = params;
+  const resolvedParams = await (params ?? Promise.resolve({}));
+  const { name } = resolvedParams;
   const uniqueParam = `?t=${new Date().getTime()}`;
 
   const fetchUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/group/group-by-name/${name}${uniqueParam}`;
