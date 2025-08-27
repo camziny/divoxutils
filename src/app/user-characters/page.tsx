@@ -42,12 +42,11 @@ async function fetchCharactersForUser(userId: string) {
 }
 
 interface UserCharactersPageProps {
-  searchParams: { [key: string]: string | string[] };
+  searchParams?: Promise<any>;
 }
 
-const UserCharactersPage: React.FC<UserCharactersPageProps> = async ({
-  searchParams = {},
-}) => {
+const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => {
+  const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as Record<string, string | string[]>;
   const { userId } = auth();
 
   if (!userId) {
@@ -77,7 +76,7 @@ const UserCharactersPage: React.FC<UserCharactersPageProps> = async ({
               <Suspense fallback={<Loading />}>
                 <CharacterListOptimized
                   characters={characters}
-                  searchParams={searchParams}
+                  searchParams={resolvedSearchParams}
                   showDelete={true}
                 />
               </Suspense>

@@ -14,13 +14,9 @@ const CharacterListOptimized = dynamic(
   }
 );
 
-interface CharactersPageParams {
-  userId: string;
-}
-
 interface CharactersPageProps {
-  params: CharactersPageParams;
-  searchParams: { [key: string]: string | string[] };
+  params?: Promise<any>;
+  searchParams?: Promise<any>;
 }
 
 async function fetchCharactersForUser(userId: string) {
@@ -46,7 +42,9 @@ export default async function CharactersPage({
   params,
   searchParams,
 }: CharactersPageProps) {
-  const userId = params.userId;
+  const resolvedParams = (await (params ?? Promise.resolve({}))) as { userId?: string };
+  const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as Record<string, string | string[]>;
+  const userId = resolvedParams.userId as string;
 
   const userRes = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`,
@@ -77,7 +75,7 @@ export default async function CharactersPage({
           <Suspense fallback={<Loading />}>
             <CharacterListOptimized
               characters={characters}
-              searchParams={searchParams}
+              searchParams={resolvedSearchParams}
               showDelete={false}
             />
           </Suspense>

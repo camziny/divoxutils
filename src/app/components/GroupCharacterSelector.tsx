@@ -167,7 +167,7 @@ const GroupCharacterSelector: React.FC<GroupCharacterSelectorProps> = ({
                   </DropdownItem>
                 ))
               ) : (
-                <DropdownItem className="text-center">
+                <DropdownItem key="no-characters" className="text-center">
                   No characters
                 </DropdownItem>
               )}
