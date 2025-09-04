@@ -3,16 +3,14 @@ import React, { useEffect, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import { ViewportPrefetchLink } from "./ViewportPrefetchLink";
+import { Button, Pagination, ButtonGroup } from "@nextui-org/react";
 import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Button,
-  Pagination,
-  ButtonGroup,
-} from "@nextui-org/react";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface LeaderboardItem {
   userId: number;
@@ -181,10 +179,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
     router.push(newUrl, { scroll: false });
   };
 
-  const handleMetricChange = (metric: Metric, e: React.MouseEvent) => {
-    e.stopPropagation();
-    updateURL({ metric, page: 1 });
-  };
+  
 
   const handlePeriodChange = (period: Period) => {
     updateURL({ period, page: 1 });
@@ -239,32 +234,21 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
             </Button>
           </ButtonGroup>
           
-          <Dropdown>
-            <DropdownTrigger>
-              <Button 
-                variant="bordered" 
-                className="px-4 py-2 text-sm font-medium bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white transition-colors duration-200 shadow-sm min-w-[140px] justify-between"
-              >
-                {metrics[selectedMetric]} 
-                <KeyboardArrowDownIcon className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              variant="flat"
-              aria-label="Leaderboard Metrics"
-              className="bg-gray-800 border border-gray-600 shadow-lg rounded-lg min-w-[140px]"
-            >
+          <Select
+            value={selectedMetric}
+            onValueChange={(val) => updateURL({ metric: val as Metric, page: 1 })}
+          >
+            <SelectTrigger className="text-sm font-medium hover:bg-gray-700 hover:text-white transition-colors duration-200 shadow-sm min-w-[140px] justify-between">
+              <SelectValue placeholder="Select metric" />
+            </SelectTrigger>
+            <SelectContent>
               {Object.entries(metrics).map(([key, label]) => (
-                <DropdownItem
-                  key={key}
-                  onClick={(e) => handleMetricChange(key as Metric, e)}
-                  className="px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-150"
-                >
+                <SelectItem key={key} value={key} className="px-3 py-2 text-sm">
                   {label}
-                </DropdownItem>
+                </SelectItem>
               ))}
-            </DropdownMenu>
-          </Dropdown>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

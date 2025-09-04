@@ -11,7 +11,7 @@ import { Providers } from "./providers";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export const inter = Inter({
+const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "800"],
   variable: "--font-inter",
