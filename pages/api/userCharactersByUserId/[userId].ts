@@ -20,8 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         const userCharacters = await userCharacterController.getUserCharactersByUserId(userId);
         
-        // Set cache headers for better performance
-        res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=59');
+        res.setHeader('Cache-Control', 'private, no-store, no-cache, max-age=0, must-revalidate');
         
         if (!userCharacters || userCharacters.length === 0) {
           return res.status(200).json([]);
