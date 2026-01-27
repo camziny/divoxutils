@@ -83,6 +83,8 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
         <div className="text-xs text-gray-400 space-x-2">
           <span className="text-indigo-300">{character.heraldClassName}</span>
           <span>•</span>
+          <span>{character.heraldRace}</span>
+          <span>•</span>
           <span>{character.heraldLevel || "50"}</span>
         </div>
       </div>
