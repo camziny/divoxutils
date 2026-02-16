@@ -827,3 +827,14 @@ export const upsertGuildSettings = mutation({
     });
   },
 });
+
+// Temporary: clear all guild settings
+export const clearGuildSettings = mutation({
+  handler: async (ctx) => {
+    const all = await ctx.db.query("draftGuildSettings").collect();
+    for (const doc of all) {
+      await ctx.db.delete(doc._id);
+    }
+    return { deleted: all.length };
+  },
+});
