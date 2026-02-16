@@ -24,19 +24,16 @@ function generatePickSequence(
   teamSize: number,
   firstPickTeam: number
 ): number[] {
-  // Order: first team picks 1, second team picks 2, then alternating 1-1-1-1
   const totalPicks = (teamSize - 1) * 2;
   const secondPickTeam = firstPickTeam === 1 ? 2 : 1;
   const sequence: number[] = [];
 
-  // First team picks 1
   sequence.push(firstPickTeam);
-  // Second team picks 2
   sequence.push(secondPickTeam);
   if (sequence.length < totalPicks) {
     sequence.push(secondPickTeam);
   }
-  // Then alternating 1-1-1-1 starting with first team
+
   let currentTeam = firstPickTeam;
   while (sequence.length < totalPicks) {
     sequence.push(currentTeam);
@@ -825,16 +822,5 @@ export const upsertGuildSettings = mutation({
       team2ChannelId: args.team2ChannelId,
       lobbyChannelId: args.lobbyChannelId,
     });
-  },
-});
-
-// Temporary: clear all guild settings
-export const clearGuildSettings = mutation({
-  handler: async (ctx) => {
-    const all = await ctx.db.query("draftGuildSettings").collect();
-    for (const doc of all) {
-      await ctx.db.delete(doc._id);
-    }
-    return { deleted: all.length };
   },
 });

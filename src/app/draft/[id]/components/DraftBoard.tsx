@@ -167,7 +167,6 @@ export default function DraftBoard({
       (isDrafting && (draft.currentPickIndex ?? 0) === 0 && draft.bans.length > 0) ||
       (isComplete && !draft.gameStarted));
 
-  // Compute active team turn labels
   let activeTeam1Label = "";
   let activeTeam2Label = "";
   if (isBanning && currentBanTeam !== undefined) {

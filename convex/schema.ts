@@ -57,7 +57,7 @@ export default defineSchema({
 
   draftGuildSettings: defineTable({
     discordGuildId: v.string(),
-    lobbyChannelId: v.optional(v.string()),
+    lobbyChannelId: v.string(),
     team1ChannelId: v.string(),
     team2ChannelId: v.string(),
   }).index("by_guild", ["discordGuildId"]),
