@@ -104,7 +104,7 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const body = await request.json();
-    const { guildId, team1ChannelId, team2ChannelId } = body;
+    const { guildId, team1ChannelId, team2ChannelId, lobbyChannelId } = body;
 
     if (!guildId || !team1ChannelId || !team2ChannelId) {
       return new Response(
@@ -117,6 +117,7 @@ http.route({
       discordGuildId: guildId,
       team1ChannelId,
       team2ChannelId,
+      lobbyChannelId: lobbyChannelId || undefined,
     });
 
     return new Response(JSON.stringify({ success: true, id }), {

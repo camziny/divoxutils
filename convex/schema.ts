@@ -59,5 +59,6 @@ export default defineSchema({
     discordGuildId: v.string(),
     team1ChannelId: v.string(),
     team2ChannelId: v.string(),
+    lobbyChannelId: v.optional(v.string()),
   }).index("by_guild", ["discordGuildId"]),
 });

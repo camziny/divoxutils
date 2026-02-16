@@ -802,6 +802,7 @@ export const upsertGuildSettings = mutation({
     discordGuildId: v.string(),
     team1ChannelId: v.string(),
     team2ChannelId: v.string(),
+    lobbyChannelId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -813,6 +814,7 @@ export const upsertGuildSettings = mutation({
       await ctx.db.patch(existing._id, {
         team1ChannelId: args.team1ChannelId,
         team2ChannelId: args.team2ChannelId,
+        lobbyChannelId: args.lobbyChannelId,
       });
       return existing._id;
     }
@@ -821,6 +823,7 @@ export const upsertGuildSettings = mutation({
       discordGuildId: args.discordGuildId,
       team1ChannelId: args.team1ChannelId,
       team2ChannelId: args.team2ChannelId,
+      lobbyChannelId: args.lobbyChannelId,
     });
   },
 });
