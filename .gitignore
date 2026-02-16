@@ -37,3 +37,7 @@ next-env.d.ts
 
 # scripts
 scripts/seedFromProduction.js
+
+# cursor
+.cursor/
+.agents/
