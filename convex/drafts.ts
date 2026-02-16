@@ -802,7 +802,7 @@ export const upsertGuildSettings = mutation({
     discordGuildId: v.string(),
     team1ChannelId: v.string(),
     team2ChannelId: v.string(),
-    lobbyChannelId: v.optional(v.string()),
+    lobbyChannelId: v.string(),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db

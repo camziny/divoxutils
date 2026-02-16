@@ -106,7 +106,7 @@ http.route({
     const body = await request.json();
     const { guildId, team1ChannelId, team2ChannelId, lobbyChannelId } = body;
 
-    if (!guildId || !team1ChannelId || !team2ChannelId) {
+    if (!guildId || !team1ChannelId || !team2ChannelId || !lobbyChannelId) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: corsHeaders }
@@ -117,7 +117,7 @@ http.route({
       discordGuildId: guildId,
       team1ChannelId,
       team2ChannelId,
-      lobbyChannelId: lobbyChannelId || undefined,
+      lobbyChannelId,
     });
 
     return new Response(JSON.stringify({ success: true, id }), {
