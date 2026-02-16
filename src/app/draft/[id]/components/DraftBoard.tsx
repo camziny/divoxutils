@@ -1017,7 +1017,6 @@ function TeamPanel({
         showWinner && isWinner && isT2 && "ring-1 ring-indigo-500/30"
       )}
     >
-      {/* Animated top accent bar for active team */}
       <AnimatePresence>
         {isActive && (
           <motion.div
@@ -1059,7 +1058,6 @@ function TeamPanel({
         </div>
       </div>
 
-      {/* Turn indicator */}
       <AnimatePresence>
         {turnLabel && (
           <motion.div
@@ -1211,7 +1209,6 @@ function PlayerPool({
         selectingCaptain && "bg-gray-800/20 ring-1 ring-indigo-500/20"
       )}
     >
-      {/* Animated accent bar when selecting captains */}
       <AnimatePresence>
         {selectingCaptain && (
           <motion.div
@@ -1230,7 +1227,6 @@ function PlayerPool({
         </div>
       )}
 
-      {/* Captain selection indicator */}
       <AnimatePresence>
         {captainLabel && (
           <motion.div
