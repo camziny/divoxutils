@@ -139,7 +139,7 @@ export default function DraftBoard({
   }
 
   const act = useCallback(
-    async (fn: () => Promise<void>) => {
+    async (fn: () => Promise<unknown>) => {
       if (busy) return;
       setBusy(true);
       try {
