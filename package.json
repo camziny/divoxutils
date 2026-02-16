@@ -37,6 +37,7 @@
     "axios": "^1.5.1",
     "bcrypt": "^5.1.1",
     "bootstrap-icons": "^1.11.1",
+    "convex": "^1.31.7",
     "cookie": "^0.5.0",
     "dotenv": "^16.4.7",
     "embla-carousel": "^8.0.0-rc14",

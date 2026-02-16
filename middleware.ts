@@ -53,6 +53,8 @@ export default authMiddleware({
     "/api/batchedHeraldUpdate",
     "/api/resetHeraldBatchState",
     "/api/searchUsersAndCharacters",
+    "/draft",
+    "/draft/(.*)",
   ],
   beforeAuth: (req) => {
     if (req.url.startsWith("/api/users/")) {
