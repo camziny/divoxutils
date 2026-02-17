@@ -119,7 +119,7 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
     if (element) {
       const navbarHeight = 80;
       const stickyNavHeight = 40;
-      const searchAreaHeight = 140; // Container padding + search component + margins
+      const searchAreaHeight = 140;
       const yOffset = -(navbarHeight + stickyNavHeight + searchAreaHeight + 10);
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: 'smooth' });
@@ -128,13 +128,13 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
   }, [updateURLSection]);
 
   const AlphabetNav = useMemo(() => (
-    <div className="hidden sm:block sticky top-20 z-30 bg-gray-900/98 backdrop-blur-sm -mx-2 px-2 shadow-lg">
+    <div className="hidden sm:block sticky top-20 z-30 bg-gray-900 border-b border-gray-800">
       <div className="container mx-auto py-1.5 px-2 sm:px-4">
-        <div className="flex flex-wrap sm:flex-nowrap justify-center gap-0.5 sm:gap-1 max-w-none 
+        <div className="flex flex-wrap sm:flex-nowrap justify-center gap-0.5 sm:gap-0 max-w-none
           sm:overflow-x-auto
           [&::-webkit-scrollbar]:h-1
           [&::-webkit-scrollbar-track]:bg-transparent
-          [&::-webkit-scrollbar-thumb]:bg-gray-600/50
+          [&::-webkit-scrollbar-thumb]:bg-gray-700
           [&::-webkit-scrollbar-thumb]:rounded-full">
           {alphabet.map((letter) => (
             <a
@@ -142,12 +142,11 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
               href={`#group-${letter}`}
               className={`${
                 currentSection === letter 
-                  ? "text-white bg-indigo-500/40 border-indigo-400/70" 
-                  : "text-gray-400 hover:text-white bg-gray-800/60 hover:bg-indigo-500/25 border-gray-700/30 hover:border-indigo-500/50"
-              } px-1 sm:px-1.5 md:px-2 py-0.5 rounded transition-all duration-200 font-medium 
-                text-[10px] sm:text-xs min-w-[20px] sm:min-w-[24px] md:min-w-[28px] 
-                text-center shadow-sm hover:shadow-indigo-500/10 active:scale-95 
-                whitespace-nowrap flex-shrink-0 border`}
+                  ? "text-indigo-400 bg-indigo-500/10" 
+                  : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/50"
+              } px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-md transition-colors duration-150 font-medium 
+                text-[11px] sm:text-xs min-w-[22px] sm:min-w-[26px] md:min-w-[30px] 
+                text-center whitespace-nowrap flex-shrink-0`}
               onClick={(e) => handleLetterClick(e, letter)}
             >
               {letter}
@@ -161,7 +160,7 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
   if (alphabet.length === 0) {
     return (
       <div className="text-center py-8">
-        <div className="text-gray-400">No users available</div>
+        <div className="text-gray-500">No users available</div>
       </div>
     );
   }
@@ -170,7 +169,7 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
     <div className="w-full">
       {AlphabetNav}
 
-      <div className="px-2 mt-4 sm:mt-6">
+      <div className="px-2 sm:px-4 mt-4 sm:mt-6 max-w-3xl mx-auto">
         {alphabet.map((letter) => {
           const users = initialData[letter];
           return (
@@ -188,10 +187,14 @@ const UserGroup = React.memo(({ letter, users }: { letter: string; users: User[]
       id={`group-${letter}`}
       className="mb-6"
     >
-      <h3 className="font-semibold text-lg text-white mb-3">
-        {letter}
-      </h3>
-      <div className="space-y-1">
+      <div className="flex items-center gap-3 mb-2">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          {letter}
+        </h3>
+        <div className="flex-1 h-px bg-gray-800" />
+        <span className="text-[11px] text-gray-600 tabular-nums">{users.length}</span>
+      </div>
+      <div className="divide-y divide-gray-800/50">
         {users.map((user) => (
           <UserItem key={user.id} user={user} />
         ))}
@@ -206,7 +209,7 @@ const UserItem = React.memo(({ user }: { user: User }) => {
   return (
     <HoverPrefetchLink 
       href={`user/${user.name}/characters`}
-      className="block text-indigo-400 hover:text-indigo-300 hover:bg-gray-800/30 cursor-pointer py-2 px-3 rounded-md transition-all duration-200 text-sm"
+      className="flex items-center text-gray-400 hover:text-indigo-400 hover:bg-gray-800/40 cursor-pointer py-1.5 px-3 transition-colors duration-150 text-sm"
       prefetchDelay={150}
     >
       {user.name}
@@ -216,4 +219,4 @@ const UserItem = React.memo(({ user }: { user: User }) => {
 
 UserItem.displayName = 'UserItem';
 
-export default UserListClient; 
+export default UserListClient;
