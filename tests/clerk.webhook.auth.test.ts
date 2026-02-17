@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "crypto";
-import webhookHandler from "../pages/api/clerk-webhook";
+import webhookHandler, {
+  createClerkWebhookHandler,
+} from "../pages/api/clerk-webhook";
 
 function createMockResponse() {
   const res: any = {
@@ -64,6 +66,22 @@ function createValidSvixSignature(options: {
     .update(signedContent)
     .digest("base64");
   return `v1,${signature}`;
+}
+
+function createNoopDeps() {
+  return {
+    deleteLocalUserByClerkId: async (_clerkUserId: string) => {},
+    findLocalUserByClerkId: async (_clerkUserId: string) => null,
+    updateLocalUsername: async (
+      _clerkUserId: string,
+      _username: string | null
+    ) => {},
+    createLocalUserFromClerk: async (_userData: {
+      email: string;
+      name?: string | null;
+      clerkUserId: string;
+    }) => ({}),
+  };
 }
 
 test("clerk webhook rejects missing svix headers", async () => {
@@ -147,6 +165,104 @@ test("clerk webhook accepts valid svix signature and continues payload validatio
 
   assert.equal(res.statusCode, 400);
   assert.deepEqual(res.body, { error: "Invalid clerk data" });
+
+  process.env.CLERK_WEBHOOK_SECRET = previousSecret;
+});
+
+test("clerk webhook user.deleted deletes local records via dependency", async () => {
+  const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
+  const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
+  process.env.CLERK_WEBHOOK_SECRET = `whsec_${base64Secret}`;
+
+  let deletedClerkUserId = "";
+  const handler = createClerkWebhookHandler({
+    ...createNoopDeps(),
+    deleteLocalUserByClerkId: async (clerkUserId: string) => {
+      deletedClerkUserId = clerkUserId;
+    },
+  });
+
+  const payload = JSON.stringify({
+    type: "user.deleted",
+    data: {
+      id: "user_delete_123",
+    },
+  });
+  const svixId = "msg_delete_123";
+  const svixTimestamp = String(Math.floor(Date.now() / 1000));
+  const svixSignature = createValidSvixSignature({
+    secret: process.env.CLERK_WEBHOOK_SECRET,
+    svixId,
+    svixTimestamp,
+    payload,
+  });
+
+  const req = createWebhookRequest({
+    headers: {
+      "svix-id": svixId,
+      "svix-timestamp": svixTimestamp,
+      "svix-signature": svixSignature,
+    },
+    body: payload,
+  });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(deletedClerkUserId, "user_delete_123");
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body, {
+    success: true,
+    message: "User deleted successfully",
+  });
+
+  process.env.CLERK_WEBHOOK_SECRET = previousSecret;
+});
+
+test("clerk webhook user.deleted returns 500 if local deletion fails", async () => {
+  const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
+  const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
+  process.env.CLERK_WEBHOOK_SECRET = `whsec_${base64Secret}`;
+
+  const handler = createClerkWebhookHandler({
+    ...createNoopDeps(),
+    deleteLocalUserByClerkId: async () => {
+      throw new Error("db failure");
+    },
+  });
+
+  const payload = JSON.stringify({
+    type: "user.deleted",
+    data: {
+      id: "user_delete_456",
+    },
+  });
+  const svixId = "msg_delete_456";
+  const svixTimestamp = String(Math.floor(Date.now() / 1000));
+  const svixSignature = createValidSvixSignature({
+    secret: process.env.CLERK_WEBHOOK_SECRET,
+    svixId,
+    svixTimestamp,
+    payload,
+  });
+
+  const req = createWebhookRequest({
+    headers: {
+      "svix-id": svixId,
+      "svix-timestamp": svixTimestamp,
+      "svix-signature": svixSignature,
+    },
+    body: payload,
+  });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 500);
+  assert.deepEqual(res.body, {
+    success: false,
+    message: "Error in deleting user",
+  });
 
   process.env.CLERK_WEBHOOK_SECRET = previousSecret;
 });
