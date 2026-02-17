@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { ButtonGroup, Button } from "@nextui-org/react";
+import { Button } from "@/components/ui/button";
 
 const sortOptions = {
   realm: "Realm",
@@ -14,35 +14,29 @@ const SortOptions: React.FC<{
   sortOption: string;
   onSortChange: (option: string) => void;
 }> = ({ sortOption, onSortChange }) => {
+  const entries = Object.entries(sortOptions);
+
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-center mb-6 space-y-2 sm:space-y-0">
-      <ButtonGroup 
-        variant="solid"
-        className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 shadow-lg"
-      >
-        {Object.entries(sortOptions).map(([key, label], index) => (
+    <div className="flex items-center justify-center mb-4">
+      <div className="inline-flex">
+        {entries.map(([key, label], index) => (
           <Button
             key={key}
             onClick={() => onSortChange(key)}
-            className={`
-              px-6 py-3 text-sm font-medium transition-all duration-300 
-              ${index === 0 ? 'rounded-l-xl' : ''}
-              ${index === Object.entries(sortOptions).length - 1 ? 'rounded-r-xl' : ''}
-              ${index !== 0 && index !== Object.entries(sortOptions).length - 1 ? 'rounded-none' : ''}
-              ${sortOption === key 
-                ? 'bg-indigo-500/90 text-white shadow-md' 
-                : 'bg-transparent text-gray-300 hover:text-white hover:bg-gray-700/70'
-              }
-            `}
-            style={{
-              border: 'none',
-              outline: 'none'
-            }}
+            variant={sortOption === key ? "default" : "secondary"}
+            size="sm"
+            className={`h-auto py-1.5 text-[13px] ${
+              index === 0
+                ? "rounded-r-none border-r border-r-gray-700/50"
+                : index === entries.length - 1
+                ? "rounded-l-none"
+                : "rounded-none border-r border-r-gray-700/50"
+            }`}
           >
             {label}
           </Button>
         ))}
-      </ButtonGroup>
+      </div>
     </div>
   );
 };

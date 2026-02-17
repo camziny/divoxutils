@@ -289,7 +289,7 @@ const CharacterTile: React.FC<{
                 transition={{ duration: 0.1, ease: "easeOut" }}
                 className="overflow-hidden"
               >
-                <div className="flex justify-center py-2">
+                <div className="flex justify-center py-0">
                   <CharacterDetails
                     character={characterDetails}
                     opponentRealms={opponentRealms}
@@ -329,11 +329,11 @@ const getRealmBorderColor = (realm: string) => {
 const getRealmGradientClass = (realm: string) => {
   switch (realm) {
     case "Albion":
-      return "bg-gradient-to-r from-red-800/20 to-red-700/20";
+      return "bg-red-900/20";
     case "Midgard":
-      return "bg-gradient-to-r from-blue-800/20 to-blue-700/20";
+      return "bg-blue-900/20";
     case "Hibernia":
-      return "bg-gradient-to-r from-green-800/20 to-green-700/20";
+      return "bg-green-900/20";
     default:
       return "bg-gray-800/20";
   }

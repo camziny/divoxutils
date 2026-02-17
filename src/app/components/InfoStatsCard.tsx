@@ -38,55 +38,47 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
   })();
   
   return (
-    <Card className="bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 shadow-xl text-gray-100">
-      <CardHeader className="text-center py-0.5 bg-gradient-to-r from-indigo-500/90 to-indigo-700/90">
-        <h3 className="text-sm font-semibold m-0">Info</h3>
+    <Card className="bg-gray-900 border border-gray-800 text-gray-100 shadow-none">
+      <CardHeader className="py-1 px-3 border-b border-gray-800 bg-transparent">
+        <h3 className="text-xs font-medium text-gray-400 m-0">Info</h3>
       </CardHeader>
-      <CardBody className="flex flex-col items-center px-2 py-1 text-sm flex-grow justify-between">
-        <div className="flex flex-col items-center space-y-1 w-full">
-          <div className="w-full text-center text-xs p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-gray-300">Total RP:</span>
-              <span className="font-bold text-gray-100 ml-1">{totalRP}</span>
-            </div>
+      <CardBody className="flex flex-col px-3 py-2 text-sm flex-grow justify-between gap-0">
+        <div className="flex flex-col w-full divide-y divide-gray-800">
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-xs text-gray-400">Total RP</span>
+            <span className="text-xs font-semibold text-white tabular-nums">{totalRP}</span>
           </div>
-          <div className="w-full text-center text-xs p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-gray-300">IRS:</span>
-              <span className="font-bold text-gray-100 ml-1">
-                {irs !== undefined ? irs : "N/A"}
-              </span>
-            </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-xs text-gray-400">IRS</span>
+            <span className="text-xs font-semibold text-white tabular-nums">
+              {irs !== undefined ? irs : "N/A"}
+            </span>
           </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-xs text-gray-400">RPs Last Week</span>
+            <span className="text-xs font-semibold text-white tabular-nums">{realmPointsLastWeek}</span>
           </div>
-          <div className="w-full text-center text-xs p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-gray-300">RPs Last Week:</span>
-              <span className="font-bold text-gray-100">{realmPointsLastWeek}</span>
-            </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-xs text-gray-400">RPs This Week</span>
+            <span className="text-xs font-semibold text-white tabular-nums">{normalizedThisWeek}</span>
           </div>
-          <div className="w-full text-center text-xs p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-gray-300">RPs This Week:</span>
-              <span className="font-bold text-gray-100">{normalizedThisWeek}</span>
-            </div>
         </div>
-        <div className="w-full mt-1">
+        <div className="w-full mt-2 pt-2 border-t border-gray-800">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-gray-300">{currentRank}</span>
-            <span className="text-sm font-medium text-indigo-400">
+            <span className="text-xs font-medium text-gray-300">{currentRank}</span>
+            <span className="text-xs font-medium text-indigo-400 tabular-nums">
               {displayProgress.toFixed(1)}%
             </span>
           </div>
-          <div className="w-full bg-gray-900/50 rounded-full h-2 overflow-hidden border border-gray-700/50">
+          <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600"
+              className="h-full bg-indigo-500 rounded-full"
               style={{ width: `${barWidth}%` }}
             />
           </div>
           {!isMaxRank && (
-            <div className="text-center text-xs mt-1 text-gray-400">
-              <span className="font-bold text-indigo-400">{rpsToNextRank}</span> RPs to {nextRank}
+            <div className="text-center text-[11px] mt-1 text-gray-500">
+              <span className="font-semibold text-indigo-400">{rpsToNextRank}</span> RPs to {nextRank}
             </div>
           )}
         </div>

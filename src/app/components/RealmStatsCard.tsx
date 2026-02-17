@@ -1,13 +1,6 @@
 import React, { useState } from "react";
-import {
-  CircularProgress,
-  Card,
-  CardBody,
-  Chip,
-  CardHeader,
-  Button,
-  ButtonGroup,
-} from "@nextui-org/react";
+import { CircularProgress, Card, CardBody, CardHeader } from "@nextui-org/react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface RealmCardProps {
   realm: string;
@@ -18,22 +11,7 @@ interface RealmCardProps {
   skPerKillRatio: number;
 }
 
-type RealmColorsType = {
-  [key: string]: string;
-  albion: string;
-  midgard: string;
-  hibernia: string;
-  total: string;
-};
-
 type RatioKey = "dbPerKill" | "skPerKill";
-
-const realmColors: RealmColorsType = {
-  albion: "bg-gradient-to-r from-red-800/20 to-red-700/20",
-  midgard: "bg-gradient-to-r from-blue-800/20 to-blue-700/20",
-  hibernia: "bg-gradient-to-r from-green-800/20 to-green-700/20",
-  total: "bg-gray-600",
-};
 
 const capitalizeRealm = (realm: string) => {
   return realm.charAt(0).toUpperCase() + realm.slice(1);
@@ -50,47 +28,43 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
   const [selectedRatio, setSelectedRatio] = useState<RatioKey>("dbPerKill");
   const ratioOptions = {
     dbPerKill: {
-      label: "DB / Kill Ratio",
+      label: "DB / Kill",
       value: dbPerKillRatio,
     },
     skPerKill: {
-      label: "SK / Kill Ratio",
+      label: "SK / Kill",
       value: skPerKillRatio,
     },
   };
 
   return (
-    <Card className="bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 shadow-xl text-gray-100">
-      <CardHeader className={`${realm.toLowerCase()} text-center py-1`}>
-        <h3 className="text-sm font-semibold m-0">{capitalizeRealm(realm)}</h3>
+    <Card className="bg-gray-900 border border-gray-800 text-gray-100 shadow-none">
+      <CardHeader className={`${realm.toLowerCase()} py-1 px-3`}>
+        <h3 className="text-xs font-medium m-0">{capitalizeRealm(realm)}</h3>
       </CardHeader>
-      <CardBody className="flex flex-col items-center px-2 py-1 text-sm flex-grow justify-between">
-        <div className="grid grid-cols-2 gap-1 w-full">
-          <div className="col-span-2 text-center text-xs p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-gray-300">Kills:</span>
-              <span className="font-bold text-gray-100">{kills}</span>
-            </div>
+      <CardBody className="flex flex-col items-center px-3 py-2 text-sm flex-grow justify-between">
+        <div className="w-full divide-y divide-gray-800">
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-xs text-gray-400">Kills</span>
+            <span className="text-xs font-semibold text-white tabular-nums">{kills}</span>
           </div>
-          <div className="col-span-1 text-center text-[11px] p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
-            <div className="flex flex-col items-center justify-center">
-              <span className="text-gray-300">Deathblows</span>
-              <span className="font-bold text-gray-100">{deathBlows}</span>
+          <div className="grid grid-cols-2 gap-x-4 py-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-gray-400">DBs</span>
+              <span className="text-[11px] font-semibold text-white tabular-nums">{deathBlows}</span>
             </div>
-          </div>
-          <div className="col-span-1 text-center text-[11px] p-0.5 rounded-lg bg-gray-700/50 border border-gray-600/30">
-            <div className="flex flex-col items-center justify-center">
-              <span className="text-gray-300">Solo Kills</span>
-              <span className="font-bold text-gray-100">{soloKills}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-gray-400">SKs</span>
+              <span className="text-[11px] font-semibold text-white tabular-nums">{soloKills}</span>
             </div>
           </div>
         </div>
-        <div className="w-full flex flex-col items-center mt-1">
+        <div className="w-full flex flex-col items-center mt-2 pt-2 border-t border-gray-800">
           <CircularProgress
             size="sm"
             strokeWidth={4}
             classNames={{
-              svg: "w-12 h-12 drop-shadow-xl",
+              svg: "w-12 h-12",
               indicator: "text-indigo-500",
               track: "stroke-white/10",
               value: "text-sm font-semibold text-white",
@@ -98,24 +72,17 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
             value={ratioOptions[selectedRatio].value}
             showValueLabel={true}
           />
-          <div className="flex justify-center w-full mt-1">
-            <ButtonGroup variant="flat" className="w-full px-1" size="sm">
-              {Object.entries(ratioOptions).map(([key, { label }]) => (
-                <Button
-                  key={key}
-                  onClick={() => setSelectedRatio(key as RatioKey)}
-                  className={`text-[10px] py-0 ${
-                    selectedRatio === key
-                      ? "bg-gradient-to-r from-indigo-500 to-indigo-700 text-white"
-                      : "bg-gray-700/50 text-gray-300 border border-gray-600/30"
-                  }`}
-                  style={{ minHeight: "20px" }}
-                >
-                  {label}
-                </Button>
-              ))}
-            </ButtonGroup>
-          </div>
+          <ToggleGroup
+            value={selectedRatio}
+            onValueChange={(v) => setSelectedRatio(v as RatioKey)}
+            className="mt-1.5"
+          >
+            {Object.entries(ratioOptions).map(([key, { label }]) => (
+              <ToggleGroupItem key={key} value={key}>
+                {label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </div>
       </CardBody>
     </Card>

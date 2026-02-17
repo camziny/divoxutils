@@ -6,8 +6,6 @@ import {
   calculateProgressPercentage,
   formatRealmRankWithLevel,
 } from "@/utils/character";
-import LinearProgress from "@mui/material/LinearProgress";
-import { Progress, CircularProgress } from "@nextui-org/react";
 import TotalStatsCard from "./TotalStatsCard";
 import InfoStatsCard from "./InfoStatsCard";
 import RealmStatsCard from "./RealmStatsCard";
@@ -15,37 +13,8 @@ import CharacterInfoCard from "./CharacterInfoCard";
 import {
   CharacterData,
   Realm,
-  PlayerKillRealm,
-  PlayerKills,
-  RealmType,
 } from "@/utils/character";
 import { useEffect, useState } from "react";
-
-type KillStats = {
-  kills: number;
-  deaths: number;
-  death_blows: number;
-  solo_kills: number;
-};
-
-type CharacterInfo = {
-  character_web_id: string;
-  name: string;
-  realm: number;
-  race: string;
-  class_name: string;
-  level: number;
-  guild_info?: {
-    guild_name?: string;
-  };
-  realm_points: number;
-  formattedRealmPoints: string;
-  guild_name: string;
-  player_kills: {
-    total: KillStats;
-    [key: string]: KillStats;
-  };
-};
 
 type CharacterDetailsProps = {
   character: CharacterData;
@@ -53,25 +22,6 @@ type CharacterDetailsProps = {
   realmPointsLastWeek: number;
   realmPointsThisWeek: number;
   totalRealmPoints: number;
-};
-
-type RealmColorsType = {
-  [key: string]: string;
-  albion: string;
-  midgard: string;
-  hibernia: string;
-  total: string;
-};
-
-function isValidRealmKey(key: any): key is RealmType {
-  return ["total", "midgard", "albion", "hibernia"].includes(key);
-}
-
-const realmColors = {
-  albion: "bg-gradient-to-r from-red-800/20 to-red-700/20",
-  midgard: "bg-gradient-to-r from-blue-800/20 to-blue-700/20",
-  hibernia: "bg-gradient-to-r from-green-800/20 to-green-700/20",
-  total: "bg-gray-600",
 };
 
 const CharacterDetails: React.FC<CharacterDetailsProps> = ({
@@ -84,61 +34,10 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   const totalKills = character.player_kills.total
     ? character.player_kills.total.kills
     : 0;
-  const midgardKills = character.player_kills.midgard
-    ? character.player_kills.midgard.kills
-    : 0;
-  const albionKills = character.player_kills.albion
-    ? character.player_kills.albion.kills
-    : 0;
-  const hiberniaKills = character.player_kills.hibernia
-    ? character.player_kills.hibernia.kills
-    : 0;
-
-  const getStats = (realm: Realm, character: CharacterData) => {
-    const realmMapping: Record<
-      Realm,
-      {
-        kills: number | undefined;
-        deaths: number | undefined;
-        death_blows: number | undefined;
-        solo_kills?: number | undefined;
-      }
-    > = {
-      Midgard: {
-        kills: character?.heraldMidgardKills,
-        deaths: character?.heraldMidgardDeaths,
-        death_blows: character?.heraldMidgardDeathBlows,
-      },
-      Albion: {
-        kills: character?.heraldAlbionKills,
-        deaths: character?.heraldAlbionDeaths,
-        death_blows: character?.heraldAlbionDeathBlows,
-        solo_kills: character?.heraldAlbionSoloKills,
-      },
-      Hibernia: {
-        kills: character?.heraldHiberniaKills || 0,
-        deaths: character?.heraldHiberniaDeaths || 0,
-        death_blows: character?.heraldHiberniaDeathBlows || 0,
-        solo_kills: character?.heraldHiberniaSoloKills || 0,
-      },
-    };
-
-    return (
-      realmMapping[realm] || {
-        kills: 0,
-        deaths: 0,
-        death_blows: 0,
-        solo_kills: 0,
-      }
-    );
-  };
 
   const {
     player_kills: {
-      total: { kills, deaths, death_blows, solo_kills },
-      albion,
-      midgard,
-      hibernia,
+      total: { deaths },
     },
   } = character;
 
@@ -155,9 +54,6 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   const currentRankNumber = getRealmRankForPoints(character.heraldRealmPoints);
   const nextRankFormatted = formatRealmRankWithLevel(currentRankNumber + 1);
   const currentRankFormatted = formatRealmRankWithLevel(currentRank);
-  const capitalizeRealm = (realm: string) => {
-    return realm.charAt(0).toUpperCase() + realm.slice(1);
-  };
   const totalDeathblows = character.player_kills?.total?.death_blows;
   const totalSoloKills = character.player_kills?.total?.solo_kills;
 
@@ -215,11 +111,11 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   }, [progressPercentage]);
 
   return (
-    <TableCell className="bg-gray-900 w-full p-2" colSpan={9}>
-      <div className="flex justify-center items-center h-full">
+    <TableCell className="bg-gray-900 w-full px-2 py-1" colSpan={9}>
+      <div className="flex justify-center">
         <div className="sm:hidden w-full">
-          <div className="bg-gray-900 rounded-lg mx-auto p-2 max-w-[260px]">
-            <div className="space-y-2">
+          <div className="bg-gray-900 rounded-lg mx-auto p-1 max-w-[260px]">
+            <div className="space-y-1.5">
               <CharacterInfoCard character={character} />
               <InfoStatsCard
                 totalRP={formatNumber(realmPoints)}
@@ -284,7 +180,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
             </div>
           </div>
         </div>
-        <div className="hidden sm:grid sm:grid-cols-4 sm:gap-4 sm:w-full sm:max-w-4xl sm:mx-auto">
+        <div className="hidden sm:grid sm:grid-cols-4 sm:gap-2 sm:w-full sm:max-w-4xl sm:mx-auto">
           {[...opponentRealms, "Total", "Info"].map((realm, index) => {
             if (realm !== "Total" && realm !== "Info") {
               const realmKey =
