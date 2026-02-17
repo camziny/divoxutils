@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { Webhook } from "svix";
+import crypto from "crypto";
 import { createUserFromClerk } from "../../../src/controllers/userController";
 import prisma from "../../../prisma/prismaClient";
 
@@ -30,6 +30,66 @@ const readRawBody = async (req: NextApiRequest): Promise<string> => {
     chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
   }
   return Buffer.concat(chunks).toString("utf8");
+};
+
+const parseSecret = (secret: string) => {
+  const value = secret.startsWith("whsec_") ? secret.slice(6) : secret;
+  return Buffer.from(value, "base64");
+};
+
+const safeCompare = (a: string, b: string) => {
+  const aBuf = Buffer.from(a);
+  const bBuf = Buffer.from(b);
+  if (aBuf.length !== bBuf.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(aBuf, bBuf);
+};
+
+const verifySvixSignature = ({
+  payload,
+  secret,
+  svixId,
+  svixTimestamp,
+  svixSignature,
+}: {
+  payload: string;
+  secret: string;
+  svixId: string;
+  svixTimestamp: string;
+  svixSignature: string;
+}) => {
+  const timestamp = Number(svixTimestamp);
+  if (!Number.isFinite(timestamp)) {
+    return false;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - timestamp) > 300) {
+    return false;
+  }
+
+  const key = parseSecret(secret);
+  const signedContent = `${svixId}.${svixTimestamp}.${payload}`;
+  const expected = crypto
+    .createHmac("sha256", key)
+    .update(signedContent)
+    .digest("base64");
+
+  const signatures = svixSignature
+    .trim()
+    .split(" ")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  for (const signaturePart of signatures) {
+    const [version, signature] = signaturePart.split(",");
+    if (version === "v1" && signature && safeCompare(signature, expected)) {
+      return true;
+    }
+  }
+
+  return false;
 };
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -63,12 +123,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   let event: ClerkWebhookEvent;
   try {
     const rawBody = await readRawBody(req);
-    const wh = new Webhook(webhookSecret);
-    event = wh.verify(rawBody, {
-      "svix-id": svixId,
-      "svix-timestamp": svixTimestamp,
-      "svix-signature": svixSignature,
-    }) as ClerkWebhookEvent;
+    const isValid = verifySvixSignature({
+      payload: rawBody,
+      secret: webhookSecret,
+      svixId,
+      svixTimestamp,
+      svixSignature,
+    });
+    if (!isValid) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid webhook signature" });
+    }
+    event = JSON.parse(rawBody) as ClerkWebhookEvent;
   } catch (error) {
     return res
       .status(401)
