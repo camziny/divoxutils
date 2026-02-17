@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import { PageReload } from "@/app/components/PageReload";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
+import prisma from "../../../../../prisma/prismaClient";
 
 const CharacterListOptimized = dynamic(
   () => import("@/app/components/CharacterListOptimized"),
@@ -22,10 +23,7 @@ interface CharactersPageProps {
 async function fetchCharactersForUser(userId: string) {
   const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
   const response = await fetch(apiUrl, {
-    next: {
-      revalidate: 60,
-      tags: [`other-characters-${userId}`],
-    },
+    cache: "no-store",
   });
   if (!response.ok) {
     console.error(
@@ -46,21 +44,13 @@ export default async function CharactersPage({
   const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as Record<string, string | string[]>;
   const userId = resolvedParams.userId as string;
 
-  const userRes = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`,
-    {
-      next: {
-        revalidate: 300,
-        tags: [`user-${userId}`],
-      },
-    }
-  );
-  if (!userRes.ok) {
-    throw new Error(
-      `Failed to fetch user: ${userRes.status} ${userRes.statusText}`
-    );
+  const userData = await prisma.user.findUnique({
+    where: { clerkUserId: userId },
+    select: { name: true },
+  });
+  if (!userData) {
+    throw new Error("Failed to fetch user");
   }
-  const userData = await userRes.json();
 
   const characters = await fetchCharactersForUser(userId);
 
