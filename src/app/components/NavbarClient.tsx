@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import UpdateUsernameModal from "./UpdateUserNameModal";
 type NavbarClientProps = {
   isUserSignedIn: boolean;
 };
@@ -18,7 +17,6 @@ const NAV_LINKS = [
 
 const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [usernameModalOpen, setUsernameModalOpen] = useState(false);
   const { user } = useUser();
   const [userName, setUserName] = useState<string | null>(null);
   const pathname = usePathname();
@@ -77,17 +75,24 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, [updateActiveIndicator]);
 
-  const handleUsernameUpdated = (newUsername: string) => {
-    setUserName(newUsername);
-  };
-
   useEffect(() => {
     if (user) {
+      // Prefer Clerk's in-memory username for immediate UI updates.
+      setUserName(user.username ?? null);
       fetch(`/api/users/${user.id}`)
         .then((res) => res.json())
-        .then((data) => setUserName(data.name));
+        .then((data) => setUserName(data?.username ?? data?.name ?? user.username ?? null))
+        .catch(() => {
+          // Keep the current name if the profile fetch fails.
+        });
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user?.username) {
+      setUserName(user.username);
+    }
+  }, [user?.username]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -178,12 +183,9 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                 My Characters
               </Link>
               {userName && (
-                <button
-                  onClick={() => setUsernameModalOpen(true)}
-                  className="text-[13px] font-medium text-gray-400 hover:text-white transition-colors"
-                >
+                <span className="text-[13px] font-medium text-gray-400">
                   {userName}
-                </button>
+                </span>
               )}
               <UserButton afterSignOutUrl="/" />
             </>
@@ -262,15 +264,9 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                   My Characters
                 </Link>
                 {userName && (
-                  <button
-                    onClick={() => {
-                      setUsernameModalOpen(true);
-                      setMenuOpen(false);
-                    }}
-                    className="rounded-md px-3 py-2.5 text-sm font-medium text-gray-400 hover:text-white text-left transition-colors"
-                  >
+                  <span className="rounded-md px-3 py-2.5 text-sm font-medium text-gray-400 text-left">
                     {userName}
-                  </button>
+                  </span>
                 )}
                 <div className="px-3 py-2.5">
                   <UserButton afterSignOutUrl="/" />
@@ -296,11 +292,6 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
         </div>
       )}
 
-      <UpdateUsernameModal
-        isOpen={usernameModalOpen}
-        onClose={() => setUsernameModalOpen(false)}
-        onUserNameUpdated={handleUsernameUpdated}
-      />
     </div>
   );
 };

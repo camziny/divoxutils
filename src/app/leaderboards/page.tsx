@@ -1,54 +1,15 @@
 import React from "react";
 import LeaderboardWrapper from "@/app/components/LeaderboardWrapper";
 import LeaderboardTooltip from "@/app/components/LeaderboardTooltip";
+import { getLeaderboardData, type LeaderboardItem } from "@/server/leaderboard";
 
 export const metadata = {
   title: "Leaderboards - divoxutils",
 };
 
-interface LeaderboardItem {
-  userId: number;
-  clerkUserId: string;
-  userName: string;
-  totalRealmPoints: number;
-  realmPointsLastWeek: number;
-  realmPointsThisWeek: number;
-  totalSoloKills: number;
-  soloKillsLastWeek: number;
-  soloKillsThisWeek: number;
-  totalDeaths: number;
-  deathsLastWeek: number;
-  deathsThisWeek: number;
-  totalDeathBlows: number;
-  deathBlowsLastWeek: number;
-  deathBlowsThisWeek: number;
-  irs: number;
-  irsLastWeek: number;
-  irsThisWeek: number;
-  lastUpdated: Date | null;
-}
-
 async function fetchLeaderboardData(): Promise<LeaderboardItem[]> {
   try {
-    const apiUrl = `${
-      process.env.NEXT_PUBLIC_API_URL
-    }/api/leaderboard`;
-    
-    const response = await fetch(apiUrl, {
-      next: { 
-        revalidate: 60,
-        tags: ['leaderboard']
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch leaderboard data: ${response.status} ${response.statusText}`
-      );
-    }
-
-    const data: LeaderboardItem[] = await response.json();
-    return data;
+    return await getLeaderboardData();
   } catch (error) {
     console.error("Error fetching leaderboard data:", error);
     return [];
