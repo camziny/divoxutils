@@ -5,7 +5,7 @@ import { Input, Button } from "@nextui-org/react";
 import { useRouter } from "next/navigation";
 import Loading from "../loading";
 import { User, GroupUserSearchProps } from "@/utils/group";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 const GroupUserSearch: React.FC<GroupUserSearchProps> = ({
   clerkUserId,

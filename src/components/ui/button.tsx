@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 const variantStyles: Record<string, string> = {
   default:
-    "bg-indigo-600 text-white shadow hover:bg-indigo-500 active:bg-indigo-700",
+    "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 active:bg-indigo-500/35",
   destructive:
     "bg-red-600 text-white shadow-sm hover:bg-red-500 active:bg-red-700",
   outline:

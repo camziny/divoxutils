@@ -4,7 +4,7 @@ import { CreateGroupButtonProps } from "@/utils/group";
 import { useRouter } from "next/navigation";
 import { Button } from "@nextui-org/react";
 import ConstructionIcon from "@mui/icons-material/Construction";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 function CreateGroupButton({ clerkUserId, name }: CreateGroupButtonProps) {
   const router = useRouter();

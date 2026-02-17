@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import IosShareIcon from "@mui/icons-material/IosShare";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import CheckIcon from "@mui/icons-material/Check";
 
 interface ShareProfileButtonProps {
@@ -19,15 +19,7 @@ const ShareProfileButton: React.FC<ShareProfileButtonProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       
-      toast(`Profile link copied to clipboard`, {
-        position: "top-center",
-        autoClose: 2000,
-        hideProgressBar: true,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
+      toast.success("Profile link copied to clipboard");
     });
   };
 
