@@ -1,42 +1,34 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { classesByRealm, allClasses, REALMS } from "./constants";
 
 function generateShortId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 8; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
 }
 
 function generateToken(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 24; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
+  return crypto.randomUUID() + crypto.randomUUID().slice(0, 12);
 }
 
 function generatePickSequence(
   teamSize: number,
-  firstPickTeam: number
-): number[] {
+  firstPickTeam: 1 | 2
+): (1 | 2)[] {
   const totalPicks = (teamSize - 1) * 2;
-  const secondPickTeam = firstPickTeam === 1 ? 2 : 1;
-  const sequence: number[] = [];
+  const secondPickTeam: 1 | 2 = firstPickTeam === 1 ? 2 : 1;
+  const sequence: (1 | 2)[] = [];
 
   sequence.push(firstPickTeam);
-  sequence.push(secondPickTeam);
-  if (sequence.length < totalPicks) {
-    sequence.push(secondPickTeam);
-  }
 
-  let currentTeam = firstPickTeam;
+  let currentTeam: 1 | 2 = secondPickTeam;
   while (sequence.length < totalPicks) {
     sequence.push(currentTeam);
+    if (sequence.length < totalPicks) {
+      sequence.push(currentTeam);
+    }
     currentTeam = currentTeam === firstPickTeam ? secondPickTeam : firstPickTeam;
   }
 
@@ -69,28 +61,20 @@ export const getDraft = query({
   },
 });
 
-export const getPlayersWithTokens = query({
-  args: { shortId: v.string() },
-  handler: async (ctx, { shortId }) => {
+export const getPlayerByToken = query({
+  args: { shortId: v.string(), token: v.string() },
+  handler: async (ctx, { shortId, token }) => {
     const draft = await ctx.db
       .query("drafts")
       .withIndex("by_shortId", (q) => q.eq("shortId", shortId))
       .unique();
     if (!draft) return null;
-    return await ctx.db
-      .query("draftPlayers")
-      .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
-      .collect();
-  },
-});
-
-export const getPlayerByToken = query({
-  args: { token: v.string() },
-  handler: async (ctx, { token }) => {
-    return await ctx.db
+    const player = await ctx.db
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", token))
       .unique();
+    if (!player || player.draftId !== draft._id) return null;
+    return player;
   },
 });
 
@@ -109,7 +93,16 @@ export const createDraft = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const shortId = generateShortId();
+    let shortId = generateShortId();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const existing = await ctx.db
+        .query("drafts")
+        .withIndex("by_shortId", (q) => q.eq("shortId", shortId))
+        .unique();
+      if (!existing) break;
+      shortId = generateShortId();
+      if (attempt === 4) throw new Error("Failed to generate unique draft ID");
+    }
 
     const draftId = await ctx.db.insert("drafts", {
       shortId,
@@ -145,21 +138,23 @@ export const assignCaptain = mutation({
   args: {
     draftId: v.id("drafts"),
     discordUserId: v.string(),
-    team: v.number(),
+    team: v.union(v.literal(1), v.literal(2)),
     token: v.string(),
   },
   handler: async (ctx, args) => {
     const draft = await ctx.db.get(args.draftId);
     if (!draft) throw new Error("Draft not found");
     if (draft.status !== "setup") throw new Error("Draft is not in setup phase");
-    if (args.team !== 1 && args.team !== 2)
-      throw new Error("Team must be 1 or 2");
 
     const callerPlayer = await ctx.db
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    if (!callerPlayer || callerPlayer.discordUserId !== draft.createdBy) {
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
       throw new Error("Only the draft creator can assign captains");
     }
 
@@ -225,7 +220,11 @@ export const updateSettings = mutation({
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    if (!callerPlayer || callerPlayer.discordUserId !== draft.createdBy) {
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
       throw new Error("Only the draft creator can update settings");
     }
 
@@ -267,7 +266,11 @@ export const startDraft = mutation({
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    if (!callerPlayer || callerPlayer.discordUserId !== draft.createdBy) {
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
       throw new Error("Only the draft creator can start the draft");
     }
 
@@ -307,17 +310,18 @@ export const setCoinFlipChoice = mutation({
       .unique();
     if (
       !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
       callerPlayer.discordUserId !== draft.coinFlipWinnerId
     ) {
       throw new Error("Only the coin flip winner can make this choice");
     }
 
-    const winnerTeam =
+    const winnerTeam: 1 | 2 =
       draft.coinFlipWinnerId === draft.team1CaptainId ? 1 : 2;
-    const loserTeam = winnerTeam === 1 ? 2 : 1;
+    const loserTeam: 1 | 2 = winnerTeam === 1 ? 2 : 1;
 
-    let firstPickTeam: number;
-    let firstRealmPickTeam: number | undefined;
+    let firstPickTeam: 1 | 2;
+    let firstRealmPickTeam: 1 | 2 | undefined;
     let nextStatus: "realm_pick" | "banning";
 
     if (draft.type === "traditional") {
@@ -340,9 +344,9 @@ export const setCoinFlipChoice = mutation({
       nextStatus = "banning";
     }
 
-    const banFirstTeam = firstPickTeam === 1 ? 2 : 1;
-    const banSecondTeam = firstPickTeam;
-    const banSequence = [
+    const banFirstTeam: 1 | 2 = firstPickTeam === 1 ? 2 : 1;
+    const banSecondTeam: 1 | 2 = firstPickTeam;
+    const banSequence: (1 | 2)[] = [
       banFirstTeam,
       banSecondTeam,
       banFirstTeam,
@@ -380,7 +384,9 @@ export const pickRealm = mutation({
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    if (!callerPlayer) throw new Error("Player not found");
+    if (!callerPlayer || callerPlayer.draftId !== args.draftId) {
+      throw new Error("Invalid token for this draft");
+    }
 
     const team1HasRealm = !!draft.team1Realm;
     const team2HasRealm = !!draft.team2Realm;
@@ -443,7 +449,9 @@ export const banClass = mutation({
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    if (!callerPlayer) throw new Error("Player not found");
+    if (!callerPlayer || callerPlayer.draftId !== args.draftId) {
+      throw new Error("Invalid token for this draft");
+    }
 
     const currentBanTeam = draft.banSequence![draft.currentBanIndex!];
     const expectedCaptainId =
@@ -529,7 +537,9 @@ export const pickPlayer = mutation({
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    if (!callerPlayer) throw new Error("Player not found");
+    if (!callerPlayer || callerPlayer.draftId !== args.draftId) {
+      throw new Error("Invalid token for this draft");
+    }
 
     const currentPickTeam = draft.pickSequence![draft.currentPickIndex!];
     const expectedCaptainId =
@@ -581,7 +591,11 @@ export const beginGame = mutation({
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    if (!callerPlayer || callerPlayer.discordUserId !== draft.createdBy) {
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
       throw new Error("Only the draft creator can begin the game");
     }
 
@@ -604,7 +618,11 @@ export const undoLastAction = mutation({
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    if (!callerPlayer || callerPlayer.discordUserId !== draft.createdBy) {
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
       throw new Error("Only the draft creator can undo");
     }
 
@@ -674,12 +692,52 @@ export const undoLastAction = mutation({
         .query("draftBans")
         .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
         .collect();
-      if (bans.length === 0) throw new Error("Nothing to undo");
+      if (bans.length === 0) {
+        if (draft.type === "traditional") {
+          const secondRealmTeam = draft.firstRealmPickTeam === 1 ? 2 : 1;
+          const realmToClear = secondRealmTeam === 1 ? "team1Realm" : "team2Realm";
+          await ctx.db.patch(args.draftId, {
+            status: "realm_pick",
+            [realmToClear]: undefined,
+            currentBanIndex: undefined,
+          });
+        } else {
+          await ctx.db.patch(args.draftId, {
+            status: "coin_flip",
+            coinFlipChoice: undefined,
+            firstPickTeam: undefined,
+            banSequence: undefined,
+            currentBanIndex: undefined,
+          });
+        }
+        return;
+      }
       const lastBan = bans[bans.length - 1];
       await ctx.db.delete(lastBan._id);
       await ctx.db.patch(args.draftId, {
         currentBanIndex: draft.currentBanIndex! - 1,
       });
+      return;
+    }
+
+    if (draft.status === "realm_pick") {
+      const hasAnyRealm = !!draft.team1Realm || !!draft.team2Realm;
+      if (!hasAnyRealm) {
+        await ctx.db.patch(args.draftId, {
+          status: "coin_flip",
+          coinFlipChoice: undefined,
+          firstPickTeam: undefined,
+          firstRealmPickTeam: undefined,
+          banSequence: undefined,
+          currentBanIndex: undefined,
+        });
+      } else {
+        const realmToClear =
+          draft.firstRealmPickTeam === 1 ? "team1Realm" : "team2Realm";
+        await ctx.db.patch(args.draftId, {
+          [realmToClear]: undefined,
+        });
+      }
       return;
     }
 
@@ -690,7 +748,7 @@ export const undoLastAction = mutation({
 export const setWinner = mutation({
   args: {
     draftId: v.id("drafts"),
-    winnerTeam: v.number(),
+    winnerTeam: v.union(v.literal(1), v.literal(2)),
     token: v.string(),
   },
   handler: async (ctx, args) => {
@@ -702,12 +760,12 @@ export const setWinner = mutation({
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", args.token))
       .unique();
-    if (!callerPlayer || callerPlayer.discordUserId !== draft.createdBy) {
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
       throw new Error("Only the draft creator can set the winner");
-    }
-
-    if (args.winnerTeam !== 1 && args.winnerTeam !== 2) {
-      throw new Error("Winner must be team 1 or 2");
     }
 
     await ctx.db.patch(args.draftId, {
@@ -719,11 +777,22 @@ export const setWinner = mutation({
 export const getActiveDrafts = query({
   args: {},
   handler: async (ctx) => {
-    const allDrafts = await ctx.db.query("drafts").collect();
-
-    const active = allDrafts.filter(
-      (d) => !(d.status === "complete" && d.gameStarted)
-    );
+    const statuses = ["setup", "coin_flip", "realm_pick", "banning", "drafting"] as const;
+    const active = [];
+    for (const status of statuses) {
+      const drafts = await ctx.db
+        .query("drafts")
+        .withIndex("by_status", (q) => q.eq("status", status))
+        .collect();
+      active.push(...drafts);
+    }
+    const completedNotStarted = (
+      await ctx.db
+        .query("drafts")
+        .withIndex("by_status", (q) => q.eq("status", "complete"))
+        .collect()
+    ).filter((d) => !d.gameStarted);
+    active.push(...completedNotStarted);
 
     const results = [];
     for (const draft of active) {
@@ -742,10 +811,6 @@ export const getActiveDrafts = query({
         team2CaptainId: draft.team2CaptainId,
         botPostedLink: draft.botPostedLink,
         botNotifiedCaptains: draft.botNotifiedCaptains,
-        tokens: players.map((p) => ({
-          discordUserId: p.discordUserId,
-          token: p.token,
-        })),
         players: players.map((p) => ({
           discordUserId: p.discordUserId,
           displayName: p.displayName,
@@ -758,6 +823,25 @@ export const getActiveDrafts = query({
   },
 });
 
+export const getActiveDraftTokens = internalQuery({
+  args: { shortId: v.string() },
+  handler: async (ctx, { shortId }) => {
+    const draft = await ctx.db
+      .query("drafts")
+      .withIndex("by_shortId", (q) => q.eq("shortId", shortId))
+      .unique();
+    if (!draft) return null;
+    const players = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+      .collect();
+    return players.map((p) => ({
+      discordUserId: p.discordUserId,
+      token: p.token,
+    }));
+  },
+});
+
 export const markBotPostedLink = mutation({
   args: { shortId: v.string() },
   handler: async (ctx, args) => {
@@ -765,9 +849,8 @@ export const markBotPostedLink = mutation({
       .query("drafts")
       .withIndex("by_shortId", (q) => q.eq("shortId", args.shortId))
       .unique();
-    if (draft) {
-      await ctx.db.patch(draft._id, { botPostedLink: true });
-    }
+    if (!draft) throw new Error("Draft not found");
+    await ctx.db.patch(draft._id, { botPostedLink: true });
   },
 });
 
@@ -778,9 +861,8 @@ export const markBotNotifiedCaptains = mutation({
       .query("drafts")
       .withIndex("by_shortId", (q) => q.eq("shortId", args.shortId))
       .unique();
-    if (draft) {
-      await ctx.db.patch(draft._id, { botNotifiedCaptains: true });
-    }
+    if (!draft) throw new Error("Draft not found");
+    await ctx.db.patch(draft._id, { botNotifiedCaptains: true });
   },
 });
 

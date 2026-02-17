@@ -1,11 +1,13 @@
+import { Id } from "../../../convex/_generated/dataModel";
+
 export interface DraftPlayer {
-  _id: string;
+  _id: Id<"draftPlayers">;
   _creationTime: number;
-  draftId: string;
+  draftId: Id<"drafts">;
   discordUserId: string;
   displayName: string;
   avatarUrl?: string;
-  team?: number;
+  team?: 1 | 2;
   isCaptain: boolean;
   pickOrder?: number;
 }
@@ -13,13 +15,13 @@ export interface DraftPlayer {
 export interface DraftBan {
   _id: string;
   _creationTime: number;
-  draftId: string;
-  team: number;
+  draftId: Id<"drafts">;
+  team: 1 | 2;
   className: string;
 }
 
 export interface DraftData {
-  _id: string;
+  _id: Id<"drafts">;
   _creationTime: number;
   shortId: string;
   type: "traditional" | "pvp";
@@ -37,17 +39,17 @@ export interface DraftData {
   team2Realm?: string;
   team1CaptainId?: string;
   team2CaptainId?: string;
-  firstPickTeam?: number;
-  firstRealmPickTeam?: number;
-  pickSequence?: number[];
+  firstPickTeam?: 1 | 2;
+  firstRealmPickTeam?: 1 | 2;
+  pickSequence?: (1 | 2)[];
   currentPickIndex?: number;
-  banSequence?: number[];
+  banSequence?: (1 | 2)[];
   currentBanIndex?: number;
   discordGuildId: string;
   discordChannelId: string;
   discordTextChannelId?: string;
   createdBy: string;
-  winnerTeam?: number;
+  winnerTeam?: 1 | 2;
   gameStarted?: boolean;
   botPostedLink?: boolean;
   botNotifiedCaptains?: boolean;
@@ -56,12 +58,12 @@ export interface DraftData {
 }
 
 export interface CurrentPlayer {
-  _id: string;
+  _id: Id<"draftPlayers">;
   _creationTime: number;
-  draftId: string;
+  draftId: Id<"drafts">;
   discordUserId: string;
   displayName: string;
-  team?: number;
+  team?: 1 | 2;
   isCaptain: boolean;
   pickOrder?: number;
   token: string;

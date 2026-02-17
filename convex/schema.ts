@@ -1,6 +1,8 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const teamNumber = v.union(v.literal(1), v.literal(2));
+
 export default defineSchema({
   drafts: defineTable({
     shortId: v.string(),
@@ -20,28 +22,30 @@ export default defineSchema({
     team2Realm: v.optional(v.string()),
     team1CaptainId: v.optional(v.string()),
     team2CaptainId: v.optional(v.string()),
-    firstPickTeam: v.optional(v.number()),
-    firstRealmPickTeam: v.optional(v.number()),
-    pickSequence: v.optional(v.array(v.number())),
+    firstPickTeam: v.optional(teamNumber),
+    firstRealmPickTeam: v.optional(teamNumber),
+    pickSequence: v.optional(v.array(teamNumber)),
     currentPickIndex: v.optional(v.number()),
-    banSequence: v.optional(v.array(v.number())),
+    banSequence: v.optional(v.array(teamNumber)),
     currentBanIndex: v.optional(v.number()),
     discordGuildId: v.string(),
     discordChannelId: v.string(),
     discordTextChannelId: v.optional(v.string()),
     createdBy: v.string(),
-    winnerTeam: v.optional(v.number()),
+    winnerTeam: v.optional(teamNumber),
     gameStarted: v.optional(v.boolean()),
     botPostedLink: v.optional(v.boolean()),
     botNotifiedCaptains: v.optional(v.boolean()),
-  }).index("by_shortId", ["shortId"]),
+  })
+    .index("by_shortId", ["shortId"])
+    .index("by_status", ["status"]),
 
   draftPlayers: defineTable({
     draftId: v.id("drafts"),
     discordUserId: v.string(),
     displayName: v.string(),
     avatarUrl: v.optional(v.string()),
-    team: v.optional(v.number()),
+    team: v.optional(teamNumber),
     isCaptain: v.boolean(),
     pickOrder: v.optional(v.number()),
     token: v.string(),
@@ -51,7 +55,7 @@ export default defineSchema({
 
   draftBans: defineTable({
     draftId: v.id("drafts"),
-    team: v.number(),
+    team: teamNumber,
     className: v.string(),
   }).index("by_draft", ["draftId"]),
 
