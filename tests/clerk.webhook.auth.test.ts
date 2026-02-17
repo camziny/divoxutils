@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import crypto from "crypto";
 import webhookHandler from "../pages/api/clerk-webhook";
 
 function createMockResponse() {
@@ -47,6 +48,24 @@ function createWebhookRequest(options?: {
   return req;
 }
 
+function createValidSvixSignature(options: {
+  secret: string;
+  svixId: string;
+  svixTimestamp: string;
+  payload: string;
+}) {
+  const normalizedSecret = options.secret.startsWith("whsec_")
+    ? options.secret.slice(6)
+    : options.secret;
+  const key = Buffer.from(normalizedSecret, "base64");
+  const signedContent = `${options.svixId}.${options.svixTimestamp}.${options.payload}`;
+  const signature = crypto
+    .createHmac("sha256", key)
+    .update(signedContent)
+    .digest("base64");
+  return `v1,${signature}`;
+}
+
 test("clerk webhook rejects missing svix headers", async () => {
   const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
   process.env.CLERK_WEBHOOK_SECRET = "whsec_test_secret";
@@ -89,6 +108,45 @@ test("clerk webhook rejects invalid svix signature", async () => {
     success: false,
     message: "Invalid webhook signature",
   });
+
+  process.env.CLERK_WEBHOOK_SECRET = previousSecret;
+});
+
+test("clerk webhook accepts valid svix signature and continues payload validation", async () => {
+  const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
+  const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
+  process.env.CLERK_WEBHOOK_SECRET = `whsec_${base64Secret}`;
+
+  const payload = JSON.stringify({
+    type: "user.updated",
+    data: {
+      id: "user_123",
+      username: "alice",
+    },
+  });
+  const svixId = "msg_valid_123";
+  const svixTimestamp = String(Math.floor(Date.now() / 1000));
+  const svixSignature = createValidSvixSignature({
+    secret: process.env.CLERK_WEBHOOK_SECRET,
+    svixId,
+    svixTimestamp,
+    payload,
+  });
+
+  const req = createWebhookRequest({
+    headers: {
+      "svix-id": svixId,
+      "svix-timestamp": svixTimestamp,
+      "svix-signature": svixSignature,
+    },
+    body: payload,
+  });
+  const res = createMockResponse();
+
+  await webhookHandler(req, res);
+
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(res.body, { error: "Invalid clerk data" });
 
   process.env.CLERK_WEBHOOK_SECRET = previousSecret;
 });
