@@ -18,7 +18,7 @@ const COMMANDS = [
 
 export default function DiscordPage() {
   return (
-    <div className="bg-gray-950 min-h-screen text-gray-300">
+    <div className="bg-gray-900 min-h-screen text-gray-300">
       <div className="mx-auto max-w-3xl px-4 py-16 space-y-16">
         <header className="space-y-4">
           <h1 className="text-3xl font-bold text-white tracking-tight">

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
@@ -22,6 +22,60 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
   const { user } = useUser();
   const [userName, setUserName] = useState<string | null>(null);
   const pathname = usePathname();
+
+  const navRef = useRef<HTMLElement>(null);
+  const linkRefs = useRef<Map<string, HTMLAnchorElement>>(new Map());
+  const [indicator, setIndicator] = useState({ left: 0, width: 0, opacity: 0 });
+  const [hoverIndicator, setHoverIndicator] = useState({ left: 0, width: 0, opacity: 0 });
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  const isActive = useCallback(
+    (href: string) => pathname === href || pathname?.startsWith(href + "/"),
+    [pathname]
+  );
+
+  const measureLink = useCallback(
+    (href: string) => {
+      const navEl = navRef.current;
+      const linkEl = linkRefs.current.get(href);
+      if (!navEl || !linkEl) return null;
+      const navRect = navEl.getBoundingClientRect();
+      const linkRect = linkEl.getBoundingClientRect();
+      return { left: linkRect.left - navRect.left, width: linkRect.width };
+    },
+    []
+  );
+
+  const updateActiveIndicator = useCallback(() => {
+    const activeLink = NAV_LINKS.find((l) => isActive(l.href));
+    if (!activeLink) {
+      setIndicator((prev) => ({ ...prev, opacity: 0 }));
+      setHasInitialized(false);
+      return;
+    }
+    const measured = measureLink(activeLink.href);
+    if (measured) {
+      if (!hasInitialized) {
+        setIndicator({ ...measured, opacity: 1 });
+        setHasInitialized(true);
+      } else {
+        setIndicator({ ...measured, opacity: 1 });
+      }
+    }
+  }, [isActive, measureLink, hasInitialized]);
+
+  useEffect(() => {
+    updateActiveIndicator();
+  }, [pathname, updateActiveIndicator]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      updateActiveIndicator();
+      setHoverIndicator((prev) => ({ ...prev, opacity: 0 }));
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [updateActiveIndicator]);
 
   const handleUsernameUpdated = (newUsername: string) => {
     setUserName(newUsername);
@@ -61,20 +115,53 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
           <span className="text-white">u</span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1 lg:justify-self-center">
+        <nav
+          ref={navRef}
+          className="hidden lg:flex items-center gap-1 lg:justify-self-center relative"
+          onMouseLeave={() => setHoverIndicator((prev) => ({ ...prev, opacity: 0 }))}
+        >
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                pathname === link.href || pathname?.startsWith(link.href + "/")
-                  ? "text-white bg-gray-800/60"
-                  : "text-gray-400 hover:text-white hover:bg-gray-800/40"
+              ref={(el) => {
+                if (el) linkRefs.current.set(link.href, el);
+              }}
+              onMouseEnter={() => {
+                const measured = measureLink(link.href);
+                if (measured) setHoverIndicator({ ...measured, opacity: 1 });
+              }}
+              className={`rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors relative z-10 ${
+                isActive(link.href)
+                  ? "text-white"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
               {link.label}
             </Link>
           ))}
+          <div
+            className="absolute bottom-0 h-[2px] bg-gray-500/40 rounded-full"
+            style={{
+              left: hoverIndicator.left,
+              width: hoverIndicator.width,
+              opacity: hoverIndicator.opacity,
+              transition: hoverIndicator.opacity === 0
+                ? "opacity 150ms ease"
+                : "left 200ms ease, width 200ms ease, opacity 150ms ease",
+            }}
+          />
+          <div
+            className="absolute bottom-0 h-[2px] bg-white rounded-full"
+            style={{
+              left: indicator.left,
+              width: indicator.width,
+              opacity: indicator.opacity,
+              transition: hasInitialized
+                ? "left 250ms cubic-bezier(0.4, 0, 0.2, 1), width 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms ease"
+                : "none",
+            }}
+          />
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 lg:justify-self-end">
