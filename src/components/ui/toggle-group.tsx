@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 interface ToggleGroupProps {
   value: string;
   onValueChange: (value: string) => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
 }
 
