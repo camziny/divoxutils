@@ -3,15 +3,6 @@
 import React, { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 
-type ClerkUser = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  emailAddresses: { id: string; emailAddress: string }[];
-  primaryEmailAddressId: string;
-};
-
 const UpdateUserName = () => {
   const { user } = useUser();
   const [newUsername, setNewUsername] = useState("");
@@ -33,29 +24,11 @@ const UpdateUserName = () => {
 
     setUpdating(true);
 
-    const clerkUser = user as ClerkUser;
-    const primaryEmailId =
-      clerkUser.primaryEmailAddressId || "default_email_id";
-
-    const requestBody = {
-      data: {
-        id: clerkUser.id,
-        username: trimmedUsername,
-        first_name: clerkUser.firstName,
-        last_name: clerkUser.lastName,
-        email_addresses: clerkUser.emailAddresses.map((email) => ({
-          id: email.id || "default_email_id",
-          email_address: email.emailAddress,
-        })),
-        primary_email_address_id: primaryEmailId,
-      },
-    };
-
     try {
-      const response = await fetch("/api/clerk-webhook", {
-        method: "POST",
+      const response = await fetch("/api/users/update-username", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ username: trimmedUsername }),
       });
 
       if (!response.ok) {

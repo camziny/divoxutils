@@ -35,26 +35,11 @@ const UpdateUsernameModal: React.FC<UpdateUsernameModalProps> = ({
 
     setUpdating(true);
 
-    const primaryEmailId = user.primaryEmailAddressId || "default_email_id";
-    const requestBody = {
-      data: {
-        id: user.id,
-        username: trimmedUsername,
-        first_name: user.firstName,
-        last_name: user.lastName,
-        email_addresses: user.emailAddresses.map((email) => ({
-          id: email.id || "default_email_id",
-          email_address: email.emailAddress,
-        })),
-        primary_email_address_id: primaryEmailId,
-      },
-    };
-
     try {
-      const response = await fetch("/api/clerk-webhook", {
-        method: "POST",
+      const response = await fetch("/api/users/update-username", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ username: trimmedUsername }),
       });
 
       if (!response.ok) {
@@ -62,7 +47,7 @@ const UpdateUsernameModal: React.FC<UpdateUsernameModalProps> = ({
       }
 
       const result = await response.json();
-      onUserNameUpdated(newUsername);
+      onUserNameUpdated(trimmedUsername);
       alert("Username updated successfully!");
     } catch (error) {
       alert("Failed to update username.");
