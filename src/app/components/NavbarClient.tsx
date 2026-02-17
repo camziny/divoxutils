@@ -12,7 +12,6 @@ const NAV_LINKS = [
   { href: "/leaderboards", label: "Leaderboards" },
   { href: "/search", label: "Search" },
   { href: "/realm-ranks", label: "Realm Ranks" },
-  { href: "/draft", label: "Draft" },
   { href: "/discord", label: "Discord" },
   { href: "/about", label: "About" },
 ];
@@ -53,16 +52,16 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
 
   return (
     <div className="mx-auto max-w-6xl px-4">
-      <div className="flex h-14 items-center justify-between">
+      <div className="relative flex h-14 items-center justify-between lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center">
         <Link
           href="/"
-          className="text-sm font-bold tracking-tight hover:text-gray-300 transition-colors"
+          className="text-sm font-bold tracking-tight hover:text-gray-300 transition-colors lg:justify-self-start"
         >
           <span className="text-indigo-400">d</span>
           <span className="text-white">u</span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-1 lg:justify-self-center">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -78,7 +77,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
           ))}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-3 lg:justify-self-end">
           {isUserSignedIn ? (
             <>
               <Link
