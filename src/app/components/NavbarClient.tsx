@@ -1,217 +1,220 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import HomeIcon from "@mui/icons-material/Home";
-import SearchIcon from "@mui/icons-material/Search";
-import MenuIcon from "@mui/icons-material/Menu";
-import CloseIcon from "@mui/icons-material/Close";
-import { UserButton } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
+import { UserButton, useUser } from "@clerk/nextjs";
 import UpdateUsernameModal from "./UpdateUserNameModal";
-import { useUser } from "@clerk/nextjs";
-import EditIcon from "@mui/icons-material/Edit";
-import useFetchUser from "./FetchUser";
-import ConstructionIcon from "@mui/icons-material/Construction";
-import useFetchGroupByClerkUserId from "./FetchGroupUserName";
-import { FaDiscord } from "react-icons/fa";
-
 type NavbarClientProps = {
   isUserSignedIn: boolean;
 };
 
+const NAV_LINKS = [
+  { href: "/leaderboards", label: "Leaderboards" },
+  { href: "/search", label: "Search" },
+  { href: "/realm-ranks", label: "Realm Ranks" },
+  { href: "/discord", label: "Discord" },
+  { href: "/about", label: "About" },
+];
+
 const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isUpdateUsernameModalOpen, setIsUpdateUsernameModalOpen] =
-    useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [usernameModalOpen, setUsernameModalOpen] = useState(false);
   const { user } = useUser();
-  const { userData, isLoading } = useFetchUser(user?.id || " ");
   const [userName, setUserName] = useState<string | null>(null);
-
-  const { groupData, error } = useFetchGroupByClerkUserId(user?.id || "");
-
-  const groupName = groupData?.name;
+  const pathname = usePathname();
 
   const handleUsernameUpdated = (newUsername: string) => {
     setUserName(newUsername);
   };
 
-  const fetchUserName = async (clerkUserId: string) => {
-    const response = await fetch(`/api/users/${clerkUserId}`);
-    const data = await response.json();
-    return data.name;
-  };
-
   useEffect(() => {
     if (user) {
-      fetchUserName(user.id).then(setUserName);
+      fetch(`/api/users/${user.id}`)
+        .then((res) => res.json())
+        .then((data) => setUserName(data.name));
     }
   }, [user]);
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
-  const closeMenu = () => {
-    setIsMenuOpen(false);
-  };
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
 
   return (
-    <nav className="text-white p-4">
-      <div className="container mx-auto flex flex-wrap justify-between items-center">
-        <Link href="/">
-          <div className="group flex items-center px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10">
-            <HomeIcon className="text-indigo-400 group-hover:text-indigo-300 transition-colors duration-300" />
-            <span className="ml-2 font-semibold group-hover:text-white transition-colors duration-300">Home</span>
-          </div>
+    <div className="mx-auto max-w-6xl px-4">
+      <div className="relative flex h-14 items-center justify-between lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+        <Link
+          href="/"
+          className="text-sm font-bold tracking-tight hover:text-gray-300 transition-colors lg:justify-self-start"
+        >
+          <span className="text-indigo-400">d</span>
+          <span className="text-white">u</span>
         </Link>
 
-        <button
-          onClick={toggleMenu}
-          className="text-white lg:hidden focus:outline-none focus:ring-2 focus:ring-indigo-500/50 p-3 rounded-xl hover:bg-white/10 transition-all duration-300 border border-transparent hover:border-indigo-500/30"
-        >
-          {isMenuOpen ? <CloseIcon /> : <MenuIcon />}
-        </button>
-        <div
-          className={`${
-            isMenuOpen ? "flex" : "hidden"
-          } lg:flex flex-col lg:flex-row flex-grow justify-between items-center w-full lg:w-auto`}
-        >
-          <div className="flex flex-col lg:flex-row lg:space-x-2 mt-4 md:mt-0 w-full lg:w-auto lg:ml-auto">
-            <Link href="/about">
-              <div
-                onClick={closeMenu}
-                className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-              >
-                <span className="font-medium group-hover:text-white transition-colors duration-300">About</span>
-              </div>
+        <nav className="hidden lg:flex items-center gap-1 lg:justify-self-center">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                pathname === link.href || pathname?.startsWith(link.href + "/")
+                  ? "text-white bg-gray-800/60"
+                  : "text-gray-400 hover:text-white hover:bg-gray-800/40"
+              }`}
+            >
+              {link.label}
             </Link>
-            
-            {isUserSignedIn && (
-              <>
-                <Link href="/user-characters">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  >
-                    <span className="font-medium group-hover:text-white transition-colors duration-300">My Characters</span>
-                  </div>
-                </Link>
-                <Link href="/leaderboards">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  >
-                    <span className="font-medium group-hover:text-white transition-colors duration-300">Leaderboards</span>
-                  </div>
-                </Link>
-                <Link href="/search">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  >
-                    <span className="font-medium group-hover:text-white transition-colors duration-300">Search</span>
-                    <SearchIcon className="text-indigo-400 group-hover:text-indigo-300 ml-2 transition-colors duration-300" />
-                  </div>
-                </Link>
-                <Link href="/discord">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  >
-                    <span className="font-medium group-hover:text-white transition-colors duration-300">Discord Bot</span>
-                    <FaDiscord
-                      className="text-indigo-400 group-hover:text-indigo-300 ml-2 transition-colors duration-300"
-                      size={18}
-                    />
-                  </div>
-                </Link>
-                <Link href="/realm-ranks">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  >
-                    <span className="font-medium group-hover:text-white transition-colors duration-300">Realm Ranks</span>
-                  </div>
-                </Link>
-                <div
-                  className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  onClick={() => setIsUpdateUsernameModalOpen(true)}
+          ))}
+        </nav>
+
+        <div className="hidden lg:flex items-center gap-3 lg:justify-self-end">
+          {isUserSignedIn ? (
+            <>
+              <Link
+                href="/user-characters"
+                className={`rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                  pathname === "/user-characters"
+                    ? "text-white bg-gray-800/60"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800/40"
+                }`}
+              >
+                My Characters
+              </Link>
+              {userName && (
+                <button
+                  onClick={() => setUsernameModalOpen(true)}
+                  className="text-[13px] font-medium text-gray-400 hover:text-white transition-colors"
                 >
-                  <span className="mr-2 font-semibold group-hover:text-white transition-colors duration-300">{userName}</span>
-                  {userName && (
-                    <EditIcon className="text-indigo-400 group-hover:text-indigo-300 transition-colors duration-300" />
-                  )}
-                </div>
-                <UpdateUsernameModal
-                  isOpen={isUpdateUsernameModalOpen}
-                  onClose={() => setIsUpdateUsernameModalOpen(false)}
-                  onUserNameUpdated={handleUsernameUpdated}
-                />
-              </>
-            )}
-            {!isUserSignedIn && (
-              <>
-                <Link href="/leaderboards">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  >
-                    <span className="font-medium group-hover:text-white transition-colors duration-300">Leaderboards</span>
-                  </div>
-                </Link>
-                <Link href="/search">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  >
-                    <span className="font-medium group-hover:text-white transition-colors duration-300">Search</span>
-                    <SearchIcon className="text-indigo-400 group-hover:text-indigo-300 ml-2 transition-colors duration-300" />
-                  </div>
-                </Link>
-                <Link href="/discord">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  >
-                    <span className="font-medium group-hover:text-white transition-colors duration-300">Discord Bot</span>
-                    <FaDiscord
-                      className="text-indigo-400 group-hover:text-indigo-300 ml-2 transition-colors duration-300"
-                      size={18}
-                    />
-                  </div>
-                </Link>
-                <Link href="/realm-ranks">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  >
-                    <span className="font-medium group-hover:text-white transition-colors duration-300">Realm Ranks</span>
-                  </div>
-                </Link>
-                <Link href="/sign-in">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                  >
-                    <span className="font-medium group-hover:text-white transition-colors duration-300">Sign In</span>
-                  </div>
-                </Link>
-                <Link href="/sign-up">
-                  <div
-                    onClick={closeMenu}
-                    className="group px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition-all duration-300 cursor-pointer w-full lg:w-auto text-sm lg:text-base flex items-center lg:justify-end border border-transparent hover:shadow-lg hover:shadow-indigo-500/25"
-                  >
-                    <span className="font-semibold text-white">Register</span>
-                  </div>
-                </Link>
-              </>
-            )}
-            <div className="ml-2">
+                  {userName}
+                </button>
+              )}
               <UserButton afterSignOutUrl="/" />
-            </div>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/sign-in"
+                className="rounded-md px-3 py-1.5 text-[13px] font-medium text-gray-400 hover:text-white transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/sign-up"
+                className="rounded-md border border-gray-700 px-3 py-1.5 text-[13px] font-medium text-gray-300 hover:border-gray-600 hover:text-white transition-colors"
+              >
+                Register
+              </Link>
+            </>
+          )}
+        </div>
+
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="lg:hidden relative w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+          aria-label="Toggle menu"
+        >
+          <div className="flex flex-col gap-[5px]">
+            <span
+              className={`block h-[1.5px] w-4 bg-current transition-all duration-200 ${
+                menuOpen ? "translate-y-[6.5px] rotate-45" : ""
+              }`}
+            />
+            <span
+              className={`block h-[1.5px] w-4 bg-current transition-all duration-200 ${
+                menuOpen ? "opacity-0" : ""
+              }`}
+            />
+            <span
+              className={`block h-[1.5px] w-4 bg-current transition-all duration-200 ${
+                menuOpen ? "-translate-y-[6.5px] -rotate-45" : ""
+              }`}
+            />
+          </div>
+        </button>
+      </div>
+
+      {menuOpen && (
+        <div className="lg:hidden fixed inset-0 top-14 z-40 bg-gray-900">
+          <div className="flex flex-col px-4 py-6 space-y-1">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                  pathname === link.href || pathname?.startsWith(link.href + "/")
+                    ? "text-white bg-gray-800/60"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800/40"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+
+            <div className="border-t border-gray-800 my-3" />
+
+            {isUserSignedIn ? (
+              <>
+                <Link
+                  href="/user-characters"
+                  className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                    pathname === "/user-characters"
+                      ? "text-white bg-gray-800/60"
+                      : "text-gray-400 hover:text-white hover:bg-gray-800/40"
+                  }`}
+                >
+                  My Characters
+                </Link>
+                {userName && (
+                  <button
+                    onClick={() => {
+                      setUsernameModalOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="rounded-md px-3 py-2.5 text-sm font-medium text-gray-400 hover:text-white text-left transition-colors"
+                  >
+                    {userName}
+                  </button>
+                )}
+                <div className="px-3 py-2.5">
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              </>
+            ) : (
+              <div className="flex gap-2 px-3 pt-2">
+                <Link
+                  href="/sign-in"
+                  className="rounded-md px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="rounded-md border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:border-gray-600 hover:text-white transition-colors"
+                >
+                  Register
+                </Link>
+              </div>
+            )}
           </div>
         </div>
-      </div>
-    </nav>
+      )}
+
+      <UpdateUsernameModal
+        isOpen={usernameModalOpen}
+        onClose={() => setUsernameModalOpen(false)}
+        onUserNameUpdated={handleUsernameUpdated}
+      />
+    </div>
   );
 };
 
