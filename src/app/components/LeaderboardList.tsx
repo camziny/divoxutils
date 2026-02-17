@@ -3,7 +3,8 @@ import React, { useEffect, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import { ViewportPrefetchLink } from "./ViewportPrefetchLink";
-import { Button, Pagination, ButtonGroup } from "@nextui-org/react";
+import { Pagination } from "@nextui-org/react";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -195,44 +196,32 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
     <section className="max-w-3xl mx-auto px-6">
       <div className="mb-6 flex flex-col items-center">
         <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <ButtonGroup className="shadow-sm">
+          <div className="inline-flex">
             <Button
               onClick={() => handlePeriodChange("total")}
-              className={`
-                px-4 py-2 text-sm font-medium transition-colors duration-200
-                ${selectedPeriod === "total" 
-                  ? "bg-indigo-600 text-white border-indigo-600" 
-                  : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
-                }
-              `}
+              variant={selectedPeriod === "total" ? "default" : "secondary"}
+              size="sm"
+              className="rounded-r-none border-r border-r-gray-700/50 h-auto py-1.5 text-[13px]"
             >
               Total
             </Button>
             <Button
               onClick={() => handlePeriodChange("lastWeek")}
-              className={`
-                px-4 py-2 text-sm font-medium transition-colors duration-200 border-l-0
-                ${selectedPeriod === "lastWeek" 
-                  ? "bg-indigo-600 text-white border-indigo-600" 
-                  : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
-                }
-              `}
+              variant={selectedPeriod === "lastWeek" ? "default" : "secondary"}
+              size="sm"
+              className="rounded-none border-r border-r-gray-700/50 h-auto py-1.5 text-[13px]"
             >
               Last Week
             </Button>
             <Button
               onClick={() => handlePeriodChange("thisWeek")}
-              className={`
-                px-4 py-2 text-sm font-medium transition-colors duration-200 border-l-0
-                ${selectedPeriod === "thisWeek" 
-                  ? "bg-indigo-600 text-white border-indigo-600" 
-                  : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
-                }
-              `}
+              variant={selectedPeriod === "thisWeek" ? "default" : "secondary"}
+              size="sm"
+              className="rounded-l-none h-auto py-1.5 text-[13px]"
             >
               This Week
             </Button>
-          </ButtonGroup>
+          </div>
           
           <Select
             value={selectedMetric}
