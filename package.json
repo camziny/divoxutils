@@ -11,7 +11,9 @@
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
-    "seed:from-prod": "node scripts/seedFromProduction.js"
+    "seed:from-prod": "node scripts/seedFromProduction.js",
+    "test:draft": "tsx --test tests/draft.feature.test.ts",
+    "test:feature": "tsx --test tests/draft.feature.test.ts tests/http.auth.test.ts"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",
@@ -82,6 +84,7 @@
     "playwright": "^1.40.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.20.5",
     "typescript": "^5.2.2"
   },
   "prisma": {

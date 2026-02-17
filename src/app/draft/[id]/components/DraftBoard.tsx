@@ -5,6 +5,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DraftData, CurrentPlayer } from "../../types";
+import { Id } from "../../../../../convex/_generated/dataModel";
 import {
   REALMS,
   classesByRealm,
@@ -213,7 +214,7 @@ export default function DraftBoard({
               onClick={() =>
                 act(() =>
                   undoLastAction({
-                    draftId: draft._id as any,
+                    draftId: draft._id,
                     token: token!,
                   })
                 )
@@ -234,7 +235,7 @@ export default function DraftBoard({
           onUpdateType={(type) =>
             act(() =>
               updateSettings({
-                draftId: draft._id as any,
+                draftId: draft._id,
                 type,
                 teamSize: draft.teamSize,
                 token: token!,
@@ -244,7 +245,7 @@ export default function DraftBoard({
           onUpdateSize={(teamSize) =>
             act(() =>
               updateSettings({
-                draftId: draft._id as any,
+                draftId: draft._id,
                 type: draft.type,
                 teamSize,
                 token: token!,
@@ -252,7 +253,7 @@ export default function DraftBoard({
             )
           }
           onStart={() =>
-            act(() => startDraft({ draftId: draft._id as any, token: token! }))
+            act(() => startDraft({ draftId: draft._id, token: token! }))
           }
           canStart={!!canStart}
         />
@@ -266,6 +267,15 @@ export default function DraftBoard({
         </div>
       )}
 
+      {isSetup && draft.players.length < draft.teamSize * 2 && (
+        <div className="flex items-center justify-center rounded-lg border border-yellow-800/40 bg-yellow-950/20 px-4 py-3">
+          <span className="text-xs text-yellow-500/80">
+            Need at least {draft.teamSize * 2} players for a {draft.teamSize}v{draft.teamSize} draft
+            — currently have {draft.players.length}
+          </span>
+        </div>
+      )}
+
       {isCoinFlip && (
         <CoinFlipSection
           draft={draft}
@@ -275,7 +285,7 @@ export default function DraftBoard({
           onChoice={(choice) =>
             act(() =>
               setCoinFlipChoice({
-                draftId: draft._id as any,
+                draftId: draft._id,
                 choice,
                 token: token!,
               })
@@ -293,7 +303,7 @@ export default function DraftBoard({
           onPick={(realm) =>
             act(() =>
               pickRealm({
-                draftId: draft._id as any,
+                draftId: draft._id,
                 realm,
                 token: token!,
               })
@@ -315,7 +325,7 @@ export default function DraftBoard({
           onBan={(className) =>
             act(() =>
               banClass({
-                draftId: draft._id as any,
+                draftId: draft._id,
                 className,
                 token: token!,
               })
@@ -364,7 +374,7 @@ export default function DraftBoard({
           onAssignCaptain={(discordUserId, team) =>
             act(() =>
               assignCaptain({
-                draftId: draft._id as any,
+                draftId: draft._id,
                 discordUserId,
                 team,
                 token: token!,
@@ -374,8 +384,8 @@ export default function DraftBoard({
           onPickPlayer={(playerId) =>
             act(() =>
               pickPlayer({
-                draftId: draft._id as any,
-                playerId: playerId as any,
+                draftId: draft._id,
+                playerId,
                 token: token!,
               })
             )
@@ -408,7 +418,7 @@ export default function DraftBoard({
             onClick={() =>
               act(() =>
                 beginGame({
-                  draftId: draft._id as any,
+                  draftId: draft._id,
                   token: token!,
                 })
               )
@@ -436,7 +446,7 @@ export default function DraftBoard({
             onClick={() =>
               act(() =>
                 setWinner({
-                  draftId: draft._id as any,
+                  draftId: draft._id,
                   winnerTeam: 1,
                   token: token!,
                 })
@@ -452,7 +462,7 @@ export default function DraftBoard({
             onClick={() =>
               act(() =>
                 setWinner({
-                  draftId: draft._id as any,
+                  draftId: draft._id,
                   winnerTeam: 2,
                   token: token!,
                 })
@@ -994,8 +1004,8 @@ function TeamPanel({
   showWinner,
 }: {
   team: number;
-  captain?: { displayName: string; _id: string; avatarUrl?: string } | null;
-  players: { _id: string; displayName: string; pickOrder?: number; avatarUrl?: string }[];
+  captain?: { displayName: string; _id: Id<"draftPlayers">; avatarUrl?: string } | null;
+  players: { _id: Id<"draftPlayers">; displayName: string; pickOrder?: number; avatarUrl?: string }[];
   realm?: string;
   teamSize: number;
   isActive: boolean;
@@ -1165,7 +1175,7 @@ function PlayerPool({
   onPickPlayer,
 }: {
   players: {
-    _id: string;
+    _id: Id<"draftPlayers">;
     discordUserId: string;
     displayName: string;
     avatarUrl?: string;
@@ -1178,8 +1188,8 @@ function PlayerPool({
   needsCaptain1: boolean;
   needsCaptain2: boolean;
   busy: boolean;
-  onAssignCaptain: (discordUserId: string, team: number) => void;
-  onPickPlayer: (playerId: string) => void;
+  onAssignCaptain: (discordUserId: string, team: 1 | 2) => void;
+  onPickPlayer: (playerId: Id<"draftPlayers">) => void;
 }) {
   const selectingCaptain = isSetup && isCreator && (needsCaptain1 || needsCaptain2);
   const canInteract = selectingCaptain || (isDrafting && isMyPickTurn);

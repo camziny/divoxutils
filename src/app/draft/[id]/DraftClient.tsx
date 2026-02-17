@@ -15,7 +15,7 @@ export default function DraftClient({
   const draft = useQuery(api.drafts.getDraft, { shortId });
   const currentPlayer = useQuery(
     api.drafts.getPlayerByToken,
-    token ? { token } : "skip"
+    token ? { shortId, token } : "skip"
   );
 
   if (draft === undefined) {
@@ -38,8 +38,8 @@ export default function DraftClient({
 
   return (
     <DraftBoard
-      draft={draft as unknown as DraftData}
-      currentPlayer={(currentPlayer as unknown as CurrentPlayer) || null}
+      draft={draft as DraftData}
+      currentPlayer={(currentPlayer as CurrentPlayer) ?? null}
       isCreator={isCreator}
       token={token}
     />
