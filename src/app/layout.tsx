@@ -8,8 +8,7 @@ import Footer from "./footer";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "./providers";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -52,7 +51,17 @@ export default function RootLayout({
               <SpeedInsights />
               <Analytics />
               <Footer />
-              <ToastContainer />
+              <Toaster
+                theme="dark"
+                position="bottom-right"
+                toastOptions={{
+                  style: {
+                    background: "#1f2937",
+                    border: "1px solid #374151",
+                    color: "#e5e7eb",
+                  },
+                }}
+              />
             </Providers>
           </div>
         </body>

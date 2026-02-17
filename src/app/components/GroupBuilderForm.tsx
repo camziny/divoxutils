@@ -17,7 +17,7 @@ import GroupDraggable from "./GroupDraggable";
 import GroupRealmSelector from "./GroupRealmSelector";
 import CloseIcon from "@mui/icons-material/Close";
 import { Checkbox, Button } from "@nextui-org/react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import {
   GroupUser,
@@ -303,15 +303,7 @@ const GroupBuilderForm: React.FC<GroupBuilderFormProps> = ({
     navigator.clipboard
       .writeText(urlToCopy)
       .then(() => {
-        toast("Link copied to clipboard", {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        });
+        toast.success("Link copied to clipboard");
       })
       .catch((err) => {
         console.error("Failed to copy URL:", err);

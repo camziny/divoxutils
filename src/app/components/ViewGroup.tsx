@@ -8,7 +8,7 @@ import {
 import Link from "next/link";
 import { useUser } from "@clerk/clerk-react";
 import { ViewGroupProps } from "@/utils/group";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { Button } from "@nextui-org/react";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import Loading from "../loading";
@@ -58,15 +58,7 @@ const ViewGroup: React.FC<ViewGroupProps> = ({
     navigator.clipboard
       .writeText(urlToCopy)
       .then(() => {
-        toast("Link copied to clipboard", {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-        });
+        toast.success("Link copied to clipboard");
       })
       .catch((err) => {
         console.error("Failed to copy URL:", err);
