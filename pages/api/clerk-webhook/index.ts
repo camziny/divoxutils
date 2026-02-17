@@ -18,6 +18,24 @@ interface ClerkWebhookEvent {
   };
 }
 
+type UserData = {
+  email: string;
+  name?: string | null;
+  clerkUserId: string;
+};
+
+type WebhookDeps = {
+  deleteLocalUserByClerkId: (clerkUserId: string) => Promise<void>;
+  findLocalUserByClerkId: (clerkUserId: string) => Promise<{
+    clerkUserId: string;
+  } | null>;
+  updateLocalUsername: (
+    clerkUserId: string,
+    username: string | null
+  ) => Promise<void>;
+  createLocalUserFromClerk: (userData: UserData) => Promise<unknown>;
+};
+
 export const config = {
   api: {
     bodyParser: false,
@@ -92,7 +110,8 @@ const verifySvixSignature = ({
   return false;
 };
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+export const createClerkWebhookHandler =
+  (deps: WebhookDeps) => async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "POST") {
     return res
       .status(405)
@@ -144,9 +163,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (event.type === "user.deleted") {
     try {
-      await prisma.user.deleteMany({
-        where: { clerkUserId: event.data.id },
-      });
+      await deps.deleteLocalUserByClerkId(event.data.id);
       return res
         .status(200)
         .json({ success: true, message: "User deleted successfully" });
@@ -172,26 +189,21 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const userData = {
     email: primaryEmailObj.email_address,
-    name: event.data.username,
+    name: event.data.username ?? null,
     clerkUserId: event.data.id,
   };
 
   try {
-    const existingUser = await prisma.user.findUnique({
-      where: { clerkUserId: userData.clerkUserId },
-    });
+    const existingUser = await deps.findLocalUserByClerkId(userData.clerkUserId);
 
     if (existingUser) {
-      await prisma.user.update({
-        where: { clerkUserId: event.data.id },
-        data: { name: event.data.username },
-      });
+      await deps.updateLocalUsername(event.data.id, event.data.username ?? null);
       return res
         .status(200)
         .json({ success: true, message: "User updated successfully" });
     }
 
-    const newUser = await createUserFromClerk(userData);
+    await deps.createLocalUserFromClerk(userData);
     return res
       .status(200)
       .json({ success: true, message: "User created successfully" });
@@ -199,5 +211,34 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+const handler = createClerkWebhookHandler({
+  deleteLocalUserByClerkId: async (clerkUserId) => {
+    const users = await prisma.user.findMany({
+      where: { clerkUserId },
+      select: { id: true },
+    });
+    const userIds = users.map((user) => user.id);
+
+    await prisma.$transaction([
+      prisma.groupUser.deleteMany({ where: { clerkUserId } }),
+      prisma.userCharacter.deleteMany({ where: { clerkUserId } }),
+      prisma.account.deleteMany({ where: { userId: { in: userIds } } }),
+      prisma.user.deleteMany({ where: { clerkUserId } }),
+    ]);
+  },
+  findLocalUserByClerkId: async (clerkUserId) =>
+    prisma.user.findUnique({
+      where: { clerkUserId },
+      select: { clerkUserId: true },
+    }),
+  updateLocalUsername: async (clerkUserId, username) => {
+    await prisma.user.update({
+      where: { clerkUserId },
+      data: { name: username },
+    });
+  },
+  createLocalUserFromClerk: createUserFromClerk,
+});
 
 export default handler;
