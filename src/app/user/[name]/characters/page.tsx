@@ -108,7 +108,7 @@ const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => 
         <div className="p-4 md:p-8 lg:p-12">
           <div className="max-w-screen-lg mx-auto">
             <div className="text-center mb-6">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">
+              <h1 className="text-2xl sm:text-3xl font-semibold text-white">
                 {user.name}
               </h1>
             </div>

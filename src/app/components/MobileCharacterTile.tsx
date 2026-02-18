@@ -66,14 +66,14 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   const opponentRealms = getOpponentRealms(characterDetails.realm);
 
   // Match CharacterTile colors exactly
-  const getRealmGradientClass = (realmName: string) => {
+  const getRealmColorClass = (realmName: string) => {
     switch (realmName) {
       case "Albion":
-        return "bg-gradient-to-r from-red-800/20 to-red-700/20";
+        return "bg-red-900/20";
       case "Midgard":
-        return "bg-gradient-to-r from-blue-800/20 to-blue-700/20";
+        return "bg-blue-900/20";
       case "Hibernia":
-        return "bg-gradient-to-r from-green-800/20 to-green-700/20";
+        return "bg-green-900/20";
       default:
         return "bg-gray-800/20";
     }
@@ -96,7 +96,7 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   return (
     <div className="mb-1 mx-3">
       <div
-        className={`relative overflow-hidden rounded-lg shadow-sm ${getRealmGradientClass(realm.name)} cursor-pointer`}
+        className={`relative overflow-hidden rounded-md border border-gray-800 ${getRealmColorClass(realm.name)} cursor-pointer`}
         onClick={() => setOpen(!open)}
       >
         <div className="flex items-center px-3 py-1.5">
@@ -117,17 +117,17 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
                 <h4 className="text-white font-medium text-sm leading-tight truncate">
                   {characterDetails.heraldName || "Unknown"}
                 </h4>
-                <p className="text-gray-300 text-xs">
+                <p className="text-gray-400 text-xs">
                   {characterDetails.heraldClassName || "Unknown"}
                 </p>
               </div>
               
               <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="text-right">
-                  <div className="text-white font-bold text-sm">
+                  <div className="text-white font-semibold text-sm">
                     {formattedRank || "0"}
                   </div>
-                  <div className="text-gray-300 text-xs">
+                  <div className="text-gray-400 text-xs">
                     {characterDetails.heraldServerName || "Unknown"}
                   </div>
                 </div>

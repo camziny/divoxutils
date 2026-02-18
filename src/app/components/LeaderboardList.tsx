@@ -3,8 +3,8 @@ import React, { useEffect, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import { ViewportPrefetchLink } from "./ViewportPrefetchLink";
-import { Pagination } from "@nextui-org/react";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
@@ -293,14 +293,6 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
           total={totalPages}
           page={currentPage}
           onChange={handlePageChange}
-          showControls
-          classNames={{
-            wrapper: "gap-1 overflow-visible h-10 rounded-md bg-gray-900 p-2 border border-gray-800",
-            item: "w-10 h-8 text-small rounded-md bg-transparent text-gray-500 hover:bg-gray-800/50 hover:text-gray-300 transition-colors",
-            cursor: "bg-indigo-500/20 text-indigo-300 font-semibold hover:bg-indigo-500/30",
-            prev: "w-10 h-8 rounded-md bg-transparent text-gray-500 hover:bg-gray-800/50 hover:text-indigo-400 transition-colors",
-            next: "w-10 h-8 rounded-md bg-transparent text-gray-500 hover:bg-gray-800/50 hover:text-indigo-400 transition-colors",
-          }}
         />
       </div>
     </section>
