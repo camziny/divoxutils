@@ -7,6 +7,8 @@ export const metadata = {
   title: "Leaderboards - divoxutils",
 };
 
+export const revalidate = 60;
+
 async function fetchLeaderboardData(): Promise<LeaderboardItem[]> {
   try {
     return await getLeaderboardData();
