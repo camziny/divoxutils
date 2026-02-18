@@ -61,13 +61,13 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
         </div>
         <div className="w-full flex flex-col items-center mt-2 pt-2 border-t border-gray-800">
           <CircularProgress
-            size="sm"
-            strokeWidth={4}
+            size="md"
+            strokeWidth={3}
             classNames={{
-              svg: "w-12 h-12",
+              svg: "w-14 h-14",
               indicator: "text-indigo-500",
               track: "stroke-white/10",
-              value: "text-sm font-semibold text-white",
+              value: "text-xs font-medium text-white",
             }}
             value={ratioOptions[selectedRatio].value}
             showValueLabel={true}
