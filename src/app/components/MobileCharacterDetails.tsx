@@ -72,7 +72,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
   };
 
   return (
-    <div className="bg-gray-900/95 rounded-xl p-3 mx-3 shadow-lg">
+    <div className="bg-gray-900 rounded-md border border-gray-800 p-3 mx-3">
       <div className="text-center mb-3 pb-2 border-b border-gray-800">
         <h3 className="text-base font-semibold text-white mb-1">{character.heraldName}</h3>
         {character.heraldGuildName && (
@@ -98,7 +98,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
         </div>
         <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden mb-1">
           <div 
-            className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600"
+            className="h-full bg-indigo-500"
             style={{ width: `${animatedProgress}%` }}
           />
         </div>
@@ -108,18 +108,18 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="bg-gray-800/50 rounded-lg p-2">
+        <div className="bg-gray-800/30 rounded-md p-2">
           <div className="text-xs text-gray-400">Total RP</div>
-          <div className="text-base font-bold text-white">{formatNumber(realmPoints)}</div>
+          <div className="text-base font-semibold text-white">{formatNumber(realmPoints)}</div>
         </div>
-        <div className="bg-gray-800/50 rounded-lg p-2">
+        <div className="bg-gray-800/30 rounded-md p-2">
           <div className="text-xs text-gray-400">IRS</div>
-          <div className="text-base font-bold text-white">{formatNumber(irs)}</div>
+          <div className="text-base font-semibold text-white">{formatNumber(irs)}</div>
         </div>
       </div>
 
-      <div className="bg-gray-800/30 rounded-lg p-2 mb-3">
-        <div className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">Weekly Progress</div>
+      <div className="bg-gray-800/30 rounded-md p-2 mb-3">
+        <div className="text-xs text-gray-400 mb-1.5">Weekly Progress</div>
         <div className="flex justify-between items-center">
           <div>
             <div className="text-xs text-gray-300">Last Week</div>
@@ -138,33 +138,33 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
       </div>
 
       <div className="space-y-1.5">
-        <div className="bg-gray-800/30 rounded-lg p-2">
+        <div className="bg-gray-800/30 rounded-md p-2">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-white">Total</span>
-            <div className="flex gap-3 text-xs">
-              <span className="bg-gray-700/50 px-2 py-0.5 rounded text-gray-300">
+            <div className="flex gap-2 text-xs">
+              <span className="bg-gray-800 px-2 py-0.5 rounded text-gray-400">
                 DB {dbPerKillRatio}%
               </span>
-              <span className="bg-gray-700/50 px-2 py-0.5 rounded text-gray-300">
+              <span className="bg-gray-800 px-2 py-0.5 rounded text-gray-400">
                 SK {skPerKillRatio}%
               </span>
             </div>
           </div>
           <div className="grid grid-cols-4 gap-2 text-center">
-            <div className="bg-gray-700/30 rounded-md py-2 px-1">
-              <div className="text-xs text-gray-400 mb-1">Kills</div>
+            <div className="py-1">
+              <div className="text-xs text-gray-400">Kills</div>
               <div className="text-sm font-semibold text-white">{formatNumber(totalKills)}</div>
             </div>
-            <div className="bg-gray-700/30 rounded-md py-2 px-1">
-              <div className="text-xs text-gray-400 mb-1">Deaths</div>
+            <div className="py-1">
+              <div className="text-xs text-gray-400">Deaths</div>
               <div className="text-sm font-semibold text-white">{formatNumber(totalDeaths)}</div>
             </div>
-            <div className="bg-gray-700/30 rounded-md py-2 px-1">
-              <div className="text-xs text-gray-400 mb-1">DBs</div>
+            <div className="py-1">
+              <div className="text-xs text-gray-400">DBs</div>
               <div className="text-sm font-semibold text-white">{formatNumber(totalDeathBlows)}</div>
             </div>
-            <div className="bg-gray-700/30 rounded-md py-2 px-1">
-              <div className="text-xs text-gray-400 mb-1">SKs</div>
+            <div className="py-1">
+              <div className="text-xs text-gray-400">SKs</div>
               <div className="text-sm font-semibold text-white">{formatNumber(totalSoloKills)}</div>
             </div>
           </div>
@@ -183,39 +183,37 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
           const realmSkRatio = kills === 0 ? 0 : ((soloKills / kills) * 100).toFixed(1);
 
           const realmColorMap: { [key: string]: string } = {
-            albion: "from-red-800/20 to-red-700/20",
-            midgard: "from-blue-800/20 to-blue-700/20", 
-            hibernia: "from-green-800/20 to-green-700/20"
+            albion: "bg-red-900/20",
+            midgard: "bg-blue-900/20", 
+            hibernia: "bg-green-900/20"
           };
 
           return (
-            <div key={realm} className={`bg-gradient-to-r ${realmColorMap[realmLower]} rounded-lg p-2`}>
+            <div key={realm} className={`${realmColorMap[realmLower]} rounded-md p-2`}>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm font-medium text-white">{realm}</span>
                 <div className="flex gap-2 text-xs">
-                  <span className="bg-gray-700/50 px-2 py-0.5 rounded text-gray-300">
+                  <span className="bg-gray-800 px-2 py-0.5 rounded text-gray-400">
                     DB {realmDbRatio}%
                   </span>
-                  <span className="bg-gray-700/50 px-2 py-0.5 rounded text-gray-300">
+                  <span className="bg-gray-800 px-2 py-0.5 rounded text-gray-400">
                     SK {realmSkRatio}%
                   </span>
                 </div>
               </div>
               
-              <div className="space-y-1.5">
-                <div className="grid grid-cols-3 gap-1.5">
-                  <div className="bg-gray-800/30 rounded-md py-1.5 px-1 text-center">
-                    <div className="text-xs text-gray-400">Kills</div>
-                    <div className="text-sm font-semibold text-white">{formatNumber(kills)}</div>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-md py-1.5 px-1 text-center">
-                    <div className="text-xs text-gray-400">DBs</div>
-                    <div className="text-sm font-semibold text-white">{formatNumber(deathBlows)}</div>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-md py-1.5 px-1 text-center">
-                    <div className="text-xs text-gray-400">SKs</div>
-                    <div className="text-sm font-semibold text-white">{formatNumber(soloKills)}</div>
-                  </div>
+              <div className="grid grid-cols-3 gap-1.5 text-center">
+                <div className="py-1">
+                  <div className="text-xs text-gray-400">Kills</div>
+                  <div className="text-sm font-semibold text-white">{formatNumber(kills)}</div>
+                </div>
+                <div className="py-1">
+                  <div className="text-xs text-gray-400">DBs</div>
+                  <div className="text-sm font-semibold text-white">{formatNumber(deathBlows)}</div>
+                </div>
+                <div className="py-1">
+                  <div className="text-xs text-gray-400">SKs</div>
+                  <div className="text-sm font-semibold text-white">{formatNumber(soloKills)}</div>
                 </div>
               </div>
             </div>

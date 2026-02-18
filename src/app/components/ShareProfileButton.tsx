@@ -1,8 +1,7 @@
 "use client";
 import React, { useState } from "react";
-import IosShareIcon from "@mui/icons-material/IosShare";
+import { Share, Check } from "lucide-react";
 import { toast } from "sonner";
-import CheckIcon from "@mui/icons-material/Check";
 
 interface ShareProfileButtonProps {
   username: string;
@@ -18,7 +17,7 @@ const ShareProfileButton: React.FC<ShareProfileButtonProps> = ({
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      
+
       toast.success("Profile link copied to clipboard");
     });
   };
@@ -28,17 +27,17 @@ const ShareProfileButton: React.FC<ShareProfileButtonProps> = ({
       onClick={handleShareClick}
       className="
         flex items-center justify-center
-        bg-gray-800 hover:bg-gray-700
-        text-gray-400 hover:text-white
-        border border-gray-700 hover:border-gray-600
-        rounded-lg p-2
-        transition-colors duration-200
+        text-gray-500 hover:text-gray-300
+        p-2 rounded-md
+        border border-gray-800 hover:border-gray-700
+        bg-transparent hover:bg-gray-800/50
+        transition-colors duration-150
       "
     >
       {copied ? (
-        <CheckIcon style={{ fontSize: "1.2rem" }} />
+        <Check size={15} strokeWidth={2} />
       ) : (
-        <IosShareIcon style={{ fontSize: "1.2rem" }} />
+        <Share size={15} strokeWidth={2} />
       )}
     </button>
   );

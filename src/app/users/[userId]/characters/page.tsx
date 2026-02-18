@@ -58,7 +58,7 @@ export default async function CharactersPage({
     <div className="bg-gray-900 min-h-screen text-gray-300">
       <div className="p-4 md:p-8 lg:p-12">
         <div className="max-w-screen-lg mx-auto">
-          <h1 className="text-3xl font-bold text-indigo-400 mb-4 text-center">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-white mb-4 text-center">
             {userData.name}
           </h1>
           <PageReload />

@@ -7,10 +7,10 @@ import {
   DropdownMenu,
   DropdownItem,
   Button,
-  Pagination,
   Skeleton,
   ButtonGroup,
 } from "@nextui-org/react";
+import { Pagination } from "@/components/ui/pagination";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 interface LeaderboardItem {
@@ -220,16 +220,8 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
         <div className="my-8 flex justify-center">
           <Pagination
             total={Math.ceil(data.length / itemsPerPage)}
-            initialPage={1}
+            page={currentPage}
             onChange={(page) => setCurrentPage(page)}
-            showControls
-            classNames={{
-              wrapper: "gap-1 overflow-visible h-10 rounded-lg bg-gray-800/50 p-2 border border-gray-700/50",
-              item: "w-10 h-8 text-small rounded-md bg-transparent text-gray-300 hover:bg-gray-700 transition-colors",
-              cursor: "bg-indigo-500 text-white font-semibold shadow-md hover:bg-indigo-400",
-              prev: "w-10 h-8 rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-indigo-400 transition-colors",
-              next: "w-10 h-8 rounded-md bg-transparent text-gray-300 hover:bg-gray-700 hover:text-indigo-400 transition-colors",
-            }}
           />
         </div>
       </>

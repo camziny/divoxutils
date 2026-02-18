@@ -3,55 +3,50 @@ import React from "react";
 
 export default function Loading() {
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen bg-gray-900 text-white" style={{ paddingTop: "20vh" }}>
-      <div className="relative w-full max-w-md mx-auto px-4">
-        <div className="w-16 h-16 relative mx-auto">
-          <div className="absolute inset-0 border-4 border-indigo-500/30 rounded-full"></div>
-          
-          <div className="absolute inset-0 border-4 border-transparent border-t-indigo-500 rounded-full animate-spin"></div>
-          
-          <div className="absolute inset-3 bg-indigo-500 rounded-full animate-pulse"></div>
-        </div>
-        
-        <div className="mt-8 text-center">
-          <p className="text-lg font-semibold text-gray-400 bg-clip-text ">
-            Loading
-            <span className="inline-flex ml-1">
-              <span className="animate-bounce text-gray-400 delay-0">.</span>
-              <span className="animate-bounce text-gray-400 delay-100">.</span>
-              <span className="animate-bounce text-gray-400 delay-200">.</span>
-            </span>
-          </p>
-        </div>
+    <div
+      className="flex items-start justify-center min-h-screen bg-gray-900"
+      style={{ paddingTop: "20vh" }}
+    >
+      <div className="flex flex-col items-center gap-4">
+        <svg
+          className="animate-spin-slow"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="#1f2937"
+            strokeWidth="2.5"
+          />
+          <path
+            d="M12 2a10 10 0 0 1 10 10"
+            stroke="url(#spinner-gradient)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+          <defs>
+            <linearGradient id="spinner-gradient" x1="12" y1="2" x2="22" y2="12">
+              <stop stopColor="#818cf8" />
+              <stop offset="1" stopColor="#6366f1" stopOpacity="0.4" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <p className="text-[13px] text-gray-500">Loading</p>
       </div>
 
       <style jsx>{`
-        .delay-0 {
-          animation-delay: 0ms;
-        }
-        .delay-100 {
-          animation-delay: 100ms;
-        }
-        .delay-200 {
-          animation-delay: 200ms;
-        }
-        @keyframes spin {
+        @keyframes spin-slow {
           to {
             transform: rotate(360deg);
           }
         }
-        @keyframes pulse {
-          50% {
-            opacity: .5;
-          }
-        }
-        @keyframes bounce {
-          0%, 80%, 100% { 
-            transform: translateY(0);
-          }
-          40% { 
-            transform: translateY(-4px);
-          }
+        .animate-spin-slow {
+          animation: spin-slow 0.9s linear infinite;
         }
       `}</style>
     </div>
