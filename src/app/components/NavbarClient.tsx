@@ -109,6 +109,20 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
     };
   }, [menuOpen]);
 
+  const userButtonAppearance = {
+    elements: {
+      userButtonTrigger:
+        "rounded-md border border-gray-700 bg-gray-800/70 hover:bg-gray-700/80 transition-colors",
+      userButtonAvatarBox: "h-8 w-8",
+      userButtonPopoverCard: "bg-gray-900 border border-gray-700",
+      userButtonPopoverActionButton:
+        "text-gray-300 hover:text-white hover:bg-gray-800",
+      userButtonPopoverActionButtonText: "text-gray-300",
+      userButtonPopoverActionButtonIcon: "text-gray-400",
+      userButtonPopoverFooter: "hidden",
+    },
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4">
       <div className="relative flex h-14 items-center justify-between lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center">
@@ -187,7 +201,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                   {userName}
                 </span>
               )}
-              <UserButton afterSignOutUrl="/" />
+              <UserButton afterSignOutUrl="/" appearance={userButtonAppearance} />
             </>
           ) : (
             <>
@@ -269,7 +283,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
                   </span>
                 )}
                 <div className="px-3 py-2.5">
-                  <UserButton afterSignOutUrl="/" />
+                  <UserButton afterSignOutUrl="/" appearance={userButtonAppearance} />
                 </div>
               </>
             ) : (
