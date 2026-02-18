@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useMemo } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import { ViewportPrefetchLink } from "./ViewportPrefetchLink";
 import { Button } from "@/components/ui/button";
@@ -79,38 +79,24 @@ function sortLeaderboardData(
 
 const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
 
-  const selectedMetric = (searchParams?.get('metric') as Metric) || 'realmPoints';
-  const selectedPeriod = (searchParams?.get('period') as Period) || 'total';
-  const pageString = searchParams?.get('page') || '1';
-  const currentPage = parseInt(pageString, 10);
+  const metricParam = searchParams?.get("metric");
+  const periodParam = searchParams?.get("period");
+  const initialMetric =
+    metricParam && metricParam in metrics
+      ? (metricParam as Metric)
+      : "realmPoints";
+  const initialPeriod =
+    periodParam && periodParam in periods
+      ? (periodParam as Period)
+      : "total";
+  const initialPage = parseInt(searchParams?.get("page") || "1", 10);
 
-  const updateURL = (updates: { metric?: Metric; period?: Period; page?: number }) => {
-    const currentUrl = new URL(window.location.href);
-    const urlParams = new URLSearchParams(currentUrl.search);
-    
-    if (updates.metric !== undefined) {
-      urlParams.set('metric', updates.metric);
-    }
-    if (updates.period !== undefined) {
-      urlParams.set('period', updates.period);
-    }
-    if (updates.page !== undefined) {
-      urlParams.set('page', updates.page.toString());
-    }
-    
-    if (!urlParams.has('metric')) {
-      urlParams.set('metric', 'realmPoints');
-    }
-    if (!urlParams.has('period')) {
-      urlParams.set('period', 'total');
-    }
-    
-    const newUrl = `${pathname}?${urlParams.toString()}`;
-    router.push(newUrl, { scroll: false });
-  };
+  const [selectedMetric, setSelectedMetric] = useState<Metric>(initialMetric);
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>(initialPeriod);
+  const [currentPage, setCurrentPage] = useState<number>(
+    Number.isNaN(initialPage) || initialPage < 1 ? 1 : initialPage
+  );
 
   const processedData = useMemo(() => {
     return data.map((item) => {
@@ -140,50 +126,29 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
-      const currentUrl = new URL(window.location.href);
-      const urlParams = new URLSearchParams(currentUrl.search);
-      
-      urlParams.set('page', '1');
-      
-      if (!urlParams.has('metric')) {
-        urlParams.set('metric', selectedMetric);
-      }
-      if (!urlParams.has('period')) {
-        urlParams.set('period', selectedPeriod);
-      }
-      
-      const newUrl = `${pathname}?${urlParams.toString()}`;
-      router.push(newUrl, { scroll: false });
+      setCurrentPage(1);
     }
-  }, [currentPage, totalPages, pathname, router, selectedMetric, selectedPeriod]);
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    const currentUrl = new URL(window.location.href);
+    const urlParams = new URLSearchParams(currentUrl.search);
+    urlParams.set("metric", selectedMetric);
+    urlParams.set("period", selectedPeriod);
+    urlParams.set("page", currentPage.toString());
+    const nextUrl = `${currentUrl.pathname}?${urlParams.toString()}`;
+    window.history.replaceState(null, "", nextUrl);
+  }, [selectedMetric, selectedPeriod, currentPage]);
 
   const handlePageChange = (page: number) => {
-    const currentUrl = new URL(window.location.href);
-    const currentUrlParams = new URLSearchParams(currentUrl.search);
-    
-    const newUrlParams = new URLSearchParams();
-    
-    currentUrlParams.forEach((value, key) => {
-      newUrlParams.set(key, value);
-    });
-    
-    newUrlParams.set('page', page.toString());
-    
-    if (!newUrlParams.has('metric')) {
-      newUrlParams.set('metric', selectedMetric);
-    }
-    if (!newUrlParams.has('period')) {
-      newUrlParams.set('period', selectedPeriod);
-    }
-    
-    const newUrl = `${pathname}?${newUrlParams.toString()}`;
-    router.push(newUrl, { scroll: false });
+    setCurrentPage(page);
   };
 
   
 
   const handlePeriodChange = (period: Period) => {
-    updateURL({ period, page: 1 });
+    setSelectedPeriod(period);
+    setCurrentPage(1);
   };
 
   const formatNumber = (number: number | undefined) => {
@@ -225,7 +190,10 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
           
           <Select
             value={selectedMetric}
-            onValueChange={(val) => updateURL({ metric: val as Metric, page: 1 })}
+            onValueChange={(val) => {
+              setSelectedMetric(val as Metric);
+              setCurrentPage(1);
+            }}
           >
             <SelectTrigger className="text-sm font-medium hover:bg-gray-800/50 hover:text-gray-300 transition-colors duration-150 min-w-[140px] justify-between">
               <SelectValue placeholder="Select metric" />
@@ -268,7 +236,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
               className="group rounded-md border border-gray-800 hover:border-gray-700 hover:bg-gray-800/40 transition-colors duration-150"
             >
               <LinkComponent
-                href={`user/${item.userName}/characters`}
+                href={`/user/${item.userName}/characters`}
                 className="flex justify-between items-center w-full h-full px-4 py-3"
               >
                 <div className="flex items-center space-x-3">
