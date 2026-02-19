@@ -13,6 +13,7 @@ export type DraftLeaderboardDraft = {
   discordGuildId: string;
   winnerTeam?: 1 | 2;
   resultStatus?: "unverified" | "verified" | "voided";
+  _creationTime?: number;
   players: DraftLeaderboardPlayer[];
 };
 
