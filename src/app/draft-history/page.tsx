@@ -1,4 +1,7 @@
-import { getDraftLeaderboardRows } from "@/server/draftLeaderboard";
+import {
+  getDraftLeaderboardRows,
+  type DraftLeaderboardRow,
+} from "@/server/draftLeaderboard";
 
 export const metadata = {
   title: "Draft History - divoxutils",
@@ -7,7 +10,7 @@ export const metadata = {
 export const revalidate = 60;
 
 export default async function DraftHistoryPage() {
-  let rows = [];
+  let rows: DraftLeaderboardRow[] = [];
   let loadError: string | null = null;
 
   try {
