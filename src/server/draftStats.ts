@@ -33,6 +33,51 @@ export type DraftHeadToHeadRow = {
   winRate: number;
 };
 
+export type DraftRecentGameRow = {
+  shortId: string;
+  discordGuildId: string;
+  createdAtMs: number;
+  didWin: boolean;
+  wasCaptain: boolean;
+  winnerTeam: 1 | 2;
+  playerTeam: 1 | 2;
+  team1CaptainName: string;
+  team2CaptainName: string;
+};
+
+export type DraftPlayerDrilldown = {
+  playerClerkUserId: string;
+  playerName: string;
+  overall: {
+    wins: number;
+    losses: number;
+    games: number;
+    winRate: number;
+  };
+  captain: {
+    wins: number;
+    losses: number;
+    games: number;
+    winRate: number;
+  };
+  recentGames: DraftRecentGameRow[];
+  headToHead: DraftHeadToHeadRow[];
+};
+
+export type DraftLogRow = {
+  shortId: string;
+  discordGuildId: string;
+  winnerTeam?: 1 | 2;
+  resultStatus: "unverified" | "verified" | "voided";
+  createdAtMs: number;
+  players: Array<{
+    discordUserId: string;
+    displayName: string;
+    team?: 1 | 2;
+    isCaptain: boolean;
+  }>;
+};
+
 type DraftIdentityContext = {
   drafts: DraftLeaderboardDraft[];
   clerkByDiscordUserId: Map<string, string>;
@@ -189,6 +234,159 @@ export function aggregateHeadToHeadRow(
   };
 }
 
+export function aggregatePlayerDrilldown(
+  drafts: DraftLeaderboardDraft[],
+  clerkByDiscordUserId: Map<string, string>,
+  userNameByClerkUserId: Map<string, string>,
+  playerClerkUserId: string,
+  filters: DraftStatsFilters,
+  recentLimit = 20
+): DraftPlayerDrilldown | null {
+  const filteredDrafts = applyDraftStatsFilters(drafts, filters);
+  const playerName =
+    userNameByClerkUserId.get(playerClerkUserId) ?? playerClerkUserId;
+
+  let wins = 0;
+  let losses = 0;
+  let captainWins = 0;
+  let captainLosses = 0;
+  const recentGames: DraftRecentGameRow[] = [];
+  const headToHeadStats = new Map<string, { wins: number; losses: number }>();
+
+  for (const draft of filteredDrafts) {
+    let playerTeam: 1 | 2 | undefined;
+    let wasCaptain = false;
+    const opponentTeams = new Map<string, 1 | 2>();
+
+    for (const participant of draft.players) {
+      if (participant.team === undefined) {
+        continue;
+      }
+      const clerkUserId = clerkByDiscordUserId.get(participant.discordUserId);
+      if (!clerkUserId) {
+        continue;
+      }
+      if (clerkUserId === playerClerkUserId) {
+        playerTeam = participant.team;
+        wasCaptain = participant.isCaptain;
+      } else {
+        opponentTeams.set(clerkUserId, participant.team);
+      }
+    }
+
+    if (playerTeam === undefined || draft.winnerTeam === undefined) {
+      continue;
+    }
+
+    const didWin = playerTeam === draft.winnerTeam;
+    if (didWin) {
+      wins += 1;
+      if (wasCaptain) {
+        captainWins += 1;
+      }
+    } else {
+      losses += 1;
+      if (wasCaptain) {
+        captainLosses += 1;
+      }
+    }
+
+    let team1CaptainName = "Unknown";
+    let team2CaptainName = "Unknown";
+    for (const p of draft.players) {
+      if (p.isCaptain && p.team === 1) {
+        const cId = clerkByDiscordUserId.get(p.discordUserId);
+        team1CaptainName = (cId && userNameByClerkUserId.get(cId)) || p.displayName;
+      }
+      if (p.isCaptain && p.team === 2) {
+        const cId = clerkByDiscordUserId.get(p.discordUserId);
+        team2CaptainName = (cId && userNameByClerkUserId.get(cId)) || p.displayName;
+      }
+    }
+
+    recentGames.push({
+      shortId: draft.shortId,
+      discordGuildId: draft.discordGuildId,
+      createdAtMs: draft._creationTime ?? 0,
+      didWin,
+      wasCaptain,
+      winnerTeam: draft.winnerTeam,
+      playerTeam,
+      team1CaptainName,
+      team2CaptainName,
+    });
+
+    opponentTeams.forEach((opponentTeam, opponentClerkUserId) => {
+      if (opponentTeam === playerTeam) {
+        return;
+      }
+      const entry = headToHeadStats.get(opponentClerkUserId) ?? { wins: 0, losses: 0 };
+      if (didWin) {
+        entry.wins += 1;
+      } else {
+        entry.losses += 1;
+      }
+      headToHeadStats.set(opponentClerkUserId, entry);
+    });
+  }
+
+  const games = wins + losses;
+  if (games === 0 || games < (filters.minGames ?? 0)) {
+    return null;
+  }
+
+  const captainGames = captainWins + captainLosses;
+  const headToHead = Array.from(headToHeadStats.entries())
+    .map(([opponentClerkUserId, value]) => {
+      const opponentName =
+        userNameByClerkUserId.get(opponentClerkUserId) ?? opponentClerkUserId;
+      const opponentGames = value.wins + value.losses;
+      return {
+        playerClerkUserId,
+        playerName,
+        opponentClerkUserId,
+        opponentName,
+        wins: value.wins,
+        losses: value.losses,
+        games: opponentGames,
+        winRate:
+          opponentGames > 0
+            ? Math.round((value.wins / opponentGames) * 1000) / 10
+            : 0,
+      };
+    })
+    .filter((row) => row.games >= (filters.minGames ?? 0))
+    .sort((a, b) => {
+      if (b.games !== a.games) return b.games - a.games;
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return b.winRate - a.winRate;
+    });
+
+  recentGames.sort((a, b) => b.createdAtMs - a.createdAtMs);
+
+  return {
+    playerClerkUserId,
+    playerName,
+    overall: {
+      wins,
+      losses,
+      games,
+      winRate: games > 0 ? Math.round((wins / games) * 1000) / 10 : 0,
+    },
+    captain: {
+      wins: captainWins,
+      losses: captainLosses,
+      games: captainGames,
+      winRate:
+        captainGames > 0
+          ? Math.round((captainWins / captainGames) * 1000) / 10
+          : 0,
+    },
+    recentGames: recentGames.slice(0, recentLimit),
+    headToHead,
+  };
+}
+
 async function loadDraftIdentityContext(): Promise<DraftIdentityContext> {
   const convex = getConvexClient();
   const drafts = (await convex.query(
@@ -265,4 +463,47 @@ export async function getHeadToHeadDraftStats(
     opponentClerkUserId,
     filters
   );
+}
+
+export async function getPlayerDraftDrilldownStats(
+  playerClerkUserId: string,
+  filters: DraftStatsFilters
+) {
+  const context = await loadDraftIdentityContext();
+  return aggregatePlayerDrilldown(
+    context.drafts,
+    context.clerkByDiscordUserId,
+    context.userNameByClerkUserId,
+    playerClerkUserId,
+    filters
+  );
+}
+
+export async function getDraftLogRows(): Promise<DraftLogRow[]> {
+  const convex = getConvexClient();
+  const drafts = (await convex.query(
+    "drafts:getCompletedDraftResults" as any,
+    {}
+  )) as Array<{
+    shortId: string;
+    discordGuildId: string;
+    winnerTeam?: 1 | 2;
+    resultStatus?: "unverified" | "verified" | "voided";
+    _creationTime?: number;
+    players: Array<{
+      discordUserId: string;
+      displayName: string;
+      team?: 1 | 2;
+      isCaptain: boolean;
+    }>;
+  }>;
+
+  return drafts.map((draft) => ({
+    shortId: draft.shortId,
+    discordGuildId: draft.discordGuildId,
+    winnerTeam: draft.winnerTeam,
+    resultStatus: draft.resultStatus ?? "unverified",
+    createdAtMs: draft._creationTime ?? 0,
+    players: draft.players,
+  }));
 }

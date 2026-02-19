@@ -1,5 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { DraftStatsFilters, getCaptainDraftStats } from "@/server/draftStats";
+import {
+  DraftStatsFilters,
+  getPlayerDraftDrilldownStats,
+} from "@/server/draftStats";
 
 function getSingleQueryValue(value: string | string[] | undefined) {
   if (Array.isArray(value)) {
@@ -55,15 +58,23 @@ function parseFilters(req: NextApiRequest): DraftStatsFilters {
   };
 }
 
-export function createCaptainDraftStatsHandler(deps?: {
-  getCaptainRows?: (filters: DraftStatsFilters) => Promise<unknown>;
+export function createPlayerDraftDrilldownHandler(deps?: {
+  getPlayerDrilldown?: (
+    playerClerkUserId: string,
+    filters: DraftStatsFilters
+  ) => Promise<unknown>;
 }) {
-  const getCaptainRows = deps?.getCaptainRows ?? getCaptainDraftStats;
+  const getPlayerDrilldown = deps?.getPlayerDrilldown ?? getPlayerDraftDrilldownStats;
 
   return async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== "GET") {
       res.setHeader("Allow", ["GET"]);
       return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    const playerClerkUserId = getSingleQueryValue(req.query.playerClerkUserId)?.trim();
+    if (!playerClerkUserId) {
+      return res.status(400).json({ error: "playerClerkUserId is required." });
     }
 
     let filters: DraftStatsFilters;
@@ -74,12 +85,12 @@ export function createCaptainDraftStatsHandler(deps?: {
     }
 
     try {
-      const rows = await getCaptainRows(filters);
-      return res.status(200).json({ rows, filters });
+      const drilldown = await getPlayerDrilldown(playerClerkUserId, filters);
+      return res.status(200).json({ drilldown, filters });
     } catch (error) {
-      return res.status(500).json({ error: "Failed to load captain stats." });
+      return res.status(500).json({ error: "Failed to load player drilldown." });
     }
   };
 }
 
-export default createCaptainDraftStatsHandler();
+export default createPlayerDraftDrilldownHandler();

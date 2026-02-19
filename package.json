@@ -12,8 +12,9 @@
     "start": "next start",
     "lint": "next lint",
     "seed:from-prod": "node scripts/seedFromProduction.js",
+    "seed:draft-history:dev": "tsx scripts/seedDraftHistoryDev.ts",
     "test:draft": "tsx --test tests/draft.feature.test.ts",
-    "test:feature": "tsx --test tests/draft.feature.test.ts tests/http.auth.test.ts",
+    "test:feature": "tsx --test $(find tests -type f -name '*.test.ts' | sort)",
     "test:my-characters:api": "node --import tsx --test tests/my-characters.crud.test.ts"
   },
   "dependencies": {

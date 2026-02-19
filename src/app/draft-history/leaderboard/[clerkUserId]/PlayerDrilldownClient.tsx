@@ -1,0 +1,448 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { ArrowLeft, ChevronRight } from "lucide-react";
+
+type Drilldown = {
+  playerClerkUserId: string;
+  playerName: string;
+  overall: { wins: number; losses: number; games: number; winRate: number };
+  captain: { wins: number; losses: number; games: number; winRate: number };
+  recentGames: Array<{
+    shortId: string;
+    discordGuildId: string;
+    createdAtMs: number;
+    didWin: boolean;
+    wasCaptain: boolean;
+    winnerTeam: 1 | 2;
+    playerTeam: 1 | 2;
+    team1CaptainName: string;
+    team2CaptainName: string;
+  }>;
+  headToHead: Array<{
+    opponentClerkUserId: string;
+    opponentName: string;
+    wins: number;
+    losses: number;
+    games: number;
+    winRate: number;
+  }>;
+};
+
+const PIE_COLORS = ["#e5e7eb", "#374151"]; // gray-200 wins, gray-700 losses
+
+export default function PlayerDrilldownClient({
+  clerkUserId,
+}: {
+  clerkUserId: string;
+}) {
+  const [drilldown, setDrilldown] = useState<Drilldown | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams({ playerClerkUserId: clerkUserId });
+        const res = await fetch(
+          `/api/draft-stats/player-drilldown?${params.toString()}`,
+          { cache: "no-store" }
+        );
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error ?? "Request failed.");
+        if (active) setDrilldown(data.drilldown);
+      } catch (err: any) {
+        if (active) setError(err?.message ?? "Unable to load player data.");
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [clerkUserId]);
+
+  if (error) {
+    return (
+      <Shell>
+        <BackNav />
+        <div className="rounded-lg border border-gray-800 px-4 py-6 text-sm text-red-400">
+          {error}
+        </div>
+      </Shell>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Shell>
+        <BackNav />
+        <LoadingSkeleton />
+      </Shell>
+    );
+  }
+
+  if (!drilldown) {
+    return (
+      <Shell>
+        <BackNav />
+        <div className="rounded-lg border border-gray-800 px-4 py-8 text-center text-sm text-gray-500">
+          No verified draft data found for this player.
+        </div>
+      </Shell>
+    );
+  }
+
+  const overallPie = [
+    { name: "Wins", value: drilldown.overall.wins },
+    { name: "Losses", value: drilldown.overall.losses },
+  ];
+  const captainPie = [
+    { name: "Wins", value: drilldown.captain.wins },
+    { name: "Losses", value: drilldown.captain.losses },
+  ];
+
+  const topH2H = drilldown.headToHead.slice(0, 8);
+  const h2hBarData = topH2H.map((row) => ({
+    name:
+      row.opponentName.length > 10
+        ? row.opponentName.slice(0, 9) + "…"
+        : row.opponentName,
+    wins: row.wins,
+    losses: row.losses,
+  }));
+
+  const streak = computeStreak(drilldown.recentGames);
+
+  return (
+    <Shell>
+      <BackNav />
+
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold tracking-tight text-gray-100">
+          {drilldown.playerName}
+        </h1>
+        <p className="mt-1 text-[13px] text-gray-500">
+          {drilldown.overall.games} verified game
+          {drilldown.overall.games !== 1 ? "s" : ""}
+        </p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid gap-3 sm:grid-cols-2 mb-6">
+        <StatCard
+          label="Overall"
+          data={overallPie}
+          record={`${drilldown.overall.wins}-${drilldown.overall.losses}`}
+          winRate={drilldown.overall.winRate}
+        />
+        {drilldown.captain.games > 0 ? (
+          <StatCard
+            label="As Captain"
+            data={captainPie}
+            record={`${drilldown.captain.wins}-${drilldown.captain.losses}`}
+            winRate={drilldown.captain.winRate}
+          />
+        ) : (
+          <Card className="bg-transparent">
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs font-medium text-gray-500">
+                As Captain
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600">No captain games yet.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Streak */}
+      <div className="mb-6 flex items-center gap-3">
+        <span className="text-xs text-gray-500">Streak</span>
+        <div className="flex gap-0.5">
+          {drilldown.recentGames.slice(0, 10).map((game, i) => (
+            <div
+              key={`${game.shortId}-${i}`}
+              className={`w-5 h-5 rounded-[3px] flex items-center justify-center text-[9px] font-semibold ${
+                game.didWin
+                  ? "bg-gray-200 text-gray-900"
+                  : "bg-gray-800 text-gray-500"
+              }`}
+            >
+              {game.didWin ? "W" : "L"}
+            </div>
+          ))}
+        </div>
+        {streak.count > 0 && (
+          <span className="text-xs text-gray-500">
+            {streak.count}{streak.type}
+          </span>
+        )}
+      </div>
+
+      {/* H2H bar chart */}
+      {h2hBarData.length > 0 && (
+        <Card className="mb-6 bg-transparent">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-xs font-medium text-gray-500">
+              Head-to-Head
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={h2hBarData}
+                  layout="vertical"
+                  margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+                >
+                  <XAxis type="number" hide />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={80}
+                    tick={{ fill: "#9ca3af", fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    content={({ label, payload }) => (
+                      <ChartTooltipContent
+                        label={typeof label === "string" ? label : undefined}
+                        payload={payload as any}
+                      />
+                    )}
+                  />
+                  <Bar
+                    dataKey="wins"
+                    name="Wins"
+                    fill="#d1d5db"
+                    radius={[0, 3, 3, 0]}
+                    stackId="s"
+                  />
+                  <Bar
+                    dataKey="losses"
+                    name="Losses"
+                    fill="#374151"
+                    radius={[0, 3, 3, 0]}
+                    stackId="s"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* H2H list */}
+      {drilldown.headToHead.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs font-medium text-gray-500 mb-2 px-1">
+            vs Opponents
+          </p>
+          <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
+            {drilldown.headToHead.map((row) => (
+              <Link
+                key={row.opponentClerkUserId}
+                href={`/draft-history/leaderboard/${row.opponentClerkUserId}`}
+                className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
+              >
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors duration-100">
+                  {row.opponentName}
+                </span>
+                <div className="flex items-center gap-3 text-sm tabular-nums">
+                  <span className="text-gray-300 font-medium">
+                    {row.wins}-{row.losses}
+                  </span>
+                  <span className="text-gray-600 w-12 text-right text-xs">
+                    {row.winRate.toFixed(1)}%
+                  </span>
+                  <ChevronRight className="w-3 h-3 text-gray-700 group-hover:text-gray-500 transition-colors duration-100" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent games */}
+      {drilldown.recentGames.length > 0 && (
+        <div className="mb-8">
+          <p className="text-xs font-medium text-gray-500 mb-2 px-1">
+            Recent Drafts
+          </p>
+          <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
+            {drilldown.recentGames.map((game, i) => (
+              <div
+                key={`${game.shortId}-${i}`}
+                className="flex items-center justify-between px-4 py-2.5"
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`text-xs font-semibold w-4 text-center ${
+                      game.didWin ? "text-gray-200" : "text-gray-600"
+                    }`}
+                  >
+                    {game.didWin ? "W" : "L"}
+                  </span>
+                  <span className="text-sm text-gray-400">
+                    {game.team1CaptainName}
+                    <span className="text-gray-600 mx-1.5">vs</span>
+                    {game.team2CaptainName}
+                  </span>
+                  {game.wasCaptain && (
+                    <span className="text-[10px] text-gray-600 font-medium uppercase tracking-wider">
+                      C
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs text-gray-600">
+                  {new Date(game.createdAtMs).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Shell>
+  );
+}
+
+/* ─── Sub-components ─────────────────────────────────── */
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return <section className="max-w-3xl mx-auto px-6">{children}</section>;
+}
+
+function BackNav() {
+  return (
+    <div className="mb-6">
+      <Link
+        href="/draft-history/leaderboard"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-400 transition-colors duration-100"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Leaderboard
+      </Link>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  data,
+  record,
+  winRate,
+}: {
+  label: string;
+  data: Array<{ name: string; value: number }>;
+  record: string;
+  winRate: number;
+}) {
+  return (
+    <Card className="bg-transparent">
+      <CardHeader className="pb-1">
+        <CardTitle className="text-xs font-medium text-gray-500">
+          {label}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-4">
+          <MiniDonut data={data} />
+          <div>
+            <p className="text-xl font-semibold text-gray-100 tabular-nums">
+              {record}
+            </p>
+            <p className="text-xs text-gray-500 tabular-nums">
+              {winRate.toFixed(1)}% win rate
+            </p>
+          </div>
+        </div>
+        <Progress
+          value={winRate}
+          className="mt-3 h-1"
+          indicatorClassName="bg-gray-400"
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniDonut({
+  data,
+}: {
+  data: Array<{ name: string; value: number }>;
+}) {
+  return (
+    <div className="w-14 h-14 flex-shrink-0">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={16}
+            outerRadius={24}
+            paddingAngle={2}
+            dataKey="value"
+            stroke="none"
+          >
+            {data.map((_, idx) => (
+              <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="h-6 w-40 rounded bg-gray-800 animate-pulse" />
+      <div className="h-4 w-28 rounded bg-gray-800 animate-pulse" />
+      <div className="grid gap-3 sm:grid-cols-2 mt-6">
+        <div className="rounded-lg border border-gray-800 h-32 animate-pulse" />
+        <div className="rounded-lg border border-gray-800 h-32 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+function computeStreak(
+  games: Array<{ didWin: boolean }>
+): { type: "W" | "L"; count: number } {
+  if (games.length === 0) return { type: "W", count: 0 };
+  const first = games[0].didWin;
+  let count = 0;
+  for (const game of games) {
+    if (game.didWin === first) count += 1;
+    else break;
+  }
+  return { type: first ? "W" : "L", count };
+}
