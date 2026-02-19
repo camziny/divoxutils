@@ -317,6 +317,7 @@ test("userCharactersByUserId handler rejects unsupported methods", async () => {
 test("userCharacter handler deletes existing link", async () => {
   const deletedKeys: Array<{ clerkUserId: string; characterId: number }> = [];
   const handler = createUserCharacterHandler({
+    getAuthUserId: () => "user_abc",
     getUserCharacterById: async ({ clerkUserId, characterId }) => ({
       clerkUserId,
       characterId,
@@ -345,6 +346,7 @@ test("userCharacter handler deletes existing link", async () => {
 
 test("userCharacter handler returns 404 when deleting missing link", async () => {
   const handler = createUserCharacterHandler({
+    getAuthUserId: () => "user_abc",
     getUserCharacterById: async () => null,
     deleteUserCharacter: async () => ({} as any),
   });
@@ -363,6 +365,7 @@ test("userCharacter handler returns 404 when deleting missing link", async () =>
 
 test("userCharacter handler validates characterId", async () => {
   const handler = createUserCharacterHandler({
+    getAuthUserId: () => "user_abc",
     getUserCharacterById: async () => null,
     deleteUserCharacter: async () => ({} as any),
   });
@@ -381,6 +384,7 @@ test("userCharacter handler validates characterId", async () => {
 
 test("userCharacter handler validates clerkUserId shape", async () => {
   const handler = createUserCharacterHandler({
+    getAuthUserId: () => "user_abc",
     getUserCharacterById: async () => null,
     deleteUserCharacter: async () => ({} as any),
   });
@@ -402,6 +406,7 @@ test("userCharacter handler validates clerkUserId shape", async () => {
 
 test("userCharacter handler rejects unsupported methods", async () => {
   const handler = createUserCharacterHandler({
+    getAuthUserId: () => "user_abc",
     getUserCharacterById: async () => null,
     deleteUserCharacter: async () => ({} as any),
   });
@@ -415,4 +420,51 @@ test("userCharacter handler rejects unsupported methods", async () => {
   await handler(req, res);
 
   assert.equal(res.statusCode, 405);
+});
+
+test("userCharacter handler rejects unauthenticated delete", async () => {
+  const handler = createUserCharacterHandler({
+    getAuthUserId: () => null,
+    getUserCharacterById: async () => ({
+      clerkUserId: "user_abc",
+      characterId: 14,
+    }),
+    deleteUserCharacter: async () => ({} as any),
+  });
+
+  const req = createMockRequest({
+    method: "DELETE",
+    query: { clerkUserId: "user_abc", characterId: "14" },
+  });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 401);
+  assert.equal((res.body as { message: string }).message, "Unauthorized");
+});
+
+test("userCharacter handler rejects cross-user delete", async () => {
+  const handler = createUserCharacterHandler({
+    getAuthUserId: () => "user_other",
+    getUserCharacterById: async () => ({
+      clerkUserId: "user_abc",
+      characterId: 14,
+    }),
+    deleteUserCharacter: async () => ({} as any),
+  });
+
+  const req = createMockRequest({
+    method: "DELETE",
+    query: { clerkUserId: "user_abc", characterId: "14" },
+  });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 403);
+  assert.match(
+    String((res.body as { message: string }).message),
+    /Unauthorized operation/i
+  );
 });

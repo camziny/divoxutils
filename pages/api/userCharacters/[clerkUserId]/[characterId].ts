@@ -1,6 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { getAuth } from "@clerk/nextjs/server";
 
 type UserCharacterHandlerDeps = {
+  getAuthUserId: (req: NextApiRequest) => string | null;
   getUserCharacterById: (ids: {
     clerkUserId: string;
     characterId: number;
@@ -49,6 +51,19 @@ export const createUserCharacterHandler =
         break;
       case "DELETE":
         try {
+          const authUserId = deps.getAuthUserId(req);
+          if (!authUserId) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+          }
+
+          if (authUserId !== clerkUserId) {
+            res.status(403).json({
+              message: "Unauthorized operation: User does not own this character.",
+            });
+            return;
+          }
+
           const userCharacter = await deps.getUserCharacterById({
             clerkUserId: clerkUserId as string,
             characterId,
@@ -64,7 +79,7 @@ export const createUserCharacterHandler =
             return;
           }
 
-          if (userCharacter.clerkUserId !== clerkUserId) {
+          if (userCharacter.clerkUserId !== authUserId) {
             console.warn("Unauthorized operation: Mismatched userIds.");
             res.status(403).json({
               message:
@@ -100,6 +115,7 @@ export const createUserCharacterHandler =
   };
 
 const handler = createUserCharacterHandler({
+  getAuthUserId: (req) => getAuth(req).userId,
   getUserCharacterById: (ids) => {
     const controller = require("../../../../src/controllers/userCharacterController");
     return controller.getUserCharacterById(ids);
