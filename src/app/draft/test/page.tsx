@@ -63,7 +63,7 @@ export default function DraftTestPage() {
   const currentActorId = useMemo(() => {
     if (!draft) return undefined;
     if (draft.status === "setup") return draft.createdBy;
-    if (draft.status === "coin_flip") return draft.coinFlipWinnerId;
+    if (draft.status === "coin_flip") return draft.coinFlipWinnerId ?? draft.createdBy;
     if (draft.status === "realm_pick") {
       const t1Has = !!draft.team1Realm;
       const t2Has = !!draft.team2Realm;

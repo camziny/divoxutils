@@ -258,10 +258,6 @@ export const startDraft = mutation({
   handler: async (ctx, args) => {
     const draft = await ctx.db.get(args.draftId);
     if (!draft) throw new Error("Draft not found");
-    if (draft.status !== "setup") throw new Error("Draft is not in setup phase");
-    if (!draft.team1CaptainId || !draft.team2CaptainId) {
-      throw new Error("Both captains must be assigned");
-    }
 
     const callerPlayer = await ctx.db
       .query("draftPlayers")
@@ -279,6 +275,34 @@ export const startDraft = mutation({
       .query("draftPlayers")
       .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
       .collect();
+
+    if (draft.status === "setup") {
+      if (!draft.team1CaptainId || !draft.team2CaptainId) {
+        throw new Error("Both captains must be assigned");
+      }
+      if (players.length < draft.teamSize * 2) {
+        throw new Error(`Need at least ${draft.teamSize * 2} players`);
+      }
+
+      await ctx.db.patch(args.draftId, {
+        status: "coin_flip",
+        coinFlipWinnerId: undefined,
+        coinFlipChoice: undefined,
+        firstPickTeam: undefined,
+        firstRealmPickTeam: undefined,
+      });
+      return;
+    }
+
+    if (draft.status !== "coin_flip") {
+      throw new Error("Draft is not ready for coin flip");
+    }
+    if (draft.coinFlipWinnerId) {
+      throw new Error("Coin flip has already happened");
+    }
+    if (!draft.team1CaptainId || !draft.team2CaptainId) {
+      throw new Error("Both captains must be assigned");
+    }
     if (players.length < draft.teamSize * 2) {
       throw new Error(`Need at least ${draft.teamSize * 2} players`);
     }
@@ -287,7 +311,6 @@ export const startDraft = mutation({
       Math.random() < 0.5 ? draft.team1CaptainId : draft.team2CaptainId;
 
     await ctx.db.patch(args.draftId, {
-      status: "coin_flip",
       coinFlipWinnerId,
     });
   },
@@ -304,6 +327,9 @@ export const setCoinFlipChoice = mutation({
     if (!draft) throw new Error("Draft not found");
     if (draft.status !== "coin_flip")
       throw new Error("Not in coin flip phase");
+    if (!draft.coinFlipWinnerId) {
+      throw new Error("Coin flip has not happened yet");
+    }
 
     const callerPlayer = await ctx.db
       .query("draftPlayers")

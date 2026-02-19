@@ -280,8 +280,10 @@ export default function DraftBoard({
         <CoinFlipSection
           draft={draft}
           winner={coinFlipWinner}
+          isCreator={isCreator}
           isWinner={isCoinFlipWinner}
           busy={busy}
+          onFlip={() => act(() => startDraft({ draftId: draft._id, token: token! }))}
           onChoice={(choice) =>
             act(() =>
               setCoinFlipChoice({
@@ -494,7 +496,7 @@ function StatusBar({
   if (draft.status === "setup") {
     subtitle = `${draft.players.length} players in lobby`;
   } else if (draft.status === "coin_flip") {
-    subtitle = "Flipping...";
+    subtitle = draft.coinFlipWinnerId ? "Flipping..." : "Waiting to flip";
   } else if (draft.status === "realm_pick") {
     subtitle = "Choose your realm";
   } else if (draft.status === "banning") {
@@ -613,31 +615,43 @@ function SettingsBar({
 function CoinFlipSection({
   draft,
   winner,
+  isCreator,
   isWinner,
   busy,
+  onFlip,
   onChoice,
 }: {
   draft: DraftData;
   winner?: { displayName: string };
+  isCreator: boolean;
   isWinner: boolean;
   busy: boolean;
+  onFlip: () => void;
   onChoice: (choice: string) => void;
 }) {
-  const [phase, setPhase] = useState<"spinning" | "landed" | "done">(
-    "spinning"
+  const [phase, setPhase] = useState<"waiting" | "spinning" | "landed" | "done">(
+    draft.coinFlipWinnerId ? "spinning" : "waiting"
   );
 
   useEffect(() => {
+    if (!draft.coinFlipWinnerId) {
+      setPhase("waiting");
+      return;
+    }
+    setPhase("spinning");
     const t1 = setTimeout(() => setPhase("landed"), 1200);
     const t2 = setTimeout(() => setPhase("done"), 1800);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, []);
+  }, [draft.coinFlipWinnerId]);
 
-  const winnerTeam =
-    draft.coinFlipWinnerId === draft.team1CaptainId ? 1 : 2;
+  const winnerTeam = draft.coinFlipWinnerId
+    ? draft.coinFlipWinnerId === draft.team1CaptainId
+      ? 1
+      : 2
+    : undefined;
 
   const team1Captain = draft.players.find(
     (p) => p.discordUserId === draft.team1CaptainId
@@ -678,7 +692,7 @@ function CoinFlipSection({
               animate={
                 phase === "spinning"
                   ? { rotateX: [0, 1800] }
-                  : { rotateX: winnerTeam === 1 ? 0 : 180 }
+                  : { rotateX: winnerTeam === 2 ? 180 : 0 }
               }
               transition={
                 phase === "spinning"
@@ -720,6 +734,28 @@ function CoinFlipSection({
         </div>
 
         <AnimatePresence>
+          {phase === "waiting" && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center gap-3"
+            >
+              <p className="text-xs text-gray-600">
+                Waiting for creator to flip the coin...
+              </p>
+              {isCreator && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  onClick={onFlip}
+                >
+                  Flip Coin
+                </Button>
+              )}
+            </motion.div>
+          )}
           {phase === "done" && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
