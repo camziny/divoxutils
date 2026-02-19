@@ -12,7 +12,6 @@ import {
   allClasses,
   CLASS_CATEGORIES,
   ClassCategory,
-  REALM_COLORS,
 } from "../../constants";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -269,7 +268,7 @@ export default function DraftBoard({
       )}
 
       {isSetup && draft.players.length < draft.teamSize * 2 && (
-        <div className="flex items-center justify-center rounded-lg border border-yellow-800/40 bg-yellow-950/20 px-4 py-3">
+        <div className="flex items-center justify-center rounded-lg border border-yellow-700/40 bg-yellow-900/20 px-4 py-3">
           <span className="text-xs text-yellow-500/80">
             Need at least {draft.teamSize * 2} players for a {draft.teamSize}v{draft.teamSize} draft
             — currently have {draft.players.length}
@@ -335,79 +334,85 @@ export default function DraftBoard({
         />
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(200px,280px)_1fr] gap-3">
-        <TeamPanel
-          team={1}
-          captain={team1Captain}
-          players={team1Players}
-          realm={draft.team1Realm}
-          teamSize={draft.teamSize}
-          isActive={
-            (isDrafting && currentPickTeam === 1) ||
-            (isBanning && currentBanTeam === 1) ||
-            (isRealmPick && currentRealmPickTeam === 1)
-          }
-          turnLabel={activeTeam1Label}
-          isWinner={draft.winnerTeam === 1}
-          showWinner={isComplete}
-        />
+      <div className="grid grid-cols-2 lg:grid-cols-[1fr_minmax(200px,280px)_1fr] gap-3">
+        <div className="order-1">
+          <TeamPanel
+            team={1}
+            captain={team1Captain}
+            players={team1Players}
+            realm={draft.team1Realm}
+            teamSize={draft.teamSize}
+            isActive={
+              (isDrafting && currentPickTeam === 1) ||
+              (isBanning && currentBanTeam === 1) ||
+              (isRealmPick && currentRealmPickTeam === 1)
+            }
+            turnLabel={activeTeam1Label}
+            isWinner={draft.winnerTeam === 1}
+            showWinner={isComplete}
+          />
+        </div>
 
-        <PlayerPool
-          players={
-            isSetup
-              ? draft.players.filter(
-                  (p) =>
-                    p.discordUserId !== draft.team1CaptainId &&
-                    p.discordUserId !== draft.team2CaptainId
-                )
-              : availablePlayers
-          }
-          isSetup={isSetup}
-          isDrafting={isDrafting}
-          isCreator={isCreator}
-          isMyPickTurn={isMyPickTurn}
-          currentPickCaptainName={currentPickCaptain?.displayName}
-          needsCaptain1={isSetup && !draft.team1CaptainId}
-          needsCaptain2={
-            isSetup && !!draft.team1CaptainId && !draft.team2CaptainId
-          }
-          busy={busy}
-          onAssignCaptain={(discordUserId, team) =>
-            act(() =>
-              assignCaptain({
-                draftId: draft._id,
-                discordUserId,
-                team,
-                token: token!,
-              })
-            )
-          }
-          onPickPlayer={(playerId) =>
-            act(() =>
-              pickPlayer({
-                draftId: draft._id,
-                playerId,
-                token: token!,
-              })
-            )
-          }
-        />
+        <div className="order-3 lg:order-2 col-span-2 lg:col-span-1 mx-auto w-full max-w-xs lg:max-w-none">
+          <PlayerPool
+            players={
+              isSetup
+                ? draft.players.filter(
+                    (p) =>
+                      p.discordUserId !== draft.team1CaptainId &&
+                      p.discordUserId !== draft.team2CaptainId
+                  )
+                : availablePlayers
+            }
+            isSetup={isSetup}
+            isDrafting={isDrafting}
+            isCreator={isCreator}
+            isMyPickTurn={isMyPickTurn}
+            currentPickCaptainName={currentPickCaptain?.displayName}
+            needsCaptain1={isSetup && !draft.team1CaptainId}
+            needsCaptain2={
+              isSetup && !!draft.team1CaptainId && !draft.team2CaptainId
+            }
+            busy={busy}
+            onAssignCaptain={(discordUserId, team) =>
+              act(() =>
+                assignCaptain({
+                  draftId: draft._id,
+                  discordUserId,
+                  team,
+                  token: token!,
+                })
+              )
+            }
+            onPickPlayer={(playerId) =>
+              act(() =>
+                pickPlayer({
+                  draftId: draft._id,
+                  playerId,
+                  token: token!,
+                })
+              )
+            }
+          />
+        </div>
 
-        <TeamPanel
-          team={2}
-          captain={team2Captain}
-          players={team2Players}
-          realm={draft.team2Realm}
-          teamSize={draft.teamSize}
-          isActive={
-            (isDrafting && currentPickTeam === 2) ||
-            (isBanning && currentBanTeam === 2) ||
-            (isRealmPick && currentRealmPickTeam === 2)
-          }
-          turnLabel={activeTeam2Label}
-          isWinner={draft.winnerTeam === 2}
-          showWinner={isComplete}
-        />
+        <div className="order-2 lg:order-3">
+          <TeamPanel
+            team={2}
+            captain={team2Captain}
+            players={team2Players}
+            realm={draft.team2Realm}
+            teamSize={draft.teamSize}
+            isActive={
+              (isDrafting && currentPickTeam === 2) ||
+              (isBanning && currentBanTeam === 2) ||
+              (isRealmPick && currentRealmPickTeam === 2)
+            }
+            turnLabel={activeTeam2Label}
+            isWinner={draft.winnerTeam === 2}
+            showWinner={isComplete}
+          />
+        </div>
       </div>
 
       {isComplete && isCreator && !draft.gameStarted && (
@@ -560,7 +565,7 @@ function SettingsBar({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-800 bg-gray-900/40 px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-3">
       <div className="flex items-center gap-3">
         <Select
           value={draft.type}
@@ -642,7 +647,7 @@ function CoinFlipSection({
   );
 
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900/40 px-6 py-8">
+    <div className="rounded-lg border border-gray-700 bg-gray-800/60 px-6 py-8">
       <div className="flex flex-col items-center gap-6">
         <p className="text-xs uppercase tracking-widest text-gray-600">
           Coin Flip
@@ -660,7 +665,7 @@ function CoinFlipSection({
             >
               {team1Captain?.displayName}
             </p>
-            <p className="text-[10px] text-gray-700 mt-0.5">Team 1</p>
+            <p className="text-[10px] text-gray-600 mt-0.5">Team 1</p>
           </div>
 
           <div
@@ -710,7 +715,7 @@ function CoinFlipSection({
             >
               {team2Captain?.displayName}
             </p>
-            <p className="text-[10px] text-gray-700 mt-0.5">Team 2</p>
+            <p className="text-[10px] text-gray-600 mt-0.5">Team 2</p>
           </div>
         </div>
 
@@ -803,7 +808,7 @@ function RealmPickSection({
   );
 
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900/40 px-4 py-4">
+    <div className="rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-4">
       <div className="flex items-center justify-center gap-4 flex-wrap">
         <span className="text-xs text-gray-500">
           {isMyTurn
@@ -820,9 +825,9 @@ function RealmPickSection({
                 onClick={() => onPick(realm)}
                 className={cn(
                   "rounded-md border px-4 py-1.5 text-xs font-medium transition-all",
-                  taken && "border-gray-800 text-gray-700 line-through opacity-40 cursor-not-allowed",
-                  !taken && isMyTurn && "border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white cursor-pointer",
-                  !taken && !isMyTurn && "border-gray-800 text-gray-600"
+                  taken && "border-gray-700 text-gray-600 line-through opacity-40 cursor-not-allowed",
+                  !taken && isMyTurn && "border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer",
+                  !taken && !isMyTurn && "border-gray-700 text-gray-600"
                 )}
               >
                 {realm}
@@ -897,7 +902,7 @@ function BanSection({
   );
 
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900/40 px-4 py-4 space-y-3">
+    <div className="rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-xs font-medium text-gray-400">Bans</span>
@@ -923,7 +928,7 @@ function BanSection({
                 </Badge>
               ))
             ) : (
-              <span className="text-[10px] text-gray-700">--</span>
+              <span className="text-[10px] text-gray-600">--</span>
             )}
           </div>
           <div className="flex items-center gap-1.5">
@@ -939,48 +944,71 @@ function BanSection({
                 </Badge>
               ))
             ) : (
-              <span className="text-[10px] text-gray-700">--</span>
+              <span className="text-[10px] text-gray-600">--</span>
             )}
           </div>
         </div>
       </div>
 
       {isBanning && draft.type === "pvp" && (
-        <div className="grid grid-cols-3 gap-px bg-gray-800/30 rounded overflow-hidden">
-          {REALMS.map((realm) => {
-            const realmClasses = classesByRealm[realm] || [];
+        <div className="space-y-2">
+          {(
+            Object.entries(CLASS_CATEGORIES) as [ClassCategory, string[]][]
+          ).map(([category, classes]) => {
+            const hasAny = REALMS.some((r) =>
+              classes.some((c) => (classesByRealm[r] || []).includes(c))
+            );
+            if (!hasAny) return null;
             return (
-              <div key={realm} className="bg-gray-900/60 px-2.5 py-2 space-y-2">
-                <span className="text-[10px] uppercase tracking-wider font-medium text-gray-500">
-                  {realm}
+              <div key={category} className="flex items-start gap-3">
+                <span className="text-[10px] uppercase tracking-wider font-medium w-14 shrink-0 pt-1 text-gray-500">
+                  {category}
                 </span>
-                {(
-                  Object.entries(CLASS_CATEGORIES) as [ClassCategory, string[]][]
-                ).map(([category, classes]) => {
-                  const relevant = classes
-                    .filter((c) => realmClasses.includes(c))
-                    .sort((a, b) => a.localeCompare(b));
-                  if (relevant.length === 0) return null;
-                  return (
-                    <div key={category}>
-                      <span className="text-[9px] uppercase tracking-wider text-gray-600 mb-0.5 block">
-                        {category}
-                      </span>
-                      <div className="flex flex-wrap gap-x-0.5">
-                        {relevant.map((cls) => {
-                          const isBanned = bannedClassNames.includes(cls);
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                  {REALMS.map((realm) => {
+                    const realmClasses = classes
+                      .filter((c) => (classesByRealm[realm] || []).includes(c))
+                      .sort((a, b) => a.localeCompare(b));
+                    if (realmClasses.length === 0) return null;
+                    const groupBg =
+                      realm === "Albion"
+                        ? "bg-red-900/15"
+                        : realm === "Midgard"
+                          ? "bg-blue-900/15"
+                          : "bg-green-900/15";
+                    return (
+                      <div
+                        key={realm}
+                        className={cn(
+                          "flex items-center gap-0.5 rounded-md px-1.5 py-0.5",
+                          groupBg
+                        )}
+                      >
+                        {realmClasses.map((cls) => {
+                          const realmTag =
+                            realm === "Albion"
+                              ? "Alb"
+                              : realm === "Midgard"
+                                ? "Mid"
+                                : "Hib";
+                          const banKey =
+                            cls === "Mauler"
+                              ? `Mauler (${realmTag})`
+                              : cls;
+                          const isBanned =
+                            bannedClassNames.includes(banKey);
                           return (
                             <button
-                              key={cls}
+                              key={banKey}
                               disabled={!isMyBanTurn || busy || isBanned}
-                              onClick={() => onBan(cls)}
+                              onClick={() => onBan(banKey)}
                               className={cn(
-                                "rounded px-1.5 py-0.5 text-[10px] font-medium transition-all leading-tight",
+                                "rounded px-1.5 py-0.5 text-[10px] font-medium transition-all",
                                 isBanned &&
-                                  "text-gray-700 line-through",
+                                  "text-gray-600 line-through",
                                 !isBanned &&
                                   isMyBanTurn &&
-                                  "text-gray-400 hover:bg-gray-800 hover:text-white cursor-pointer",
+                                  "text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer",
                                 !isBanned &&
                                   !isMyBanTurn &&
                                   "text-gray-600"
@@ -991,9 +1019,9 @@ function BanSection({
                           );
                         })}
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -1024,13 +1052,13 @@ function BanSection({
                           className={cn(
                             "rounded border px-2 py-1 text-[11px] font-medium transition-all",
                             isBanned &&
-                              "border-gray-800 bg-gray-900/40 text-gray-600 line-through opacity-50",
+                              "border-gray-700 bg-gray-800/40 text-gray-600 line-through opacity-50",
                             !isBanned &&
                               isMyBanTurn &&
-                              "border-gray-700 bg-gray-800/60 text-gray-300 hover:bg-gray-700 hover:text-white hover:border-gray-600 cursor-pointer",
+                              "border-gray-600 bg-gray-700/40 text-gray-300 hover:bg-gray-700 hover:text-white hover:border-gray-500 cursor-pointer",
                             !isBanned &&
                               !isMyBanTurn &&
-                              "border-gray-800/50 bg-gray-900/30 text-gray-600"
+                              "border-gray-700/50 bg-gray-800/30 text-gray-600"
                           )}
                         >
                           {cls}
@@ -1076,9 +1104,9 @@ function TeamPanel({
     <div
       className={cn(
         "rounded-lg border p-3 space-y-1.5 transition-all duration-300 relative overflow-hidden",
-        isActive && !isT2 && "border-gray-600 bg-gray-800/20",
-        isActive && isT2 && "border-indigo-500/40 bg-indigo-950/10",
-        !isActive && "border-gray-800 bg-gray-900/30",
+        isActive && !isT2 && "border-gray-600 bg-gray-800/60",
+        isActive && isT2 && "border-indigo-500/40 bg-indigo-900/15",
+        !isActive && "border-gray-700 bg-gray-800/50",
         showWinner && isWinner && !isT2 && "ring-1 ring-gray-500/30",
         showWinner && isWinner && isT2 && "ring-1 ring-indigo-500/30"
       )}
@@ -1124,40 +1152,36 @@ function TeamPanel({
         </div>
       </div>
 
-      <AnimatePresence>
+      <div
+        className={cn(
+          "flex items-center gap-2 rounded px-2.5 py-1.5 text-[11px] font-medium mb-1 transition-all duration-200",
+          turnLabel
+            ? isT2
+              ? "bg-indigo-500/10 text-indigo-300"
+              : "bg-gray-700/30 text-gray-300"
+            : "bg-transparent text-transparent"
+        )}
+      >
         {turnLabel && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
             className={cn(
-              "flex items-center gap-2 rounded px-2.5 py-1.5 text-[11px] font-medium mb-1",
-              isT2
-                ? "bg-indigo-500/10 text-indigo-300"
-                : "bg-gray-700/30 text-gray-300"
+              "w-1.5 h-1.5 rounded-full shrink-0",
+              isT2 ? "bg-indigo-400" : "bg-gray-400"
             )}
-          >
-            <motion.div
-              className={cn(
-                "w-1.5 h-1.5 rounded-full shrink-0",
-                isT2 ? "bg-indigo-400" : "bg-gray-400"
-              )}
-              animate={{ opacity: [0.4, 1, 0.4] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            />
-            {turnLabel}
-          </motion.div>
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          />
         )}
-      </AnimatePresence>
+        {turnLabel || "\u00A0"}
+      </div>
 
       {captain && (
         <div
           className={cn(
             "flex items-center justify-between rounded px-2.5 py-1.5 text-sm",
             isT2
-              ? "bg-indigo-950/30 text-indigo-300"
-              : "bg-gray-800/60 text-gray-300"
+              ? "bg-indigo-900/20 text-indigo-300"
+              : "bg-gray-800/50 text-gray-300"
           )}
         >
           <div className="flex items-center gap-2">
@@ -1175,7 +1199,7 @@ function TeamPanel({
         </div>
       )}
       {!captain && (
-        <div className="rounded border border-dashed border-gray-800 px-2.5 py-1.5 text-xs text-gray-700">
+        <div className="rounded border border-dashed border-gray-700 px-2.5 py-1.5 text-xs text-gray-600">
           Captain
         </div>
       )}
@@ -1190,7 +1214,7 @@ function TeamPanel({
             className={cn(
               "flex items-center justify-between rounded px-2.5 py-1.5 text-xs",
               isT2
-                ? "bg-indigo-950/10 text-indigo-200/80"
+                ? "bg-indigo-900/10 text-indigo-200/80"
                 : "bg-gray-800/40 text-gray-300"
             )}
           >
@@ -1207,7 +1231,7 @@ function TeamPanel({
         (_, i) => (
           <div
             key={`e-${i}`}
-            className="rounded border border-dashed border-gray-800/40 px-2.5 py-1.5 text-xs text-gray-800"
+            className="rounded border border-dashed border-gray-700/40 px-2.5 py-1.5 text-xs text-gray-700"
           >
             --
           </div>
@@ -1272,7 +1296,7 @@ function PlayerPool({
     <div
       className={cn(
         "space-y-2 rounded-lg p-2 transition-all duration-300 relative overflow-hidden",
-        selectingCaptain && "bg-gray-800/20 ring-1 ring-indigo-500/20"
+        selectingCaptain && "bg-gray-800/40 ring-1 ring-indigo-500/20"
       )}
     >
       <AnimatePresence>
@@ -1289,7 +1313,7 @@ function PlayerPool({
 
       {players.length === 0 && !isSetup && (
         <div className="text-center py-2">
-          <span className="text-[10px] text-gray-700">No players remaining</span>
+          <span className="text-[10px] text-gray-600">No players remaining</span>
         </div>
       )}
 
@@ -1338,8 +1362,8 @@ function PlayerPool({
               className={cn(
                 "w-full flex items-center gap-2 rounded px-2.5 py-1.5 text-xs font-medium transition-all",
                 canInteract
-                  ? "bg-gray-900 border border-gray-700 text-gray-300 hover:border-indigo-500/40 hover:text-white hover:bg-gray-800 cursor-pointer"
-                  : "bg-gray-900/30 border border-gray-800/40 text-gray-600"
+                  ? "bg-gray-800 border border-gray-700 text-gray-300 hover:border-indigo-500/40 hover:text-white hover:bg-gray-700 cursor-pointer"
+                  : "bg-gray-800/40 border border-gray-700/40 text-gray-600"
               )}
             >
               <PlayerAvatar url={p.avatarUrl} size={18} />
@@ -1348,7 +1372,7 @@ function PlayerPool({
           ))}
         </AnimatePresence>
         {players.length === 0 && (
-          <p className="text-center text-[10px] text-gray-700 py-4">
+          <p className="text-center text-[10px] text-gray-600 py-4">
             {isDrafting ? "All drafted" : "No players"}
           </p>
         )}

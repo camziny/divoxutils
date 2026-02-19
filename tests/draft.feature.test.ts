@@ -227,3 +227,71 @@ test("startDraft with correct creator token transitions to coin_flip", async () 
   assert.equal(updated.status, "coin_flip");
   assert.ok(updated.coinFlipWinnerId === "cap1" || updated.coinFlipWinnerId === "cap2");
 });
+
+test("final ban enters drafting with one-time double pick for second team (first pick team 1)", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "banning",
+        type: "pvp",
+        teamSize: 4,
+        firstPickTeam: 1,
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        banSequence: [1],
+        currentBanIndex: 0,
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "cap1-token", discordUserId: "cap1", isCaptain: true },
+      { _id: "p2", draftId: "d1", token: "cap2-token", discordUserId: "cap2", isCaptain: true },
+    ],
+  });
+
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Cleric",
+    token: "cap1-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "drafting");
+  assert.deepEqual(updated.pickSequence, [1, 2, 2, 1, 2, 1]);
+  assert.equal(updated.currentPickIndex, 0);
+});
+
+test("final ban enters drafting with one-time double pick for second team (first pick team 2)", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "banning",
+        type: "pvp",
+        teamSize: 4,
+        firstPickTeam: 2,
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        banSequence: [1],
+        currentBanIndex: 0,
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "cap1-token", discordUserId: "cap1", isCaptain: true },
+      { _id: "p2", draftId: "d1", token: "cap2-token", discordUserId: "cap2", isCaptain: true },
+    ],
+  });
+
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Cleric",
+    token: "cap1-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "drafting");
+  assert.deepEqual(updated.pickSequence, [2, 1, 1, 2, 1, 2]);
+  assert.equal(updated.currentPickIndex, 0);
+});

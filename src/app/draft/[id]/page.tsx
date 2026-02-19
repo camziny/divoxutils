@@ -12,7 +12,7 @@ export default function DraftPage({
   searchParams: { token?: string };
 }) {
   return (
-    <div className="bg-gray-950 min-h-screen text-gray-300">
+    <div className="bg-gray-900 min-h-screen text-gray-300">
       <div className="mx-auto max-w-5xl px-4 py-8">
         <DraftClient shortId={params.id} token={searchParams.token} />
       </div>
