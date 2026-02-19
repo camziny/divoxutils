@@ -1,135 +1,148 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import * as userCharacterController from "../../../src/controllers/userCharacterController";
 import {
   formatRealmRankWithLevel,
   getRealmRankForPoints,
 } from "../../../src/utils/character";
-import { PrismaClient } from "@prisma/client";
+type UserCharactersByUserIdDeps = {
+  getUserCharactersByUserId: (clerkUserId: string) => Promise<any[]>;
+};
 
-const prisma = new PrismaClient();
+export const createUserCharactersByUserIdHandler =
+  (deps: UserCharactersByUserIdDeps) =>
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { userId } = req.query;
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { userId } = req.query;
+    if (!userId || typeof userId !== "string") {
+      return res.status(400).json({ error: "Invalid userId" });
+    }
 
-  if (!userId || typeof userId !== "string") {
-    return res.status(400).json({ error: "Invalid userId" });
-  }
+    switch (req.method) {
+      case "GET":
+        try {
+          const userCharacters = await deps.getUserCharactersByUserId(userId);
 
-  switch (req.method) {
-    case "GET":
-      try {
-        const userCharacters = await userCharacterController.getUserCharactersByUserId(userId);
-        
-        res.setHeader('Cache-Control', 'private, no-store, no-cache, max-age=0, must-revalidate');
-        
-        if (!userCharacters || userCharacters.length === 0) {
-          return res.status(200).json([]);
-        }
+          res.setHeader(
+            "Cache-Control",
+            "private, no-store, no-cache, max-age=0, must-revalidate"
+          );
 
-        const charactersWithDetails = userCharacters
-          .map((userCharacter) => {
-            if (!userCharacter.character) {
-              return null;
-            }
+          if (!userCharacters || userCharacters.length === 0) {
+            return res.status(200).json([]);
+          }
 
-            const { character, user } = userCharacter;
-            const heraldRealmPoints = character.heraldRealmPoints ?? 0;
-            const formattedHeraldRealmPoints = formatRealmRankWithLevel(
-              getRealmRankForPoints(heraldRealmPoints)
-            );
+          const charactersWithDetails = userCharacters
+            .map((userCharacter) => {
+              if (!userCharacter.character) {
+                return null;
+              }
 
-            return {
-              id: character.id,
-              webId: character.webId,
-              characterName: character.characterName,
-              className: character.className,
-              realm: character.realm,
-              previousCharacterName: character.previousCharacterName,
-              totalRealmPoints: character.totalRealmPoints,
-              realmPointsLastWeek: character.realmPointsLastWeek,
-              totalSoloKills: character.totalSoloKills,
-              soloKillsLastWeek: character.soloKillsLastWeek,
-              totalDeaths: character.totalDeaths,
-              deathsLastWeek: character.deathsLastWeek,
-              lastUpdated: character.lastUpdated,
-              nameLastUpdated: character.nameLastUpdated,
-              heraldCharacterWebId: character.heraldCharacterWebId,
-              heraldName: character.heraldName,
-              heraldServerName: character.heraldServerName,
-              heraldRealm: character.heraldRealm,
-              heraldRace: character.heraldRace,
-              heraldClassName: character.heraldClassName,
-              heraldLevel: character.heraldLevel,
-              heraldGuildName: character.heraldGuildName,
-              heraldRealmPoints: character.heraldRealmPoints,
-              heraldBountyPoints: character.heraldBountyPoints,
-              heraldMasterLevel: character.heraldMasterLevel,
-              heraldTotalKills: character.heraldTotalKills,
-              heraldTotalDeaths: character.heraldTotalDeaths,
-              heraldTotalDeathBlows: character.heraldTotalDeathBlows,
-              heraldTotalSoloKills: character.heraldTotalSoloKills,
-              heraldAlbionKills: character.heraldAlbionKills,
-              heraldAlbionDeaths: character.heraldAlbionDeaths,
-              heraldAlbionDeathBlows: character.heraldAlbionDeathBlows,
-              heraldAlbionSoloKills: character.heraldAlbionSoloKills,
-              heraldMidgardKills: character.heraldMidgardKills,
-              heraldMidgardDeaths: character.heraldMidgardDeaths,
-              heraldMidgardDeathBlows: character.heraldMidgardDeathBlows,
-              heraldMidgardSoloKills: character.heraldMidgardSoloKills,
-              heraldHiberniaKills: character.heraldHiberniaKills,
-              heraldHiberniaDeaths: character.heraldHiberniaDeaths,
-              heraldHiberniaDeathBlows: character.heraldHiberniaDeathBlows,
-              heraldHiberniaSoloKills: character.heraldHiberniaSoloKills,
-              clerkUserId: user.clerkUserId,
-              formattedHeraldRealmPoints,
-              initialCharacter: {
+              const { character, user } = userCharacter;
+              const heraldRealmPoints = character.heraldRealmPoints ?? 0;
+              const formattedHeraldRealmPoints = formatRealmRankWithLevel(
+                getRealmRankForPoints(heraldRealmPoints)
+              );
+
+              return {
                 id: character.id,
-                userId: user.clerkUserId,
                 webId: character.webId,
-              },
-              player_kills: {
-                total: {
-                  kills: character.heraldTotalKills || 0,
-                  deaths: character.heraldTotalDeaths || 0,
-                  death_blows: character.heraldTotalDeathBlows || 0,
-                  solo_kills: character.heraldTotalSoloKills || 0,
+                characterName: character.characterName,
+                className: character.className,
+                realm: character.realm,
+                previousCharacterName: character.previousCharacterName,
+                totalRealmPoints: character.totalRealmPoints,
+                realmPointsLastWeek: character.realmPointsLastWeek,
+                totalSoloKills: character.totalSoloKills,
+                soloKillsLastWeek: character.soloKillsLastWeek,
+                totalDeaths: character.totalDeaths,
+                deathsLastWeek: character.deathsLastWeek,
+                lastUpdated: character.lastUpdated,
+                nameLastUpdated: character.nameLastUpdated,
+                heraldCharacterWebId: character.heraldCharacterWebId,
+                heraldName: character.heraldName,
+                heraldServerName: character.heraldServerName,
+                heraldRealm: character.heraldRealm,
+                heraldRace: character.heraldRace,
+                heraldClassName: character.heraldClassName,
+                heraldLevel: character.heraldLevel,
+                heraldGuildName: character.heraldGuildName,
+                heraldRealmPoints: character.heraldRealmPoints,
+                heraldBountyPoints: character.heraldBountyPoints,
+                heraldMasterLevel: character.heraldMasterLevel,
+                heraldTotalKills: character.heraldTotalKills,
+                heraldTotalDeaths: character.heraldTotalDeaths,
+                heraldTotalDeathBlows: character.heraldTotalDeathBlows,
+                heraldTotalSoloKills: character.heraldTotalSoloKills,
+                heraldAlbionKills: character.heraldAlbionKills,
+                heraldAlbionDeaths: character.heraldAlbionDeaths,
+                heraldAlbionDeathBlows: character.heraldAlbionDeathBlows,
+                heraldAlbionSoloKills: character.heraldAlbionSoloKills,
+                heraldMidgardKills: character.heraldMidgardKills,
+                heraldMidgardDeaths: character.heraldMidgardDeaths,
+                heraldMidgardDeathBlows: character.heraldMidgardDeathBlows,
+                heraldMidgardSoloKills: character.heraldMidgardSoloKills,
+                heraldHiberniaKills: character.heraldHiberniaKills,
+                heraldHiberniaDeaths: character.heraldHiberniaDeaths,
+                heraldHiberniaDeathBlows: character.heraldHiberniaDeathBlows,
+                heraldHiberniaSoloKills: character.heraldHiberniaSoloKills,
+                clerkUserId: user.clerkUserId,
+                formattedHeraldRealmPoints,
+                initialCharacter: {
+                  id: character.id,
+                  userId: user.clerkUserId,
+                  webId: character.webId,
                 },
-                midgard: {
-                  kills: character.heraldMidgardKills || 0,
-                  deaths: character.heraldMidgardDeaths || 0,
-                  death_blows: character.heraldMidgardDeathBlows || 0,
-                  solo_kills: character.heraldMidgardSoloKills || 0,
+                player_kills: {
+                  total: {
+                    kills: character.heraldTotalKills || 0,
+                    deaths: character.heraldTotalDeaths || 0,
+                    death_blows: character.heraldTotalDeathBlows || 0,
+                    solo_kills: character.heraldTotalSoloKills || 0,
+                  },
+                  midgard: {
+                    kills: character.heraldMidgardKills || 0,
+                    deaths: character.heraldMidgardDeaths || 0,
+                    death_blows: character.heraldMidgardDeathBlows || 0,
+                    solo_kills: character.heraldMidgardSoloKills || 0,
+                  },
+                  albion: {
+                    kills: character.heraldAlbionKills || 0,
+                    deaths: character.heraldAlbionDeaths || 0,
+                    death_blows: character.heraldAlbionDeathBlows || 0,
+                    solo_kills: character.heraldAlbionSoloKills || 0,
+                  },
+                  hibernia: {
+                    kills: character.heraldHiberniaKills || 0,
+                    deaths: character.heraldHiberniaDeaths || 0,
+                    death_blows: character.heraldHiberniaDeathBlows || 0,
+                    solo_kills: character.heraldHiberniaSoloKills || 0,
+                  },
                 },
-                albion: {
-                  kills: character.heraldAlbionKills || 0,
-                  deaths: character.heraldAlbionDeaths || 0,
-                  death_blows: character.heraldAlbionDeathBlows || 0,
-                  solo_kills: character.heraldAlbionSoloKills || 0,
-                },
-                hibernia: {
-                  kills: character.heraldHiberniaKills || 0,
-                  deaths: character.heraldHiberniaDeaths || 0,
-                  death_blows: character.heraldHiberniaDeathBlows || 0,
-                  solo_kills: character.heraldHiberniaSoloKills || 0,
-                },
-              },
-            };
-          })
-          .filter(Boolean);
+              };
+            })
+            .filter(Boolean);
 
-        res.status(200).json(charactersWithDetails);
-      } catch (error) {
-        console.error("Error in /api/userCharactersByUserId:", error);
-        if (error instanceof Error) {
-          res.status(500).json({ message: error.message });
-        } else {
-          res.status(500).json({ message: "An unknown error occurred" });
+          res.status(200).json(charactersWithDetails);
+        } catch (error) {
+          console.error("Error in /api/userCharactersByUserId:", error);
+          if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+          } else {
+            res.status(500).json({ message: "An unknown error occurred" });
+          }
         }
-      }
-      break;
+        break;
 
-    default:
-      res.setHeader("Allow", ["GET"]);
-      res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
-}
+      default:
+        res.setHeader("Allow", ["GET"]);
+        res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
+  };
+
+const handler = createUserCharactersByUserIdHandler({
+  getUserCharactersByUserId: (clerkUserId) => {
+    const controller = require("../../../src/controllers/userCharacterController");
+    return controller.getUserCharactersByUserId(clerkUserId);
+  },
+});
+
+export default handler;

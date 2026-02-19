@@ -8,15 +8,13 @@ import { sortCharacters } from "@/utils/sortCharacters";
 import SortOptions from "./SortOptions";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { Button } from "@nextui-org/react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import {
   TableContainer,
   Paper,
   Table,
   TableBody,
   TableHead,
-  TableRow,
-  TableCell,
 } from "@mui/material";
 
 const CharacterTile = dynamic(() => import("./CharacterTile"), {
@@ -77,7 +75,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
 
   const confirmDeleteAction = useCallback(async () => {
     if (!confirmDelete || !user) return;
-    
+
     const { id: characterId, name: characterName } = confirmDelete;
     setConfirmDelete(null);
     setDeletingCharacterId(characterId);
@@ -88,7 +86,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         `/api/userCharacters/${user.id}/${characterId}`,
         {
           method: "DELETE",
-          cache: 'no-store',
+          cache: "no-store",
         }
       );
 
@@ -97,12 +95,11 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       }
 
       setMessage(`Successfully deleted ${characterName}`);
-      
-      // Refresh to show updated list
+
       startTransition(() => {
         router.refresh();
       });
-      
+
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       console.error("Error deleting character:", error);
@@ -114,12 +111,16 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   }, [confirmDelete, user, router, startTransition]);
 
   const EmptyState = memo(() => (
-    <div className="text-center py-8 text-white bg-gray-900/80 backdrop-blur-sm rounded-lg mx-2">
-      <div className="text-lg font-semibold">No characters available</div>
-      <div className="text-gray-400 text-sm mt-2">
-        {showDelete
-          ? "Add some characters to get started!"
-          : "This user hasn't added any characters yet."}
+    <div className="rounded-xl border border-gray-800 bg-gray-900/60 backdrop-blur-sm">
+      <div className="flex flex-col items-center justify-center py-16 px-6">
+        <p className="text-sm font-medium text-gray-300 mb-1">
+          No characters yet
+        </p>
+        <p className="text-xs text-gray-600 text-center max-w-xs">
+          {showDelete
+            ? "Use the search above to find and add your characters."
+            : "This user hasn't added any characters yet."}
+        </p>
       </div>
     </div>
   ));
@@ -132,7 +133,8 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         "linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%)",
       backdropFilter: "blur(8px)",
       boxShadow: "none",
-      borderRadius: "16px",
+      borderRadius: "12px",
+      border: "1px solid rgb(31, 41, 55)",
       "& .MuiTable-root": {
         borderCollapse: "separate",
         borderSpacing: "0 1px",
@@ -220,16 +222,16 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       </div>
 
       {message && (
-        <div className="fixed bottom-4 right-4 z-50 p-4 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-w-sm">
-          <span className="text-sm text-white">{message}</span>
+        <div className="fixed bottom-4 right-4 z-50 px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg shadow-lg max-w-sm">
+          <span className="text-xs text-gray-300">{message}</span>
         </div>
       )}
 
       {isPending && (
         <div className="mt-4 p-3 text-center">
-          <div className="inline-flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-500"></div>
-            <span className="text-sm text-gray-400">Updating...</span>
+          <div className="inline-flex items-center gap-2">
+            <Loader2 size={14} className="animate-spin text-indigo-400" />
+            <span className="text-xs text-gray-500">Updating...</span>
           </div>
         </div>
       )}
@@ -239,26 +241,36 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       </div>
 
       {confirmDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg border border-gray-600 max-w-sm w-full mx-4">
-            <h3 className="text-white font-semibold mb-4">Delete Character</h3>
-            <p className="text-gray-300 mb-6">
-              Are you sure you want to delete <span className="text-white font-medium">{confirmDelete.name}</span>?
-            </p>
-            <div className="flex gap-3 justify-end">
-              <Button
-                variant="bordered"
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" data-testid="delete-confirm-overlay">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl max-w-sm w-full mx-4 overflow-hidden" data-testid="delete-confirm-modal">
+            <div className="px-5 py-4 border-b border-gray-800">
+              <h3 className="text-sm font-medium text-gray-200">Delete Character</h3>
+            </div>
+            <div className="px-5 py-5">
+              <div className="flex items-start gap-3">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/10 flex-shrink-0 mt-0.5">
+                  <AlertTriangle size={14} className="text-red-400" />
+                </div>
+                <p className="text-sm text-gray-400 leading-relaxed">
+                  Are you sure you want to remove <span className="text-gray-200 font-medium">{confirmDelete.name}</span> from your list?
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-800">
+              <button
                 onClick={() => setConfirmDelete(null)}
-                className="border-gray-600 text-gray-400 hover:text-gray-300"
+                data-testid="delete-confirm-cancel"
+                className="h-8 px-3 rounded-md text-xs font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 transition-colors duration-150"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={confirmDeleteAction}
-                className="bg-gray-700 hover:bg-gray-600 text-white"
+                data-testid="delete-confirm-submit"
+                className="h-8 px-3 rounded-md text-xs font-medium bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors duration-150"
               >
                 Delete
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -267,4 +279,4 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   );
 };
 
-export default CharacterListOptimized; 
+export default CharacterListOptimized;

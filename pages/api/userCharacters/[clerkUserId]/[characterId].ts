@@ -1,90 +1,129 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import * as userCharacterController from "../../../../src/controllers/userCharacterController";
+import { getAuth } from "@clerk/nextjs/server";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { clerkUserId, characterId: characterIdStr } = req.query;
+type UserCharacterHandlerDeps = {
+  getAuthUserId: (req: NextApiRequest) => string | null;
+  getUserCharacterById: (ids: {
+    clerkUserId: string;
+    characterId: number;
+  }) => Promise<{ clerkUserId: string; characterId: number } | null>;
+  deleteUserCharacter: (ids: {
+    clerkUserId: string;
+    characterId: number;
+  }) => Promise<unknown>;
+};
 
-  const characterId = parseInt(characterIdStr as string, 10);
+export const createUserCharacterHandler =
+  (deps: UserCharacterHandlerDeps) =>
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const { clerkUserId, characterId: characterIdStr } = req.query;
 
-  if (isNaN(characterId)) {
-    res.status(400).json({ message: "Invalid characterId." });
-    return;
-  }
+    const characterId = parseInt(characterIdStr as string, 10);
 
-  if (!clerkUserId || Array.isArray(clerkUserId)) {
-    res.status(400).json({ message: "clerkUserId must be a single string." });
-    return;
-  }
+    if (isNaN(characterId)) {
+      res.status(400).json({ message: "Invalid characterId." });
+      return;
+    }
 
-  const compoundKey = { clerkUserId, characterId };
+    if (!clerkUserId || Array.isArray(clerkUserId)) {
+      res.status(400).json({ message: "clerkUserId must be a single string." });
+      return;
+    }
 
-  switch (req.method) {
-    case "GET":
-      try {
-        const userCharacter =
-          await userCharacterController.getUserCharacterById(compoundKey);
-        if (userCharacter) {
-          res.status(200).json(userCharacter);
-        } else {
-          res.status(404).json({ message: "UserCharacter not found." });
+    const compoundKey = { clerkUserId, characterId };
+
+    switch (req.method) {
+      case "GET":
+        try {
+          const userCharacter = await deps.getUserCharacterById(compoundKey);
+          if (userCharacter) {
+            res.status(200).json(userCharacter);
+          } else {
+            res.status(404).json({ message: "UserCharacter not found." });
+          }
+        } catch (error) {
+          if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+          } else {
+            res.status(500).json({ message: "An unknown error occurred" });
+          }
         }
-      } catch (error) {
-        if (error instanceof Error) {
-          res.status(500).json({ message: error.message });
-        } else {
-          res.status(500).json({ message: "An unknown error occurred" });
-        }
-      }
-      break;
-    case "DELETE":
-      try {
-        const userCharacter =
-          await userCharacterController.getUserCharacterById({
+        break;
+      case "DELETE":
+        try {
+          const authUserId = deps.getAuthUserId(req);
+          if (!authUserId) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+          }
+
+          if (authUserId !== clerkUserId) {
+            res.status(403).json({
+              message: "Unauthorized operation: User does not own this character.",
+            });
+            return;
+          }
+
+          const userCharacter = await deps.getUserCharacterById({
             clerkUserId: clerkUserId as string,
             characterId,
           });
 
-        if (!userCharacter) {
-          console.warn(
-            `UserCharacter with userId ${clerkUserId} and characterId ${characterId} not found.`
+          if (!userCharacter) {
+            console.warn(
+              `UserCharacter with userId ${clerkUserId} and characterId ${characterId} not found.`
+            );
+            res.status(404).json({
+              message: `UserCharacter with userId ${clerkUserId} and characterId ${characterId} not found.`,
+            });
+            return;
+          }
+
+          if (userCharacter.clerkUserId !== authUserId) {
+            console.warn("Unauthorized operation: Mismatched userIds.");
+            res.status(403).json({
+              message:
+                "Unauthorized operation: User does not own this character.",
+            });
+            return;
+          }
+
+          await deps.deleteUserCharacter({
+            clerkUserId: clerkUserId as string,
+            characterId,
+          });
+
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          res.status(200).json({ message: "Character successfully deleted" });
+        } catch (error) {
+          console.error(
+            `Error deleting character with userId ${clerkUserId} and characterId ${characterId} :`,
+            error
           );
-          res.status(404).json({
-            message: `UserCharacter with userId ${clerkUserId} and characterId ${characterId} not found.`,
-          });
-          return;
+          if (error instanceof Error) {
+            res.status(500).json({ message: error.message });
+          } else {
+            res.status(500).json({ message: "An unknown error occurred" });
+          }
         }
+        break;
 
-        if (userCharacter.clerkUserId !== clerkUserId) {
-          console.warn("Unauthorized operation: Mismatched userIds.");
-          res.status(403).json({
-            message:
-              "Unauthorized operation: User does not own this character.",
-          });
-          return;
-        }
+      default:
+        res.setHeader("Allow", ["GET", "DELETE"]);
+        res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
+  };
 
-        await userCharacterController.deleteUserCharacter({
-          clerkUserId: clerkUserId as string,
-          characterId,
-        });
+const handler = createUserCharacterHandler({
+  getAuthUserId: (req) => getAuth(req).userId,
+  getUserCharacterById: (ids) => {
+    const controller = require("../../../../src/controllers/userCharacterController");
+    return controller.getUserCharacterById(ids);
+  },
+  deleteUserCharacter: (ids) => {
+    const controller = require("../../../../src/controllers/userCharacterController");
+    return controller.deleteUserCharacter(ids);
+  },
+});
 
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.status(200).json({ message: "Character successfully deleted" });
-      } catch (error) {
-        console.error(
-          `Error deleting character with userId ${clerkUserId} and characterId ${characterId} :`,
-          error
-        );
-        if (error instanceof Error) {
-          res.status(500).json({ message: error.message });
-        } else {
-          res.status(500).json({ message: "An unknown error occurred" });
-        }
-      }
-      break;
-
-    default:
-      res.setHeader("Allow", ["GET", "DELETE"]);
-      res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
-}
+export default handler;

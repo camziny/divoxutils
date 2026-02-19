@@ -4,7 +4,7 @@ import { TableRow, TableCell, IconButton } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import CharacterDetails from "./CharacterDetails";
-import DeleteIcon from "@mui/icons-material/Delete";
+import { X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { currentUser, useAuth } from "@clerk/nextjs";
 import { Snackbar } from "@mui/material";
@@ -249,8 +249,7 @@ const CharacterTile: React.FC<{
           className="p-0 text-center"
         >
           {showDeleteIcon && isOwner && (
-            <IconButton
-              size="medium"
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 if (onDelete && !isDeleting) {
@@ -258,23 +257,15 @@ const CharacterTile: React.FC<{
                 }
               }}
               disabled={isDeleting}
-              sx={{
-                padding: "2px",
-                backgroundColor: "transparent",
-                "&:hover": {
-                  backgroundColor: "transparent",
-                },
-                "&:disabled": {
-                  backgroundColor: "transparent",
-                },
-              }}
+              data-testid={`delete-character-${character.id}`}
+              className="p-1 rounded-md text-gray-500 hover:text-red-400 transition-colors duration-150 disabled:opacity-40"
             >
               {isDeleting ? (
-                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                <Loader2 size={12} className="animate-spin" />
               ) : (
-                <DeleteIcon style={{ fontSize: 12 }} className="text-white hover:text-indigo-400 transition-colors" />
+                <X size={12} />
               )}
-            </IconButton>
+            </button>
           )}
         </TableCell>
       </TableRow>
