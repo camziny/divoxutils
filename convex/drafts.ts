@@ -908,6 +908,40 @@ export const getVerifiedDraftResults = query({
   },
 });
 
+export const getCompletedDraftResults = query({
+  args: {},
+  handler: async (ctx) => {
+    const completedDrafts = await ctx.db
+      .query("drafts")
+      .withIndex("by_status", (q) => q.eq("status", "complete"))
+      .collect();
+
+    const results = [];
+    for (const draft of completedDrafts) {
+      const players = await ctx.db
+        .query("draftPlayers")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      results.push({
+        _id: draft._id,
+        shortId: draft.shortId,
+        discordGuildId: draft.discordGuildId,
+        winnerTeam: draft.winnerTeam,
+        resultStatus: draft.resultStatus ?? "unverified",
+        _creationTime: draft._creationTime,
+        players: players.map((p) => ({
+          discordUserId: p.discordUserId,
+          displayName: p.displayName,
+          team: p.team,
+          isCaptain: p.isCaptain,
+        })),
+      });
+    }
+
+    return results.sort((a, b) => b._creationTime - a._creationTime);
+  },
+});
+
 export const moderateDraftResult = mutation({
   args: {
     shortId: v.string(),
@@ -940,6 +974,93 @@ export const moderateDraftResult = mutation({
     });
 
     return { shortId: draft.shortId, resultStatus };
+  },
+});
+
+/**
+ * Dev-only mutation to seed a completed+verified draft directly.
+ * Never call this in production.
+ */
+export const seedVerifiedDraft = mutation({
+  args: {
+    shortId: v.string(),
+    discordGuildId: v.string(),
+    createdBy: v.string(),
+    winnerTeam: v.union(v.literal(1), v.literal(2)),
+    players: v.array(
+      v.object({
+        discordUserId: v.string(),
+        displayName: v.string(),
+        team: v.union(v.literal(1), v.literal(2)),
+        isCaptain: v.boolean(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const draftId = await ctx.db.insert("drafts", {
+      shortId: args.shortId,
+      type: "traditional",
+      status: "complete",
+      teamSize: Math.max(
+        args.players.filter((p) => p.team === 1).length,
+        args.players.filter((p) => p.team === 2).length
+      ),
+      discordGuildId: args.discordGuildId,
+      discordChannelId: "seed-channel",
+      createdBy: args.createdBy,
+      winnerTeam: args.winnerTeam,
+      resultStatus: "verified",
+      resultModeratedBy: "seed-admin",
+      resultModeratedAt: Date.now(),
+      gameStarted: true,
+    });
+
+    for (const player of args.players) {
+      await ctx.db.insert("draftPlayers", {
+        draftId,
+        discordUserId: player.discordUserId,
+        displayName: player.displayName,
+        team: player.team,
+        isCaptain: player.isCaptain,
+        token: `seed-${args.shortId}-${player.discordUserId}`,
+      });
+    }
+
+    return { draftId, shortId: args.shortId };
+  },
+});
+
+/**
+ * Dev-only mutation to delete all seed drafts (shortId starts with "seed-").
+ */
+export const cleanupSeedDrafts = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const allDrafts = await ctx.db.query("drafts").collect();
+    let deleted = 0;
+    for (const draft of allDrafts) {
+      if (draft.shortId.startsWith("seed-")) {
+        // Delete associated players
+        const players = await ctx.db
+          .query("draftPlayers")
+          .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+          .collect();
+        for (const player of players) {
+          await ctx.db.delete(player._id);
+        }
+        // Delete associated bans
+        const bans = await ctx.db
+          .query("draftBans")
+          .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+          .collect();
+        for (const ban of bans) {
+          await ctx.db.delete(ban._id);
+        }
+        await ctx.db.delete(draft._id);
+        deleted += 1;
+      }
+    }
+    return { deleted };
   },
 });
 

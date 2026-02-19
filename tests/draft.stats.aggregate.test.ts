@@ -4,6 +4,7 @@ import {
   aggregateCaptainRows,
   aggregateHeadToHeadRow,
   aggregateOverallRows,
+  aggregatePlayerDrilldown,
 } from "../src/server/draftStats";
 import { DraftLeaderboardDraft } from "../src/server/draftLeaderboard";
 
@@ -145,4 +146,39 @@ test("aggregateHeadToHeadRow returns accurate vs math and ignores same-team draf
   assert.equal(row.losses, 1);
   assert.equal(row.games, 2);
   assert.equal(row.winRate, 50);
+});
+
+test("aggregatePlayerDrilldown returns recent verified drafts and captain split", () => {
+  const drilldown = aggregatePlayerDrilldown(
+    drafts,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    {}
+  );
+
+  assert.ok(drilldown);
+  assert.equal(drilldown.playerClerkUserId, "clerk_1");
+  assert.equal(drilldown.overall.wins, 1);
+  assert.equal(drilldown.overall.losses, 2);
+  assert.equal(drilldown.captain.wins, 1);
+  assert.equal(drilldown.captain.losses, 0);
+  assert.equal(drilldown.recentGames.length, 3);
+  assert.equal(drilldown.recentGames[0].shortId, "a5");
+  assert.equal(drilldown.recentGames[0].team1CaptainName, "Unknown");
+  assert.equal(drilldown.recentGames[0].team2CaptainName, "Unknown");
+  assert.equal(drilldown.recentGames[2].team1CaptainName, "Alice");
+  assert.equal(drilldown.recentGames[2].team2CaptainName, "Bob");
+  assert.equal(drilldown.headToHead.length, 2);
+});
+
+test("aggregatePlayerDrilldown returns null when filters eliminate qualifying games", () => {
+  const drilldown = aggregatePlayerDrilldown(
+    drafts,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    { guildId: "g2", minGames: 2 }
+  );
+  assert.equal(drilldown, null);
 });
