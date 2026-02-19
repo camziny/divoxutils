@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useAuth, useUser } from "@clerk/nextjs";
@@ -12,7 +12,11 @@ const NAV_LINKS = [
   { href: "/about", label: "About" },
 ];
 
-const NavbarClient: React.FC = () => {
+type NavbarClientProps = {
+  isAdmin: boolean;
+};
+
+const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isSignedIn } = useAuth();
   const { user } = useUser();
@@ -24,6 +28,10 @@ const NavbarClient: React.FC = () => {
   const [indicator, setIndicator] = useState({ left: 0, width: 0, opacity: 0 });
   const [hoverIndicator, setHoverIndicator] = useState({ left: 0, width: 0, opacity: 0 });
   const [hasInitialized, setHasInitialized] = useState(false);
+  const links = useMemo(
+    () => (isAdmin ? [...NAV_LINKS, { href: "/admin", label: "Admin" }] : NAV_LINKS),
+    [isAdmin]
+  );
 
   const isActive = useCallback(
     (href: string) => pathname === href || pathname?.startsWith(href + "/"),
@@ -43,7 +51,7 @@ const NavbarClient: React.FC = () => {
   );
 
   const updateActiveIndicator = useCallback(() => {
-    const activeLink = NAV_LINKS.find((l) => isActive(l.href));
+    const activeLink = links.find((l) => isActive(l.href));
     if (!activeLink) {
       setIndicator((prev) => ({ ...prev, opacity: 0 }));
       setHasInitialized(false);
@@ -58,7 +66,7 @@ const NavbarClient: React.FC = () => {
         setIndicator({ ...measured, opacity: 1 });
       }
     }
-  }, [isActive, measureLink, hasInitialized]);
+  }, [isActive, measureLink, hasInitialized, links]);
 
   useEffect(() => {
     updateActiveIndicator();
@@ -137,7 +145,7 @@ const NavbarClient: React.FC = () => {
           className="hidden lg:flex items-center gap-1 lg:justify-self-center relative"
           onMouseLeave={() => setHoverIndicator((prev) => ({ ...prev, opacity: 0 }))}
         >
-          {NAV_LINKS.map((link) => (
+          {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -247,7 +255,7 @@ const NavbarClient: React.FC = () => {
       {menuOpen && (
         <div className="lg:hidden fixed inset-0 top-14 z-40 bg-gray-900">
           <div className="flex flex-col px-4 py-6 space-y-1">
-            {NAV_LINKS.map((link) => (
+            {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
