@@ -14,8 +14,8 @@ export default function DraftClient({
 }) {
   const draft = useQuery(api.drafts.getDraft, { shortId });
   const currentPlayer = useQuery(
-    api.drafts.getPlayerByToken as any,
-    token ? ({ token } as any) : "skip"
+    api.drafts.getPlayerByToken,
+    token ? { shortId, token } : "skip"
   );
 
   if (draft === undefined) {
