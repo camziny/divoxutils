@@ -225,6 +225,36 @@ test("startDraft with correct creator token transitions to coin_flip", async () 
 
   const updated = await ctx.db.get("d1");
   assert.equal(updated.status, "coin_flip");
+  assert.equal(updated.coinFlipWinnerId, undefined);
+});
+
+test("second startDraft in coin_flip performs the actual coin flip", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "coin_flip",
+        teamSize: 2,
+        createdBy: "creator",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "x1", discordUserId: "cap1" },
+      { _id: "p3", draftId: "d1", token: "x2", discordUserId: "cap2" },
+      { _id: "p4", draftId: "d1", token: "x3", discordUserId: "u4" },
+    ],
+  });
+
+  await (draftFns.startDraft as any)._handler(ctx, {
+    draftId: "d1",
+    token: "creator-token",
+  });
+
+  const updated = await ctx.db.get("d1");
   assert.ok(updated.coinFlipWinnerId === "cap1" || updated.coinFlipWinnerId === "cap2");
 });
 
