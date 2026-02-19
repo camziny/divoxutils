@@ -58,40 +58,52 @@ function parseFilters(req: NextApiRequest): DraftStatsFilters {
   };
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") {
-    res.setHeader("Allow", ["GET"]);
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+export function createHeadToHeadDraftStatsHandler(deps?: {
+  getHeadToHeadRow?: (
+    playerClerkUserId: string,
+    opponentClerkUserId: string,
+    filters: DraftStatsFilters
+  ) => Promise<unknown>;
+}) {
+  const getHeadToHeadRow = deps?.getHeadToHeadRow ?? getHeadToHeadDraftStats;
 
-  const playerClerkUserId = getSingleQueryValue(req.query.playerClerkUserId)?.trim();
-  const opponentClerkUserId = getSingleQueryValue(req.query.opponentClerkUserId)?.trim();
-  if (!playerClerkUserId || !opponentClerkUserId) {
-    return res.status(400).json({
-      error: "playerClerkUserId and opponentClerkUserId are required.",
-    });
-  }
-  if (playerClerkUserId === opponentClerkUserId) {
-    return res
-      .status(400)
-      .json({ error: "playerClerkUserId and opponentClerkUserId must differ." });
-  }
+  return async function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method !== "GET") {
+      res.setHeader("Allow", ["GET"]);
+      return res.status(405).json({ error: "Method not allowed" });
+    }
 
-  let filters: DraftStatsFilters;
-  try {
-    filters = parseFilters(req);
-  } catch (error: any) {
-    return res.status(400).json({ error: error?.message ?? "Invalid query parameters." });
-  }
+    const playerClerkUserId = getSingleQueryValue(req.query.playerClerkUserId)?.trim();
+    const opponentClerkUserId = getSingleQueryValue(req.query.opponentClerkUserId)?.trim();
+    if (!playerClerkUserId || !opponentClerkUserId) {
+      return res.status(400).json({
+        error: "playerClerkUserId and opponentClerkUserId are required.",
+      });
+    }
+    if (playerClerkUserId === opponentClerkUserId) {
+      return res
+        .status(400)
+        .json({ error: "playerClerkUserId and opponentClerkUserId must differ." });
+    }
 
-  try {
-    const row = await getHeadToHeadDraftStats(
-      playerClerkUserId,
-      opponentClerkUserId,
-      filters
-    );
-    return res.status(200).json({ row, filters });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to load head-to-head stats." });
-  }
+    let filters: DraftStatsFilters;
+    try {
+      filters = parseFilters(req);
+    } catch (error: any) {
+      return res.status(400).json({ error: error?.message ?? "Invalid query parameters." });
+    }
+
+    try {
+      const row = await getHeadToHeadRow(
+        playerClerkUserId,
+        opponentClerkUserId,
+        filters
+      );
+      return res.status(200).json({ row, filters });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to load head-to-head stats." });
+    }
+  };
 }
+
+export default createHeadToHeadDraftStatsHandler();

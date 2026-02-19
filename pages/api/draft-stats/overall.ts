@@ -55,23 +55,31 @@ function parseFilters(req: NextApiRequest): DraftStatsFilters {
   };
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") {
-    res.setHeader("Allow", ["GET"]);
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+export function createOverallDraftStatsHandler(deps?: {
+  getOverallRows?: (filters: DraftStatsFilters) => Promise<unknown>;
+}) {
+  const getOverallRows = deps?.getOverallRows ?? getOverallDraftStats;
 
-  let filters: DraftStatsFilters;
-  try {
-    filters = parseFilters(req);
-  } catch (error: any) {
-    return res.status(400).json({ error: error?.message ?? "Invalid query parameters." });
-  }
+  return async function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method !== "GET") {
+      res.setHeader("Allow", ["GET"]);
+      return res.status(405).json({ error: "Method not allowed" });
+    }
 
-  try {
-    const rows = await getOverallDraftStats(filters);
-    return res.status(200).json({ rows, filters });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to load draft stats." });
-  }
+    let filters: DraftStatsFilters;
+    try {
+      filters = parseFilters(req);
+    } catch (error: any) {
+      return res.status(400).json({ error: error?.message ?? "Invalid query parameters." });
+    }
+
+    try {
+      const rows = await getOverallRows(filters);
+      return res.status(200).json({ rows, filters });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to load draft stats." });
+    }
+  };
 }
+
+export default createOverallDraftStatsHandler();

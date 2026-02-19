@@ -55,23 +55,31 @@ function parseFilters(req: NextApiRequest): DraftStatsFilters {
   };
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET") {
-    res.setHeader("Allow", ["GET"]);
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+export function createCaptainDraftStatsHandler(deps?: {
+  getCaptainRows?: (filters: DraftStatsFilters) => Promise<unknown>;
+}) {
+  const getCaptainRows = deps?.getCaptainRows ?? getCaptainDraftStats;
 
-  let filters: DraftStatsFilters;
-  try {
-    filters = parseFilters(req);
-  } catch (error: any) {
-    return res.status(400).json({ error: error?.message ?? "Invalid query parameters." });
-  }
+  return async function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method !== "GET") {
+      res.setHeader("Allow", ["GET"]);
+      return res.status(405).json({ error: "Method not allowed" });
+    }
 
-  try {
-    const rows = await getCaptainDraftStats(filters);
-    return res.status(200).json({ rows, filters });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to load captain stats." });
-  }
+    let filters: DraftStatsFilters;
+    try {
+      filters = parseFilters(req);
+    } catch (error: any) {
+      return res.status(400).json({ error: error?.message ?? "Invalid query parameters." });
+    }
+
+    try {
+      const rows = await getCaptainRows(filters);
+      return res.status(200).json({ rows, filters });
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to load captain stats." });
+    }
+  };
 }
+
+export default createCaptainDraftStatsHandler();
