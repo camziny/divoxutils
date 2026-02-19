@@ -1,8 +1,12 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import prisma from "../../../prisma/prismaClient";
 import fetch from "node-fetch";
-import { realmMapping } from "@/controllers/characterController";
+
+const realmMapping: Record<number, string> = {
+  1: "Albion",
+  2: "Midgard",
+  3: "Hibernia",
+};
 
 async function fetchCharacterDetails(webId: string) {
   const url = `https://api.camelotherald.com/character/info/${webId}`;
@@ -15,8 +19,8 @@ async function fetchCharacterDetails(webId: string) {
   return response.json();
 }
 
-async function upsertCharacter(char: any) {
-  const characterData = {
+function mapCharacterData(char: any) {
+  return {
     webId: char.character_web_id,
     characterName: char.name,
     className: char.class_name,
@@ -67,71 +71,112 @@ async function upsertCharacter(char: any) {
       char.realm_war_stats.current.player_kills.midgard?.solo_kills ?? 0,
     heraldMasterLevel: char.master_level?.level?.toString() ?? "Unknown",
   };
-
-  return prisma.character.upsert({
-    where: { webId: char.character_web_id },
-    update: characterData,
-    create: characterData,
-  });
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const authDetails = getAuth(req);
-  const clerkUserId = authDetails.userId;
+function createUpsertCharacter(prismaClient: any) {
+  return async (char: any) => {
+    const characterData = {
+      ...mapCharacterData(char),
+    };
 
-  if (!clerkUserId) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkUserId },
-  });
-
-  if (!user) {
-    return res.status(404).json({ error: "User not found." });
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
-  }
-
-  const { webIds } = req.body;
-
-  if (!Array.isArray(webIds)) {
-    return res.status(400).json({ error: "Expected an array of webIds." });
-  }
-
-  try {
-    const characterDetails = await Promise.all(
-      webIds.map(fetchCharacterDetails)
-    );
-
-    const characters = await Promise.all(characterDetails.map(upsertCharacter));
-
-    await Promise.all(
-      characters.map((character) => {
-        return prisma.userCharacter.upsert({
-          where: {
-            clerkUserId_characterId: {
-              clerkUserId: clerkUserId,
-              characterId: character.id,
-            },
-          },
-          update: {},
-          create: {
-            clerkUserId: clerkUserId,
-            characterId: character.id,
-          },
-        });
-      })
-    );
-
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.status(201).json(characters);
-  } catch (error: any) {
-    console.error(`Failed to process characters: ${error}`);
-    res
-      .status(500)
-      .json({ error: "Internal server error", details: error.message });
-  }
+    return prismaClient.character.upsert({
+      where: { webId: char.character_web_id },
+      update: characterData,
+      create: characterData,
+    });
+  };
 }
+
+type AddCharactersDeps = {
+  getAuthUserId: (req: NextApiRequest) => string | null;
+  findUserByClerkId: (clerkUserId: string) => Promise<{ id: number } | null>;
+  fetchCharacterDetailsByWebId: (webId: string) => Promise<any>;
+  upsertCharacterFromDetails: (char: any) => Promise<{ id: number }>;
+  upsertUserCharacterLink: (
+    clerkUserId: string,
+    characterId: number
+  ) => Promise<unknown>;
+};
+
+export const createAddCharactersHandler =
+  (deps: AddCharactersDeps) =>
+  async (req: NextApiRequest, res: NextApiResponse) => {
+    const clerkUserId = deps.getAuthUserId(req);
+
+    if (!clerkUserId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const user = await deps.findUserByClerkId(clerkUserId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+    }
+
+    const { webIds } = req.body;
+
+    if (!Array.isArray(webIds)) {
+      return res.status(400).json({ error: "Expected an array of webIds." });
+    }
+
+    try {
+      const characterDetails = await Promise.all(
+        webIds.map(deps.fetchCharacterDetailsByWebId)
+      );
+
+      const characters = await Promise.all(
+        characterDetails.map(deps.upsertCharacterFromDetails)
+      );
+
+      await Promise.all(
+        characters.map((character) =>
+          deps.upsertUserCharacterLink(clerkUserId, character.id)
+        )
+      );
+
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.status(201).json(characters);
+    } catch (error: any) {
+      console.error(`Failed to process characters: ${error}`);
+      res
+        .status(500)
+        .json({ error: "Internal server error", details: error.message });
+    }
+  };
+
+const handler = createAddCharactersHandler({
+  getAuthUserId: (req) => getAuth(req).userId,
+  findUserByClerkId: (clerkUserId) => {
+    const prismaClient = require("../../../prisma/prismaClient").default;
+    return prismaClient.user.findUnique({
+      where: { clerkUserId },
+      select: { id: true },
+    });
+  },
+  fetchCharacterDetailsByWebId: fetchCharacterDetails,
+  upsertCharacterFromDetails: (char) => {
+    const prismaClient = require("../../../prisma/prismaClient").default;
+    return createUpsertCharacter(prismaClient)(char);
+  },
+  upsertUserCharacterLink: (clerkUserId, characterId) => {
+    const prismaClient = require("../../../prisma/prismaClient").default;
+    return prismaClient.userCharacter.upsert({
+      where: {
+        clerkUserId_characterId: {
+          clerkUserId,
+          characterId,
+        },
+      },
+      update: {},
+      create: {
+        clerkUserId,
+        characterId,
+      },
+    });
+  },
+});
+
+export default handler;

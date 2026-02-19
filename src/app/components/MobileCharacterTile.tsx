@@ -5,7 +5,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandCircleDown";
 import ExpandLessIcon from "@mui/icons-material/ExpandCircleDown";
 import MobileCharacterDetails from "./MobileCharacterDetails";
 import { getRealmRankForPoints, formatRealmRankWithLevel } from "@/utils/character";
-import DeleteIcon from "@mui/icons-material/Delete";
+import { X, Loader2 } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import {
   getRealmNameAndColor,
@@ -139,12 +139,13 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
                       if (onDelete && !isDeleting) onDelete();
                     }}
                     disabled={isDeleting}
-                    className="p-1 rounded-md disabled:opacity-50"
+                    data-testid={`delete-character-${character.id}`}
+                    className="p-1.5 rounded-md text-gray-500 hover:text-red-400 transition-colors duration-150 disabled:opacity-40"
                   >
                     {isDeleting ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-400"></div>
+                      <Loader2 size={14} className="animate-spin" />
                     ) : (
-                      <DeleteIcon className="text-gray-400 hover:text-indigo-400 transition-colors" style={{ fontSize: 16 }} />
+                      <X size={14} />
                     )}
                   </button>
                 )}
