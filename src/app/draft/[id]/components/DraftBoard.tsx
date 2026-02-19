@@ -12,6 +12,7 @@ import {
   allClasses,
   CLASS_CATEGORIES,
   ClassCategory,
+  REALM_COLORS,
 } from "../../constants";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -944,7 +945,62 @@ function BanSection({
         </div>
       </div>
 
-      {isBanning && (
+      {isBanning && draft.type === "pvp" && (
+        <div className="grid grid-cols-3 gap-px bg-gray-800/30 rounded overflow-hidden">
+          {REALMS.map((realm) => {
+            const realmClasses = classesByRealm[realm] || [];
+            return (
+              <div key={realm} className="bg-gray-900/60 px-2.5 py-2 space-y-2">
+                <span className="text-[10px] uppercase tracking-wider font-medium text-gray-500">
+                  {realm}
+                </span>
+                {(
+                  Object.entries(CLASS_CATEGORIES) as [ClassCategory, string[]][]
+                ).map(([category, classes]) => {
+                  const relevant = classes
+                    .filter((c) => realmClasses.includes(c))
+                    .sort((a, b) => a.localeCompare(b));
+                  if (relevant.length === 0) return null;
+                  return (
+                    <div key={category}>
+                      <span className="text-[9px] uppercase tracking-wider text-gray-600 mb-0.5 block">
+                        {category}
+                      </span>
+                      <div className="flex flex-wrap gap-x-0.5">
+                        {relevant.map((cls) => {
+                          const isBanned = bannedClassNames.includes(cls);
+                          return (
+                            <button
+                              key={cls}
+                              disabled={!isMyBanTurn || busy || isBanned}
+                              onClick={() => onBan(cls)}
+                              className={cn(
+                                "rounded px-1.5 py-0.5 text-[10px] font-medium transition-all leading-tight",
+                                isBanned &&
+                                  "text-gray-700 line-through",
+                                !isBanned &&
+                                  isMyBanTurn &&
+                                  "text-gray-400 hover:bg-gray-800 hover:text-white cursor-pointer",
+                                !isBanned &&
+                                  !isMyBanTurn &&
+                                  "text-gray-600"
+                              )}
+                            >
+                              {cls}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {isBanning && draft.type !== "pvp" && (
         <div className="space-y-2">
           {(Object.entries(CLASS_CATEGORIES) as [ClassCategory, string[]][]).map(
             ([category, classes]) => {

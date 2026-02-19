@@ -62,18 +62,20 @@ export const getDraft = query({
 });
 
 export const getPlayerByToken = query({
-  args: { shortId: v.string(), token: v.string() },
+  args: { token: v.string(), shortId: v.optional(v.string()) },
   handler: async (ctx, { shortId, token }) => {
-    const draft = await ctx.db
-      .query("drafts")
-      .withIndex("by_shortId", (q) => q.eq("shortId", shortId))
-      .unique();
-    if (!draft) return null;
     const player = await ctx.db
       .query("draftPlayers")
       .withIndex("by_token", (q) => q.eq("token", token))
       .unique();
-    if (!player || player.draftId !== draft._id) return null;
+    if (!player) return null;
+    if (shortId) {
+      const draft = await ctx.db
+        .query("drafts")
+        .withIndex("by_shortId", (q) => q.eq("shortId", shortId))
+        .unique();
+      if (!draft || player.draftId !== draft._id) return null;
+    }
     return player;
   },
 });
