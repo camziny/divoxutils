@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import Loading from "../loading";
 import ShareProfileButton from "../components/ShareProfileButton";
 import { redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs";
 import { headers } from "next/headers";
 
 const CharacterListOptimized = dynamic(
@@ -69,15 +68,14 @@ interface UserCharactersPageProps {
 
 const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => {
   const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as Record<string, string | string[]>;
-  const { userId } = auth();
+  const user = await currentUser();
+  const userId = user?.id;
 
   if (!userId) {
     redirect("/sign-in");
   }
 
   const characters = await fetchCharactersForUser(userId);
-
-  const user = await currentUser();
 
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">

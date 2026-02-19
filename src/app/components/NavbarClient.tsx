@@ -2,10 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton, useUser } from "@clerk/nextjs";
-type NavbarClientProps = {
-  isUserSignedIn: boolean;
-};
+import { UserButton, useAuth, useUser } from "@clerk/nextjs";
 
 const NAV_LINKS = [
   { href: "/leaderboards", label: "Leaderboards" },
@@ -15,8 +12,9 @@ const NAV_LINKS = [
   { href: "/about", label: "About" },
 ];
 
-const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
+const NavbarClient: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isSignedIn } = useAuth();
   const { user } = useUser();
   const [userName, setUserName] = useState<string | null>(null);
   const pathname = usePathname();
@@ -184,7 +182,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 lg:justify-self-end">
-          {isUserSignedIn ? (
+          {isSignedIn ? (
             <>
               <Link
                 href="/user-characters"
@@ -265,7 +263,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isUserSignedIn }) => {
 
             <div className="border-t border-gray-800 my-3" />
 
-            {isUserSignedIn ? (
+            {isSignedIn ? (
               <>
                 <Link
                   href="/user-characters"

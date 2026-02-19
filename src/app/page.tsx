@@ -1,6 +1,5 @@
 import React from "react";
 import Link from "next/link";
-import { auth } from "@clerk/nextjs";
 import HomeCarousel from "./components/HomeCarousel";
 
 export const metadata = {
