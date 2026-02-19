@@ -22,14 +22,13 @@ function generatePickSequence(
   const sequence: (1 | 2)[] = [];
 
   sequence.push(firstPickTeam);
+  if (sequence.length < totalPicks) sequence.push(secondPickTeam);
+  if (sequence.length < totalPicks) sequence.push(secondPickTeam);
 
-  let currentTeam: 1 | 2 = secondPickTeam;
+  let currentTeam: 1 | 2 = firstPickTeam;
   while (sequence.length < totalPicks) {
     sequence.push(currentTeam);
-    if (sequence.length < totalPicks) {
-      sequence.push(currentTeam);
-    }
-    currentTeam = currentTeam === firstPickTeam ? secondPickTeam : firstPickTeam;
+    currentTeam = currentTeam === 1 ? 2 : 1;
   }
 
   return sequence;
@@ -473,7 +472,8 @@ export const banClass = mutation({
         );
       }
     } else {
-      if (!allClasses.includes(args.className)) {
+      const baseName = args.className.replace(/\s*\((?:Alb|Mid|Hib)\)$/, "");
+      if (!allClasses.includes(baseName)) {
         throw new Error(`${args.className} is not a valid class`);
       }
     }

@@ -11,6 +11,7 @@
 import type * as constants from "../constants.js";
 import type * as drafts from "../drafts.js";
 import type * as http from "../http.js";
+import type * as httpAuth from "../httpAuth.js";
 
 import type {
   ApiFromModules,
@@ -22,6 +23,7 @@ declare const fullApi: ApiFromModules<{
   constants: typeof constants;
   drafts: typeof drafts;
   http: typeof http;
+  httpAuth: typeof httpAuth;
 }>;
 
 /**
