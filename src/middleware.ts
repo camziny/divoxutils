@@ -1,5 +1,4 @@
 import { authMiddleware } from "@clerk/nextjs";
-import { NextResponse } from "next/server";
 
 const publicPathPatterns = [
   /^\/$/,
@@ -45,12 +44,6 @@ const isPublicPath = (pathname: string) =>
 
 export default authMiddleware({
   debug: false,
-  beforeAuth: (req) => {
-    if (isPublicPath(req.nextUrl.pathname)) {
-      return NextResponse.next();
-    }
-    return undefined;
-  },
   publicRoutes: (req) => isPublicPath(req.nextUrl.pathname),
 });
 
