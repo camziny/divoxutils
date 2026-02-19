@@ -32,6 +32,8 @@ model User {
   account      Account?
   characters   UserCharacter[]
   groupUsers   GroupUser[]
+  identityLinks UserIdentityLink[]
+  identityClaims UserIdentityClaim[]
 }
 
 model Character {
@@ -121,6 +123,37 @@ model GroupUser {
 model HeraldBatchState {
   key                   String  @id
   lastProcessedCharacterId  Int
+}
+
+model UserIdentityLink {
+  id              Int      @id @default(autoincrement())
+  clerkUserId     String
+  user            User     @relation(fields: [clerkUserId], references: [clerkUserId], onDelete: Cascade)
+  provider        String
+  providerUserId  String
+  status          String   @default("linked")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([provider, providerUserId])
+  @@unique([clerkUserId, provider])
+  @@index([clerkUserId])
+}
+
+model UserIdentityClaim {
+  id                  Int       @id @default(autoincrement())
+  clerkUserId         String
+  user                User      @relation(fields: [clerkUserId], references: [clerkUserId], onDelete: Cascade)
+  provider            String
+  providerUserId      String
+  draftId             String?
+  status              String    @default("pending")
+  reviewedAt          DateTime?
+  reviewedByClerkUserId String?
+  createdAt           DateTime  @default(now())
+
+  @@index([clerkUserId, provider])
+  @@index([provider, providerUserId])
 }
 
 

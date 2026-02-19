@@ -25,7 +25,7 @@ test("SortOptions applies active and inactive button styles", () => {
     })
   );
 
-  assert.match(html, /bg-indigo-600 text-white/);
+  assert.match(html, /bg-indigo-500\/20 text-indigo-300/);
   assert.match(html, /bg-gray-800 text-gray-300/);
   assert.match(html, /rounded-r-none/);
   assert.match(html, /rounded-none/);

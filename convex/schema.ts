@@ -34,6 +34,16 @@ export default defineSchema({
     createdBy: v.string(),
     winnerTeam: v.optional(teamNumber),
     gameStarted: v.optional(v.boolean()),
+    resultStatus: v.optional(
+      v.union(
+        v.literal("unverified"),
+        v.literal("verified"),
+        v.literal("voided")
+      )
+    ),
+    resultModeratedBy: v.optional(v.string()),
+    resultModeratedAt: v.optional(v.number()),
+    resultModerationNote: v.optional(v.string()),
     botPostedLink: v.optional(v.boolean()),
     botNotifiedCaptains: v.optional(v.boolean()),
   })

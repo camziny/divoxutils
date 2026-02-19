@@ -772,7 +772,174 @@ export const setWinner = mutation({
 
     await ctx.db.patch(args.draftId, {
       winnerTeam: args.winnerTeam,
+      resultStatus: "unverified",
+      resultModeratedBy: undefined,
+      resultModeratedAt: undefined,
+      resultModerationNote: undefined,
     });
+  },
+});
+
+export const getDraftsForModeration = query({
+  args: {},
+  handler: async (ctx) => {
+    const completedDrafts = await ctx.db
+      .query("drafts")
+      .withIndex("by_status", (q) => q.eq("status", "complete"))
+      .collect();
+
+    const pending = completedDrafts.filter(
+      (draft) =>
+        draft.winnerTeam !== undefined &&
+        (draft.resultStatus === undefined || draft.resultStatus === "unverified")
+    );
+
+    const results = [];
+    for (const draft of pending) {
+      const players = await ctx.db
+        .query("draftPlayers")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      results.push({
+        _id: draft._id,
+        shortId: draft.shortId,
+        discordGuildId: draft.discordGuildId,
+        winnerTeam: draft.winnerTeam,
+        createdBy: draft.createdBy,
+        resultStatus: draft.resultStatus ?? "unverified",
+        _creationTime: draft._creationTime,
+        players: players.map((p) => ({
+          discordUserId: p.discordUserId,
+          displayName: p.displayName,
+          team: p.team,
+          isCaptain: p.isCaptain,
+        })),
+      });
+    }
+
+    return results.sort((a, b) => b._creationTime - a._creationTime);
+  },
+});
+
+export const getReviewedDraftsForModeration = query({
+  args: {},
+  handler: async (ctx) => {
+    const completedDrafts = await ctx.db
+      .query("drafts")
+      .withIndex("by_status", (q) => q.eq("status", "complete"))
+      .collect();
+
+    const reviewed = completedDrafts.filter(
+      (draft) =>
+        draft.winnerTeam !== undefined &&
+        (draft.resultStatus === "verified" || draft.resultStatus === "voided")
+    );
+
+    const results = [];
+    for (const draft of reviewed) {
+      const players = await ctx.db
+        .query("draftPlayers")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      results.push({
+        _id: draft._id,
+        shortId: draft.shortId,
+        discordGuildId: draft.discordGuildId,
+        winnerTeam: draft.winnerTeam,
+        createdBy: draft.createdBy,
+        resultStatus: draft.resultStatus,
+        resultModeratedAt: draft.resultModeratedAt,
+        resultModeratedBy: draft.resultModeratedBy,
+        _creationTime: draft._creationTime,
+        players: players.map((p) => ({
+          discordUserId: p.discordUserId,
+          displayName: p.displayName,
+          team: p.team,
+          isCaptain: p.isCaptain,
+        })),
+      });
+    }
+
+    return results
+      .sort(
+        (a, b) =>
+          (b.resultModeratedAt ?? b._creationTime) -
+          (a.resultModeratedAt ?? a._creationTime)
+      )
+      .slice(0, 50);
+  },
+});
+
+export const getVerifiedDraftResults = query({
+  args: {},
+  handler: async (ctx) => {
+    const completedDrafts = await ctx.db
+      .query("drafts")
+      .withIndex("by_status", (q) => q.eq("status", "complete"))
+      .collect();
+
+    const verified = completedDrafts.filter(
+      (draft) => draft.winnerTeam !== undefined && draft.resultStatus === "verified"
+    );
+
+    const results = [];
+    for (const draft of verified) {
+      const players = await ctx.db
+        .query("draftPlayers")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      results.push({
+        _id: draft._id,
+        shortId: draft.shortId,
+        discordGuildId: draft.discordGuildId,
+        winnerTeam: draft.winnerTeam,
+        resultStatus: draft.resultStatus,
+        _creationTime: draft._creationTime,
+        players: players.map((p) => ({
+          discordUserId: p.discordUserId,
+          displayName: p.displayName,
+          team: p.team,
+          isCaptain: p.isCaptain,
+        })),
+      });
+    }
+
+    return results.sort((a, b) => b._creationTime - a._creationTime);
+  },
+});
+
+export const moderateDraftResult = mutation({
+  args: {
+    shortId: v.string(),
+    action: v.union(v.literal("verify"), v.literal("void")),
+    moderatedByClerkUserId: v.string(),
+    note: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db
+      .query("drafts")
+      .withIndex("by_shortId", (q) => q.eq("shortId", args.shortId))
+      .unique();
+    if (!draft) {
+      throw new Error("Draft not found");
+    }
+    if (draft.status !== "complete") {
+      throw new Error("Only completed drafts can be moderated");
+    }
+    if (draft.winnerTeam === undefined) {
+      throw new Error("Draft has no winner to moderate");
+    }
+
+    const resultStatus = args.action === "verify" ? "verified" : "voided";
+
+    await ctx.db.patch(draft._id, {
+      resultStatus,
+      resultModeratedBy: args.moderatedByClerkUserId,
+      resultModeratedAt: Date.now(),
+      resultModerationNote: args.note?.trim() ? args.note.trim() : undefined,
+    });
+
+    return { shortId: draft.shortId, resultStatus };
   },
 });
 
