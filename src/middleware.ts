@@ -1,6 +1,7 @@
 import { authMiddleware } from "@clerk/nextjs";
+import { NextResponse } from "next/server";
 
-const publicRoutePatterns = [
+const publicPathPatterns = [
   /^\/$/,
   /^\/about$/,
   /^\/sign-in(?:\/.*)?$/,
@@ -39,10 +40,18 @@ const publicRoutePatterns = [
   /^\/api\/searchUsersAndCharacters$/,
 ];
 
+const isPublicPath = (pathname: string) =>
+  publicPathPatterns.some((pattern) => pattern.test(pathname));
+
 export default authMiddleware({
   debug: false,
-  publicRoutes: (req) =>
-    publicRoutePatterns.some((pattern) => pattern.test(req.nextUrl.pathname)),
+  beforeAuth: (req) => {
+    if (isPublicPath(req.nextUrl.pathname)) {
+      return NextResponse.next();
+    }
+    return undefined;
+  },
+  publicRoutes: (req) => isPublicPath(req.nextUrl.pathname),
 });
 
 export const config = {
