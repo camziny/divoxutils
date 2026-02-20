@@ -19,11 +19,20 @@ import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
 import DraftHistoryNav from "../../DraftHistoryNav";
 
+type WinLossRecord = {
+  wins: number;
+  losses: number;
+  games: number;
+  winRate: number;
+};
+
 type Drilldown = {
   playerClerkUserId: string;
   playerName: string;
-  overall: { wins: number; losses: number; games: number; winRate: number };
-  captain: { wins: number; losses: number; games: number; winRate: number };
+  overall: WinLossRecord;
+  captain: WinLossRecord;
+  byRealm: Record<string, WinLossRecord>;
+  pvp: WinLossRecord;
   recentGames: Array<{
     shortId: string;
     discordGuildId: string;
@@ -34,6 +43,8 @@ type Drilldown = {
     playerTeam: 1 | 2;
     team1CaptainName: string;
     team2CaptainName: string;
+    draftType: "traditional" | "pvp";
+    playerRealm?: string;
   }>;
   headToHead: Array<{
     opponentClerkUserId: string;
@@ -46,6 +57,14 @@ type Drilldown = {
 };
 
 const PIE_COLORS = ["#818cf8", "#374151"];
+
+const REALM_BAR_COLOR: Record<string, string> = {
+  Albion: "bg-red-500/30",
+  Hibernia: "bg-green-500/30",
+  Midgard: "bg-blue-500/30",
+  PvP: "bg-indigo-500/30",
+};
+
 
 export default function PlayerDrilldownClient({
   clerkUserId,
@@ -176,6 +195,33 @@ export default function PlayerDrilldownClient({
           </Card>
         )}
       </div>
+
+      {(Object.keys(drilldown.byRealm).length > 0 || drilldown.pvp.games > 0) && (
+        <div className="mb-6">
+          <h2 className="text-xs font-medium text-gray-500 mb-2 px-1">
+            Breakdown
+          </h2>
+          <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
+            {drilldown.pvp.games > 0 && (
+              <BreakdownRow
+                label="PvP"
+                barClass={REALM_BAR_COLOR["PvP"]}
+                stats={drilldown.pvp}
+              />
+            )}
+            {Object.entries(drilldown.byRealm)
+              .sort((a, b) => a[0].localeCompare(b[0]))
+              .map(([realm, stats]) => (
+                <BreakdownRow
+                  key={realm}
+                  label={realm}
+                  barClass={REALM_BAR_COLOR[realm] ?? "bg-gray-500/30"}
+                  stats={stats}
+                />
+              ))}
+          </div>
+        </div>
+      )}
 
       <div className="mb-6 flex items-center gap-3">
         <span className="text-xs text-gray-500">Streak</span>
@@ -346,6 +392,16 @@ export default function PlayerDrilldownClient({
                         C
                       </span>
                     )}
+                    {game.playerRealm && (
+                      <span className="text-[10px] text-gray-600 font-medium tracking-wider">
+                        {game.playerRealm}
+                      </span>
+                    )}
+                    {game.draftType === "pvp" && (
+                      <span className="text-[10px] text-gray-600 font-medium tracking-wider">
+                        PvP
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs text-gray-600">
                     {new Date(game.createdAtMs).toLocaleDateString("en-US", {
@@ -463,6 +519,36 @@ function LoadingSkeleton() {
         <div className="rounded-lg border border-gray-800 h-32 animate-pulse" />
         <div className="rounded-lg border border-gray-800 h-32 animate-pulse" />
       </div>
+    </div>
+  );
+}
+
+function BreakdownRow({
+  label,
+  barClass,
+  stats,
+}: {
+  label: string;
+  barClass: string;
+  stats: WinLossRecord;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5">
+      <span className="text-sm text-gray-300 w-20">{label}</span>
+      <span className="text-sm text-gray-100 font-medium tabular-nums">
+        {stats.wins}-{stats.losses}
+      </span>
+      <div className="flex-1 h-1 rounded-full bg-gray-800 overflow-hidden">
+        <div
+          className={`h-full rounded-full ${barClass}`}
+          style={{
+            width: `${Math.min(100, Math.max(0, stats.winRate))}%`,
+          }}
+        />
+      </div>
+      <span className="text-xs text-gray-500 tabular-nums w-12 text-right">
+        {stats.winRate.toFixed(1)}%
+      </span>
     </div>
   );
 }

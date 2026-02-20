@@ -10,8 +10,40 @@ import { PrismaClient } from "@prisma/client";
 /* ─── Config ────────────────────────────────────────── */
 
 const GUILD_ID = "test-guild";
-const DRAFT_COUNT = 30;
-const TEAM_SIZE = 5; // 5v5 → 10 players per draft
+const DRAFT_COUNT = 60;
+const TEAM_SIZE = 5;
+const BANS_PER_TEAM = 2;
+
+const CLASSES_BY_REALM: Record<string, string[]> = {
+  Albion: [
+    "Armsman", "Cabalist", "Cleric", "Friar", "Heretic", "Infiltrator",
+    "Mauler", "Mercenary", "Minstrel", "Necromancer", "Paladin", "Reaver",
+    "Scout", "Sorcerer", "Theurgist", "Wizard",
+  ],
+  Hibernia: [
+    "Animist", "Bainshee", "Bard", "Blademaster", "Champion", "Druid",
+    "Eldritch", "Enchanter", "Hero", "Mauler", "Mentalist", "Nightshade",
+    "Ranger", "Valewalker", "Vampiir", "Warden",
+  ],
+  Midgard: [
+    "Berserker", "Bonedancer", "Healer", "Hunter", "Mauler", "Runemaster",
+    "Savage", "Shadowblade", "Shaman", "Skald", "Spiritmaster", "Thane",
+    "Valkyrie", "Warlock", "Warrior",
+  ],
+};
+
+const ALL_CLASSES = Array.from(
+  new Set(Object.values(CLASSES_BY_REALM).flat())
+).sort();
+
+const REALM_PAIRS: [string, string][] = [
+  ["Albion", "Midgard"],
+  ["Albion", "Hibernia"],
+  ["Midgard", "Hibernia"],
+  ["Midgard", "Albion"],
+  ["Hibernia", "Albion"],
+  ["Hibernia", "Midgard"],
+];
 
 /**
  * Matches the DUMMY_NAMES and discordUserIds from src/app/draft/test/page.tsx
@@ -59,10 +91,6 @@ function shuffle<T>(arr: T[]): T[] {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
-}
-
-function randomInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function generateShortId() {
@@ -191,6 +219,10 @@ async function main() {
   console.log(`\nSeeding ${DRAFT_COUNT} verified drafts in Convex...`);
 
   let created = 0;
+  let pvpCount = 0;
+  let traditionalCount = 0;
+  let realmPairIdx = 0;
+  const realmTally: Record<string, number> = {};
 
   for (let i = 0; i < DRAFT_COUNT; i++) {
     const shortId = `seed-${generateShortId()}`;
@@ -200,6 +232,7 @@ async function main() {
     const team2 = shuffled.slice(TEAM_SIZE, TEAM_SIZE * 2);
 
     const winnerTeam: 1 | 2 = Math.random() < 0.55 ? 1 : 2;
+    const isPvp = i % 4 === 0;
 
     const players = [
       ...team1.map((p, idx) => ({
@@ -216,21 +249,55 @@ async function main() {
       })),
     ];
 
+    const seedArgs: Record<string, unknown> = {
+      shortId,
+      discordGuildId: GUILD_ID,
+      createdBy: players[0].discordUserId,
+      winnerTeam,
+      players,
+      type: isPvp ? "pvp" : "traditional",
+    };
+
+    const bans: Array<{ team: 1 | 2; className: string }> = [];
+
+    if (!isPvp) {
+      const [r1, r2] = REALM_PAIRS[realmPairIdx % REALM_PAIRS.length];
+      seedArgs.team1Realm = r1;
+      seedArgs.team2Realm = r2;
+      realmPairIdx += 1;
+      realmTally[r1] = (realmTally[r1] ?? 0) + 1;
+      realmTally[r2] = (realmTally[r2] ?? 0) + 1;
+
+      const t1BanPool = shuffle(CLASSES_BY_REALM[r2] ?? []);
+      const t2BanPool = shuffle(CLASSES_BY_REALM[r1] ?? []);
+      for (let b = 0; b < BANS_PER_TEAM; b++) {
+        if (t1BanPool[b]) bans.push({ team: 1, className: t1BanPool[b] });
+        if (t2BanPool[b]) bans.push({ team: 2, className: t2BanPool[b] });
+      }
+    } else {
+      const pvpBanPool = shuffle([...ALL_CLASSES]);
+      for (let b = 0; b < BANS_PER_TEAM; b++) {
+        if (pvpBanPool[b * 2]) bans.push({ team: 1, className: pvpBanPool[b * 2] });
+        if (pvpBanPool[b * 2 + 1]) bans.push({ team: 2, className: pvpBanPool[b * 2 + 1] });
+      }
+    }
+
+    seedArgs.bans = bans;
+
     try {
-      await convex.mutation("drafts:seedVerifiedDraft" as any, {
-        shortId,
-        discordGuildId: GUILD_ID,
-        createdBy: players[0].discordUserId,
-        winnerTeam,
-        players,
-      });
+      await convex.mutation("drafts:seedVerifiedDraft" as any, seedArgs);
       created += 1;
+      if (isPvp) pvpCount += 1;
+      else traditionalCount += 1;
     } catch (err: any) {
       console.error(`Failed to seed draft ${shortId}:`, err?.message);
     }
   }
 
-  console.log(`Created ${created} verified drafts.`);
+  console.log(
+    `Created ${created} verified drafts (${traditionalCount} traditional, ${pvpCount} pvp).`
+  );
+  console.log("Realm appearances:", realmTally);
 
   await prisma.$disconnect();
   console.log("\nDone! Refresh your app to see the data.");
