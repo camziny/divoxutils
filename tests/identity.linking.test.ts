@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createLinkDiscordIdentityHandler } from "../pages/api/identity/link-discord";
+import {
+  createLinkDiscordIdentityHandler,
+  getDiscordExternalAccountId,
+} from "../pages/api/identity/link-discord";
 import { createClaimDiscordIdentityHandler } from "../pages/api/identity/claim-discord";
 import { createModerateClaimHandler } from "../pages/api/identity/moderate-claim";
 import { createPendingClaimsHandler } from "../pages/api/identity/pending-claims";
@@ -208,6 +211,35 @@ test("link-discord allows relinking when discord identity is already linked to s
 
   assert.equal(res.statusCode, 200);
   assert.equal(upsertCalls.length, 1);
+});
+
+test("getDiscordExternalAccountId returns trimmed externalId for discord account", () => {
+  const id = getDiscordExternalAccountId({
+    externalAccounts: [
+      { provider: "google", externalId: "111" },
+      { provider: "oauth_discord", externalId: "  99887766  " },
+    ],
+  });
+  assert.equal(id, "99887766");
+});
+
+test("getDiscordExternalAccountId falls back to providerUserId when externalId is absent", () => {
+  const id = getDiscordExternalAccountId({
+    externalAccounts: [
+      { provider: "oauth_discord", providerUserId: "  88776655  " },
+    ],
+  });
+  assert.equal(id, "88776655");
+});
+
+test("getDiscordExternalAccountId returns null when no discord account has an id", () => {
+  const id = getDiscordExternalAccountId({
+    externalAccounts: [
+      { provider: "google", externalId: "111" },
+      { provider: "oauth_discord", externalId: "   " },
+    ],
+  });
+  assert.equal(id, null);
 });
 
 test("claim-discord creates pending claim", async () => {

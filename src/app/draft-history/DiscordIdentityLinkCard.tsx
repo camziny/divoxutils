@@ -174,7 +174,9 @@ export default function DiscordIdentityLinkCard() {
         </span>
       </div>
       <p className="text-xs text-gray-400 leading-relaxed mb-3">
-        Connect your Discord account to track your draft stats on the leaderboard.
+        {hasDiscord
+          ? "Even though you're signed in with Discord, we just need a quick one-click link to connect your draft stats."
+          : "Connect your Discord account to track your draft stats on the leaderboard."}
       </p>
 
       {hasDiscord ? (

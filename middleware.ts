@@ -15,6 +15,8 @@ export default authMiddleware({
     "/group-builder",
     "/discord",
     "/draft(.*)",
+    "/draft-history(.*)",
+    "/api/draft-stats(.*)",
     "/user/(.*)/characters",
     "/user/(.*)/group",
     "/users/(.*)/characters",

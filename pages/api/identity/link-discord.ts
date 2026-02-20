@@ -18,7 +18,7 @@ type LinkIdentityDeps = {
   }) => Promise<unknown>;
 };
 
-function getDiscordExternalAccountId(clerkUser: any): string | null {
+export function getDiscordExternalAccountId(clerkUser: any): string | null {
   const externalAccounts = Array.isArray(clerkUser?.externalAccounts)
     ? clerkUser.externalAccounts
     : [];
@@ -28,8 +28,12 @@ function getDiscordExternalAccountId(clerkUser: any): string | null {
     if (!provider.includes("discord")) {
       continue;
     }
-    if (typeof account?.providerUserId === "string" && account.providerUserId.trim()) {
-      return account.providerUserId.trim();
+    const id =
+      (typeof account?.externalId === "string" && account.externalId.trim()) ||
+      (typeof account?.providerUserId === "string" && account.providerUserId.trim()) ||
+      "";
+    if (id) {
+      return id;
     }
   }
 
