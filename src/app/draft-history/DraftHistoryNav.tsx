@@ -4,7 +4,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { key: "history", label: "Drafts", href: "/draft-history" },
+  { key: "history", label: "History", href: "/draft-history" },
   { key: "leaderboard", label: "Leaderboard", href: "/draft-history/leaderboard" },
 ] as const;
 

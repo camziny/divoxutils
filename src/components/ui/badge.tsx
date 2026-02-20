@@ -6,6 +6,7 @@ const variantStyles: Record<string, string> = {
   secondary: "border-transparent bg-gray-800 text-gray-400",
   destructive: "border-transparent bg-red-600/20 text-red-300",
   outline: "border-gray-700 text-gray-400",
+  winner: "border-indigo-400/30 bg-indigo-500/25 text-indigo-200",
 };
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {

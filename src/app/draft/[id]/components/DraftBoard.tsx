@@ -1189,7 +1189,7 @@ function TeamPanel({
             </Badge>
           )}
           {showWinner && isWinner && (
-            <Badge variant="default" className="text-[9px]">
+            <Badge variant="winner" className="text-[9px]">
               Winner
             </Badge>
           )}

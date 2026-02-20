@@ -2,12 +2,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton, useAuth, useUser } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 import { FaCoffee } from "react-icons/fa";
 
 const NAV_LINKS = [
   { href: "/leaderboards", label: "Leaderboards" },
   { href: "/search", label: "Search" },
+  { href: "/draft-history", label: "Drafts" },
   { href: "/realm-ranks", label: "Realm Ranks" },
   { href: "/discord", label: "Discord" },
   { href: "/about", label: "About" },
@@ -20,8 +21,6 @@ type NavbarClientProps = {
 const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isSignedIn } = useAuth();
-  const { user } = useUser();
-  const [userName, setUserName] = useState<string | null>(null);
   const pathname = usePathname();
 
   const navRef = useRef<HTMLElement>(null);
@@ -81,22 +80,6 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [updateActiveIndicator]);
-
-  useEffect(() => {
-    if (user) {
-      setUserName(user.username ?? null);
-      fetch(`/api/users/${user.id}`)
-        .then((res) => res.json())
-        .then((data) => setUserName(data?.username ?? data?.name ?? user.username ?? null))
-        .catch(() => {});
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user?.username) {
-      setUserName(user.username);
-    }
-  }, [user?.username]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -211,11 +194,6 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
               >
                 My Characters
               </Link>
-              {userName && (
-                <span className="text-[13px] font-medium text-gray-400">
-                  {userName}
-                </span>
-              )}
               <UserButton afterSignOutUrl="/" appearance={userButtonAppearance} />
             </>
           ) : (
@@ -304,11 +282,6 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
                 >
                   My Characters
                 </Link>
-                {userName && (
-                  <span className="rounded-md px-3 py-2.5 text-sm font-medium text-gray-400 text-left">
-                    {userName}
-                  </span>
-                )}
                 <div className="px-3 py-2.5">
                   <UserButton afterSignOutUrl="/" appearance={userButtonAppearance} />
                 </div>

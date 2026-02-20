@@ -18,6 +18,10 @@ type DraftLogRow = {
     team?: 1 | 2;
     isCaptain: boolean;
   }>;
+  bans: Array<{
+    team: 1 | 2;
+    className: string;
+  }>;
 };
 
 const ITEMS_PER_PAGE = 12;
@@ -133,14 +137,12 @@ export default function DraftHistoryClient() {
                   key={row.shortId}
                   className="rounded-lg border border-gray-800 overflow-hidden"
                 >
-                  {/* Row header */}
                   <button
                     type="button"
                     onClick={() => toggle(row.shortId)}
                     className="w-full px-4 py-3 text-left hover:bg-gray-800/20 transition-colors duration-100 group"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      {/* Left: matchup */}
                       <div className="flex items-center gap-3 min-w-0">
                         <ChevronRight
                           className={`w-3.5 h-3.5 text-gray-600 flex-shrink-0 transition-transform duration-150 ${
@@ -160,7 +162,6 @@ export default function DraftHistoryClient() {
                         </div>
                       </div>
 
-                      {/* Right: winner + date */}
                       <div className="flex items-center gap-4 flex-shrink-0 text-xs">
                         {winnerName ? (
                           <span className="flex items-center gap-1.5 text-gray-400">
@@ -177,7 +178,6 @@ export default function DraftHistoryClient() {
                     </div>
                   </button>
 
-                  {/* Expanded content */}
                   {isExpanded && (
                     <div className="border-t border-gray-800/60 px-4 py-4 bg-gray-950/40">
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -185,11 +185,13 @@ export default function DraftHistoryClient() {
                           label="Team 1"
                           players={teamPlayers(row, 1)}
                           isWinner={row.winnerTeam === 1}
+                          bans={row.bans.filter((b) => b.team === 1)}
                         />
                         <TeamPanel
                           label="Team 2"
                           players={teamPlayers(row, 2)}
                           isWinner={row.winnerTeam === 2}
+                          bans={row.bans.filter((b) => b.team === 2)}
                         />
                       </div>
                       <div className="mt-4 pt-3 border-t border-gray-800/40 flex items-center gap-3 text-[11px] text-gray-600">
@@ -219,16 +221,16 @@ export default function DraftHistoryClient() {
   );
 }
 
-/* ─── Sub-components ─────────────────────────────────── */
-
 function TeamPanel({
   label,
   players,
   isWinner,
+  bans,
 }: {
   label: string;
   players: Array<{ displayName: string; isCaptain: boolean }>;
   isWinner: boolean;
+  bans: Array<{ className: string }>;
 }) {
   return (
     <div>
@@ -257,6 +259,23 @@ function TeamPanel({
           ))
         )}
       </div>
+      {bans.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-gray-800/40">
+          <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">
+            Banned
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {bans.map((b, i) => (
+              <span
+                key={i}
+                className="rounded bg-gray-800/60 px-1.5 py-0.5 text-xs text-gray-400"
+              >
+                {b.className}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
