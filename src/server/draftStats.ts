@@ -375,9 +375,9 @@ export function aggregatePlayerDrilldown(
   }
 
   const byRealm: Record<string, WinLossRecord> = {};
-  for (const [realm, entry] of realmStats.entries()) {
+  realmStats.forEach((entry, realm) => {
     byRealm[realm] = computeWinRate(entry.wins, entry.losses);
-  }
+  });
 
   const headToHead = Array.from(headToHeadStats.entries())
     .map(([opponentClerkUserId, value]) => {
