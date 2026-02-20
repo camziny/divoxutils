@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import DiscordIdentityLinkCard from "@/app/draft-history/DiscordIdentityLinkCard";
 import { getPlayerPoolEmptyState } from "./playerPoolState";
 
 function PlayerAvatar({ url, size = 20 }: { url?: string; size?: number }) {
@@ -480,6 +481,12 @@ export default function DraftBoard({
           >
             Team 2 Wins
           </Button>
+        </div>
+      )}
+
+      {isComplete && (
+        <div className="pt-4">
+          <DiscordIdentityLinkCard />
         </div>
       )}
     </div>

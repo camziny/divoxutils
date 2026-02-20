@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import DraftClient from "../[id]/DraftClient";
+import DiscordIdentityLinkCard from "../../draft-history/DiscordIdentityLinkCard";
 
 const DUMMY_NAMES = [
   "divox",
@@ -207,7 +208,8 @@ export default function DraftTestPage() {
           </div>
         </div>
 
-        <div className="mx-auto max-w-5xl px-4 py-8">
+        <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
+          <DiscordIdentityLinkCard />
           <DraftClient
             shortId={draftState.shortId}
             token={activeToken}
@@ -220,6 +222,8 @@ export default function DraftTestPage() {
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300 flex items-center justify-center p-4">
       <div className="max-w-sm w-full space-y-8 text-center">
+        <DiscordIdentityLinkCard />
+
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">
             Draft Test
