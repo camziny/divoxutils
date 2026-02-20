@@ -151,7 +151,6 @@ export default function LeaderboardClient() {
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    {/* Name + record on one line */}
                     <div className={`flex items-baseline justify-between gap-3${sortBy === "winRate" ? " mb-1.5" : ""}`}>
                       <span className="text-sm font-medium text-gray-200 group-hover:text-white truncate transition-colors duration-100">
                         {row.userName}
@@ -160,11 +159,10 @@ export default function LeaderboardClient() {
                         {row.wins}W {row.losses}L · {row.winRate.toFixed(1)}%
                       </span>
                     </div>
-                    {/* Win rate bar — only visible when sorting by Win % */}
                     {sortBy === "winRate" && (
                       <div className="h-1 rounded-full bg-gray-800 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-white/80 transition-all duration-700 ease-out"
+                          className="h-full rounded-full bg-indigo-400/60 transition-all duration-700 ease-out"
                           style={{
                             width: animate
                               ? `${Math.min(100, Math.max(0, row.winRate))}%`

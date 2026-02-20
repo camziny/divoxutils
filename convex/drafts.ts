@@ -948,6 +948,10 @@ export const getCompletedDraftResults = query({
         .query("draftPlayers")
         .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
         .collect();
+      const bans = await ctx.db
+        .query("draftBans")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
       results.push({
         _id: draft._id,
         shortId: draft.shortId,
@@ -960,6 +964,10 @@ export const getCompletedDraftResults = query({
           displayName: p.displayName,
           team: p.team,
           isCaptain: p.isCaptain,
+        })),
+        bans: bans.map((b) => ({
+          team: b.team,
+          className: b.className,
         })),
       });
     }

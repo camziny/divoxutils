@@ -105,10 +105,8 @@ export default function DiscordIdentityLinkCard() {
     }
   }
 
-  /* ── Loading ── */
   if (dbStatus.loading) return null;
 
-  /* ── Not signed in ── */
   if (!isSignedIn) {
     return (
       <div className="rounded-lg border border-indigo-500/30 bg-indigo-950/20 px-4 py-3">
@@ -133,12 +131,10 @@ export default function DiscordIdentityLinkCard() {
     );
   }
 
-  /* ── Already linked — nothing to show ── */
   if (!dbStatus.loading && dbStatus.linked) {
     return null;
   }
 
-  /* ── Pending claim ── */
   if (!dbStatus.loading && !dbStatus.linked && dbStatus.pendingClaim) {
     return (
       <div className="rounded-lg border border-yellow-600/30 bg-yellow-950/15 px-4 py-3">
@@ -154,7 +150,6 @@ export default function DiscordIdentityLinkCard() {
     );
   }
 
-  /* ── Just-completed action ── */
   if (linkState === "success" || claimState === "success") {
     return (
       <div className="rounded-lg border border-green-500/30 bg-green-950/20 px-4 py-3">
@@ -168,7 +163,6 @@ export default function DiscordIdentityLinkCard() {
     );
   }
 
-  /* ── Default: prompt to link ── */
   return (
     <div className="rounded-lg border border-indigo-500/30 bg-indigo-950/20 px-4 py-3">
       <div className="flex items-center gap-2.5 mb-1.5">

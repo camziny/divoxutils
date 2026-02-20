@@ -16,7 +16,8 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
+import DraftHistoryNav from "../../DraftHistoryNav";
 
 type Drilldown = {
   playerClerkUserId: string;
@@ -44,7 +45,7 @@ type Drilldown = {
   }>;
 };
 
-const PIE_COLORS = ["#e5e7eb", "#374151"]; // gray-200 wins, gray-700 losses
+const PIE_COLORS = ["#818cf8", "#374151"];
 
 export default function PlayerDrilldownClient({
   clerkUserId,
@@ -54,6 +55,8 @@ export default function PlayerDrilldownClient({
   const [drilldown, setDrilldown] = useState<Drilldown | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [opponentsOpen, setOpponentsOpen] = useState(false);
+  const [recentOpen, setRecentOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -136,7 +139,6 @@ export default function PlayerDrilldownClient({
     <Shell>
       <BackNav />
 
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-xl font-semibold tracking-tight text-gray-100">
           {drilldown.playerName}
@@ -147,7 +149,6 @@ export default function PlayerDrilldownClient({
         </p>
       </div>
 
-      {/* Stat cards */}
       <div className="grid gap-3 sm:grid-cols-2 mb-6">
         <StatCard
           label="Overall"
@@ -176,7 +177,6 @@ export default function PlayerDrilldownClient({
         )}
       </div>
 
-      {/* Streak */}
       <div className="mb-6 flex items-center gap-3">
         <span className="text-xs text-gray-500">Streak</span>
         <div className="flex gap-0.5">
@@ -185,7 +185,7 @@ export default function PlayerDrilldownClient({
               key={`${game.shortId}-${i}`}
               className={`w-5 h-5 rounded-[3px] flex items-center justify-center text-[9px] font-semibold ${
                 game.didWin
-                  ? "bg-gray-200 text-gray-900"
+                  ? "bg-indigo-500/25 text-indigo-300"
                   : "bg-gray-800 text-gray-500"
               }`}
             >
@@ -200,7 +200,6 @@ export default function PlayerDrilldownClient({
         )}
       </div>
 
-      {/* H2H bar chart */}
       {h2hBarData.length > 0 && (
         <Card className="mb-6 bg-transparent">
           <CardHeader className="pb-1">
@@ -226,6 +225,13 @@ export default function PlayerDrilldownClient({
                     tickLine={false}
                   />
                   <Tooltip
+                    cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                    wrapperStyle={{ outline: "none" }}
+                    contentStyle={{
+                      background: "transparent",
+                      border: "none",
+                      padding: 0,
+                    }}
                     content={({ label, payload }) => (
                       <ChartTooltipContent
                         label={typeof label === "string" ? label : undefined}
@@ -236,7 +242,7 @@ export default function PlayerDrilldownClient({
                   <Bar
                     dataKey="wins"
                     name="Wins"
-                    fill="#d1d5db"
+                    fill="#818cf8"
                     radius={[0, 3, 3, 0]}
                     stackId="s"
                   />
@@ -254,85 +260,109 @@ export default function PlayerDrilldownClient({
         </Card>
       )}
 
-      {/* H2H list */}
       {drilldown.headToHead.length > 0 && (
         <div className="mb-6">
-          <p className="text-xs font-medium text-gray-500 mb-2 px-1">
+          <button
+            type="button"
+            onClick={() => setOpponentsOpen((v) => !v)}
+            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-2 px-1 hover:text-gray-400 transition-colors duration-100"
+          >
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-150 ${
+                opponentsOpen ? "" : "-rotate-90"
+              }`}
+            />
             vs Opponents
-          </p>
-          <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
-            {drilldown.headToHead.map((row) => (
-              <Link
-                key={row.opponentClerkUserId}
-                href={`/draft-history/leaderboard/${row.opponentClerkUserId}`}
-                className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
-              >
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors duration-100">
-                  {row.opponentName}
-                </span>
-                <div className="flex items-center gap-3 text-sm tabular-nums">
-                  <span className="text-gray-300 font-medium">
-                    {row.wins}-{row.losses}
+            <span className="text-gray-600 font-normal">
+              ({drilldown.headToHead.length})
+            </span>
+          </button>
+          {opponentsOpen && (
+            <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
+              {drilldown.headToHead.map((row) => (
+                <Link
+                  key={row.opponentClerkUserId}
+                  href={`/draft-history/leaderboard/${row.opponentClerkUserId}`}
+                  className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
+                >
+                  <span className="text-sm text-gray-300 group-hover:text-white transition-colors duration-100">
+                    {row.opponentName}
                   </span>
-                  <span className="text-gray-600 w-12 text-right text-xs">
-                    {row.winRate.toFixed(1)}%
-                  </span>
-                  <ChevronRight className="w-3 h-3 text-gray-700 group-hover:text-gray-500 transition-colors duration-100" />
-                </div>
-              </Link>
-            ))}
-          </div>
+                  <div className="flex items-center gap-3 text-sm tabular-nums">
+                    <span className="text-gray-300 font-medium">
+                      {row.wins}-{row.losses}
+                    </span>
+                    <span className="text-gray-600 w-12 text-right text-xs">
+                      {row.winRate.toFixed(1)}%
+                    </span>
+                    <ChevronRight className="w-3 h-3 text-gray-700 group-hover:text-gray-500 transition-colors duration-100" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Recent games */}
       {drilldown.recentGames.length > 0 && (
         <div className="mb-8">
-          <p className="text-xs font-medium text-gray-500 mb-2 px-1">
+          <button
+            type="button"
+            onClick={() => setRecentOpen((v) => !v)}
+            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-2 px-1 hover:text-gray-400 transition-colors duration-100"
+          >
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-150 ${
+                recentOpen ? "" : "-rotate-90"
+              }`}
+            />
             Recent Drafts
-          </p>
-          <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
-            {drilldown.recentGames.map((game, i) => (
-              <div
-                key={`${game.shortId}-${i}`}
-                className="flex items-center justify-between px-4 py-2.5"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`text-xs font-semibold w-4 text-center ${
-                      game.didWin ? "text-gray-200" : "text-gray-600"
-                    }`}
-                  >
-                    {game.didWin ? "W" : "L"}
-                  </span>
-                  <span className="text-sm text-gray-400">
-                    {game.team1CaptainName}
-                    <span className="text-gray-600 mx-1.5">vs</span>
-                    {game.team2CaptainName}
-                  </span>
-                  {game.wasCaptain && (
-                    <span className="text-[10px] text-gray-600 font-medium uppercase tracking-wider">
-                      C
+            <span className="text-gray-600 font-normal">
+              ({drilldown.recentGames.length})
+            </span>
+          </button>
+          {recentOpen && (
+            <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
+              {drilldown.recentGames.map((game, i) => (
+                <div
+                  key={`${game.shortId}-${i}`}
+                  className="flex items-center justify-between px-4 py-2.5"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`text-xs font-semibold w-4 text-center ${
+                        game.didWin ? "text-gray-200" : "text-gray-600"
+                      }`}
+                    >
+                      {game.didWin ? "W" : "L"}
                     </span>
-                  )}
+                    <span className="text-sm text-gray-400">
+                      {game.team1CaptainName}
+                      <span className="text-gray-600 mx-1.5">vs</span>
+                      {game.team2CaptainName}
+                    </span>
+                    {game.wasCaptain && (
+                      <span className="text-[10px] text-gray-600 font-medium uppercase tracking-wider">
+                        C
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-600">
+                    {new Date(game.createdAtMs).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
                 </div>
-                <span className="text-xs text-gray-600">
-                  {new Date(game.createdAtMs).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </Shell>
   );
 }
-
-/* ─── Sub-components ─────────────────────────────────── */
 
 function Shell({ children }: { children: React.ReactNode }) {
   return <section className="max-w-3xl mx-auto px-6">{children}</section>;
@@ -340,15 +370,18 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function BackNav() {
   return (
-    <div className="mb-6">
-      <Link
-        href="/draft-history/leaderboard"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-400 transition-colors duration-100"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        Leaderboard
-      </Link>
-    </div>
+    <>
+      <DraftHistoryNav active="leaderboard" />
+      <div className="mb-6">
+        <Link
+          href="/draft-history/leaderboard"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-400 transition-colors duration-100"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Leaderboard
+        </Link>
+      </div>
+    </>
   );
 }
 
@@ -385,7 +418,7 @@ function StatCard({
         <Progress
           value={winRate}
           className="mt-3 h-1"
-          indicatorClassName="bg-gray-400"
+          indicatorClassName="bg-indigo-400/60"
         />
       </CardContent>
     </Card>

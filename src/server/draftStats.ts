@@ -76,6 +76,10 @@ export type DraftLogRow = {
     team?: 1 | 2;
     isCaptain: boolean;
   }>;
+  bans: Array<{
+    team: 1 | 2;
+    className: string;
+  }>;
 };
 
 type DraftIdentityContext = {
@@ -496,6 +500,10 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
       team?: 1 | 2;
       isCaptain: boolean;
     }>;
+    bans?: Array<{
+      team: 1 | 2;
+      className: string;
+    }>;
   }>;
 
   return drafts.map((draft) => ({
@@ -505,5 +513,6 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
     resultStatus: draft.resultStatus ?? "unverified",
     createdAtMs: draft._creationTime ?? 0,
     players: draft.players,
+    bans: draft.bans ?? [],
   }));
 }
