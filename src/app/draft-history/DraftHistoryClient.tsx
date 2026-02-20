@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pagination } from "@/components/ui/pagination";
 import { ChevronRight, Trophy } from "lucide-react";
 import DraftHistoryNav from "./DraftHistoryNav";
+import DiscordIdentityLinkCard from "./DiscordIdentityLinkCard";
 
 type DraftLogRow = {
   shortId: string;
@@ -86,6 +87,7 @@ export default function DraftHistoryClient() {
   return (
     <section className="max-w-3xl mx-auto px-6">
       <DraftHistoryNav active="history" />
+      <DiscordIdentityLinkCard />
 
       <div className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight text-gray-100">

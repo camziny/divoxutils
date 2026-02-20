@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { getPlayerPoolEmptyState } from "./playerPoolState";
 
 function PlayerAvatar({ url, size = 20 }: { url?: string; size?: number }) {
   if (!url) return null;
@@ -1327,6 +1328,11 @@ function PlayerPool({
   const sortedPlayers = [...players].sort((a, b) =>
     a.displayName.localeCompare(b.displayName)
   );
+  const emptyState = getPlayerPoolEmptyState({
+    playersCount: players.length,
+    isSetup,
+    isDrafting,
+  });
 
   return (
     <div
@@ -1347,9 +1353,9 @@ function PlayerPool({
         )}
       </AnimatePresence>
 
-      {players.length === 0 && !isSetup && (
+      {emptyState.topNotice && (
         <div className="text-center py-2">
-          <span className="text-[10px] text-gray-600">No players remaining</span>
+          <span className="text-[10px] text-gray-600">{emptyState.topNotice}</span>
         </div>
       )}
 
@@ -1407,9 +1413,9 @@ function PlayerPool({
             </motion.button>
           ))}
         </AnimatePresence>
-        {players.length === 0 && (
+        {emptyState.listEmptyLabel && (
           <p className="text-center text-[10px] text-gray-600 py-4">
-            {isDrafting ? "All drafted" : "No players"}
+            {emptyState.listEmptyLabel}
           </p>
         )}
       </div>
