@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Pagination } from "@/components/ui/pagination";
+import { Badge } from "@/components/ui/badge";
 import { ChevronRight, Trophy } from "lucide-react";
 import DraftHistoryNav from "./DraftHistoryNav";
 import DiscordIdentityLinkCard from "./DiscordIdentityLinkCard";
@@ -91,7 +92,10 @@ export default function DraftHistoryClient() {
   return (
     <section className="max-w-3xl mx-auto px-6">
       <DraftHistoryNav active="history" />
-      <DiscordIdentityLinkCard />
+
+      <div className="mb-6">
+        <DiscordIdentityLinkCard />
+      </div>
 
       <div className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight text-gray-100">
@@ -164,8 +168,8 @@ export default function DraftHistoryClient() {
 
                       <div className="flex items-center gap-4 flex-shrink-0 text-xs">
                         {winnerName ? (
-                          <span className="flex items-center gap-1.5 text-gray-400">
-                            <Trophy className="w-3 h-3 text-gray-400" />
+                          <span className="inline-flex items-center gap-1.5 rounded-md border border-indigo-400/30 bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-200">
+                            <Trophy className="w-3 h-3 text-indigo-400" />
                             {winnerName}
                           </span>
                         ) : (
@@ -195,10 +199,6 @@ export default function DraftHistoryClient() {
                         />
                       </div>
                       <div className="mt-4 pt-3 border-t border-gray-800/40 flex items-center gap-3 text-[11px] text-gray-600">
-                        <span>{formatDate(row.createdAtMs)}</span>
-                        <span className="w-px h-3 bg-gray-800" />
-                        <span>{row.discordGuildId}</span>
-                        <span className="w-px h-3 bg-gray-800" />
                         <span className="capitalize">{row.resultStatus}</span>
                       </div>
                     </div>
@@ -233,11 +233,19 @@ function TeamPanel({
   bans: Array<{ className: string }>;
 }) {
   return (
-    <div>
+    <div
+      className={
+        isWinner
+          ? "rounded-lg border border-indigo-400/20 bg-indigo-500/5 ring-1 ring-indigo-400/20 p-3"
+          : "rounded-lg border border-gray-800/40 p-3"
+      }
+    >
       <div className="flex items-center gap-2 mb-2">
         <p className="text-xs font-medium text-gray-500">{label}</p>
         {isWinner && (
-          <Trophy className="w-3 h-3 text-gray-400" />
+          <Badge variant="winner" className="text-[9px]">
+            Winner
+          </Badge>
         )}
       </div>
       <div className="space-y-1">
