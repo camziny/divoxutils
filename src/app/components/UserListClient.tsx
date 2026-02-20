@@ -2,11 +2,13 @@
 import React, { useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
+import SupporterBadge, { supporterRowClass, supporterNameStyle } from "./SupporterBadge";
 
 type User = {
   id: number;
   clerkUserId: string;
   name: string;
+  supporterTier: number;
 };
 
 type GroupedUsers = {
@@ -206,13 +208,15 @@ const UserGroup = React.memo(({ letter, users }: { letter: string; users: User[]
 UserGroup.displayName = 'UserGroup';
 
 const UserItem = React.memo(({ user }: { user: User }) => {
+  const rowBg = supporterRowClass(user.supporterTier);
   return (
     <HoverPrefetchLink 
       href={`user/${user.name}/characters`}
-      className="flex items-center text-gray-400 hover:text-indigo-400 hover:bg-gray-800/40 cursor-pointer py-1.5 px-3 transition-colors duration-150 text-sm"
+      className={`flex items-center gap-1.5 text-gray-400 hover:text-indigo-400 hover:bg-gray-800/40 cursor-pointer py-1.5 px-3 transition-colors duration-150 text-sm relative overflow-hidden ${rowBg}`}
       prefetchDelay={150}
     >
-      {user.name}
+      <span style={supporterNameStyle(user.supporterTier)}>{user.name}</span>
+      {user.supporterTier > 0 && <SupporterBadge tier={user.supporterTier} />}
     </HoverPrefetchLink>
   );
 });

@@ -5,8 +5,10 @@ import { currentUser } from "@clerk/nextjs";
 import { Suspense } from "react";
 import Loading from "../loading";
 import ShareProfileButton from "../components/ShareProfileButton";
+import SupporterBadge from "../components/SupporterBadge";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import prisma from "../../../prisma/prismaClient";
 
 const CharacterListOptimized = dynamic(
   () => import("../components/CharacterListOptimized"),
@@ -77,13 +79,20 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
 
   const characters = await fetchCharactersForUser(userId);
 
+  const dbUser = await prisma.user.findUnique({
+    where: { clerkUserId: userId },
+    select: { supporterTier: true },
+  });
+  const supporterTier = dbUser?.supporterTier ?? 0;
+
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
       <div className="p-4 md:p-8 lg:p-12">
         <div className="max-w-screen-lg mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-lg font-semibold text-white tracking-tight">
+            <h1 className="text-lg font-semibold text-white tracking-tight inline-flex items-center gap-2">
               My Characters
+              {supporterTier > 0 && <SupporterBadge tier={supporterTier} size="md" />}
             </h1>
             <ShareProfileButton username={user?.username ?? ''} />
           </div>

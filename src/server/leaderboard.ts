@@ -22,6 +22,7 @@ type LeaderboardUserInput = {
   id: number;
   name: string | null;
   clerkUserId: string;
+  supporterTier: number;
   characters: Array<{
     character: LeaderboardCharacter;
   }>;
@@ -47,6 +48,7 @@ export type LeaderboardItem = {
   irsLastWeek: number;
   irsThisWeek: number;
   lastUpdated: Date | null;
+  supporterTier: number;
 };
 
 export const aggregateLeaderboardData = (
@@ -144,6 +146,7 @@ export const aggregateLeaderboardData = (
       userId: user.id,
       clerkUserId: user.clerkUserId,
       userName: user.name ?? "Unknown",
+      supporterTier: user.supporterTier,
       totalRealmPoints: totalPoints,
       totalSoloKills,
       totalDeaths,
@@ -172,6 +175,7 @@ const getLeaderboardDataUncached = async (): Promise<LeaderboardItem[]> => {
       id: true,
       name: true,
       clerkUserId: true,
+      supporterTier: true,
       characters: {
         select: {
           character: {
