@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import DraftClient from "../[id]/DraftClient";
+import DiscordIdentityLinkCard from "../../draft-history/DiscordIdentityLinkCard";
 
 const DUMMY_NAMES = [
   "divox",
@@ -31,6 +32,7 @@ const DUMMY_NAMES = [
 export default function DraftTestPage() {
   const createDraft = useMutation(api.drafts.createDraft);
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const [draftState, setDraftState] = useState<{
     shortId: string;
@@ -96,6 +98,7 @@ export default function DraftTestPage() {
   }, [currentActorId, manualOverride, tokenMap, activeToken]);
 
   const handleSimulate = async () => {
+    setCreateError(null);
     setIsCreating(true);
     try {
       const players = DUMMY_NAMES.map((name, i) => ({
@@ -120,8 +123,13 @@ export default function DraftTestPage() {
       });
       setActiveToken(creatorToken);
       setManualOverride(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create test draft:", error);
+      const message =
+        typeof error?.message === "string" && error.message.trim().length > 0
+          ? error.message
+          : "Failed to create test draft.";
+      setCreateError(message);
     } finally {
       setIsCreating(false);
     }
@@ -200,7 +208,8 @@ export default function DraftTestPage() {
           </div>
         </div>
 
-        <div className="mx-auto max-w-5xl px-4 py-8">
+        <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
+          <DiscordIdentityLinkCard />
           <DraftClient
             shortId={draftState.shortId}
             token={activeToken}
@@ -213,6 +222,8 @@ export default function DraftTestPage() {
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300 flex items-center justify-center p-4">
       <div className="max-w-sm w-full space-y-8 text-center">
+        <DiscordIdentityLinkCard />
+
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">
             Draft Test
@@ -231,6 +242,12 @@ export default function DraftTestPage() {
         >
           {isCreating ? "Creating..." : "Simulate Draft"}
         </Button>
+
+        {createError && (
+          <div className="rounded-md border border-red-700/40 bg-red-900/20 px-3 py-2 text-left text-xs text-red-300">
+            {createError}
+          </div>
+        )}
       </div>
     </div>
   );

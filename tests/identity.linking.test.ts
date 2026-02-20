@@ -61,6 +61,23 @@ test("link-discord rejects unauthenticated requests", async () => {
   assert.deepEqual(res.body, { error: "Unauthorized" });
 });
 
+test("link-discord rejects non-POST requests", async () => {
+  const handler = createLinkDiscordIdentityHandler({
+    getAuthUserId: () => "user_1",
+    resolveDiscordUserIdFromClerk: async () => null,
+    findLocalUserByClerkId: async () => ({ clerkUserId: "user_1" }),
+    findIdentityLinkByProviderUserId: async () => null,
+    upsertIdentityLink: async () => ({}),
+  });
+
+  const req = createMockRequest({ method: "GET" });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 405);
+  assert.deepEqual(res.body, { error: "Method not allowed" });
+});
+
 test("link-discord uses body discordUserId and upserts identity link", async () => {
   const upsertCalls: Array<Record<string, string>> = [];
   const handler = createLinkDiscordIdentityHandler({
@@ -134,6 +151,65 @@ test("link-discord falls back to Clerk discord id resolution", async () => {
   assert.equal(upsertCalls[0].providerUserId, "99887766");
 });
 
+test("link-discord returns 400 when signed-in user has no Discord identity to resolve", async () => {
+  const handler = createLinkDiscordIdentityHandler({
+    getAuthUserId: () => "user_1",
+    resolveDiscordUserIdFromClerk: async () => null,
+    findLocalUserByClerkId: async () => ({ clerkUserId: "user_1" }),
+    findIdentityLinkByProviderUserId: async () => null,
+    upsertIdentityLink: async () => ({}),
+  });
+
+  const req = createMockRequest({ body: {} });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(res.body, {
+    error: "Unable to determine Discord user id for this account.",
+  });
+});
+
+test("link-discord returns 404 when local user does not exist", async () => {
+  const handler = createLinkDiscordIdentityHandler({
+    getAuthUserId: () => "user_1",
+    resolveDiscordUserIdFromClerk: async () => "123",
+    findLocalUserByClerkId: async () => null,
+    findIdentityLinkByProviderUserId: async () => null,
+    upsertIdentityLink: async () => ({}),
+  });
+
+  const req = createMockRequest({ body: {} });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 404);
+  assert.deepEqual(res.body, { error: "User not found." });
+});
+
+test("link-discord allows relinking when discord identity is already linked to same user", async () => {
+  const upsertCalls: Array<Record<string, string>> = [];
+  const handler = createLinkDiscordIdentityHandler({
+    getAuthUserId: () => "user_1",
+    resolveDiscordUserIdFromClerk: async () => null,
+    findLocalUserByClerkId: async () => ({ clerkUserId: "user_1" }),
+    findIdentityLinkByProviderUserId: async () => ({ clerkUserId: "user_1" }),
+    upsertIdentityLink: async (data) => {
+      upsertCalls.push(data);
+      return {};
+    },
+  });
+
+  const req = createMockRequest({
+    body: { discordUserId: "123456789" },
+  });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(upsertCalls.length, 1);
+});
+
 test("claim-discord creates pending claim", async () => {
   const createdClaims: Array<Record<string, string | undefined>> = [];
   const handler = createClaimDiscordIdentityHandler({
@@ -162,6 +238,80 @@ test("claim-discord creates pending claim", async () => {
     draftId: "draft_1",
     status: "pending",
   });
+});
+
+test("claim-discord rejects non-POST requests", async () => {
+  const handler = createClaimDiscordIdentityHandler({
+    getAuthUserId: () => "user_1",
+    findLocalUserByClerkId: async () => ({ clerkUserId: "user_1" }),
+    findIdentityLinkByProviderUserId: async () => null,
+    findPendingClaim: async () => null,
+    createClaim: async () => ({ id: 10, status: "pending" }),
+  });
+
+  const req = createMockRequest({ method: "GET" });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 405);
+  assert.deepEqual(res.body, { error: "Method not allowed" });
+});
+
+test("claim-discord rejects unauthenticated requests", async () => {
+  const handler = createClaimDiscordIdentityHandler({
+    getAuthUserId: () => null,
+    findLocalUserByClerkId: async () => ({ clerkUserId: "user_1" }),
+    findIdentityLinkByProviderUserId: async () => null,
+    findPendingClaim: async () => null,
+    createClaim: async () => ({ id: 10, status: "pending" }),
+  });
+
+  const req = createMockRequest({
+    body: { discordUserId: "777" },
+  });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 401);
+  assert.deepEqual(res.body, { error: "Unauthorized" });
+});
+
+test("claim-discord rejects missing discord user id", async () => {
+  const handler = createClaimDiscordIdentityHandler({
+    getAuthUserId: () => "user_1",
+    findLocalUserByClerkId: async () => ({ clerkUserId: "user_1" }),
+    findIdentityLinkByProviderUserId: async () => null,
+    findPendingClaim: async () => null,
+    createClaim: async () => ({ id: 10, status: "pending" }),
+  });
+
+  const req = createMockRequest({
+    body: { discordUserId: "   " },
+  });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(res.body, { error: "discordUserId is required." });
+});
+
+test("claim-discord returns 404 when local user does not exist", async () => {
+  const handler = createClaimDiscordIdentityHandler({
+    getAuthUserId: () => "user_1",
+    findLocalUserByClerkId: async () => null,
+    findIdentityLinkByProviderUserId: async () => null,
+    findPendingClaim: async () => null,
+    createClaim: async () => ({ id: 10, status: "pending" }),
+  });
+
+  const req = createMockRequest({
+    body: { discordUserId: "777" },
+  });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 404);
+  assert.deepEqual(res.body, { error: "User not found." });
 });
 
 test("claim-discord rejects duplicate pending claims", async () => {
