@@ -156,6 +156,11 @@ export default function LeaderboardClient() {
                         {row.userName}
                       </span>
                       <span className="text-xs text-gray-500 tabular-nums flex-shrink-0">
+                        {sortBy === "games" && (
+                          <span className="text-gray-300 font-medium mr-1.5">
+                            {row.games}
+                          </span>
+                        )}
                         {row.wins}W {row.losses}L · {row.winRate.toFixed(1)}%
                       </span>
                     </div>

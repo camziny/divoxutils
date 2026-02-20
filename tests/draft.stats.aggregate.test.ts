@@ -23,10 +23,13 @@ const namesByClerk = new Map<string, string>([
 const drafts: DraftLeaderboardDraft[] = [
   {
     shortId: "a1",
+    type: "traditional",
     discordGuildId: "g1",
     _creationTime: 1_000,
     winnerTeam: 1,
     resultStatus: "verified",
+    team1Realm: "Albion",
+    team2Realm: "Midgard",
     players: [
       { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: true },
       { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: true },
@@ -35,10 +38,13 @@ const drafts: DraftLeaderboardDraft[] = [
   },
   {
     shortId: "a2",
+    type: "traditional",
     discordGuildId: "g2",
     _creationTime: 2_000,
     winnerTeam: 2,
     resultStatus: "verified",
+    team1Realm: "Hibernia",
+    team2Realm: "Albion",
     players: [
       { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
       { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
@@ -47,10 +53,13 @@ const drafts: DraftLeaderboardDraft[] = [
   },
   {
     shortId: "a3",
+    type: "traditional",
     discordGuildId: "g1",
     _creationTime: 3_000,
     winnerTeam: 2,
     resultStatus: "unverified",
+    team1Realm: "Albion",
+    team2Realm: "Hibernia",
     players: [
       { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
       { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
@@ -58,10 +67,13 @@ const drafts: DraftLeaderboardDraft[] = [
   },
   {
     shortId: "a4",
+    type: "traditional",
     discordGuildId: "g1",
     _creationTime: 4_000,
     winnerTeam: 2,
     resultStatus: "voided",
+    team1Realm: "Midgard",
+    team2Realm: "Hibernia",
     players: [
       { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
       { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
@@ -69,10 +81,13 @@ const drafts: DraftLeaderboardDraft[] = [
   },
   {
     shortId: "a5",
+    type: "traditional",
     discordGuildId: "g1",
     _creationTime: 5_000,
     winnerTeam: 2,
     resultStatus: "verified",
+    team1Realm: "Midgard",
+    team2Realm: "Albion",
     players: [
       { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
       { discordUserId: "d2", displayName: "Bob", team: 1, isCaptain: false },
@@ -181,4 +196,296 @@ test("aggregatePlayerDrilldown returns null when filters eliminate qualifying ga
     { guildId: "g2", minGames: 2 }
   );
   assert.equal(drilldown, null);
+});
+
+test("aggregatePlayerDrilldown computes per-realm breakdown for traditional drafts", () => {
+  const drilldown = aggregatePlayerDrilldown(
+    drafts,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    {}
+  );
+
+  assert.ok(drilldown);
+  assert.ok(drilldown.byRealm.Albion);
+  assert.equal(drilldown.byRealm.Albion.wins, 1);
+  assert.equal(drilldown.byRealm.Albion.losses, 0);
+  assert.equal(drilldown.byRealm.Albion.games, 1);
+  assert.equal(drilldown.byRealm.Albion.winRate, 100);
+
+  assert.ok(drilldown.byRealm.Hibernia);
+  assert.equal(drilldown.byRealm.Hibernia.wins, 0);
+  assert.equal(drilldown.byRealm.Hibernia.losses, 1);
+  assert.equal(drilldown.byRealm.Hibernia.games, 1);
+  assert.equal(drilldown.byRealm.Hibernia.winRate, 0);
+
+  assert.ok(drilldown.byRealm.Midgard);
+  assert.equal(drilldown.byRealm.Midgard.wins, 0);
+  assert.equal(drilldown.byRealm.Midgard.losses, 1);
+  assert.equal(drilldown.byRealm.Midgard.games, 1);
+  assert.equal(drilldown.byRealm.Midgard.winRate, 0);
+
+  assert.equal(drilldown.pvp.games, 0);
+});
+
+test("aggregatePlayerDrilldown computes pvp breakdown separately from realm stats", () => {
+  const pvpDraft: DraftLeaderboardDraft = {
+    shortId: "pvp1",
+    type: "pvp",
+    discordGuildId: "g1",
+    _creationTime: 6_000,
+    winnerTeam: 1,
+    resultStatus: "verified",
+    players: [
+      { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+      { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+    ],
+  };
+
+  const pvpDraft2: DraftLeaderboardDraft = {
+    shortId: "pvp2",
+    type: "pvp",
+    discordGuildId: "g1",
+    _creationTime: 7_000,
+    winnerTeam: 2,
+    resultStatus: "verified",
+    players: [
+      { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+      { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+    ],
+  };
+
+  const allDrafts = [...drafts, pvpDraft, pvpDraft2];
+  const drilldown = aggregatePlayerDrilldown(
+    allDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    {}
+  );
+
+  assert.ok(drilldown);
+  assert.equal(drilldown.pvp.wins, 1);
+  assert.equal(drilldown.pvp.losses, 1);
+  assert.equal(drilldown.pvp.games, 2);
+  assert.equal(drilldown.pvp.winRate, 50);
+
+  assert.equal(drilldown.overall.games, 5);
+  assert.equal(drilldown.overall.wins, 2);
+  assert.equal(drilldown.overall.losses, 3);
+
+  assert.equal(drilldown.byRealm.Albion.games, 1);
+  assert.equal(drilldown.byRealm.Hibernia.games, 1);
+  assert.equal(drilldown.byRealm.Midgard.games, 1);
+});
+
+test("aggregatePlayerDrilldown does not create realm entry for pvp drafts", () => {
+  const pvpOnly: DraftLeaderboardDraft[] = [
+    {
+      shortId: "pvp-only1",
+      type: "pvp",
+      discordGuildId: "g1",
+      _creationTime: 10_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+        { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+      ],
+    },
+  ];
+
+  const drilldown = aggregatePlayerDrilldown(
+    pvpOnly,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    {}
+  );
+
+  assert.ok(drilldown);
+  assert.deepEqual(drilldown.byRealm, {});
+  assert.equal(drilldown.pvp.wins, 1);
+  assert.equal(drilldown.pvp.losses, 0);
+  assert.equal(drilldown.pvp.games, 1);
+});
+
+test("aggregatePlayerDrilldown includes draftType and playerRealm in recent games", () => {
+  const mixedDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "trad1",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 1_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      team1Realm: "Albion",
+      team2Realm: "Midgard",
+      players: [
+        { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+        { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+      ],
+    },
+    {
+      shortId: "pvp3",
+      type: "pvp",
+      discordGuildId: "g1",
+      _creationTime: 2_000,
+      winnerTeam: 2,
+      resultStatus: "verified",
+      players: [
+        { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+        { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+      ],
+    },
+  ];
+
+  const drilldown = aggregatePlayerDrilldown(
+    mixedDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    {}
+  );
+
+  assert.ok(drilldown);
+  assert.equal(drilldown.recentGames.length, 2);
+
+  const pvpGame = drilldown.recentGames.find((g) => g.shortId === "pvp3");
+  assert.ok(pvpGame);
+  assert.equal(pvpGame.draftType, "pvp");
+  assert.equal(pvpGame.playerRealm, undefined);
+
+  const tradGame = drilldown.recentGames.find((g) => g.shortId === "trad1");
+  assert.ok(tradGame);
+  assert.equal(tradGame.draftType, "traditional");
+  assert.equal(tradGame.playerRealm, "Albion");
+});
+
+test("aggregatePlayerDrilldown assigns correct realm for team 2 player", () => {
+  const d: DraftLeaderboardDraft[] = [
+    {
+      shortId: "t2-realm",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 1_000,
+      winnerTeam: 2,
+      resultStatus: "verified",
+      team1Realm: "Albion",
+      team2Realm: "Midgard",
+      players: [
+        { discordUserId: "d1", displayName: "Alice", team: 2, isCaptain: false },
+        { discordUserId: "d2", displayName: "Bob", team: 1, isCaptain: false },
+      ],
+    },
+  ];
+
+  const drilldown = aggregatePlayerDrilldown(
+    d,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    {}
+  );
+
+  assert.ok(drilldown);
+  assert.equal(drilldown.byRealm.Midgard?.wins, 1);
+  assert.equal(drilldown.byRealm.Midgard?.games, 1);
+  assert.equal(drilldown.byRealm.Albion, undefined);
+  assert.equal(drilldown.recentGames[0].playerRealm, "Midgard");
+});
+
+test("aggregatePlayerDrilldown overall totals include both realm and pvp games", () => {
+  const mixed: DraftLeaderboardDraft[] = [
+    {
+      shortId: "m1",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 1_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      team1Realm: "Albion",
+      team2Realm: "Hibernia",
+      players: [
+        { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+        { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+      ],
+    },
+    {
+      shortId: "m2",
+      type: "pvp",
+      discordGuildId: "g1",
+      _creationTime: 2_000,
+      winnerTeam: 2,
+      resultStatus: "verified",
+      players: [
+        { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: true },
+        { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+      ],
+    },
+    {
+      shortId: "m3",
+      type: "pvp",
+      discordGuildId: "g1",
+      _creationTime: 3_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+        { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+      ],
+    },
+  ];
+
+  const drilldown = aggregatePlayerDrilldown(
+    mixed,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    {}
+  );
+
+  assert.ok(drilldown);
+  assert.equal(drilldown.overall.games, 3);
+  assert.equal(drilldown.overall.wins, 2);
+  assert.equal(drilldown.overall.losses, 1);
+  assert.equal(drilldown.pvp.games, 2);
+  assert.equal(drilldown.pvp.wins, 1);
+  assert.equal(drilldown.pvp.losses, 1);
+  assert.equal(drilldown.byRealm.Albion?.games, 1);
+  assert.equal(drilldown.byRealm.Albion?.wins, 1);
+  assert.equal(drilldown.captain.games, 1);
+  assert.equal(drilldown.captain.losses, 1);
+});
+
+test("aggregatePlayerDrilldown handles traditional draft with no realm set gracefully", () => {
+  const noRealmDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "no-realm",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 1_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        { discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+        { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+      ],
+    },
+  ];
+
+  const drilldown = aggregatePlayerDrilldown(
+    noRealmDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    {}
+  );
+
+  assert.ok(drilldown);
+  assert.deepEqual(drilldown.byRealm, {});
+  assert.equal(drilldown.pvp.games, 0);
+  assert.equal(drilldown.overall.wins, 1);
+  assert.equal(drilldown.recentGames[0].playerRealm, undefined);
 });

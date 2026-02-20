@@ -917,10 +917,13 @@ export const getVerifiedDraftResults = query({
       results.push({
         _id: draft._id,
         shortId: draft.shortId,
+        type: draft.type,
         discordGuildId: draft.discordGuildId,
         winnerTeam: draft.winnerTeam,
         resultStatus: draft.resultStatus,
         _creationTime: draft._creationTime,
+        team1Realm: draft.team1Realm,
+        team2Realm: draft.team2Realm,
         players: players.map((p) => ({
           discordUserId: p.discordUserId,
           displayName: p.displayName,
@@ -955,10 +958,13 @@ export const getCompletedDraftResults = query({
       results.push({
         _id: draft._id,
         shortId: draft.shortId,
+        type: draft.type,
         discordGuildId: draft.discordGuildId,
         winnerTeam: draft.winnerTeam,
         resultStatus: draft.resultStatus ?? "unverified",
         _creationTime: draft._creationTime,
+        team1Realm: draft.team1Realm,
+        team2Realm: draft.team2Realm,
         players: players.map((p) => ({
           discordUserId: p.discordUserId,
           displayName: p.displayName,
@@ -1021,6 +1027,9 @@ export const seedVerifiedDraft = mutation({
     discordGuildId: v.string(),
     createdBy: v.string(),
     winnerTeam: v.union(v.literal(1), v.literal(2)),
+    type: v.optional(v.union(v.literal("traditional"), v.literal("pvp"))),
+    team1Realm: v.optional(v.string()),
+    team2Realm: v.optional(v.string()),
     players: v.array(
       v.object({
         discordUserId: v.string(),
@@ -1029,12 +1038,21 @@ export const seedVerifiedDraft = mutation({
         isCaptain: v.boolean(),
       })
     ),
+    bans: v.optional(
+      v.array(
+        v.object({
+          team: v.union(v.literal(1), v.literal(2)),
+          className: v.string(),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
-    const draftId = await ctx.db.insert("drafts", {
+    const draftType = args.type ?? "traditional";
+    const draftData: any = {
       shortId: args.shortId,
-      type: "traditional",
-      status: "complete",
+      type: draftType,
+      status: "complete" as const,
       teamSize: Math.max(
         args.players.filter((p) => p.team === 1).length,
         args.players.filter((p) => p.team === 2).length
@@ -1043,11 +1061,14 @@ export const seedVerifiedDraft = mutation({
       discordChannelId: "seed-channel",
       createdBy: args.createdBy,
       winnerTeam: args.winnerTeam,
-      resultStatus: "verified",
+      resultStatus: "verified" as const,
       resultModeratedBy: "seed-admin",
       resultModeratedAt: Date.now(),
       gameStarted: true,
-    });
+    };
+    if (args.team1Realm) draftData.team1Realm = args.team1Realm;
+    if (args.team2Realm) draftData.team2Realm = args.team2Realm;
+    const draftId = await ctx.db.insert("drafts", draftData);
 
     for (const player of args.players) {
       await ctx.db.insert("draftPlayers", {
@@ -1058,6 +1079,16 @@ export const seedVerifiedDraft = mutation({
         isCaptain: player.isCaptain,
         token: `seed-${args.shortId}-${player.discordUserId}`,
       });
+    }
+
+    if (args.bans) {
+      for (const ban of args.bans) {
+        await ctx.db.insert("draftBans", {
+          draftId,
+          team: ban.team,
+          className: ban.className,
+        });
+      }
     }
 
     return { draftId, shortId: args.shortId };

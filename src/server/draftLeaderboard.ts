@@ -10,10 +10,13 @@ export type DraftLeaderboardPlayer = {
 
 export type DraftLeaderboardDraft = {
   shortId: string;
+  type: "traditional" | "pvp";
   discordGuildId: string;
   winnerTeam?: 1 | 2;
   resultStatus?: "unverified" | "verified" | "voided";
   _creationTime?: number;
+  team1Realm?: string;
+  team2Realm?: string;
   players: DraftLeaderboardPlayer[];
 };
 

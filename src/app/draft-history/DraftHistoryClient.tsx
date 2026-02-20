@@ -9,10 +9,13 @@ import DiscordIdentityLinkCard from "./DiscordIdentityLinkCard";
 
 type DraftLogRow = {
   shortId: string;
+  type: "traditional" | "pvp";
   discordGuildId: string;
   winnerTeam?: 1 | 2;
   resultStatus: "unverified" | "verified" | "voided";
   createdAtMs: number;
+  team1Realm?: string;
+  team2Realm?: string;
   players: Array<{
     discordUserId: string;
     displayName: string;
@@ -164,6 +167,11 @@ export default function DraftHistoryClient() {
                             </span>
                           </p>
                         </div>
+                        {row.type === "pvp" && (
+                          <span className="rounded bg-gray-800/60 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 flex-shrink-0">
+                            PvP
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-4 flex-shrink-0 text-xs">
@@ -186,13 +194,13 @@ export default function DraftHistoryClient() {
                     <div className="border-t border-gray-800/60 px-4 py-4 bg-gray-950/40">
                       <div className="grid gap-4 sm:grid-cols-2">
                         <TeamPanel
-                          label="Team 1"
+                          label={row.team1Realm ?? "Team 1"}
                           players={teamPlayers(row, 1)}
                           isWinner={row.winnerTeam === 1}
                           bans={row.bans.filter((b) => b.team === 1)}
                         />
                         <TeamPanel
-                          label="Team 2"
+                          label={row.team2Realm ?? "Team 2"}
                           players={teamPlayers(row, 2)}
                           isWinner={row.winnerTeam === 2}
                           bans={row.bans.filter((b) => b.team === 2)}
@@ -200,6 +208,18 @@ export default function DraftHistoryClient() {
                       </div>
                       <div className="mt-4 pt-3 border-t border-gray-800/40 flex items-center gap-3 text-[11px] text-gray-600">
                         <span className="capitalize">{row.resultStatus}</span>
+                        {row.type === "pvp" && (
+                          <>
+                            <span>|</span>
+                            <span>PvP</span>
+                          </>
+                        )}
+                        {row.type === "traditional" && row.team1Realm && row.team2Realm && (
+                          <>
+                            <span>|</span>
+                            <span>{row.team1Realm} vs {row.team2Realm}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}

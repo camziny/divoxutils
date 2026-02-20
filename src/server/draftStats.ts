@@ -43,33 +43,37 @@ export type DraftRecentGameRow = {
   playerTeam: 1 | 2;
   team1CaptainName: string;
   team2CaptainName: string;
+  draftType: "traditional" | "pvp";
+  playerRealm?: string;
+};
+
+export type WinLossRecord = {
+  wins: number;
+  losses: number;
+  games: number;
+  winRate: number;
 };
 
 export type DraftPlayerDrilldown = {
   playerClerkUserId: string;
   playerName: string;
-  overall: {
-    wins: number;
-    losses: number;
-    games: number;
-    winRate: number;
-  };
-  captain: {
-    wins: number;
-    losses: number;
-    games: number;
-    winRate: number;
-  };
+  overall: WinLossRecord;
+  captain: WinLossRecord;
+  byRealm: Record<string, WinLossRecord>;
+  pvp: WinLossRecord;
   recentGames: DraftRecentGameRow[];
   headToHead: DraftHeadToHeadRow[];
 };
 
 export type DraftLogRow = {
   shortId: string;
+  type: "traditional" | "pvp";
   discordGuildId: string;
   winnerTeam?: 1 | 2;
   resultStatus: "unverified" | "verified" | "voided";
   createdAtMs: number;
+  team1Realm?: string;
+  team2Realm?: string;
   players: Array<{
     discordUserId: string;
     displayName: string;
@@ -238,6 +242,24 @@ export function aggregateHeadToHeadRow(
   };
 }
 
+function computeWinRate(wins: number, losses: number): WinLossRecord {
+  const games = wins + losses;
+  return {
+    wins,
+    losses,
+    games,
+    winRate: games > 0 ? Math.round((wins / games) * 1000) / 10 : 0,
+  };
+}
+
+function resolvePlayerRealm(
+  draft: DraftLeaderboardDraft,
+  playerTeam: 1 | 2
+): string | undefined {
+  if (draft.type !== "traditional") return undefined;
+  return playerTeam === 1 ? draft.team1Realm : draft.team2Realm;
+}
+
 export function aggregatePlayerDrilldown(
   drafts: DraftLeaderboardDraft[],
   clerkByDiscordUserId: Map<string, string>,
@@ -254,6 +276,9 @@ export function aggregatePlayerDrilldown(
   let losses = 0;
   let captainWins = 0;
   let captainLosses = 0;
+  let pvpWins = 0;
+  let pvpLosses = 0;
+  const realmStats = new Map<string, { wins: number; losses: number }>();
   const recentGames: DraftRecentGameRow[] = [];
   const headToHeadStats = new Map<string, { wins: number; losses: number }>();
 
@@ -285,14 +310,22 @@ export function aggregatePlayerDrilldown(
     const didWin = playerTeam === draft.winnerTeam;
     if (didWin) {
       wins += 1;
-      if (wasCaptain) {
-        captainWins += 1;
-      }
+      if (wasCaptain) captainWins += 1;
     } else {
       losses += 1;
-      if (wasCaptain) {
-        captainLosses += 1;
-      }
+      if (wasCaptain) captainLosses += 1;
+    }
+
+    const playerRealm = resolvePlayerRealm(draft, playerTeam);
+
+    if (draft.type === "pvp") {
+      if (didWin) pvpWins += 1;
+      else pvpLosses += 1;
+    } else if (playerRealm) {
+      const entry = realmStats.get(playerRealm) ?? { wins: 0, losses: 0 };
+      if (didWin) entry.wins += 1;
+      else entry.losses += 1;
+      realmStats.set(playerRealm, entry);
     }
 
     let team1CaptainName = "Unknown";
@@ -318,6 +351,8 @@ export function aggregatePlayerDrilldown(
       playerTeam,
       team1CaptainName,
       team2CaptainName,
+      draftType: draft.type,
+      playerRealm,
     });
 
     opponentTeams.forEach((opponentTeam, opponentClerkUserId) => {
@@ -339,7 +374,11 @@ export function aggregatePlayerDrilldown(
     return null;
   }
 
-  const captainGames = captainWins + captainLosses;
+  const byRealm: Record<string, WinLossRecord> = {};
+  realmStats.forEach((entry, realm) => {
+    byRealm[realm] = computeWinRate(entry.wins, entry.losses);
+  });
+
   const headToHead = Array.from(headToHeadStats.entries())
     .map(([opponentClerkUserId, value]) => {
       const opponentName =
@@ -371,21 +410,10 @@ export function aggregatePlayerDrilldown(
   return {
     playerClerkUserId,
     playerName,
-    overall: {
-      wins,
-      losses,
-      games,
-      winRate: games > 0 ? Math.round((wins / games) * 1000) / 10 : 0,
-    },
-    captain: {
-      wins: captainWins,
-      losses: captainLosses,
-      games: captainGames,
-      winRate:
-        captainGames > 0
-          ? Math.round((captainWins / captainGames) * 1000) / 10
-          : 0,
-    },
+    overall: computeWinRate(wins, losses),
+    captain: computeWinRate(captainWins, captainLosses),
+    byRealm,
+    pvp: computeWinRate(pvpWins, pvpLosses),
     recentGames: recentGames.slice(0, recentLimit),
     headToHead,
   };
@@ -490,10 +518,13 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
     {}
   )) as Array<{
     shortId: string;
+    type: "traditional" | "pvp";
     discordGuildId: string;
     winnerTeam?: 1 | 2;
     resultStatus?: "unverified" | "verified" | "voided";
     _creationTime?: number;
+    team1Realm?: string;
+    team2Realm?: string;
     players: Array<{
       discordUserId: string;
       displayName: string;
@@ -508,10 +539,13 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
 
   return drafts.map((draft) => ({
     shortId: draft.shortId,
+    type: draft.type,
     discordGuildId: draft.discordGuildId,
     winnerTeam: draft.winnerTeam,
     resultStatus: draft.resultStatus ?? "unverified",
     createdAtMs: draft._creationTime ?? 0,
+    team1Realm: draft.team1Realm,
+    team2Realm: draft.team2Realm,
     players: draft.players,
     bans: draft.bans ?? [],
   }));

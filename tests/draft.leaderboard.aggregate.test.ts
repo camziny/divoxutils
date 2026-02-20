@@ -6,6 +6,7 @@ test("aggregateDraftLeaderboardRows only counts verified draft results", () => {
   const drafts = [
     {
       shortId: "a1",
+      type: "traditional" as const,
       discordGuildId: "g1",
       winnerTeam: 1 as const,
       resultStatus: "verified" as const,
@@ -16,6 +17,7 @@ test("aggregateDraftLeaderboardRows only counts verified draft results", () => {
     },
     {
       shortId: "a2",
+      type: "traditional" as const,
       discordGuildId: "g1",
       winnerTeam: 2 as const,
       resultStatus: "unverified" as const,
@@ -26,6 +28,7 @@ test("aggregateDraftLeaderboardRows only counts verified draft results", () => {
     },
     {
       shortId: "a3",
+      type: "traditional" as const,
       discordGuildId: "g1",
       winnerTeam: 2 as const,
       resultStatus: "voided" as const,
@@ -62,10 +65,63 @@ test("aggregateDraftLeaderboardRows only counts verified draft results", () => {
   assert.equal(bob.captainLosses, 0);
 });
 
+test("aggregateDraftLeaderboardRows counts both traditional and pvp drafts", () => {
+  const drafts = [
+    {
+      shortId: "t1",
+      type: "traditional" as const,
+      discordGuildId: "g1",
+      winnerTeam: 1 as const,
+      resultStatus: "verified" as const,
+      team1Realm: "Albion",
+      team2Realm: "Midgard",
+      players: [
+        { discordUserId: "d1", displayName: "P1", team: 1 as const, isCaptain: true },
+        { discordUserId: "d2", displayName: "P2", team: 2 as const, isCaptain: false },
+      ],
+    },
+    {
+      shortId: "p1",
+      type: "pvp" as const,
+      discordGuildId: "g1",
+      winnerTeam: 2 as const,
+      resultStatus: "verified" as const,
+      players: [
+        { discordUserId: "d1", displayName: "P1", team: 1 as const, isCaptain: false },
+        { discordUserId: "d2", displayName: "P2", team: 2 as const, isCaptain: true },
+      ],
+    },
+  ];
+
+  const clerkByDiscord = new Map<string, string>([
+    ["d1", "clerk_1"],
+    ["d2", "clerk_2"],
+  ]);
+  const namesByClerk = new Map<string, string>([
+    ["clerk_1", "Alice"],
+    ["clerk_2", "Bob"],
+  ]);
+
+  const rows = aggregateDraftLeaderboardRows(drafts, clerkByDiscord, namesByClerk);
+
+  assert.equal(rows.length, 2);
+  const alice = rows.find((row) => row.clerkUserId === "clerk_1");
+  const bob = rows.find((row) => row.clerkUserId === "clerk_2");
+  assert.ok(alice);
+  assert.ok(bob);
+  assert.equal(alice.wins, 1);
+  assert.equal(alice.losses, 1);
+  assert.equal(alice.games, 2);
+  assert.equal(bob.wins, 1);
+  assert.equal(bob.losses, 1);
+  assert.equal(bob.games, 2);
+});
+
 test("aggregateDraftLeaderboardRows ignores unlinked players and sorts by wins", () => {
   const drafts = [
     {
       shortId: "a1",
+      type: "traditional" as const,
       discordGuildId: "g1",
       winnerTeam: 2 as const,
       resultStatus: "verified" as const,
