@@ -32,6 +32,11 @@ export default async function AdminPage() {
       title: "Identity Claims",
       description: "Approve or reject manual Discord identity claims from users linking their draft participation to their account.",
     },
+    {
+      href: "/admin/supporters",
+      title: "Supporters",
+      description: "Manage supporter tiers for users who have contributed to help cover hosting and development costs.",
+    },
   ];
 
   return (

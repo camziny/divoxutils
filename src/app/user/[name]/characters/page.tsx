@@ -5,6 +5,8 @@ import { Suspense } from "react";
 import Loading from "@/app/loading";
 import type { Metadata, ResolvingMetadata } from "next";
 import ShareProfileButton from "@/app/components/ShareProfileButton";
+import SupporterBadge from "@/app/components/SupporterBadge";
+import { headers } from "next/headers";
 import prisma from "../../../../../prisma/prismaClient";
 
 const CharacterListOptimized = dynamic(
@@ -47,7 +49,7 @@ export async function generateMetadata(
 }
 
 async function fetchCharactersForUser(userId: string) {
-  const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/userCharactersByUserId/${userId}`;
+  const apiUrl = `${getApiBaseUrl()}/api/userCharactersByUserId/${userId}`;
 
   const response = await fetch(apiUrl, {
     next: {
@@ -67,6 +69,24 @@ async function fetchCharactersForUser(userId: string) {
   const data = await response.json();
 
   return data;
+}
+
+function getApiBaseUrl() {
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  if (configuredBaseUrl && process.env.NODE_ENV === "production") {
+    return configuredBaseUrl;
+  }
+
+  const requestHeaders = headers();
+  const host =
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
+
+  if (!host) {
+    return "http://localhost:3000";
+  }
+
+  return `${protocol}://${host}`;
 }
 
 const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => {
@@ -108,8 +128,9 @@ const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => 
         <div className="p-4 md:p-8 lg:p-12">
           <div className="max-w-screen-lg mx-auto">
             <div className="text-center mb-6">
-              <h1 className="text-2xl sm:text-3xl font-semibold text-white">
+              <h1 className="text-2xl sm:text-3xl font-semibold text-white inline-flex items-center justify-center gap-2">
                 {user.name}
+                {user.supporterTier > 0 && <SupporterBadge tier={user.supporterTier} size="md" />}
               </h1>
             </div>
             <PageReload />

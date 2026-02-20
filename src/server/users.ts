@@ -4,6 +4,7 @@ export type PublicUser = {
   id: number;
   clerkUserId: string;
   name: string;
+  supporterTier: number;
 };
 
 export type GroupedUsers = Record<string, PublicUser[]>;
@@ -35,6 +36,7 @@ export const getPublicUsers = async (): Promise<PublicUser[]> => {
       id: true,
       clerkUserId: true,
       name: true,
+      supporterTier: true,
     },
     orderBy: {
       name: "asc",

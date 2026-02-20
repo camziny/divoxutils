@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useAuth, useUser } from "@clerk/nextjs";
+import { FaCoffee } from "react-icons/fa";
 
 const NAV_LINKS = [
   { href: "/leaderboards", label: "Leaderboards" },
@@ -83,14 +84,11 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
 
   useEffect(() => {
     if (user) {
-      // Prefer Clerk's in-memory username for immediate UI updates.
       setUserName(user.username ?? null);
       fetch(`/api/users/${user.id}`)
         .then((res) => res.json())
         .then((data) => setUserName(data?.username ?? data?.name ?? user.username ?? null))
-        .catch(() => {
-          // Keep the current name if the profile fetch fails.
-        });
+        .catch(() => {});
     }
   }, [user]);
 
@@ -190,6 +188,17 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 lg:justify-self-end">
+          <Link
+            href="/contribute"
+            className={`rounded-md p-1.5 transition-colors ${
+              isActive("/contribute")
+                ? "text-indigo-400"
+                : "text-gray-500 hover:text-indigo-400"
+            }`}
+            aria-label="Contribute"
+          >
+            <FaCoffee className="w-4 h-4" />
+          </Link>
           {isSignedIn ? (
             <>
               <Link
@@ -268,6 +277,18 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
                 {link.label}
               </Link>
             ))}
+
+            <Link
+              href="/contribute"
+              className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors inline-flex items-center gap-2 ${
+                isActive("/contribute")
+                  ? "text-indigo-400 bg-gray-800/60"
+                  : "text-gray-400 hover:text-white hover:bg-gray-800/40"
+              }`}
+            >
+              <FaCoffee className="w-4 h-4" />
+              Contribute
+            </Link>
 
             <div className="border-t border-gray-800 my-3" />
 

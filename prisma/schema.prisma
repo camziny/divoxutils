@@ -24,15 +24,17 @@ model Account {
 }
 
 model User {
-  id           Int             @id @default(autoincrement())
-  clerkUserId  String          @unique
-  email        String          @unique
-  name         String?         @unique
-  accountId    Int?            @unique
-  account      Account?
-  characters   UserCharacter[]
-  groupUsers   GroupUser[]
-  identityLinks UserIdentityLink[]
+  id             Int             @id @default(autoincrement())
+  clerkUserId    String          @unique
+  email          String          @unique
+  name           String?         @unique
+  accountId      Int?            @unique
+  supporterTier    Int             @default(0)
+  supporterAmount  Float           @default(0)
+  account        Account?
+  characters     UserCharacter[]
+  groupUsers     GroupUser[]
+  identityLinks  UserIdentityLink[]
   identityClaims UserIdentityClaim[]
 }
 

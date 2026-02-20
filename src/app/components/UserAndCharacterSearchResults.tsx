@@ -8,6 +8,7 @@ import {
   formatRealmRankWithLevel,
   getRealmRankForPoints,
 } from "@/utils/character";
+import SupporterBadge, { supporterRowClass, supporterNameStyle } from "./SupporterBadge";
 
 type Character = {
   characterName: string;
@@ -25,6 +26,7 @@ type User = {
   id: number;
   clerkUserId: string;
   name: string;
+  supporterTier: number;
   characters: Character[];
 };
 
@@ -51,7 +53,6 @@ export default function CharacterNameSearch() {
       setIsLoading(true);
 
       try {
-        console.log(`Fetching results for query: ${debouncedQuery}`);
         const response = await fetch(
           `/api/searchUsersAndCharacters?name=${encodeURIComponent(
             debouncedQuery
@@ -63,7 +64,6 @@ export default function CharacterNameSearch() {
         }
 
         const results = await response.json();
-        console.log("Search Results:", results);
         setSearchResults({
           users: results.users || [],
           characters: results.characters || [],
@@ -103,12 +103,13 @@ export default function CharacterNameSearch() {
               <Link
                 key={user.id}
                 href={`/user/${user.name}/characters`}
-                className="block bg-gray-900 border border-gray-800 rounded-md hover:border-gray-700 hover:bg-gray-800/50 transition-colors duration-150"
+                className={`block bg-gray-900 border border-gray-800 rounded-md hover:border-gray-700 hover:bg-gray-800/50 transition-colors duration-150 relative overflow-hidden ${supporterRowClass(user.supporterTier)}`}
               >
                 <div className="px-4 py-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-indigo-400">
-                      {user.name}
+                    <span className="text-sm font-medium text-indigo-400 inline-flex items-center gap-1.5">
+                      <span style={supporterNameStyle(user.supporterTier)}>{user.name}</span>
+                      {user.supporterTier > 0 && <SupporterBadge tier={user.supporterTier} />}
                     </span>
                     <span className="text-xs text-gray-600 tabular-nums">
                       {user.characters.length} character{user.characters.length !== 1 ? 's' : ''}

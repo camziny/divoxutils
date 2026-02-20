@@ -21,6 +21,7 @@ interface LeaderboardItem {
   irsLastWeek: number;
   irsThisWeek: number;
   lastUpdated: Date | null;
+  supporterTier: number;
 }
 
 interface LeaderboardWrapperProps {

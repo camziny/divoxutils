@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { FaTwitch, FaDiscord, FaCoffee } from "react-icons/fa";
 
 export const metadata = {
@@ -59,11 +60,15 @@ const AboutPage = () => {
           </p>
           <p className="text-sm leading-relaxed text-gray-400">
             I&apos;m passionate about building and enhancing divoxutils, but it also 
-            comes with real costs—server hosting, database maintenance, and 
+            comes with real costs&mdash;server hosting, database maintenance, and 
             infrastructure to keep the service running smoothly for all users.
             If you&apos;ve found this tool helpful, please consider contributing 
             through the Ko-fi link below to help cover these operational costs 
-            and support future development.
+            and support future development. Check out the{" "}
+            <Link href="/contribute" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+              contribute page
+            </Link>{" "}
+            to see how contributions are recognized.
           </p>
           <p className="text-sm leading-relaxed text-gray-400">
             Your support doesn&apos;t end with financial contributions. Join the

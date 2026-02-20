@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SupporterBadge, { supporterRowClass, supporterNameStyle } from "./SupporterBadge";
 
 interface LeaderboardItem {
   userId: number;
@@ -33,6 +34,7 @@ interface LeaderboardItem {
   irsLastWeek: number;
   irsThisWeek: number;
   lastUpdated: Date | null;
+  supporterTier: number;
   totalIrs?: number;
   [key: string]: number | string | Date | null | undefined;
 }
@@ -233,7 +235,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
           return (
             <li
               key={item.userId}
-              className="group rounded-md border border-gray-800 hover:border-gray-700 hover:bg-gray-800/40 transition-colors duration-150"
+              className={`group rounded-md border border-gray-800 hover:border-gray-700 hover:bg-gray-800/40 transition-colors duration-150 relative overflow-hidden ${supporterRowClass(item.supporterTier)}`}
             >
               <LinkComponent
                 href={`/user/${item.userName}/characters`}
@@ -243,8 +245,9 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                   <div className={`flex items-center justify-center w-7 h-7 rounded-md text-xs font-semibold tabular-nums ${rankBadge}`}>
                     {globalRank}
                   </div>
-                  <span className="text-sm font-medium text-gray-200 group-hover:text-indigo-400 transition-colors duration-150">
+                  <span className="text-sm font-medium text-gray-200 group-hover:text-indigo-400 transition-colors duration-150 inline-flex items-center gap-1" style={supporterNameStyle(item.supporterTier)}>
                     {item.userName}
+                    {item.supporterTier > 0 && <SupporterBadge tier={item.supporterTier} />}
                   </span>
                 </div>
                 <span className="text-sm font-semibold text-gray-300 tabular-nums">

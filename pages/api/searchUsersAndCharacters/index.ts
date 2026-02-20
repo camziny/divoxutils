@@ -13,6 +13,7 @@ type UserWithCharacters = {
   id: number;
   clerkUserId: string;
   name: string | null;
+  supporterTier: number;
   characters: { character: Character }[];
 };
 
@@ -58,6 +59,7 @@ export default async function handler(
         id: user.id,
         clerkUserId: user.clerkUserId,
         name: user.name,
+        supporterTier: user.supporterTier ?? 0,
         characters: user.characters
           .filter((uc) =>
             uc.character.heraldName.toLowerCase().includes(name.toLowerCase())

@@ -71,6 +71,7 @@ test("aggregateLeaderboardData deduplicates repeated character ids and clamps we
       id: 1,
       name: "Alice",
       clerkUserId: "u_1",
+      supporterTier: 0,
       characters: [
         {
           character: {
