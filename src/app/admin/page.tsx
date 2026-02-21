@@ -37,6 +37,11 @@ export default async function AdminPage() {
       title: "Supporters",
       description: "Manage supporter tiers for users who have contributed to help cover hosting and development costs.",
     },
+    {
+      href: "/admin/accounts",
+      title: "Account Removal",
+      description: "Search for and permanently delete a user account along with all characters, group memberships, and linked identities.",
+    },
   ];
 
   return (
