@@ -46,9 +46,12 @@ export interface DraftData {
   banSequence?: (1 | 2)[];
   currentBanIndex?: number;
   discordGuildId: string;
+  discordGuildName?: string;
   discordChannelId: string;
   discordTextChannelId?: string;
   createdBy: string;
+  createdByDisplayName?: string;
+  createdByAvatarUrl?: string;
   winnerTeam?: 1 | 2;
   gameStarted?: boolean;
   botPostedLink?: boolean;

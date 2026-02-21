@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Trophy } from "lucide-react";
+import { CheckCircle2, ChevronRight, Trophy, User } from "lucide-react";
+import { FaDiscord } from "react-icons/fa";
 import DiscordIdentityLinkCard from "./DiscordIdentityLinkCard";
 import type { DraftLogRow } from "@/server/draftStats";
 
@@ -114,13 +115,27 @@ export default function DraftHistoryClient({
                           }`}
                         />
                         <div className="min-w-0">
-                          <p className="text-sm text-gray-200 truncate">
-                            <span className="font-medium">
+                          <p className="text-sm text-gray-200 truncate flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1.5 min-w-0">
+                              <InlineAvatar
+                                name={cap1?.displayName ?? "Team 1"}
+                                avatarUrl={cap1?.avatarUrl}
+                                size={18}
+                              />
+                              <span className="font-medium truncate">
                               {cap1?.displayName ?? "Team 1"}
+                              </span>
                             </span>
                             <span className="text-gray-600 mx-1.5">vs</span>
-                            <span className="font-medium">
+                            <span className="inline-flex items-center gap-1.5 min-w-0">
+                              <InlineAvatar
+                                name={cap2?.displayName ?? "Team 2"}
+                                avatarUrl={cap2?.avatarUrl}
+                                size={18}
+                              />
+                              <span className="font-medium truncate">
                               {cap2?.displayName ?? "Team 2"}
+                              </span>
                             </span>
                           </p>
                         </div>
@@ -163,19 +178,50 @@ export default function DraftHistoryClient({
                           bans={row.bans.filter((b) => b.team === 2)}
                         />
                       </div>
-                      <div className="mt-4 pt-3 border-t border-gray-800/40 flex items-center gap-3 text-[11px] text-gray-600">
-                        <span className="capitalize">{row.resultStatus}</span>
-                        {row.type === "pvp" && (
-                          <>
-                            <span>|</span>
-                            <span>PvP</span>
-                          </>
-                        )}
-                        {row.type === "traditional" && row.team1Realm && row.team2Realm && (
-                          <>
-                            <span>|</span>
-                            <span>{row.team1Realm} vs {row.team2Realm}</span>
-                          </>
+                      <div className="mt-4 pt-3 border-t border-gray-800/40 flex items-center justify-between text-[11px]">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {row.type === "pvp" ? (
+                            <span className="inline-flex items-center rounded bg-indigo-500/10 border border-indigo-400/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300">
+                              PvP
+                            </span>
+                          ) : row.team1Realm && row.team2Realm ? (
+                            <span className="text-gray-400">
+                              {row.team1Realm} vs {row.team2Realm}
+                            </span>
+                          ) : null}
+
+                          <span className="text-gray-700 select-none">
+                            &middot;
+                          </span>
+
+                          <span className="inline-flex items-center gap-1.5 text-gray-400">
+                            <FaDiscord className="w-3 h-3 text-indigo-400 flex-shrink-0" />
+                            {row.discordGuildName || row.discordGuildId}
+                          </span>
+
+                          <span className="text-gray-700 select-none">
+                            &middot;
+                          </span>
+
+                          <span className="inline-flex items-center gap-1.5 text-gray-500">
+                            <User className="w-3 h-3 text-gray-600 flex-shrink-0" />
+                            {row.createdByDisplayName || row.createdBy}
+                          </span>
+                        </div>
+
+                        {row.resultStatus === "verified" ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-indigo-400 flex-shrink-0 ml-3">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Verified
+                          </span>
+                        ) : row.resultStatus === "voided" ? (
+                          <span className="text-[10px] font-medium text-red-400/70 flex-shrink-0 ml-3">
+                            Voided
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-gray-600 flex-shrink-0 ml-3">
+                            Unverified
+                          </span>
                         )}
                       </div>
                     </div>
@@ -205,7 +251,12 @@ function TeamPanel({
   bans,
 }: {
   label: string;
-  players: Array<{ displayName: string; isCaptain: boolean }>;
+  players: Array<{
+    discordUserId: string;
+    displayName: string;
+    avatarUrl?: string;
+    isCaptain: boolean;
+  }>;
   isWinner: boolean;
   bans: Array<{ className: string }>;
 }) {
@@ -231,9 +282,10 @@ function TeamPanel({
         ) : (
           players.map((p) => (
             <div
-              key={p.displayName}
+              key={p.discordUserId}
               className="flex items-center gap-2 text-sm text-gray-300"
             >
+              <InlineAvatar name={p.displayName} avatarUrl={p.avatarUrl} size={18} />
               <span>{p.displayName}</span>
               {p.isCaptain && (
                 <span className="text-[10px] text-gray-600 font-medium uppercase tracking-wider">
@@ -262,5 +314,36 @@ function TeamPanel({
         </div>
       )}
     </div>
+  );
+}
+
+function InlineAvatar({
+  name,
+  avatarUrl,
+  size,
+}: {
+  name: string;
+  avatarUrl?: string;
+  size: number;
+}) {
+  const initial = name.trim().charAt(0).toUpperCase() || "?";
+  const style = { width: size, height: size };
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        className="rounded-full object-cover border border-gray-800/80"
+        style={style}
+      />
+    );
+  }
+  return (
+    <span
+      className="rounded-full bg-gray-800/80 border border-gray-700 text-[10px] text-gray-300 inline-flex items-center justify-center"
+      style={style}
+    >
+      {initial}
+    </span>
   );
 }

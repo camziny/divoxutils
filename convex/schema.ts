@@ -29,9 +29,12 @@ export default defineSchema({
     banSequence: v.optional(v.array(teamNumber)),
     currentBanIndex: v.optional(v.number()),
     discordGuildId: v.string(),
+    discordGuildName: v.optional(v.string()),
     discordChannelId: v.string(),
     discordTextChannelId: v.optional(v.string()),
     createdBy: v.string(),
+    createdByDisplayName: v.optional(v.string()),
+    createdByAvatarUrl: v.optional(v.string()),
     winnerTeam: v.optional(teamNumber),
     gameStarted: v.optional(v.boolean()),
     resultStatus: v.optional(

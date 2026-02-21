@@ -118,8 +118,11 @@ export default function LeaderboardClient({
 
                   <div className="flex-1 min-w-0">
                     <div className={`flex items-baseline justify-between gap-3${sortBy === "winRate" ? " mb-1.5" : ""}`}>
-                      <span className="text-sm font-medium text-gray-200 group-hover:text-white truncate transition-colors duration-100">
-                        {row.userName}
+                      <span className="inline-flex items-center gap-2 min-w-0">
+                        <AvatarChip name={row.userName} avatarUrl={row.avatarUrl} />
+                        <span className="text-sm font-medium text-gray-200 group-hover:text-white truncate transition-colors duration-100">
+                          {row.userName}
+                        </span>
                       </span>
                       <span className="text-xs text-gray-500 tabular-nums flex-shrink-0">
                         {sortBy === "games" && (
@@ -160,5 +163,23 @@ export default function LeaderboardClient({
         </>
       )}
     </>
+  );
+}
+
+function AvatarChip({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        className="h-5 w-5 rounded-full border border-gray-700 object-cover"
+      />
+    );
+  }
+  const initial = name.trim().charAt(0).toUpperCase() || "?";
+  return (
+    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-700 bg-gray-800 text-[10px] text-gray-300">
+      {initial}
+    </span>
   );
 }

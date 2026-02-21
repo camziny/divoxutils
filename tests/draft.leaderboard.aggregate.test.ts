@@ -151,3 +151,50 @@ test("aggregateDraftLeaderboardRows ignores unlinked players and sorts by wins",
   assert.equal(rows[1].clerkUserId, "clerk_1");
   assert.equal(rows[1].losses, 1);
 });
+
+test("aggregateDraftLeaderboardRows uses latest verified draft avatar for each user", () => {
+  const drafts = [
+    {
+      shortId: "old",
+      type: "traditional" as const,
+      discordGuildId: "g1",
+      winnerTeam: 1 as const,
+      resultStatus: "verified" as const,
+      _creationTime: 1000,
+      players: [
+        {
+          discordUserId: "d1",
+          displayName: "P1",
+          avatarUrl: "https://cdn.example.com/old.png",
+          team: 1 as const,
+          isCaptain: false,
+        },
+      ],
+    },
+    {
+      shortId: "new",
+      type: "traditional" as const,
+      discordGuildId: "g1",
+      winnerTeam: 1 as const,
+      resultStatus: "verified" as const,
+      _creationTime: 2000,
+      players: [
+        {
+          discordUserId: "d1",
+          displayName: "P1",
+          avatarUrl: "https://cdn.example.com/new.png",
+          team: 1 as const,
+          isCaptain: false,
+        },
+      ],
+    },
+  ];
+
+  const clerkByDiscord = new Map<string, string>([["d1", "clerk_1"]]);
+  const namesByClerk = new Map<string, string>([["clerk_1", "Alice"]]);
+
+  const rows = aggregateDraftLeaderboardRows(drafts, clerkByDiscord, namesByClerk);
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].avatarUrl, "https://cdn.example.com/new.png");
+});

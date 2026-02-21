@@ -266,3 +266,58 @@ test("clerk webhook user.deleted returns 500 if local deletion fails", async () 
 
   process.env.CLERK_WEBHOOK_SECRET = previousSecret;
 });
+
+test("clerk webhook user.deleted clears linked identity ownership state", async () => {
+  const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
+  const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
+  process.env.CLERK_WEBHOOK_SECRET = `whsec_${base64Secret}`;
+
+  const ownerByDiscordId = new Map<string, string>([
+    ["discord_123", "user_old"],
+    ["discord_999", "other_user"],
+  ]);
+
+  const handler = createClerkWebhookHandler({
+    ...createNoopDeps(),
+    deleteLocalUserByClerkId: async (clerkUserId: string) => {
+      for (const [discordUserId, owner] of ownerByDiscordId.entries()) {
+        if (owner === clerkUserId) {
+          ownerByDiscordId.delete(discordUserId);
+        }
+      }
+    },
+  });
+
+  const payload = JSON.stringify({
+    type: "user.deleted",
+    data: {
+      id: "user_old",
+    },
+  });
+  const svixId = "msg_delete_cleanup_123";
+  const svixTimestamp = String(Math.floor(Date.now() / 1000));
+  const svixSignature = createValidSvixSignature({
+    secret: process.env.CLERK_WEBHOOK_SECRET,
+    svixId,
+    svixTimestamp,
+    payload,
+  });
+
+  const req = createWebhookRequest({
+    headers: {
+      "svix-id": svixId,
+      "svix-timestamp": svixTimestamp,
+      "svix-signature": svixSignature,
+    },
+    body: payload,
+  });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(ownerByDiscordId.has("discord_123"), false);
+  assert.equal(ownerByDiscordId.get("discord_999"), "other_user");
+
+  process.env.CLERK_WEBHOOK_SECRET = previousSecret;
+});

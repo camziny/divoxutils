@@ -82,9 +82,12 @@ export const getPlayerByToken = query({
 export const createDraft = mutation({
   args: {
     discordGuildId: v.string(),
+    discordGuildName: v.optional(v.string()),
     discordChannelId: v.string(),
     discordTextChannelId: v.optional(v.string()),
     createdBy: v.string(),
+    createdByDisplayName: v.optional(v.string()),
+    createdByAvatarUrl: v.optional(v.string()),
     players: v.array(
       v.object({
         discordUserId: v.string(),
@@ -111,9 +114,12 @@ export const createDraft = mutation({
       status: "setup",
       teamSize: 8,
       discordGuildId: args.discordGuildId,
+      discordGuildName: args.discordGuildName,
       discordChannelId: args.discordChannelId,
       discordTextChannelId: args.discordTextChannelId,
       createdBy: args.createdBy,
+      createdByDisplayName: args.createdByDisplayName,
+      createdByAvatarUrl: args.createdByAvatarUrl,
     });
 
     const playerTokens: { discordUserId: string; token: string }[] = [];
@@ -830,13 +836,17 @@ export const getDraftsForModeration = query({
         _id: draft._id,
         shortId: draft.shortId,
         discordGuildId: draft.discordGuildId,
+        discordGuildName: draft.discordGuildName,
         winnerTeam: draft.winnerTeam,
         createdBy: draft.createdBy,
+        createdByDisplayName: draft.createdByDisplayName,
+        createdByAvatarUrl: draft.createdByAvatarUrl,
         resultStatus: draft.resultStatus ?? "unverified",
         _creationTime: draft._creationTime,
         players: players.map((p) => ({
           discordUserId: p.discordUserId,
           displayName: p.displayName,
+          avatarUrl: p.avatarUrl,
           team: p.team,
           isCaptain: p.isCaptain,
         })),
@@ -871,8 +881,11 @@ export const getReviewedDraftsForModeration = query({
         _id: draft._id,
         shortId: draft.shortId,
         discordGuildId: draft.discordGuildId,
+        discordGuildName: draft.discordGuildName,
         winnerTeam: draft.winnerTeam,
         createdBy: draft.createdBy,
+        createdByDisplayName: draft.createdByDisplayName,
+        createdByAvatarUrl: draft.createdByAvatarUrl,
         resultStatus: draft.resultStatus,
         resultModeratedAt: draft.resultModeratedAt,
         resultModeratedBy: draft.resultModeratedBy,
@@ -880,6 +893,7 @@ export const getReviewedDraftsForModeration = query({
         players: players.map((p) => ({
           discordUserId: p.discordUserId,
           displayName: p.displayName,
+          avatarUrl: p.avatarUrl,
           team: p.team,
           isCaptain: p.isCaptain,
         })),
@@ -919,6 +933,7 @@ export const getVerifiedDraftResults = query({
         shortId: draft.shortId,
         type: draft.type,
         discordGuildId: draft.discordGuildId,
+        discordGuildName: draft.discordGuildName,
         winnerTeam: draft.winnerTeam,
         resultStatus: draft.resultStatus,
         _creationTime: draft._creationTime,
@@ -927,6 +942,7 @@ export const getVerifiedDraftResults = query({
         players: players.map((p) => ({
           discordUserId: p.discordUserId,
           displayName: p.displayName,
+          avatarUrl: p.avatarUrl,
           team: p.team,
           isCaptain: p.isCaptain,
         })),
@@ -960,6 +976,7 @@ export const getCompletedDraftResults = query({
         shortId: draft.shortId,
         type: draft.type,
         discordGuildId: draft.discordGuildId,
+        discordGuildName: draft.discordGuildName,
         winnerTeam: draft.winnerTeam,
         resultStatus: draft.resultStatus ?? "unverified",
         _creationTime: draft._creationTime,
@@ -968,6 +985,7 @@ export const getCompletedDraftResults = query({
         players: players.map((p) => ({
           discordUserId: p.discordUserId,
           displayName: p.displayName,
+          avatarUrl: p.avatarUrl,
           team: p.team,
           isCaptain: p.isCaptain,
         })),
@@ -1025,7 +1043,10 @@ export const seedVerifiedDraft = mutation({
   args: {
     shortId: v.string(),
     discordGuildId: v.string(),
+    discordGuildName: v.optional(v.string()),
     createdBy: v.string(),
+    createdByDisplayName: v.optional(v.string()),
+    createdByAvatarUrl: v.optional(v.string()),
     winnerTeam: v.union(v.literal(1), v.literal(2)),
     type: v.optional(v.union(v.literal("traditional"), v.literal("pvp"))),
     team1Realm: v.optional(v.string()),
@@ -1034,6 +1055,7 @@ export const seedVerifiedDraft = mutation({
       v.object({
         discordUserId: v.string(),
         displayName: v.string(),
+        avatarUrl: v.optional(v.string()),
         team: v.union(v.literal(1), v.literal(2)),
         isCaptain: v.boolean(),
       })
@@ -1058,8 +1080,11 @@ export const seedVerifiedDraft = mutation({
         args.players.filter((p) => p.team === 2).length
       ),
       discordGuildId: args.discordGuildId,
+      discordGuildName: args.discordGuildName,
       discordChannelId: "seed-channel",
       createdBy: args.createdBy,
+      createdByDisplayName: args.createdByDisplayName,
+      createdByAvatarUrl: args.createdByAvatarUrl,
       winnerTeam: args.winnerTeam,
       resultStatus: "verified" as const,
       resultModeratedBy: "seed-admin",
@@ -1075,6 +1100,7 @@ export const seedVerifiedDraft = mutation({
         draftId,
         discordUserId: player.discordUserId,
         displayName: player.displayName,
+        avatarUrl: player.avatarUrl,
         team: player.team,
         isCaptain: player.isCaptain,
         token: `seed-${args.shortId}-${player.discordUserId}`,
@@ -1161,6 +1187,7 @@ export const getActiveDrafts = query({
         status: draft.status,
         gameStarted: draft.gameStarted,
         discordGuildId: draft.discordGuildId,
+        discordGuildName: draft.discordGuildName,
         discordTextChannelId: draft.discordTextChannelId,
         team1CaptainId: draft.team1CaptainId,
         team2CaptainId: draft.team2CaptainId,
@@ -1169,6 +1196,7 @@ export const getActiveDrafts = query({
         players: players.map((p) => ({
           discordUserId: p.discordUserId,
           displayName: p.displayName,
+          avatarUrl: p.avatarUrl,
           team: p.team,
         })),
       });

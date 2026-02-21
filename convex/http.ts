@@ -13,7 +13,16 @@ http.route({
     if (authError) return authError;
 
     const body = await request.json();
-    const { guildId, channelId, textChannelId, createdBy, players } = body;
+    const {
+      guildId,
+      guildName,
+      channelId,
+      textChannelId,
+      createdBy,
+      createdByDisplayName,
+      createdByAvatarUrl,
+      players,
+    } = body;
 
     if (
       !guildId ||
@@ -30,9 +39,12 @@ http.route({
 
     const result = await ctx.runMutation(api.drafts.createDraft, {
       discordGuildId: guildId,
+      discordGuildName: guildName,
       discordChannelId: channelId,
       discordTextChannelId: textChannelId,
       createdBy,
+      createdByDisplayName,
+      createdByAvatarUrl,
       players: players.map((p: { discordUserId: string; displayName: string; avatarUrl?: string }) => ({
         discordUserId: p.discordUserId,
         displayName: p.displayName,
@@ -76,6 +88,10 @@ http.route({
         gameStarted: draft.gameStarted,
         winnerTeam: draft.winnerTeam,
         discordGuildId: draft.discordGuildId,
+        discordGuildName: draft.discordGuildName,
+        createdBy: draft.createdBy,
+        createdByDisplayName: draft.createdByDisplayName,
+        createdByAvatarUrl: draft.createdByAvatarUrl,
         discordTextChannelId: draft.discordTextChannelId,
         team1CaptainId: draft.team1CaptainId,
         team2CaptainId: draft.team2CaptainId,
@@ -84,6 +100,7 @@ http.route({
         players: draft.players.map((p) => ({
           discordUserId: p.discordUserId,
           displayName: p.displayName,
+          avatarUrl: p.avatarUrl,
           team: p.team,
         })),
       }),
