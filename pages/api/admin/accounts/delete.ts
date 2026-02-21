@@ -34,7 +34,7 @@ export function createAdminAccountDeleteHandler(deps: DeleteAccountsDeps) {
 
     const user = await deps.findLocalUser(clerkUserId);
     const localUserFound = Boolean(user);
-    if (localUserFound) {
+    if (localUserFound && user) {
       try {
         await deps.deleteLocalUserData({ clerkUserId, userId: user.id });
       } catch (error: any) {
