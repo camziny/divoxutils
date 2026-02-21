@@ -69,6 +69,10 @@ export type DraftLogRow = {
   shortId: string;
   type: "traditional" | "pvp";
   discordGuildId: string;
+  discordGuildName?: string;
+  createdBy: string;
+  createdByDisplayName?: string;
+  createdByAvatarUrl?: string;
   winnerTeam?: 1 | 2;
   resultStatus: "unverified" | "verified" | "voided";
   createdAtMs: number;
@@ -77,6 +81,7 @@ export type DraftLogRow = {
   players: Array<{
     discordUserId: string;
     displayName: string;
+    avatarUrl?: string;
     team?: 1 | 2;
     isCaptain: boolean;
   }>;
@@ -520,6 +525,10 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
     shortId: string;
     type: "traditional" | "pvp";
     discordGuildId: string;
+    discordGuildName?: string;
+    createdBy: string;
+    createdByDisplayName?: string;
+    createdByAvatarUrl?: string;
     winnerTeam?: 1 | 2;
     resultStatus?: "unverified" | "verified" | "voided";
     _creationTime?: number;
@@ -528,6 +537,7 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
     players: Array<{
       discordUserId: string;
       displayName: string;
+      avatarUrl?: string;
       team?: 1 | 2;
       isCaptain: boolean;
     }>;
@@ -541,6 +551,10 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
     shortId: draft.shortId,
     type: draft.type,
     discordGuildId: draft.discordGuildId,
+    discordGuildName: draft.discordGuildName,
+    createdBy: draft.createdBy,
+    createdByDisplayName: draft.createdByDisplayName,
+    createdByAvatarUrl: draft.createdByAvatarUrl,
     winnerTeam: draft.winnerTeam,
     resultStatus: draft.resultStatus ?? "unverified",
     createdAtMs: draft._creationTime ?? 0,

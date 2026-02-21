@@ -213,6 +213,44 @@ test("link-discord allows relinking when discord identity is already linked to s
   assert.equal(upsertCalls.length, 1);
 });
 
+test("link-discord allows a new account to relink same discord id after old account deletion", async () => {
+  let currentUserId = "user_old";
+  const linkedByDiscordId = new Map<string, string>();
+
+  const handler = createLinkDiscordIdentityHandler({
+    getAuthUserId: () => currentUserId,
+    resolveDiscordUserIdFromClerk: async () => null,
+    findLocalUserByClerkId: async (clerkUserId) => ({ clerkUserId }),
+    findIdentityLinkByProviderUserId: async (_provider, providerUserId) => {
+      const linkedClerkUserId = linkedByDiscordId.get(providerUserId);
+      return linkedClerkUserId ? { clerkUserId: linkedClerkUserId } : null;
+    },
+    upsertIdentityLink: async ({ clerkUserId, providerUserId }) => {
+      linkedByDiscordId.set(providerUserId, clerkUserId);
+      return {};
+    },
+  });
+
+  const firstReq = createMockRequest({
+    body: { discordUserId: "123456789" },
+  });
+  const firstRes = createMockResponse();
+  await handler(firstReq, firstRes);
+  assert.equal(firstRes.statusCode, 200);
+  assert.equal(linkedByDiscordId.get("123456789"), "user_old");
+
+  linkedByDiscordId.delete("123456789");
+  currentUserId = "user_new";
+
+  const secondReq = createMockRequest({
+    body: { discordUserId: "123456789" },
+  });
+  const secondRes = createMockResponse();
+  await handler(secondReq, secondRes);
+  assert.equal(secondRes.statusCode, 200);
+  assert.equal(linkedByDiscordId.get("123456789"), "user_new");
+});
+
 test("getDiscordExternalAccountId returns trimmed externalId for discord account", () => {
   const id = getDiscordExternalAccountId({
     externalAccounts: [
@@ -647,8 +685,46 @@ test("admin drafts rejects non-admin requests", async () => {
 });
 
 test("admin drafts returns pending and reviewed draft lists for admins", async () => {
-  const pendingDrafts = [{ shortId: "abc123", resultStatus: "unverified" }];
-  const reviewedDrafts = [{ shortId: "xyz789", resultStatus: "voided" }];
+  const pendingDrafts = [
+    {
+      shortId: "abc123",
+      discordGuildId: "123",
+      discordGuildName: "Guild One",
+      createdBy: "u_creator",
+      createdByDisplayName: "Creator",
+      createdByAvatarUrl: "https://cdn.example.com/creator.png",
+      resultStatus: "unverified",
+      players: [
+        {
+          discordUserId: "d1",
+          displayName: "Player One",
+          avatarUrl: "https://cdn.example.com/p1.png",
+          team: 1,
+          isCaptain: true,
+        },
+      ],
+    },
+  ];
+  const reviewedDrafts = [
+    {
+      shortId: "xyz789",
+      discordGuildId: "456",
+      discordGuildName: "Guild Two",
+      createdBy: "u_creator_2",
+      createdByDisplayName: "Creator Two",
+      createdByAvatarUrl: "https://cdn.example.com/creator2.png",
+      resultStatus: "voided",
+      players: [
+        {
+          discordUserId: "d2",
+          displayName: "Player Two",
+          avatarUrl: "https://cdn.example.com/p2.png",
+          team: 2,
+          isCaptain: false,
+        },
+      ],
+    },
+  ];
   const handler = createAdminDraftsHandler({
     getAuthUserId: () => "admin_1",
     isAdminUserId: () => true,

@@ -199,14 +199,40 @@ test("draft log endpoint rejects unsupported method", async () => {
 });
 
 test("draft log endpoint returns rows on success", async () => {
+  const rows = [
+    {
+      shortId: "a1",
+      type: "traditional",
+      discordGuildId: "123",
+      discordGuildName: "Guild One",
+      createdBy: "u_creator",
+      createdByDisplayName: "Creator",
+      createdByAvatarUrl: "https://cdn.example.com/creator.png",
+      winnerTeam: 1,
+      resultStatus: "verified",
+      createdAtMs: 1000,
+      team1Realm: "Albion",
+      team2Realm: "Midgard",
+      players: [
+        {
+          discordUserId: "d1",
+          displayName: "Player One",
+          avatarUrl: "https://cdn.example.com/p1.png",
+          team: 1,
+          isCaptain: true,
+        },
+      ],
+      bans: [{ team: 2, className: "Berserker" }],
+    },
+  ];
   const handler = createDraftLogHandler({
-    getRows: async () => [{ shortId: "a1" }],
+    getRows: async () => rows,
   });
   const req = createMockRequest();
   const res = createMockResponse();
   await handler(req, res);
   assert.equal(res.statusCode, 200);
-  assert.deepEqual(res.body, { rows: [{ shortId: "a1" }] });
+  assert.deepEqual(res.body, { rows });
 });
 
 test("draft log endpoint returns 500 on runtime failure", async () => {

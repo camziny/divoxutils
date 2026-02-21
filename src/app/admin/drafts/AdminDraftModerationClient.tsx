@@ -6,6 +6,7 @@ import Link from "next/link";
 type ModerationPlayer = {
   discordUserId: string;
   displayName: string;
+  avatarUrl?: string;
   team?: 1 | 2;
   isCaptain: boolean;
 };
@@ -14,8 +15,11 @@ type ModerationDraft = {
   _id: string;
   shortId: string;
   discordGuildId: string;
+  discordGuildName?: string;
   winnerTeam?: 1 | 2;
   createdBy: string;
+  createdByDisplayName?: string;
+  createdByAvatarUrl?: string;
   resultStatus: "unverified" | "verified" | "voided";
   resultModeratedAt?: number;
   resultModeratedBy?: string;
@@ -176,7 +180,20 @@ export default function AdminDraftModerationClient() {
 
                     <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 mb-4">
                       <span>Guild <span className="font-mono text-gray-400">{draft.discordGuildId}</span></span>
-                      <span>Created by <span className="font-mono text-gray-400">{draft.createdBy}</span></span>
+                      <span>
+                        Guild {draft.discordGuildName ? `${draft.discordGuildName} ` : ""}
+                        <span className="font-mono text-gray-400">({draft.discordGuildId})</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <AvatarChip
+                          name={draft.createdByDisplayName ?? draft.createdBy}
+                          avatarUrl={draft.createdByAvatarUrl}
+                        />
+                        <span>
+                          Created by {draft.createdByDisplayName ? `${draft.createdByDisplayName} ` : ""}
+                          <span className="font-mono text-gray-400">({draft.createdBy})</span>
+                        </span>
+                      </span>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2 mb-4">
@@ -187,7 +204,10 @@ export default function AdminDraftModerationClient() {
                         <div className="space-y-0.5">
                           {team1.map((player) => (
                             <div key={player.discordUserId} className="text-xs text-gray-300">
-                              {player.displayName}{player.isCaptain ? " (C)" : ""}
+                              <span className="inline-flex items-center gap-1.5">
+                                <AvatarChip name={player.displayName} avatarUrl={player.avatarUrl} />
+                                <span>{player.displayName}{player.isCaptain ? " (C)" : ""}</span>
+                              </span>
                             </div>
                           ))}
                           {team1.length === 0 && <div className="text-xs text-gray-600">No players</div>}
@@ -201,7 +221,10 @@ export default function AdminDraftModerationClient() {
                         <div className="space-y-0.5">
                           {team2.map((player) => (
                             <div key={player.discordUserId} className="text-xs text-gray-300">
-                              {player.displayName}{player.isCaptain ? " (C)" : ""}
+                              <span className="inline-flex items-center gap-1.5">
+                                <AvatarChip name={player.displayName} avatarUrl={player.avatarUrl} />
+                                <span>{player.displayName}{player.isCaptain ? " (C)" : ""}</span>
+                              </span>
                             </div>
                           ))}
                           {team2.length === 0 && <div className="text-xs text-gray-600">No players</div>}
@@ -282,8 +305,20 @@ export default function AdminDraftModerationClient() {
                         </div>
 
                         <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 mb-4">
-                          <span>Guild <span className="font-mono text-gray-400">{draft.discordGuildId}</span></span>
-                          <span>Created by <span className="font-mono text-gray-400">{draft.createdBy}</span></span>
+                          <span>
+                            Guild {draft.discordGuildName ? `${draft.discordGuildName} ` : ""}
+                            <span className="font-mono text-gray-400">({draft.discordGuildId})</span>
+                          </span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <AvatarChip
+                              name={draft.createdByDisplayName ?? draft.createdBy}
+                              avatarUrl={draft.createdByAvatarUrl}
+                            />
+                            <span>
+                              Created by {draft.createdByDisplayName ? `${draft.createdByDisplayName} ` : ""}
+                              <span className="font-mono text-gray-400">({draft.createdBy})</span>
+                            </span>
+                          </span>
                           {draft.resultModeratedBy && (
                             <span>Reviewed by <span className="font-mono text-gray-400">{draft.resultModeratedBy}</span></span>
                           )}
@@ -297,7 +332,10 @@ export default function AdminDraftModerationClient() {
                             <div className="space-y-0.5">
                               {team1.map((player) => (
                                 <div key={player.discordUserId} className="text-xs text-gray-300">
-                                  {player.displayName}{player.isCaptain ? " (C)" : ""}
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <AvatarChip name={player.displayName} avatarUrl={player.avatarUrl} />
+                                    <span>{player.displayName}{player.isCaptain ? " (C)" : ""}</span>
+                                  </span>
                                 </div>
                               ))}
                               {team1.length === 0 && <div className="text-xs text-gray-600">No players</div>}
@@ -311,7 +349,10 @@ export default function AdminDraftModerationClient() {
                             <div className="space-y-0.5">
                               {team2.map((player) => (
                                 <div key={player.discordUserId} className="text-xs text-gray-300">
-                                  {player.displayName}{player.isCaptain ? " (C)" : ""}
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <AvatarChip name={player.displayName} avatarUrl={player.avatarUrl} />
+                                    <span>{player.displayName}{player.isCaptain ? " (C)" : ""}</span>
+                                  </span>
                                 </div>
                               ))}
                               {team2.length === 0 && <div className="text-xs text-gray-600">No players</div>}
@@ -361,5 +402,23 @@ export default function AdminDraftModerationClient() {
         )}
       </div>
     </div>
+  );
+}
+
+function AvatarChip({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        className="h-4 w-4 rounded-full border border-gray-700 object-cover"
+      />
+    );
+  }
+  const initial = name.trim().charAt(0).toUpperCase() || "?";
+  return (
+    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-700 bg-gray-800 text-[9px] text-gray-300">
+      {initial}
+    </span>
   );
 }

@@ -4,6 +4,7 @@ import prisma from "../../prisma/prismaClient";
 export type DraftLeaderboardPlayer = {
   discordUserId: string;
   displayName: string;
+  avatarUrl?: string;
   team?: 1 | 2;
   isCaptain: boolean;
 };
@@ -23,6 +24,7 @@ export type DraftLeaderboardDraft = {
 export type DraftLeaderboardRow = {
   clerkUserId: string;
   userName: string;
+  avatarUrl?: string;
   wins: number;
   losses: number;
   games: number;
@@ -53,6 +55,8 @@ export function aggregateDraftLeaderboardRows(
       losses: number;
       captainWins: number;
       captainLosses: number;
+      latestAvatarCreatedAt: number;
+      avatarUrl?: string;
     }
   >();
 
@@ -76,6 +80,8 @@ export function aggregateDraftLeaderboardRows(
         losses: 0,
         captainWins: 0,
         captainLosses: 0,
+        latestAvatarCreatedAt: -1,
+        avatarUrl: undefined,
       };
       const isWin = player.team === draft.winnerTeam;
       if (isWin) {
@@ -89,6 +95,14 @@ export function aggregateDraftLeaderboardRows(
           entry.captainLosses += 1;
         }
       }
+      if (
+        player.avatarUrl &&
+        typeof draft._creationTime === "number" &&
+        draft._creationTime >= entry.latestAvatarCreatedAt
+      ) {
+        entry.latestAvatarCreatedAt = draft._creationTime;
+        entry.avatarUrl = player.avatarUrl;
+      }
       stats.set(clerkUserId, entry);
     }
   }
@@ -101,6 +115,7 @@ export function aggregateDraftLeaderboardRows(
       return {
         clerkUserId,
         userName,
+        avatarUrl: value.avatarUrl,
         wins: value.wins,
         losses: value.losses,
         games,

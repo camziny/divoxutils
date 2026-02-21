@@ -118,6 +118,54 @@ test("aggregateOverallRows applies guild/date filters and excludes non-verified 
   assert.equal(cara.losses, 0);
 });
 
+test("aggregateOverallRows includes latest avatar from verified drafts", () => {
+  const avatarDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "old-avatar",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 1_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        {
+          discordUserId: "d1",
+          displayName: "Alice",
+          avatarUrl: "https://cdn.example.com/alice-old.png",
+          team: 1,
+          isCaptain: false,
+        },
+      ],
+    },
+    {
+      shortId: "new-avatar",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 2_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        {
+          discordUserId: "d1",
+          displayName: "Alice",
+          avatarUrl: "https://cdn.example.com/alice-new.png",
+          team: 1,
+          isCaptain: false,
+        },
+      ],
+    },
+  ];
+
+  const rows = aggregateOverallRows(
+    avatarDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    {}
+  );
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].avatarUrl, "https://cdn.example.com/alice-new.png");
+});
+
 test("aggregateOverallRows respects minGames", () => {
   const rows = aggregateOverallRows(drafts, clerkByDiscord, namesByClerk, {
     minGames: 4,
