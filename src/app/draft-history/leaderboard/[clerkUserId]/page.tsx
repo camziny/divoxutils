@@ -1,15 +1,16 @@
+import { getPlayerDraftDrilldownStats } from "@/server/draftStats";
 import PlayerDrilldownClient from "./PlayerDrilldownClient";
 
-export const dynamic = "force-dynamic";
-
-export default function PlayerDrilldownPage({
+export default async function PlayerDrilldownPage({
   params,
 }: {
   params: { clerkUserId: string };
 }) {
+  const drilldown = await getPlayerDraftDrilldownStats(params.clerkUserId, {});
+
   return (
-    <div className="bg-gray-900 min-h-screen text-gray-300 py-8">
-      <PlayerDrilldownClient clerkUserId={params.clerkUserId} />
-    </div>
+    <PlayerDrilldownClient
+      initialData={drilldown}
+    />
   );
 }

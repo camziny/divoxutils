@@ -4,20 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Pagination } from "@/components/ui/pagination";
 import { ChevronRight } from "lucide-react";
-import DraftHistoryNav from "../DraftHistoryNav";
-
-type OverallRow = {
-  clerkUserId: string;
-  userName: string;
-  wins: number;
-  losses: number;
-  games: number;
-  winRate: number;
-  captainWins: number;
-  captainLosses: number;
-  captainGames: number;
-  captainWinRate: number;
-};
+import type { DraftLeaderboardRow } from "@/server/draftLeaderboard";
 
 type SortKey = "wins" | "winRate" | "games" | "losses";
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -29,7 +16,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 
 const ITEMS_PER_PAGE = 20;
 
-function sortRows(rows: OverallRow[], key: SortKey): OverallRow[] {
+function sortRows(rows: DraftLeaderboardRow[], key: SortKey): DraftLeaderboardRow[] {
   return [...rows].sort((a, b) => {
     const diff = b[key] - a[key];
     if (diff !== 0) return diff;
@@ -38,15 +25,16 @@ function sortRows(rows: OverallRow[], key: SortKey): OverallRow[] {
   });
 }
 
-export default function LeaderboardClient() {
-  const [rows, setRows] = useState<OverallRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function LeaderboardClient({
+  initialRows,
+}: {
+  initialRows: DraftLeaderboardRow[];
+}) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortKey>("winRate");
   const [animate, setAnimate] = useState(false);
 
-  const sorted = useMemo(() => sortRows(rows, sortBy), [rows, sortBy]);
+  const sorted = useMemo(() => sortRows(initialRows, sortBy), [initialRows, sortBy]);
 
   const totalPages = useMemo(
     () => Math.ceil(sorted.length / ITEMS_PER_PAGE),
@@ -58,30 +46,16 @@ export default function LeaderboardClient() {
     return sorted.slice(start, start + ITEMS_PER_PAGE);
   }, [sorted, currentPage]);
 
-
-
   useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) setCurrentPage(1);
+    if (totalPages === 0) {
+      if (currentPage !== 1) setCurrentPage(1);
+      return;
+    }
+    if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
 
   useEffect(() => {
-    (async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/draft-stats/overall", {
-          cache: "no-store",
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error ?? "Request failed.");
-        setRows(data.rows);
-        requestAnimationFrame(() => setAnimate(true));
-      } catch (err: any) {
-        setError(err?.message ?? "Unable to load leaderboard.");
-      } finally {
-        setIsLoading(false);
-      }
-    })();
+    requestAnimationFrame(() => setAnimate(true));
   }, []);
 
   const handleSort = (key: SortKey) => {
@@ -92,9 +66,7 @@ export default function LeaderboardClient() {
   };
 
   return (
-    <section className="max-w-3xl mx-auto px-6">
-      <DraftHistoryNav active="leaderboard" />
-
+    <>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-gray-100">
@@ -125,13 +97,7 @@ export default function LeaderboardClient() {
         </div>
       </div>
 
-      {error ? (
-        <div className="rounded-lg border border-gray-800 px-4 py-6 text-sm text-red-400">
-          {error}
-        </div>
-      ) : isLoading ? (
-        <Skeleton />
-      ) : sorted.length === 0 ? (
+      {sorted.length === 0 ? (
         <div className="rounded-lg border border-gray-800 px-4 py-8 text-center text-sm text-gray-500">
           No verified records yet.
         </div>
@@ -193,28 +159,6 @@ export default function LeaderboardClient() {
           </div>
         </>
       )}
-    </section>
-  );
-}
-
-function Skeleton() {
-  return (
-    <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="px-4 py-3.5 animate-pulse">
-          <div className="flex items-center gap-4">
-            <div className="w-6 h-4 rounded bg-gray-800" />
-            <div className="flex-1">
-              <div className="flex justify-between mb-1.5">
-                <div className="h-4 rounded bg-gray-800 w-28" />
-                <div className="h-3 rounded bg-gray-800 w-20" />
-              </div>
-              <div className="h-1 rounded-full bg-gray-800" />
-            </div>
-            <div className="w-3.5 h-3.5" />
-          </div>
-        </div>
-      ))}
-    </div>
+    </>
   );
 }

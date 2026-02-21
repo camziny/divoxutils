@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   ResponsiveContainer,
@@ -17,44 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
-import DraftHistoryNav from "../../DraftHistoryNav";
-
-type WinLossRecord = {
-  wins: number;
-  losses: number;
-  games: number;
-  winRate: number;
-};
-
-type Drilldown = {
-  playerClerkUserId: string;
-  playerName: string;
-  overall: WinLossRecord;
-  captain: WinLossRecord;
-  byRealm: Record<string, WinLossRecord>;
-  pvp: WinLossRecord;
-  recentGames: Array<{
-    shortId: string;
-    discordGuildId: string;
-    createdAtMs: number;
-    didWin: boolean;
-    wasCaptain: boolean;
-    winnerTeam: 1 | 2;
-    playerTeam: 1 | 2;
-    team1CaptainName: string;
-    team2CaptainName: string;
-    draftType: "traditional" | "pvp";
-    playerRealm?: string;
-  }>;
-  headToHead: Array<{
-    opponentClerkUserId: string;
-    opponentName: string;
-    wins: number;
-    losses: number;
-    games: number;
-    winRate: number;
-  }>;
-};
+import type { DraftPlayerDrilldown, WinLossRecord } from "@/server/draftStats";
 
 const PIE_COLORS = ["#818cf8", "#374151"];
 
@@ -65,73 +28,26 @@ const REALM_BAR_COLOR: Record<string, string> = {
   PvP: "bg-indigo-500/30",
 };
 
-
 export default function PlayerDrilldownClient({
-  clerkUserId,
+  initialData,
 }: {
-  clerkUserId: string;
+  initialData: DraftPlayerDrilldown | null;
 }) {
-  const [drilldown, setDrilldown] = useState<Drilldown | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [opponentsOpen, setOpponentsOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const params = new URLSearchParams({ playerClerkUserId: clerkUserId });
-        const res = await fetch(
-          `/api/draft-stats/player-drilldown?${params.toString()}`,
-          { cache: "no-store" }
-        );
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error ?? "Request failed.");
-        if (active) setDrilldown(data.drilldown);
-      } catch (err: any) {
-        if (active) setError(err?.message ?? "Unable to load player data.");
-      } finally {
-        if (active) setIsLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [clerkUserId]);
-
-  if (error) {
+  if (!initialData) {
     return (
-      <Shell>
-        <BackNav />
-        <div className="rounded-lg border border-gray-800 px-4 py-6 text-sm text-red-400">
-          {error}
-        </div>
-      </Shell>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <Shell>
-        <BackNav />
-        <LoadingSkeleton />
-      </Shell>
-    );
-  }
-
-  if (!drilldown) {
-    return (
-      <Shell>
+      <>
         <BackNav />
         <div className="rounded-lg border border-gray-800 px-4 py-8 text-center text-sm text-gray-500">
           No verified draft data found for this player.
         </div>
-      </Shell>
+      </>
     );
   }
+
+  const drilldown = initialData;
 
   const overallPie = [
     { name: "Wins", value: drilldown.overall.wins },
@@ -146,7 +62,7 @@ export default function PlayerDrilldownClient({
   const h2hBarData = topH2H.map((row) => ({
     name:
       row.opponentName.length > 10
-        ? row.opponentName.slice(0, 9) + "…"
+        ? row.opponentName.slice(0, 9) + "\u2026"
         : row.opponentName,
     wins: row.wins,
     losses: row.losses,
@@ -155,7 +71,7 @@ export default function PlayerDrilldownClient({
   const streak = computeStreak(drilldown.recentGames);
 
   return (
-    <Shell>
+    <>
       <BackNav />
 
       <div className="mb-8">
@@ -416,28 +332,21 @@ export default function PlayerDrilldownClient({
           )}
         </div>
       )}
-    </Shell>
+    </>
   );
-}
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return <section className="max-w-3xl mx-auto px-6">{children}</section>;
 }
 
 function BackNav() {
   return (
-    <>
-      <DraftHistoryNav active="leaderboard" />
-      <div className="mb-6">
-        <Link
-          href="/draft-history/leaderboard"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-400 transition-colors duration-100"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Leaderboard
-        </Link>
-      </div>
-    </>
+    <div className="mb-6">
+      <Link
+        href="/draft-history/leaderboard"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-400 transition-colors duration-100"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Leaderboard
+      </Link>
+    </div>
   );
 }
 
@@ -506,19 +415,6 @@ function MiniDonut({
           </Pie>
         </PieChart>
       </ResponsiveContainer>
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div className="h-6 w-40 rounded bg-gray-800 animate-pulse" />
-      <div className="h-4 w-28 rounded bg-gray-800 animate-pulse" />
-      <div className="grid gap-3 sm:grid-cols-2 mt-6">
-        <div className="rounded-lg border border-gray-800 h-32 animate-pulse" />
-        <div className="rounded-lg border border-gray-800 h-32 animate-pulse" />
-      </div>
     </div>
   );
 }

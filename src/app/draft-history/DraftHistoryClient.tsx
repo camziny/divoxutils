@@ -4,29 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, Trophy } from "lucide-react";
-import DraftHistoryNav from "./DraftHistoryNav";
 import DiscordIdentityLinkCard from "./DiscordIdentityLinkCard";
-
-type DraftLogRow = {
-  shortId: string;
-  type: "traditional" | "pvp";
-  discordGuildId: string;
-  winnerTeam?: 1 | 2;
-  resultStatus: "unverified" | "verified" | "voided";
-  createdAtMs: number;
-  team1Realm?: string;
-  team2Realm?: string;
-  players: Array<{
-    discordUserId: string;
-    displayName: string;
-    team?: 1 | 2;
-    isCaptain: boolean;
-  }>;
-  bans: Array<{
-    team: 1 | 2;
-    className: string;
-  }>;
-};
+import type { DraftLogRow } from "@/server/draftStats";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -38,47 +17,33 @@ function formatDate(ms: number) {
   });
 }
 
-export default function DraftHistoryClient() {
-  const [rows, setRows] = useState<DraftLogRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function DraftHistoryClient({
+  initialRows,
+}: {
+  initialRows: DraftLogRow[];
+}) {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedShortIds, setExpandedShortIds] = useState<Set<string>>(
     new Set()
   );
 
   const totalPages = useMemo(
-    () => Math.ceil(rows.length / ITEMS_PER_PAGE),
-    [rows.length]
+    () => Math.ceil(initialRows.length / ITEMS_PER_PAGE),
+    [initialRows.length]
   );
 
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return rows.slice(start, start + ITEMS_PER_PAGE);
-  }, [rows, currentPage]);
+    return initialRows.slice(start, start + ITEMS_PER_PAGE);
+  }, [initialRows, currentPage]);
 
   useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) setCurrentPage(1);
+    if (totalPages === 0) {
+      if (currentPage !== 1) setCurrentPage(1);
+      return;
+    }
+    if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
-
-  useEffect(() => {
-    (async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/draft-stats/drafts", {
-          cache: "no-store",
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error ?? "Request failed.");
-        setRows(data.rows);
-      } catch (err: any) {
-        setError(err?.message ?? "Unable to load draft log.");
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, []);
 
   const toggle = (id: string) =>
     setExpandedShortIds((s) => {
@@ -93,9 +58,7 @@ export default function DraftHistoryClient() {
       .sort((a, b) => (a.isCaptain === b.isCaptain ? 0 : a.isCaptain ? -1 : 1));
 
   return (
-    <section className="max-w-3xl mx-auto px-6">
-      <DraftHistoryNav active="history" />
-
+    <>
       <div className="mb-6">
         <DiscordIdentityLinkCard />
       </div>
@@ -105,19 +68,13 @@ export default function DraftHistoryClient() {
           Draft History
         </h1>
         <p className="mt-1 text-[13px] text-gray-500">
-          {rows.length > 0
-            ? `${rows.length} completed draft${rows.length !== 1 ? "s" : ""}`
+          {initialRows.length > 0
+            ? `${initialRows.length} completed draft${initialRows.length !== 1 ? "s" : ""}`
             : "All completed drafts"}
         </p>
       </div>
 
-      {error ? (
-        <div className="rounded-lg border border-gray-800 px-4 py-6 text-sm text-red-400">
-          {error}
-        </div>
-      ) : isLoading ? (
-        <Skeleton />
-      ) : rows.length === 0 ? (
+      {initialRows.length === 0 ? (
         <div className="rounded-lg border border-gray-800 px-4 py-8 text-center text-sm text-gray-500">
           No completed drafts yet.
         </div>
@@ -237,7 +194,7 @@ export default function DraftHistoryClient() {
           </div>
         </>
       )}
-    </section>
+    </>
   );
 }
 
@@ -304,24 +261,6 @@ function TeamPanel({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function Skeleton() {
-  return (
-    <div className="space-y-1.5">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-lg border border-gray-800 px-4 py-3.5 animate-pulse"
-        >
-          <div className="flex items-center justify-between">
-            <div className="h-4 w-48 rounded bg-gray-800" />
-            <div className="h-3 w-24 rounded bg-gray-800" />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
