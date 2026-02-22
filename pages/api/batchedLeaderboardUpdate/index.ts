@@ -65,7 +65,7 @@ export default async function batchedLeaderboardUpdate(
     const characters = await prisma.character.findMany({
       where: {
         id: { gt: lastProcessedId },
-        lastUpdated: { lt: currentUpdateStartTime },
+        lastUpdated: { lte: gracePeriodEndTime },
       },
       take: batchSize,
       orderBy: { id: "asc" },
@@ -114,10 +114,7 @@ export default async function batchedLeaderboardUpdate(
             let weeklyDeaths = 0;
             let weeklyDeathBlows = 0;
 
-            if (
-              characterLastUpdated < currentUpdateStartTime &&
-              characterLastUpdated <= gracePeriodEndTime
-            ) {
+            if (characterLastUpdated <= gracePeriodEndTime) {
               weeklyRealmPoints = realmPointsDiff > 0 ? realmPointsDiff : 0;
               weeklySoloKills = soloKillsDiff > 0 ? soloKillsDiff : 0;
               weeklyDeaths = deathsDiff > 0 ? deathsDiff : 0;
