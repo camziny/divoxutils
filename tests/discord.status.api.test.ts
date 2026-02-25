@@ -41,6 +41,7 @@ test("discord-status rejects non-GET requests", async () => {
     getAuthUserId: () => "user_1",
     findIdentityLink: async () => null,
     findPendingClaim: async () => null,
+    hasDraftRowsForDiscordUserId: async () => false,
   });
   const req = createMockRequest("POST");
   const res = createMockResponse();
@@ -56,6 +57,7 @@ test("discord-status rejects unauthenticated requests", async () => {
     getAuthUserId: () => null,
     findIdentityLink: async () => null,
     findPendingClaim: async () => null,
+    hasDraftRowsForDiscordUserId: async () => false,
   });
   const req = createMockRequest("GET");
   const res = createMockResponse();
@@ -71,6 +73,7 @@ test("discord-status returns linked state when user is already linked", async ()
     getAuthUserId: () => "user_1",
     findIdentityLink: async () => ({ providerUserId: "12345", status: "linked" }),
     findPendingClaim: async () => null,
+    hasDraftRowsForDiscordUserId: async () => true,
   });
   const req = createMockRequest("GET");
   const res = createMockResponse();
@@ -82,6 +85,30 @@ test("discord-status returns linked state when user is already linked", async ()
     linked: true,
     providerUserId: "12345",
     status: "linked",
+    hasAnyDraftRowsForLinkedId: true,
+    possibleMismatch: false,
+  });
+});
+
+test("discord-status keeps mismatch false when linked id has no draft rows", async () => {
+  const handler = createDiscordStatusHandler({
+    getAuthUserId: () => "user_1",
+    findIdentityLink: async () => ({ providerUserId: "12345", status: "linked" }),
+    findPendingClaim: async () => null,
+    hasDraftRowsForDiscordUserId: async () => false,
+  });
+  const req = createMockRequest("GET");
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body, {
+    linked: true,
+    providerUserId: "12345",
+    status: "linked",
+    hasAnyDraftRowsForLinkedId: false,
+    possibleMismatch: false,
   });
 });
 
@@ -90,6 +117,7 @@ test("discord-status returns pending state when user has pending claim", async (
     getAuthUserId: () => "user_1",
     findIdentityLink: async () => null,
     findPendingClaim: async () => ({ providerUserId: "777", status: "pending" }),
+    hasDraftRowsForDiscordUserId: async () => false,
   });
   const req = createMockRequest("GET");
   const res = createMockResponse();
@@ -109,6 +137,7 @@ test("discord-status returns unlinked state when user has no link and no claim",
     getAuthUserId: () => "user_1",
     findIdentityLink: async () => null,
     findPendingClaim: async () => null,
+    hasDraftRowsForDiscordUserId: async () => false,
   });
   const req = createMockRequest("GET");
   const res = createMockResponse();

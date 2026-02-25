@@ -106,7 +106,7 @@ export default function PlayerDrilldownClient({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600">No captain games yet.</p>
+              <p className="text-sm text-gray-600">No captained drafts yet.</p>
             </CardContent>
           </Card>
         )}
