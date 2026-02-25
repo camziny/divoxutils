@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,10 +23,17 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "convex/_generated/*": ["./convex/_generated/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "convex/_generated/*": [
+        "./convex/_generated/*"
+      ]
     },
-    "typeRoots": ["./node_modules/@types", "./types"]
+    "typeRoots": [
+      "./node_modules/@types",
+      "./types"
+    ]
   },
   "include": [
     "next-env.d.ts",
@@ -30,7 +41,10 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "middleware.js",
-    "types/*"
+    "types/*",
+    ".next-dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

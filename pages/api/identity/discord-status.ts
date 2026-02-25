@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
+import { hasVerifiedDraftParticipantByDiscordUserId } from "@/server/discordIdentity";
 
 type DiscordStatusDeps = {
   getAuthUserId: (req: NextApiRequest) => string | null;
@@ -9,6 +10,7 @@ type DiscordStatusDeps = {
   findPendingClaim: (
     clerkUserId: string
   ) => Promise<{ providerUserId: string; status: string } | null>;
+  hasDraftRowsForDiscordUserId: (discordUserId: string) => Promise<boolean>;
 };
 
 export const createDiscordStatusHandler =
@@ -24,10 +26,15 @@ export const createDiscordStatusHandler =
 
     const link = await deps.findIdentityLink(clerkUserId);
     if (link) {
+      const hasAnyDraftRowsForLinkedId = await deps.hasDraftRowsForDiscordUserId(
+        link.providerUserId
+      );
       return res.status(200).json({
         linked: true,
         providerUserId: link.providerUserId,
         status: link.status,
+        hasAnyDraftRowsForLinkedId,
+        possibleMismatch: false,
       });
     }
 
@@ -67,6 +74,9 @@ const handler = createDiscordStatusHandler({
       },
       select: { providerUserId: true, status: true },
     });
+  },
+  hasDraftRowsForDiscordUserId: async (discordUserId) => {
+    return hasVerifiedDraftParticipantByDiscordUserId(discordUserId);
   },
 });
 
