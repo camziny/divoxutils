@@ -22,8 +22,15 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Verify npm registry
+        run: |
+          npm config set registry https://registry.npmjs.org/
+          echo "Using npm registry: $(npm config get registry)"
+
       - name: Install
-        run: npm ci
+        env:
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+        run: npm ci --fetch-retries=5 --fetch-retry-factor=2 --fetch-retry-maxtimeout=120000
 
       - name: Run feature tests
         run: npm run test:feature
