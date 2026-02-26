@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import fetch from "node-fetch";
 
 const realmMapping: Record<number, string> = {
   1: "Albion",
