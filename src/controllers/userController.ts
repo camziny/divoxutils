@@ -1,6 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import * as yup from "yup";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import prisma from "../../prisma/prismaClient";
 
 const accountSchema = yup
