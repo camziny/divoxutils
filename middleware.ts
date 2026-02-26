@@ -3,7 +3,6 @@ import { authMiddleware } from "@clerk/nextjs";
 export default authMiddleware({
   debug: false,
   signInUrl: "/sign-in",
-  signUpUrl: "/sign-up",
   publicRoutes: [
     "/",
     "/about",
