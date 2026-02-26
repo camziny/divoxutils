@@ -41,7 +41,7 @@
     "@vercel/postgres": "^0.5.1",
     "@vercel/speed-insights": "^1.0.1",
     "axios": "^1.5.1",
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.3",
     "bootstrap-icons": "^1.11.1",
     "classnames": "^2.5.1",
     "convex": "^1.31.7",
@@ -76,7 +76,6 @@
   },
   "devDependencies": {
     "@iconify/react": "^4.1.1",
-    "@types/bcrypt": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.3",
     "@types/node": "^20.8.0",
     "@types/nodemailer": "^6.4.11",
