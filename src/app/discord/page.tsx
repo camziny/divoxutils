@@ -21,7 +21,7 @@ export default function DiscordPage() {
     <div className="bg-gray-900 min-h-screen text-gray-300">
       <div className="mx-auto max-w-3xl px-4 py-16 space-y-16">
         <header className="space-y-4">
-          <h1 className="text-3xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-white tracking-tight">
             Discord Bot
           </h1>
           <p className="text-sm text-gray-500 max-w-lg leading-relaxed">

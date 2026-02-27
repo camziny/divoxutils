@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ResponsiveContainer,
   PieChart,
@@ -16,7 +17,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, User } from "lucide-react";
 import type { DraftPlayerDrilldown, WinLossRecord } from "@/server/draftStats";
 
 const PIE_COLORS = ["#818cf8", "#374151"];
@@ -74,14 +75,26 @@ export default function PlayerDrilldownClient({
     <>
       <BackNav />
 
-      <div className="mb-8">
-        <h1 className="text-xl font-semibold tracking-tight text-gray-100">
-          {drilldown.playerName}
-        </h1>
-        <p className="mt-1 text-[13px] text-gray-500">
-          {drilldown.overall.games} verified game
-          {drilldown.overall.games !== 1 ? "s" : ""}
-        </p>
+      <div className="mb-8 flex items-center gap-3">
+        <PlayerAvatar name={drilldown.playerName} avatarUrl={drilldown.avatarUrl} />
+        <div>
+          {drilldown.profileName ? (
+            <Link
+              href={`/user/${drilldown.profileName}/characters`}
+              className="text-xl font-semibold tracking-tight text-gray-100 hover:text-indigo-400 transition-colors duration-100"
+            >
+              {drilldown.playerName}
+            </Link>
+          ) : (
+            <h1 className="text-xl font-semibold tracking-tight text-gray-100">
+              {drilldown.playerName}
+            </h1>
+          )}
+          <p className="mt-1 text-[13px] text-gray-500">
+            {drilldown.overall.games} verified game
+            {drilldown.overall.games !== 1 ? "s" : ""}
+          </p>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 mb-6">
@@ -347,6 +360,25 @@ function BackNav() {
         Leaderboard
       </Link>
     </div>
+  );
+}
+
+function PlayerAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
+  if (avatarUrl) {
+    return (
+      <Image
+        src={avatarUrl}
+        alt={name}
+        width={40}
+        height={40}
+        className="h-10 w-10 rounded-full object-cover"
+      />
+    );
+  }
+  return (
+    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-gray-400">
+      <User className="h-5 w-5" />
+    </span>
   );
 }
 

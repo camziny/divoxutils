@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, ChevronRight, Trophy, User } from "lucide-react";
@@ -139,11 +140,6 @@ export default function DraftHistoryClient({
                             </span>
                           </p>
                         </div>
-                        {row.type === "pvp" && (
-                          <span className="rounded bg-gray-800/60 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 flex-shrink-0">
-                            PvP
-                          </span>
-                        )}
                       </div>
 
                       <div className="flex items-center gap-4 flex-shrink-0 text-xs">
@@ -326,24 +322,24 @@ function InlineAvatar({
   avatarUrl?: string;
   size: number;
 }) {
-  const initial = name.trim().charAt(0).toUpperCase() || "?";
   const style = { width: size, height: size };
   if (avatarUrl) {
     return (
-      <img
+      <Image
         src={avatarUrl}
         alt={name}
-        className="rounded-full object-cover border border-gray-800/80"
-        style={style}
+        width={size}
+        height={size}
+        className="rounded-full object-cover"
       />
     );
   }
   return (
     <span
-      className="rounded-full bg-gray-800/80 border border-gray-700 text-[10px] text-gray-300 inline-flex items-center justify-center"
+      className="rounded-full bg-gray-800/80 text-gray-400 inline-flex items-center justify-center"
       style={style}
     >
-      {initial}
+      <User className="w-[65%] h-[65%]" />
     </span>
   );
 }

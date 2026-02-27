@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Pagination } from "@/components/ui/pagination";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, User } from "lucide-react";
 import type { DraftLeaderboardRow } from "@/server/draftLeaderboard";
 
 type SortKey = "wins" | "winRate" | "games" | "losses";
@@ -169,17 +170,18 @@ export default function LeaderboardClient({
 function AvatarChip({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
   if (avatarUrl) {
     return (
-      <img
+      <Image
         src={avatarUrl}
         alt={name}
-        className="h-5 w-5 rounded-full border border-gray-700 object-cover"
+        width={20}
+        height={20}
+        className="h-5 w-5 rounded-full object-cover"
       />
     );
   }
-  const initial = name.trim().charAt(0).toUpperCase() || "?";
   return (
-    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-700 bg-gray-800 text-[10px] text-gray-300">
-      {initial}
+    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-gray-400">
+      <User className="h-3 w-3" />
     </span>
   );
 }

@@ -161,8 +161,8 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
 
   return (
     <section className="max-w-3xl mx-auto px-6">
-      <div className="mb-6 flex flex-col items-center">
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
+      <div className="mb-6">
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-2">
           <div className="inline-flex">
             <Button
               onClick={() => handlePeriodChange("total")}
@@ -197,7 +197,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="text-sm font-medium hover:bg-gray-800/50 hover:text-gray-300 transition-colors duration-150 min-w-[140px] justify-between">
+            <SelectTrigger className="h-[30px] py-0 w-[136px] text-[13px] leading-none font-medium hover:bg-gray-800/50 hover:text-gray-300 transition-colors duration-150 justify-between">
               <SelectValue placeholder="Select metric" />
             </SelectTrigger>
             <SelectContent>
