@@ -57,7 +57,7 @@ export default function RealmRanksPage() {
     <div className="bg-gray-900 min-h-screen text-gray-300">
       <div className="mx-auto max-w-3xl px-4 py-16 space-y-16">
         <header>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-white tracking-tight">
             Realm Ranks
           </h1>
         </header>

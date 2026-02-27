@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 type ModerationPlayer = {
   discordUserId: string;
@@ -408,9 +409,11 @@ export default function AdminDraftModerationClient() {
 function AvatarChip({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
   if (avatarUrl) {
     return (
-      <img
+      <Image
         src={avatarUrl}
         alt={name}
+        width={16}
+        height={16}
         className="h-4 w-4 rounded-full border border-gray-700 object-cover"
       />
     );

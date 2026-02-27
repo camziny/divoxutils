@@ -57,6 +57,8 @@ export type WinLossRecord = {
 export type DraftPlayerDrilldown = {
   playerClerkUserId: string;
   playerName: string;
+  profileName?: string;
+  avatarUrl?: string;
   overall: WinLossRecord;
   captain: WinLossRecord;
   byRealm: Record<string, WinLossRecord>;
@@ -274,8 +276,8 @@ export function aggregatePlayerDrilldown(
   recentLimit = 20
 ): DraftPlayerDrilldown | null {
   const filteredDrafts = applyDraftStatsFilters(drafts, filters);
-  const playerName =
-    userNameByClerkUserId.get(playerClerkUserId) ?? playerClerkUserId;
+  const profileName = userNameByClerkUserId.get(playerClerkUserId);
+  let playerName = profileName ?? playerClerkUserId;
 
   let wins = 0;
   let losses = 0;
@@ -286,6 +288,9 @@ export function aggregatePlayerDrilldown(
   const realmStats = new Map<string, { wins: number; losses: number }>();
   const recentGames: DraftRecentGameRow[] = [];
   const headToHeadStats = new Map<string, { wins: number; losses: number }>();
+  let avatarUrl: string | undefined;
+  let latestAvatarCreatedAt = -1;
+  let latestDisplayNameCreatedAt = -1;
 
   for (const draft of filteredDrafts) {
     let playerTeam: 1 | 2 | undefined;
@@ -303,6 +308,22 @@ export function aggregatePlayerDrilldown(
       if (clerkUserId === playerClerkUserId) {
         playerTeam = participant.team;
         wasCaptain = participant.isCaptain;
+        if (
+          participant.displayName &&
+          typeof draft._creationTime === "number" &&
+          draft._creationTime >= latestDisplayNameCreatedAt
+        ) {
+          latestDisplayNameCreatedAt = draft._creationTime;
+          playerName = participant.displayName;
+        }
+        if (
+          participant.avatarUrl &&
+          typeof draft._creationTime === "number" &&
+          draft._creationTime >= latestAvatarCreatedAt
+        ) {
+          latestAvatarCreatedAt = draft._creationTime;
+          avatarUrl = participant.avatarUrl;
+        }
       } else {
         opponentTeams.set(clerkUserId, participant.team);
       }
@@ -415,6 +436,8 @@ export function aggregatePlayerDrilldown(
   return {
     playerClerkUserId,
     playerName,
+    profileName,
+    avatarUrl,
     overall: computeWinRate(wins, losses),
     captain: computeWinRate(captainWins, captainLosses),
     byRealm,

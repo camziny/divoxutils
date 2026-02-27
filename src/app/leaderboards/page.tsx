@@ -24,8 +24,8 @@ export default async function LeaderboardPage() {
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
       <div className="p-4 md:p-8 lg:p-12">
-        <div className="max-w-screen-lg mx-auto text-center">
-          <div className="mb-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="mb-6 px-6">
             <LeaderboardTooltip />
           </div>
           <LeaderboardWrapper data={leaderboardData} />

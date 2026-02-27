@@ -175,56 +175,46 @@ function CharacterSearchAndAdd() {
   const hasResults = searchResults.length > 0;
   const hasSelections = selectedCharacters.size > 0;
   const isLoading = isAdding || isPending;
-  const isIdle = !hasResults && !isSearching && !hasSearched && !message;
+  const isExpanded = isSearching || hasSearched || hasResults || hasSelections || Boolean(message);
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900/80 backdrop-blur-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-800">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-gray-200">Add Characters</h2>
+    <div className="relative z-20 rounded-xl border border-gray-800 bg-gray-900/80 backdrop-blur-sm overflow-visible">
+      <div className="p-4">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+            <input
+              type="text"
+              placeholder="Search and add characters..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              data-testid="character-search-input"
+              className="w-full h-9 pl-8 pr-8 rounded-lg border border-gray-800 bg-gray-950/50 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600 transition-all"
+            />
+            {name && (
+              <button
+                onClick={() => { setName(""); setSearchResults([]); setHasSearched(false); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-600 hover:text-gray-300 transition-colors"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
           <CharacterSearchAndAddTooltip />
         </div>
-      </div>
 
-      <div className="p-5">
-        <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
-          <input
-            type="text"
-            placeholder="Character name..."
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            data-testid="character-search-input"
-            className="w-full h-9 pl-8 pr-8 rounded-lg border border-gray-800 bg-gray-950/50 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600 transition-all"
-          />
-          {name && (
-            <button
-              onClick={() => { setName(""); setSearchResults([]); setHasSearched(false); }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-600 hover:text-gray-300 transition-colors"
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-
-        {isIdle && (
-          <div className="mt-4 py-6 flex flex-col items-center">
-            <p className="text-xs text-gray-600">Type at least 3 characters to search</p>
-          </div>
-        )}
-
-        {message && !hasResults && !isIdle && (
+        {isExpanded && message && !hasResults && (
           <p className="mt-3 text-xs text-gray-500">{message}</p>
         )}
 
-        {isSearching && (
+        {isExpanded && isSearching && (
           <div className="flex items-center gap-2 mt-4 py-6 justify-center">
             <Loader2 size={14} className="animate-spin text-gray-500" />
             <span className="text-xs text-gray-500">Searching...</span>
           </div>
         )}
 
-        {!isSearching && hasSearched && !hasResults && name.length >= 3 && (
+        {isExpanded && !isSearching && hasSearched && !hasResults && name.length >= 3 && (
           <div className="mt-4 py-8 text-center">
             <p className="text-sm text-gray-500">No characters found</p>
             <p className="text-[11px] text-gray-700 mt-1">Try a different name or server</p>
