@@ -91,7 +91,7 @@ export default function PlayerDrilldownClient({
             </h1>
           )}
           <p className="mt-1 text-[13px] text-gray-500">
-            {drilldown.overall.games} verified game
+            {drilldown.overall.games} verified draft
             {drilldown.overall.games !== 1 ? "s" : ""}
           </p>
         </div>
