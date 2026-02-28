@@ -31,11 +31,11 @@ export default function DiscordPage() {
           <div className="pt-2">
             <a
               href="https://discord.com/api/oauth2/authorize?client_id=1204568123584552960&permissions=0&scope=bot%20applications.commands"
-              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600/20 border border-indigo-500/30 px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-600/30 transition-colors"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <FaDiscord size={18} />
+              <FaDiscord className="h-3.5 w-3.5" />
               Add to Server
             </a>
           </div>

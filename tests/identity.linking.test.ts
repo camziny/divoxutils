@@ -154,6 +154,29 @@ test("link-discord falls back to Clerk discord id resolution", async () => {
   assert.equal(upsertCalls[0].providerUserId, "99887766");
 });
 
+test("link-discord prefers explicit discordUserId over Clerk resolution", async () => {
+  const upsertCalls: Array<Record<string, string>> = [];
+  const handler = createLinkDiscordIdentityHandler({
+    getAuthUserId: () => "user_1",
+    resolveDiscordUserIdFromClerk: async () => "99887766",
+    findLocalUserByClerkId: async () => ({ clerkUserId: "user_1" }),
+    findIdentityLinkByProviderUserId: async () => null,
+    upsertIdentityLink: async (data) => {
+      upsertCalls.push(data);
+      return {};
+    },
+  });
+
+  const req = createMockRequest({
+    body: { discordUserId: "123456789" },
+  });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(upsertCalls[0].providerUserId, "123456789");
+});
+
 test("link-discord returns 400 when signed-in user has no Discord identity to resolve", async () => {
   const handler = createLinkDiscordIdentityHandler({
     getAuthUserId: () => "user_1",

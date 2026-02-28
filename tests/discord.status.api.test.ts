@@ -90,7 +90,7 @@ test("discord-status returns linked state when user is already linked", async ()
   });
 });
 
-test("discord-status keeps mismatch false when linked id has no draft rows", async () => {
+test("discord-status marks mismatch when linked id has no draft rows", async () => {
   const handler = createDiscordStatusHandler({
     getAuthUserId: () => "user_1",
     findIdentityLink: async () => ({ providerUserId: "12345", status: "linked" }),
@@ -108,7 +108,7 @@ test("discord-status keeps mismatch false when linked id has no draft rows", asy
     providerUserId: "12345",
     status: "linked",
     hasAnyDraftRowsForLinkedId: false,
-    possibleMismatch: false,
+    possibleMismatch: true,
   });
 });
 

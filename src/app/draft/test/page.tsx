@@ -31,8 +31,14 @@ const DUMMY_NAMES = [
 
 export default function DraftTestPage() {
   const createDraft = useMutation(api.drafts.createDraft);
+  const updateSettings = useMutation(api.drafts.updateSettings);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [lobbySize, setLobbySize] = useState(7);
+  const [modePreset, setModePreset] = useState<"traditional" | "pvp">(
+    "traditional"
+  );
+  const defaultTeamSize = Math.min(8, Math.max(2, Math.floor(lobbySize / 2)));
 
   const [draftState, setDraftState] = useState<{
     shortId: string;
@@ -101,9 +107,13 @@ export default function DraftTestPage() {
     setCreateError(null);
     setIsCreating(true);
     try {
-      const players = DUMMY_NAMES.map((name, i) => ({
+      const players = DUMMY_NAMES.slice(0, lobbySize).map((name, i) => ({
         discordUserId: `player_${i}`,
         displayName: name,
+        avatarUrl:
+          i % 3 === 0
+            ? undefined
+            : `https://cdn.discordapp.com/embed/avatars/${i % 5}.png`,
       }));
 
       const result = await createDraft({
@@ -116,6 +126,19 @@ export default function DraftTestPage() {
       const creatorToken = result.playerTokens.find(
         (p) => p.discordUserId === "player_0"
       )?.token;
+
+      if (modePreset === "pvp" && creatorToken) {
+        const adjustedTeamSize = Math.max(
+          2,
+          Math.min(8, Math.floor(players.length / 2))
+        );
+        await updateSettings({
+          draftId: result.draftId,
+          type: "pvp",
+          teamSize: adjustedTeamSize,
+          token: creatorToken,
+        });
+      }
 
       setDraftState({
         shortId: result.shortId,
@@ -167,7 +190,7 @@ export default function DraftTestPage() {
                 </button>
               )}
               <div className="flex gap-0.5">
-                {draftState.playerTokens.slice(0, 8).map((pt, i) => {
+                {draftState.playerTokens.map((pt, i) => {
                   const name = DUMMY_NAMES[i] || `P${i + 1}`;
                   const isActive = pt.token === activeToken;
                   return (
@@ -229,9 +252,63 @@ export default function DraftTestPage() {
             Draft Test
           </h1>
           <p className="text-sm text-gray-500 mt-2">
-            Simulate a draft with {DUMMY_NAMES.length} players to test the
-            flow.
+            Simulate a draft with a custom lobby size and mode preset.
           </p>
+          <p className="text-xs text-gray-600 mt-2">
+            Default team size for this lobby: {defaultTeamSize}v{defaultTeamSize}
+          </p>
+        </div>
+
+        <div className="space-y-3 text-left">
+          <div>
+            <p className="mb-1 text-[11px] uppercase tracking-wider text-gray-500">
+              Lobby size
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {[7, 10, 16].map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => setLobbySize(size)}
+                  className={cn(
+                    "rounded border px-2 py-1.5 text-xs",
+                    lobbySize === size
+                      ? "border-indigo-500/60 bg-indigo-600/20 text-indigo-200"
+                      : "border-gray-700 bg-gray-800/40 text-gray-400 hover:text-gray-200"
+                  )}
+                >
+                  {size} players
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-1 text-[11px] uppercase tracking-wider text-gray-500">
+              Mode preset
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { key: "traditional", label: "Traditional" },
+                { key: "pvp", label: "PvP (auto-adjust size)" },
+              ].map((mode) => (
+                <button
+                  key={mode.key}
+                  type="button"
+                  onClick={() =>
+                    setModePreset(mode.key as "traditional" | "pvp")
+                  }
+                  className={cn(
+                    "rounded border px-2 py-1.5 text-xs",
+                    modePreset === mode.key
+                      ? "border-indigo-500/60 bg-indigo-600/20 text-indigo-200"
+                      : "border-gray-700 bg-gray-800/40 text-gray-400 hover:text-gray-200"
+                  )}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <Button
@@ -240,7 +317,7 @@ export default function DraftTestPage() {
           size="lg"
           className="w-full"
         >
-          {isCreating ? "Creating..." : "Simulate Draft"}
+          {isCreating ? "Creating..." : `Simulate ${modePreset} draft`}
         </Button>
 
         {createError && (

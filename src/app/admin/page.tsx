@@ -42,6 +42,11 @@ export default async function AdminPage() {
       title: "Account Removal",
       description: "Search for and permanently delete a user account along with all characters, group memberships, and linked identities.",
     },
+    {
+      href: "/admin/identity-linking",
+      title: "Identity Backfill",
+      description: "Run a dry-run or apply pass to link existing users to Discord using Clerk external account IDs.",
+    },
   ];
 
   return (
