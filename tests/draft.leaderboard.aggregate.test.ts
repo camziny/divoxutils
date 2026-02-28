@@ -117,7 +117,7 @@ test("aggregateDraftLeaderboardRows counts both traditional and pvp drafts", () 
   assert.equal(bob.games, 2);
 });
 
-test("aggregateDraftLeaderboardRows ignores unlinked players and sorts by wins", () => {
+test("aggregateDraftLeaderboardRows includes unlinked players without verification", () => {
   const drafts = [
     {
       shortId: "a1",
@@ -144,12 +144,17 @@ test("aggregateDraftLeaderboardRows ignores unlinked players and sorts by wins",
 
   const rows = aggregateDraftLeaderboardRows(drafts, clerkByDiscord, namesByClerk);
 
-  assert.equal(rows.length, 2);
+  assert.equal(rows.length, 3);
   assert.equal(rows[0].clerkUserId, "clerk_2");
   assert.equal(rows[0].wins, 1);
   assert.equal(rows[0].captainWins, 1);
-  assert.equal(rows[1].clerkUserId, "clerk_1");
-  assert.equal(rows[1].losses, 1);
+  assert.equal(rows[0].isVerified, true);
+  assert.equal(rows[1].id, "discord:d3");
+  assert.equal(rows[1].clerkUserId, "discord:d3");
+  assert.equal(rows[1].isVerified, false);
+  assert.equal(rows[2].clerkUserId, "clerk_1");
+  assert.equal(rows[2].isVerified, true);
+  assert.equal(rows[2].losses, 1);
 });
 
 test("aggregateDraftLeaderboardRows uses latest verified draft avatar for each user", () => {
