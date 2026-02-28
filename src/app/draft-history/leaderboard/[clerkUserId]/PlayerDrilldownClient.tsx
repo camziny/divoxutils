@@ -274,9 +274,7 @@ export default function PlayerDrilldownClient({
               {drilldown.headToHead.map((row) => (
                 <Link
                   key={row.opponentClerkUserId}
-                  href={`/draft-history/leaderboard/${encodeURIComponent(
-                    row.opponentClerkUserId
-                  )}`}
+                  href={`/draft-history/leaderboard/${row.opponentClerkUserId}`}
                   className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
                 >
                   <span className="text-sm text-gray-300 group-hover:text-white transition-colors duration-100">
