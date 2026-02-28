@@ -68,6 +68,7 @@ export default function PlayerDrilldownClient({
     wins: row.wins,
     losses: row.losses,
   }));
+  const h2hChartHeight = Math.max(64, h2hBarData.length * 24);
 
   const streak = computeStreak(drilldown.recentGames);
 
@@ -183,7 +184,10 @@ export default function PlayerDrilldownClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer className="h-[200px] w-full">
+            <ChartContainer
+              className="w-full"
+              style={{ height: `${h2hChartHeight}px` }}
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={h2hBarData}
@@ -220,6 +224,7 @@ export default function PlayerDrilldownClient({
                     fill="#818cf8"
                     radius={[0, 3, 3, 0]}
                     stackId="s"
+                    barSize={10}
                   />
                   <Bar
                     dataKey="losses"
@@ -227,6 +232,7 @@ export default function PlayerDrilldownClient({
                     fill="#374151"
                     radius={[0, 3, 3, 0]}
                     stackId="s"
+                    barSize={10}
                   />
                 </BarChart>
               </ResponsiveContainer>
