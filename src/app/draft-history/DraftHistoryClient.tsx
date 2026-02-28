@@ -187,6 +187,7 @@ export default function DraftHistoryClient({
                           ) : null}
 
                           {row.discordGuildName && (
+                            <>
                             <span className="text-gray-700 select-none">
                               &middot;
                             </span>
@@ -194,6 +195,7 @@ export default function DraftHistoryClient({
                               <FaDiscord className="w-3 h-3 text-indigo-400 flex-shrink-0" />
                               {row.discordGuildName}
                             </span>
+                            </>
                           )}
 
                           <span className="text-gray-700 select-none">
