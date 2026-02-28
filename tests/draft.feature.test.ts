@@ -325,3 +325,72 @@ test("final ban enters drafting with one-time double pick for second team (first
   assert.deepEqual(updated.pickSequence, [2, 1, 1, 2, 1, 2]);
   assert.equal(updated.currentPickIndex, 0);
 });
+
+test("updateSettings applies pvp with valid adjusted team size", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "setup",
+        teamSize: 8,
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "x1", discordUserId: "u1" },
+      { _id: "p3", draftId: "d1", token: "x2", discordUserId: "u2" },
+      { _id: "p4", draftId: "d1", token: "x3", discordUserId: "u3" },
+      { _id: "p5", draftId: "d1", token: "x4", discordUserId: "u4" },
+      { _id: "p6", draftId: "d1", token: "x5", discordUserId: "u5" },
+      { _id: "p7", draftId: "d1", token: "x6", discordUserId: "u6" },
+    ],
+  });
+
+  await (draftFns.updateSettings as any)._handler(ctx, {
+    draftId: "d1",
+    type: "pvp",
+    teamSize: 3,
+    token: "creator-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.type, "pvp");
+  assert.equal(updated.teamSize, 3);
+});
+
+test("updateSettings rejects team size that exceeds available players", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "setup",
+        teamSize: 8,
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "x1", discordUserId: "u1" },
+      { _id: "p3", draftId: "d1", token: "x2", discordUserId: "u2" },
+      { _id: "p4", draftId: "d1", token: "x3", discordUserId: "u3" },
+      { _id: "p5", draftId: "d1", token: "x4", discordUserId: "u4" },
+      { _id: "p6", draftId: "d1", token: "x5", discordUserId: "u5" },
+      { _id: "p7", draftId: "d1", token: "x6", discordUserId: "u6" },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.updateSettings as any)._handler(ctx, {
+      draftId: "d1",
+      type: "pvp",
+      teamSize: 4,
+      token: "creator-token",
+    }),
+    /Need at least 8 players for 4v4/
+  );
+});

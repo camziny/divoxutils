@@ -97,6 +97,11 @@ export const createDraft = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const defaultTeamSize = Math.min(
+      8,
+      Math.max(2, Math.floor(args.players.length / 2))
+    );
+
     let shortId = generateShortId();
     for (let attempt = 0; attempt < 5; attempt++) {
       const existing = await ctx.db
@@ -112,7 +117,7 @@ export const createDraft = mutation({
       shortId,
       type: "traditional",
       status: "setup",
-      teamSize: 8,
+      teamSize: defaultTeamSize,
       discordGuildId: args.discordGuildId,
       discordGuildName: args.discordGuildName,
       discordChannelId: args.discordChannelId,

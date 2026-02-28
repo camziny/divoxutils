@@ -26,13 +26,28 @@ import {
 import { cn } from "@/lib/utils";
 import DiscordIdentityLinkCard from "@/app/draft-history/DiscordIdentityLinkCard";
 import { getPlayerPoolEmptyState } from "./playerPoolState";
+import {
+  getMaxSelectableTeamSize,
+  isTeamSizeSelectable,
+  toUserSettingsError,
+} from "./settingsUtils";
+import { User } from "lucide-react";
 
-function PlayerAvatar({ url, size = 20 }: { url?: string; size?: number }) {
-  if (!url) return null;
+function PlayerAvatar({ url, name, size = 20 }: { url?: string; name?: string; size?: number }) {
+  if (!url) {
+    return (
+      <div
+        className="rounded-full shrink-0 bg-gray-700 text-gray-200 flex items-center justify-center"
+        style={{ width: size, height: size }}
+      >
+        <User size={Math.max(10, Math.floor(size * 0.6))} />
+      </div>
+    );
+  }
   return (
     <Image
       src={url}
-      alt=""
+      alt={name ?? "Player avatar"}
       width={size}
       height={size}
       className="rounded-full shrink-0"
@@ -66,6 +81,11 @@ export default function DraftBoard({
   const undoLastAction = useMutation(api.drafts.undoLastAction);
 
   const [busy, setBusy] = useState(false);
+  const [settingsFeedback, setSettingsFeedback] = useState<{
+    type: "error" | "info";
+    text: string;
+  } | null>(null);
+  const [autoAdjustedSettingsKey, setAutoAdjustedSettingsKey] = useState<string | null>(null);
 
   const team1Captain = draft.players.find(
     (p) => p.discordUserId === draft.team1CaptainId
@@ -156,10 +176,54 @@ export default function DraftBoard({
     [busy]
   );
 
+  const applySettings = useCallback(
+    async (type: "traditional" | "pvp", teamSize: number) => {
+      if (busy) return;
+      setBusy(true);
+      try {
+        await updateSettings({
+          draftId: draft._id,
+          type,
+          teamSize,
+          token: token!,
+        });
+      } catch (e) {
+        setSettingsFeedback({
+          type: "error",
+          text: toUserSettingsError(e),
+        });
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, draft._id, token, updateSettings]
+  );
+
   const canStart =
     draft.team1CaptainId &&
     draft.team2CaptainId &&
     draft.players.length >= draft.teamSize * 2;
+
+  useEffect(() => {
+    if (!isSetup || !isCreator || !token || busy) return;
+    if (isTeamSizeSelectable(draft.teamSize, draft.players.length)) return;
+    const targetTeamSize = Math.max(2, getMaxSelectableTeamSize(draft.players.length));
+    const adjustmentKey = `${draft._id}:${draft.teamSize}:${targetTeamSize}:${draft.players.length}`;
+    if (autoAdjustedSettingsKey === adjustmentKey) return;
+    setAutoAdjustedSettingsKey(adjustmentKey);
+    void applySettings(draft.type, targetTeamSize);
+  }, [
+    applySettings,
+    autoAdjustedSettingsKey,
+    busy,
+    draft._id,
+    draft.players.length,
+    draft.teamSize,
+    draft.type,
+    isCreator,
+    isSetup,
+    token,
+  ]);
 
   const canUndo =
     isCreator &&
@@ -234,31 +298,62 @@ export default function DraftBoard({
           busy={busy}
           hasCaptain1={!!draft.team1CaptainId}
           hasCaptain2={!!draft.team2CaptainId}
-          onUpdateType={(type) =>
-            act(() =>
-              updateSettings({
-                draftId: draft._id,
-                type,
-                teamSize: draft.teamSize,
-                token: token!,
-              })
-            )
-          }
-          onUpdateSize={(teamSize) =>
-            act(() =>
-              updateSettings({
-                draftId: draft._id,
-                type: draft.type,
-                teamSize,
-                token: token!,
-              })
-            )
-          }
+          onUpdateType={(type) => {
+            setSettingsFeedback(null);
+            if (type === "pvp") {
+              if (draft.players.length < 4) {
+                setSettingsFeedback({
+                  type: "info",
+                  text: "PvP requires at least 4 players. Add more players first.",
+                });
+                return;
+              }
+              const maxValidTeamSize = Math.max(
+                2,
+                getMaxSelectableTeamSize(draft.players.length)
+              );
+              const adjustedTeamSize = Math.min(draft.teamSize, maxValidTeamSize);
+              if (adjustedTeamSize !== draft.teamSize) {
+                setSettingsFeedback({
+                  type: "info",
+                  text: `Switched to PvP and adjusted team size to ${adjustedTeamSize}v${adjustedTeamSize} for ${draft.players.length} players.`,
+                });
+              }
+              return applySettings(type, adjustedTeamSize);
+            }
+            return applySettings(type, draft.teamSize);
+          }}
+          onUpdateSize={(teamSize) => {
+            setSettingsFeedback(null);
+            return applySettings(draft.type, teamSize);
+          }}
           onStart={() =>
             act(() => startDraft({ draftId: draft._id, token: token! }))
           }
           canStart={!!canStart}
         />
+      )}
+
+      {isSetup && isCreator && settingsFeedback && (
+        <div
+          className={cn(
+            "rounded-lg border px-4 py-2",
+            settingsFeedback.type === "error"
+              ? "border-rose-600/40 bg-rose-950/20"
+              : "border-sky-600/40 bg-sky-950/20"
+          )}
+        >
+          <p
+            className={cn(
+              "text-xs",
+              settingsFeedback.type === "error"
+                ? "text-rose-300"
+                : "text-sky-300"
+            )}
+          >
+            {settingsFeedback.text}
+          </p>
+        </div>
       )}
 
       {isSetup && !isCreator && (
@@ -270,10 +365,10 @@ export default function DraftBoard({
       )}
 
       {isSetup && draft.players.length < draft.teamSize * 2 && (
-        <div className="flex items-center justify-center rounded-lg border border-yellow-700/40 bg-yellow-900/20 px-4 py-3">
-          <span className="text-xs text-yellow-500/80">
+        <div className="flex items-center justify-center rounded-lg border border-gray-700/80 bg-gray-800/60 px-4 py-3">
+          <span className="text-xs text-gray-300">
             Need at least {draft.teamSize * 2} players for a {draft.teamSize}v{draft.teamSize} draft
-            — currently have {draft.players.length}
+            . Current players: {draft.players.length}. Reduce team size or add players to continue.
           </span>
         </div>
       )}
@@ -486,7 +581,9 @@ export default function DraftBoard({
 
       {isComplete && (
         <div className="pt-4">
-          <DiscordIdentityLinkCard />
+          <DiscordIdentityLinkCard
+            draftDiscordUserId={currentPlayer?.discordUserId}
+          />
         </div>
       )}
     </div>
@@ -566,7 +663,6 @@ function SettingsBar({
   canStart: boolean;
 }) {
   const needsCaptains = !hasCaptain1 || !hasCaptain2;
-
   let buttonLabel = "Start Draft";
   if (!hasCaptain1) {
     buttonLabel = "Assign Captains";
@@ -600,7 +696,11 @@ function SettingsBar({
           </SelectTrigger>
           <SelectContent>
             {[2, 3, 4, 5, 6, 7, 8].map((s) => (
-              <SelectItem key={s} value={String(s)}>
+              <SelectItem
+                key={s}
+                value={String(s)}
+                disabled={!isTeamSizeSelectable(s, draft.players.length)}
+              >
                 {s}v{s}
               </SelectItem>
             ))}
@@ -612,7 +712,11 @@ function SettingsBar({
         size="sm"
         disabled={needsCaptains ? true : !canStart || busy}
         onClick={needsCaptains ? undefined : onStart}
-        className="h-8 text-xs"
+        className={cn(
+          "h-8 text-xs",
+          needsCaptains &&
+            "opacity-100 cursor-not-allowed border border-indigo-500/40 bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/15"
+        )}
       >
         {buttonLabel}
       </Button>
@@ -630,7 +734,7 @@ function CoinFlipSection({
   onChoice,
 }: {
   draft: DraftData;
-  winner?: { displayName: string };
+  winner?: { displayName: string; avatarUrl?: string };
   isCreator: boolean;
   isWinner: boolean;
   busy: boolean;
@@ -677,16 +781,23 @@ function CoinFlipSection({
 
         <div className="flex items-center gap-8">
           <div className="text-center w-24">
-            <p
-              className={cn(
-                "text-sm font-medium transition-colors duration-500",
-                phase !== "spinning" && winnerTeam === 1
-                  ? "text-white"
-                  : "text-gray-600"
-              )}
-            >
-              {team1Captain?.displayName}
-            </p>
+            <div className="flex flex-col items-center gap-1">
+              <PlayerAvatar
+                url={team1Captain?.avatarUrl}
+                name={team1Captain?.displayName}
+                size={26}
+              />
+              <p
+                className={cn(
+                  "text-sm font-medium transition-colors duration-500",
+                  phase !== "spinning" && winnerTeam === 1
+                    ? "text-white"
+                    : "text-gray-600"
+                )}
+              >
+                {team1Captain?.displayName}
+              </p>
+            </div>
             <p className="text-[10px] text-gray-600 mt-0.5">Team 1</p>
           </div>
 
@@ -727,16 +838,23 @@ function CoinFlipSection({
           </div>
 
           <div className="text-center w-24">
-            <p
-              className={cn(
-                "text-sm font-medium transition-colors duration-500",
-                phase !== "spinning" && winnerTeam === 2
-                  ? "text-white"
-                  : "text-gray-600"
-              )}
-            >
-              {team2Captain?.displayName}
-            </p>
+            <div className="flex flex-col items-center gap-1">
+              <PlayerAvatar
+                url={team2Captain?.avatarUrl}
+                name={team2Captain?.displayName}
+                size={26}
+              />
+              <p
+                className={cn(
+                  "text-sm font-medium transition-colors duration-500",
+                  phase !== "spinning" && winnerTeam === 2
+                    ? "text-white"
+                    : "text-gray-600"
+                )}
+              >
+                {team2Captain?.displayName}
+              </p>
+            </div>
             <p className="text-[10px] text-gray-600 mt-0.5">Team 2</p>
           </div>
         </div>
@@ -771,12 +889,17 @@ function CoinFlipSection({
               transition={{ duration: 0.3 }}
               className="flex flex-col items-center gap-4"
             >
-              <p className="text-sm text-gray-400">
-                <span className="font-medium text-white">
-                  {winner?.displayName}
-                </span>{" "}
-                wins the flip
-              </p>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="inline-flex items-center gap-2 font-medium text-white leading-none">
+                  <PlayerAvatar
+                    url={winner?.avatarUrl}
+                    name={winner?.displayName}
+                    size={20}
+                  />
+                  {winner?.displayName ?? "Winner"}
+                </span>
+                <span className="text-gray-400 leading-none">wins the flip</span>
+              </div>
 
               {isWinner && !busy && (
                 <div className="flex gap-2">
@@ -1229,7 +1352,11 @@ function TeamPanel({
           )}
         >
           <div className="flex items-center gap-2">
-            <PlayerAvatar url={captain.avatarUrl} size={18} />
+            <PlayerAvatar
+              url={captain.avatarUrl}
+              name={captain.displayName}
+              size={18}
+            />
             <span className="font-medium text-xs">{captain.displayName}</span>
           </div>
           <span
@@ -1263,7 +1390,7 @@ function TeamPanel({
             )}
           >
             <div className="flex items-center gap-2">
-              <PlayerAvatar url={p.avatarUrl} size={16} />
+              <PlayerAvatar url={p.avatarUrl} name={p.displayName} size={16} />
               <span>{p.displayName}</span>
             </div>
             <span className="text-[10px] text-gray-600">#{p.pickOrder}</span>
@@ -1415,7 +1542,7 @@ function PlayerPool({
                   : "bg-gray-800/40 border border-gray-700/40 text-gray-600"
               )}
             >
-              <PlayerAvatar url={p.avatarUrl} size={18} />
+              <PlayerAvatar url={p.avatarUrl} name={p.displayName} size={18} />
               <span>{p.displayName}</span>
             </motion.button>
           ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { hasConnectedDiscordAccount } from "@/lib/identity/discord";
@@ -19,13 +19,20 @@ type DbStatus =
     }
   | { loading: false; linked: false; pendingClaim: boolean };
 
-export default function DiscordIdentityLinkCard() {
+export default function DiscordIdentityLinkCard({
+  draftDiscordUserId,
+}: {
+  draftDiscordUserId?: string;
+}) {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const [linkState, setLinkState] = useState<LinkState>("idle");
   const [claimState, setClaimState] = useState<ClaimState>("idle");
   const [message, setMessage] = useState("");
   const [dbStatus, setDbStatus] = useState<DbStatus>({ loading: true });
+  const [autoLinkConflictDiscordUserId, setAutoLinkConflictDiscordUserId] =
+    useState<string | null>(null);
+  const [lastAutoLinkKey, setLastAutoLinkKey] = useState<string | null>(null);
 
   const hasDiscord = useMemo(
     () =>
@@ -35,46 +42,113 @@ export default function DiscordIdentityLinkCard() {
     [user?.externalAccounts]
   );
 
-  useEffect(() => {
+  const loadStatus = useCallback(async () => {
     if (!isSignedIn) {
       setDbStatus({ loading: false, linked: false, pendingClaim: false });
       return;
     }
+    const res = await fetch("/api/identity/discord-status");
+    const data = await res.json();
+    if (data.linked) {
+      const hasAnyDraftRowsForLinkedId =
+        typeof data.hasAnyDraftRowsForLinkedId === "boolean"
+          ? data.hasAnyDraftRowsForLinkedId
+          : true;
+      const possibleMismatch =
+        typeof data.possibleMismatch === "boolean"
+          ? data.possibleMismatch
+          : !hasAnyDraftRowsForLinkedId;
+      setDbStatus({
+        loading: false,
+        linked: true,
+        providerUserId: data.providerUserId,
+        hasAnyDraftRowsForLinkedId,
+        possibleMismatch,
+      });
+      return;
+    }
+    setDbStatus({ loading: false, linked: false, pendingClaim: !!data.pendingClaim });
+  }, [isSignedIn]);
+
+  useEffect(() => {
     let cancelled = false;
-    fetch("/api/identity/discord-status")
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        if (data.linked) {
-          const hasAnyDraftRowsForLinkedId =
-            typeof data.hasAnyDraftRowsForLinkedId === "boolean"
-              ? data.hasAnyDraftRowsForLinkedId
-              : true;
-          const possibleMismatch =
-            typeof data.possibleMismatch === "boolean"
-              ? data.possibleMismatch
-              : !hasAnyDraftRowsForLinkedId;
-          setDbStatus({
-            loading: false,
-            linked: true,
-            providerUserId: data.providerUserId,
-            hasAnyDraftRowsForLinkedId,
-            possibleMismatch,
-          });
-        } else {
-          setDbStatus({ loading: false, linked: false, pendingClaim: !!data.pendingClaim });
+    if (!isSignedIn) {
+      setDbStatus({ loading: false, linked: false, pendingClaim: false });
+      return;
+    }
+    setDbStatus({ loading: true });
+    loadStatus().catch(() => {
+      if (!cancelled) {
+        setDbStatus({ loading: false, linked: false, pendingClaim: false });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, loadStatus]);
+
+  useEffect(() => {
+    if (
+      !isSignedIn ||
+      dbStatus.loading ||
+      dbStatus.linked ||
+      (!dbStatus.linked && dbStatus.pendingClaim)
+    ) {
+      return;
+    }
+    if (!draftDiscordUserId) {
+      return;
+    }
+    const key = `${user?.id ?? "anonymous"}:${draftDiscordUserId}`;
+    if (lastAutoLinkKey === key) {
+      return;
+    }
+    setLastAutoLinkKey(key);
+    setLinkState("linking");
+    setMessage("");
+    setAutoLinkConflictDiscordUserId(null);
+
+    fetch("/api/identity/link-discord", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ discordUserId: draftDiscordUserId }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          setLinkState("error");
+          if (res.status === 409) {
+            setAutoLinkConflictDiscordUserId(draftDiscordUserId);
+            setMessage(
+              "This draft was created with a different Discord account. Submit a claim so an admin can review it."
+            );
+            return;
+          }
+          setMessage(data?.error ?? "Unable to link Discord right now.");
+          return;
         }
+        setLinkState("success");
+        setMessage("Discord linked automatically for this draft.");
+        await loadStatus();
       })
       .catch(() => {
-        if (!cancelled) setDbStatus({ loading: false, linked: false, pendingClaim: false });
+        setLinkState("error");
+        setMessage("Unable to link Discord right now.");
       });
-    return () => { cancelled = true; };
-  }, [isSignedIn]);
+  }, [
+    dbStatus,
+    draftDiscordUserId,
+    isSignedIn,
+    lastAutoLinkKey,
+    loadStatus,
+    user?.id,
+  ]);
 
   async function onLink() {
     setLinkState("linking");
     setClaimState("idle");
     setMessage("");
+    setAutoLinkConflictDiscordUserId(null);
     try {
       const res = await fetch("/api/identity/link-discord", {
         method: "POST",
@@ -89,13 +163,7 @@ export default function DiscordIdentityLinkCard() {
       }
       setLinkState("success");
       setMessage("Discord linked. Your draft stats are now associated with your account.");
-      setDbStatus({
-        loading: false,
-        linked: true,
-        providerUserId: data.providerUserId ?? "",
-        hasAnyDraftRowsForLinkedId: false,
-        possibleMismatch: false,
-      });
+      await loadStatus();
     } catch {
       setLinkState("error");
       setMessage("Unable to link Discord right now.");
@@ -106,6 +174,7 @@ export default function DiscordIdentityLinkCard() {
     setClaimState("submitting");
     setLinkState("idle");
     setMessage("");
+    setAutoLinkConflictDiscordUserId(null);
     try {
       const res = await fetch("/api/identity/claim-discord", {
         method: "POST",
@@ -128,6 +197,44 @@ export default function DiscordIdentityLinkCard() {
   }
 
   if (dbStatus.loading) return null;
+  if (autoLinkConflictDiscordUserId) {
+    return (
+      <div className="rounded-lg border border-indigo-500/20 bg-gray-900/50 px-4 py-3">
+        <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="flex items-center justify-center w-6 h-6 rounded bg-indigo-600/20">
+            <FaDiscord className="w-3.5 h-3.5 text-indigo-400" />
+          </div>
+          <span className="text-xs font-semibold text-gray-100">
+            Discord account mismatch
+          </span>
+        </div>
+        <p className="text-xs text-gray-400 leading-relaxed mb-3">
+          This signed-in account does not match the Discord ID used in this draft.
+          Submit a claim so we can verify and link your history.
+        </p>
+        <button
+          type="button"
+          disabled={claimState === "submitting"}
+          onClick={() => submitClaim(autoLinkConflictDiscordUserId)}
+          className="inline-flex items-center rounded-md bg-indigo-600/20 border border-indigo-500/30 px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-600/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {claimState === "submitting" ? "Submitting..." : "Submit claim"}
+        </button>
+        {message && (
+          <p
+            className={
+              claimState === "error"
+                ? "mt-3 text-xs text-red-400"
+                : "mt-3 text-xs text-green-300"
+            }
+          >
+            {message}
+          </p>
+        )}
+      </div>
+    );
+  }
+
 
   if (!isSignedIn) {
     return (
@@ -248,7 +355,9 @@ export default function DiscordIdentityLinkCard() {
       <p className="text-xs text-gray-400 leading-relaxed mb-3">
         {hasDiscord
           ? "Even though you're signed in with Discord, we just need a quick one-click link to connect your draft stats."
-          : "Connect your Discord account to track your draft stats on the leaderboard."}
+          : draftDiscordUserId
+            ? "We found your draft participant ID. Continue with Discord or link manually to sync history."
+            : "Connect your Discord account to track your draft stats on the leaderboard."}
       </p>
 
       {hasDiscord ? (

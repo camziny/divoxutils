@@ -34,7 +34,7 @@ export const createDiscordStatusHandler =
         providerUserId: link.providerUserId,
         status: link.status,
         hasAnyDraftRowsForLinkedId,
-        possibleMismatch: false,
+        possibleMismatch: !hasAnyDraftRowsForLinkedId,
       });
     }
 
