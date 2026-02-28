@@ -349,12 +349,12 @@ export default function DiscordIdentityLinkCard({
           <FaDiscord className="w-3.5 h-3.5 text-indigo-400" />
         </div>
         <span className="text-xs font-semibold text-gray-100">
-          Link your Discord
+          Link Discord to become verified
         </span>
       </div>
       <p className="text-xs text-gray-400 leading-relaxed mb-3">
         {hasDiscord
-          ? "Even though you're signed in with Discord, we just need a quick one-click link to connect your draft stats."
+          ? "Link your Discord to become verified and claim your draft history."
           : draftDiscordUserId
             ? "We found your draft participant ID. Continue with Discord or link manually to sync history."
             : "Connect your Discord account to track your draft stats on the leaderboard."}

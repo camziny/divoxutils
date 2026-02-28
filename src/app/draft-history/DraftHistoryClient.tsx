@@ -124,7 +124,7 @@ export default function DraftHistoryClient({
                                 size={18}
                               />
                               <span className="font-medium truncate">
-                              {cap1?.displayName ?? "Team 1"}
+                                {cap1?.displayName ?? "Team 1"}
                               </span>
                             </span>
                             <span className="text-gray-600 mx-1.5">vs</span>
@@ -135,7 +135,7 @@ export default function DraftHistoryClient({
                                 size={18}
                               />
                               <span className="font-medium truncate">
-                              {cap2?.displayName ?? "Team 2"}
+                                {cap2?.displayName ?? "Team 2"}
                               </span>
                             </span>
                           </p>
