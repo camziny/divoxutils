@@ -537,3 +537,87 @@ test("aggregatePlayerDrilldown handles traditional draft with no realm set grace
   assert.equal(drilldown.overall.wins, 1);
   assert.equal(drilldown.recentGames[0].playerRealm, undefined);
 });
+
+test("aggregateHeadToHeadRow supports unlinked player ids from verified drafts", () => {
+  const mixedDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "u1",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 1_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        { discordUserId: "d4", displayName: "Unlinked", team: 1, isCaptain: false },
+        { discordUserId: "d1", displayName: "Alice", team: 2, isCaptain: false },
+      ],
+    },
+    {
+      shortId: "u2",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 2_000,
+      winnerTeam: 2,
+      resultStatus: "verified",
+      players: [
+        { discordUserId: "d4", displayName: "Unlinked", team: 1, isCaptain: false },
+        { discordUserId: "d1", displayName: "Alice", team: 2, isCaptain: false },
+      ],
+    },
+  ];
+
+  const row = aggregateHeadToHeadRow(
+    mixedDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "discord:d4",
+    "clerk_1",
+    {}
+  );
+
+  assert.ok(row);
+  assert.equal(row.playerClerkUserId, "discord:d4");
+  assert.equal(row.playerName, "Unlinked");
+  assert.equal(row.opponentClerkUserId, "clerk_1");
+  assert.equal(row.opponentIsVerified, true);
+  assert.equal(row.wins, 1);
+  assert.equal(row.losses, 1);
+  assert.equal(row.games, 2);
+});
+
+test("aggregatePlayerDrilldown returns data for unlinked player id", () => {
+  const mixedDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "u3",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 1_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        { discordUserId: "d4", displayName: "Unlinked", team: 1, isCaptain: true },
+        { discordUserId: "d1", displayName: "Alice", team: 2, isCaptain: false },
+        { discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: true },
+      ],
+    },
+  ];
+
+  const drilldown = aggregatePlayerDrilldown(
+    mixedDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "discord:d4",
+    {}
+  );
+
+  assert.ok(drilldown);
+  assert.equal(drilldown.playerClerkUserId, "discord:d4");
+  assert.equal(drilldown.isVerified, false);
+  assert.equal(drilldown.profileName, undefined);
+  assert.equal(drilldown.playerName, "Unlinked");
+  assert.equal(drilldown.headToHead.length, 2);
+  const alice = drilldown.headToHead.find((row) => row.opponentClerkUserId === "clerk_1");
+  assert.ok(alice);
+  assert.equal(alice.opponentName, "Alice");
+  assert.equal(alice.opponentIsVerified, true);
+});

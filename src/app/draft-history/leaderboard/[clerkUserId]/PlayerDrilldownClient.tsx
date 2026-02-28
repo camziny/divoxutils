@@ -93,14 +93,14 @@ export default function PlayerDrilldownClient({
               >
                 {drilldown.playerName}
               </Link>
-              <VerifiedCheck />
+              {drilldown.isVerified ? <VerifiedCheck /> : null}
             </div>
           ) : (
             <div className="inline-flex items-center gap-1.5">
               <h1 className="text-xl font-semibold tracking-tight text-gray-100">
                 {drilldown.playerName}
               </h1>
-              <VerifiedCheck />
+              {drilldown.isVerified ? <VerifiedCheck /> : null}
             </div>
           )}
           <p className="mt-1 text-[13px] text-gray-500">
