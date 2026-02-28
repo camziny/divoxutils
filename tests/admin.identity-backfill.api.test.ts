@@ -93,16 +93,18 @@ test("identity backfill rejects non-admin requests", async () => {
   assert.deepEqual(res.body, { error: "Forbidden" });
 });
 
-test("identity backfill dry-run summarizes linkable users without writes", async () => {
+test("identity backfill paginates and applies safe matches", async () => {
   const upsertCalls: Array<Record<string, string>> = [];
+  const users = [
+    { id: 1, clerkUserId: "u1" },
+    { id: 2, clerkUserId: "u2" },
+    { id: 3, clerkUserId: "u3" },
+  ];
   const handler = createAdminIdentityBackfillHandler({
     getAuthUserId: () => "admin_1",
     isAdminUserId: () => true,
-    listUnlinkedLocalUsers: async () => [
-      { clerkUserId: "u1" },
-      { clerkUserId: "u2" },
-      { clerkUserId: "u3" },
-    ],
+    listUnlinkedLocalUsers: async ({ afterId }) =>
+      users.filter((u) => (afterId ? u.id > afterId : true)),
     getDiscordUserIdFromClerk: async (clerkUserId) => {
       if (clerkUserId === "u1") return "discord_1";
       if (clerkUserId === "u2") return null;
@@ -118,46 +120,42 @@ test("identity backfill dry-run summarizes linkable users without writes", async
     },
   });
 
-  const req = createMockRequest({ body: { dryRun: true, limit: 100 } });
-  const res = createMockResponse();
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 200);
-  assert.equal(upsertCalls.length, 0);
-  assert.deepEqual(res.body.summary, {
-    scannedUsers: 3,
-    linked: 1,
-    skippedNoDiscord: 1,
-    skippedAlreadyLinkedToOther: 1,
-    skippedErrors: 0,
-    errors: [],
-  });
-});
-
-test("identity backfill apply writes links for safe matches", async () => {
-  const upsertCalls: Array<Record<string, string>> = [];
-  const handler = createAdminIdentityBackfillHandler({
-    getAuthUserId: () => "admin_1",
-    isAdminUserId: () => true,
-    listUnlinkedLocalUsers: async () => [{ clerkUserId: "u1" }],
-    getDiscordUserIdFromClerk: async () => "discord_1",
-    findLinkByProviderUserId: async () => null,
-    upsertIdentityLink: async (data) => {
-      upsertCalls.push(data);
-      return {};
-    },
-  });
-
-  const req = createMockRequest({ body: { dryRun: false, limit: 100 } });
+  const req = createMockRequest({ body: {} });
   const res = createMockResponse();
   await handler(req, res);
 
   assert.equal(res.statusCode, 200);
   assert.equal(upsertCalls.length, 1);
-  assert.deepEqual(upsertCalls[0], {
-    clerkUserId: "u1",
-    provider: "discord",
-    providerUserId: "discord_1",
-    status: "linked",
+  assert.deepEqual(res.body.batch, {
+    scannedUsers: 3,
+    linked: 1,
+    skippedNoDiscord: 1,
+    skippedMissingClerkUser: 0,
+    skippedAlreadyLinkedToOther: 1,
+    skippedErrors: 0,
+    errors: [],
   });
+  assert.deepEqual(res.body.progress, { hasMore: false, nextCursor: null });
+});
+
+test("identity backfill marks missing clerk users separately", async () => {
+  const handler = createAdminIdentityBackfillHandler({
+    getAuthUserId: () => "admin_1",
+    isAdminUserId: () => true,
+    listUnlinkedLocalUsers: async () => [{ id: 1, clerkUserId: "u1" }],
+    getDiscordUserIdFromClerk: async () => {
+      const error = new Error("Not Found");
+      throw error;
+    },
+    findLinkByProviderUserId: async () => null,
+    upsertIdentityLink: async () => ({}),
+  });
+
+  const req = createMockRequest({ body: {} });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.batch.skippedMissingClerkUser, 1);
+  assert.equal(res.body.batch.skippedErrors, 0);
 });

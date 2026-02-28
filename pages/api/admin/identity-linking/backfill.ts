@@ -8,6 +8,7 @@ type BackfillSummary = {
   scannedUsers: number;
   linked: number;
   skippedNoDiscord: number;
+  skippedMissingClerkUser: number;
   skippedAlreadyLinkedToOther: number;
   skippedErrors: number;
   errors: Array<{ clerkUserId: string; reason: string }>;
@@ -16,7 +17,10 @@ type BackfillSummary = {
 type AdminIdentityBackfillDeps = {
   getAuthUserId: (req: NextApiRequest) => string | null;
   isAdminUserId: (userId: string) => boolean;
-  listUnlinkedLocalUsers: (limit?: number) => Promise<Array<{ clerkUserId: string }>>;
+  listUnlinkedLocalUsers: (args: {
+    afterId?: number;
+    take: number;
+  }) => Promise<Array<{ id: number; clerkUserId: string }>>;
   getDiscordUserIdFromClerk: (clerkUserId: string) => Promise<string | null>;
   findLinkByProviderUserId: (
     provider: string,
@@ -29,6 +33,19 @@ type AdminIdentityBackfillDeps = {
     status: string;
   }) => Promise<unknown>;
 };
+
+const BATCH_SIZE = 100;
+
+function isClerkNotFoundError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const maybe = error as { status?: number; errors?: Array<{ code?: string }> };
+  if (maybe.status === 404) return true;
+  if (Array.isArray(maybe.errors) && maybe.errors.some((entry) => entry?.code === "resource_not_found")) {
+    return true;
+  }
+  const message = error instanceof Error ? error.message : "";
+  return message.toLowerCase().includes("not found");
+}
 
 export function createAdminIdentityBackfillHandler(deps: AdminIdentityBackfillDeps) {
   return async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -44,26 +61,32 @@ export function createAdminIdentityBackfillHandler(deps: AdminIdentityBackfillDe
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    const dryRun = req.body?.dryRun !== false;
-    const parsedLimit =
-      typeof req.body?.limit === "number" && Number.isFinite(req.body.limit)
-        ? Math.floor(req.body.limit)
+    const parsedCursor =
+      typeof req.body?.cursor === "number" && Number.isFinite(req.body.cursor)
+        ? Math.floor(req.body.cursor)
         : undefined;
-    const limit =
-      parsedLimit && parsedLimit > 0 ? Math.min(parsedLimit, 2000) : undefined;
-
-    const users = await deps.listUnlinkedLocalUsers(limit);
+    const cursor = parsedCursor && parsedCursor > 0 ? parsedCursor : undefined;
+    const users = await deps.listUnlinkedLocalUsers({
+      afterId: cursor,
+      take: BATCH_SIZE + 1,
+    });
+    const hasMore = users.length > BATCH_SIZE;
+    const batchUsers = hasMore ? users.slice(0, BATCH_SIZE) : users;
+    const nextCursor = hasMore
+      ? batchUsers[batchUsers.length - 1]?.id ?? null
+      : null;
 
     const summary: BackfillSummary = {
-      scannedUsers: users.length,
+      scannedUsers: batchUsers.length,
       linked: 0,
       skippedNoDiscord: 0,
+      skippedMissingClerkUser: 0,
       skippedAlreadyLinkedToOther: 0,
       skippedErrors: 0,
       errors: [],
     };
 
-    for (const user of users) {
+    for (const user of batchUsers) {
       try {
         const discordUserId = await deps.getDiscordUserIdFromClerk(user.clerkUserId);
         if (!discordUserId) {
@@ -77,16 +100,18 @@ export function createAdminIdentityBackfillHandler(deps: AdminIdentityBackfillDe
           continue;
         }
 
-        if (!dryRun) {
-          await deps.upsertIdentityLink({
-            clerkUserId: user.clerkUserId,
-            provider: "discord",
-            providerUserId: discordUserId,
-            status: "linked",
-          });
-        }
+        await deps.upsertIdentityLink({
+          clerkUserId: user.clerkUserId,
+          provider: "discord",
+          providerUserId: discordUserId,
+          status: "linked",
+        });
         summary.linked += 1;
       } catch (error: unknown) {
+        if (isClerkNotFoundError(error)) {
+          summary.skippedMissingClerkUser += 1;
+          continue;
+        }
         summary.skippedErrors += 1;
         summary.errors.push({
           clerkUserId: user.clerkUserId,
@@ -96,9 +121,11 @@ export function createAdminIdentityBackfillHandler(deps: AdminIdentityBackfillDe
     }
 
     return res.status(200).json({
-      dryRun,
-      limit: limit ?? null,
-      summary,
+      batch: summary,
+      progress: {
+        hasMore,
+        nextCursor,
+      },
     });
   };
 }
@@ -106,10 +133,11 @@ export function createAdminIdentityBackfillHandler(deps: AdminIdentityBackfillDe
 const handler = createAdminIdentityBackfillHandler({
   getAuthUserId: (req) => getAuth(req).userId ?? null,
   isAdminUserId: (userId) => isAdminClerkUserId(userId),
-  listUnlinkedLocalUsers: async (limit) => {
+  listUnlinkedLocalUsers: async ({ afterId, take }) => {
     const prismaClient = require("../../../../prisma/prismaClient").default;
     return prismaClient.user.findMany({
       where: {
+        ...(afterId ? { id: { gt: afterId } } : {}),
         identityLinks: {
           none: {
             provider: "discord",
@@ -117,12 +145,13 @@ const handler = createAdminIdentityBackfillHandler({
         },
       },
       select: {
+        id: true,
         clerkUserId: true,
       },
       orderBy: {
         id: "asc",
       },
-      ...(limit ? { take: limit } : {}),
+      take,
     });
   },
   getDiscordUserIdFromClerk: async (clerkUserId) => {

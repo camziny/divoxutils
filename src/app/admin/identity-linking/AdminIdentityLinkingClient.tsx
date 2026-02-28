@@ -3,49 +3,85 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 type BackfillResponse = {
-  dryRun: boolean;
-  limit: number | null;
-  summary: {
+  batch: {
     scannedUsers: number;
     linked: number;
     skippedNoDiscord: number;
+    skippedMissingClerkUser: number;
     skippedAlreadyLinkedToOther: number;
     skippedErrors: number;
     errors: Array<{ clerkUserId: string; reason: string }>;
   };
+  progress: {
+    hasMore: boolean;
+    nextCursor: number | null;
+  };
+};
+
+type BackfillAggregate = {
+  scannedUsers: number;
+  linked: number;
+  skippedNoDiscord: number;
+  skippedMissingClerkUser: number;
+  skippedAlreadyLinkedToOther: number;
+  skippedErrors: number;
+  errors: Array<{ clerkUserId: string; reason: string }>;
+  batches: number;
 };
 
 export default function AdminIdentityLinkingClient() {
-  const [limit, setLimit] = useState("500");
-  const [running, setRunning] = useState<"dry" | "apply" | null>(null);
+  const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<BackfillResponse | null>(null);
+  const [result, setResult] = useState<BackfillAggregate | null>(null);
 
-  async function runBackfill(mode: "dry" | "apply") {
-    setRunning(mode);
+  async function runBackfill() {
+    setRunning(true);
     setError(null);
     try {
-      const numericLimit = Number(limit);
-      const response = await fetch("/api/admin/identity-linking/backfill", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dryRun: mode === "dry",
-          limit: Number.isFinite(numericLimit) && numericLimit > 0 ? numericLimit : undefined,
-        }),
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error ?? "Backfill request failed.");
+      const aggregate: BackfillAggregate = {
+        scannedUsers: 0,
+        linked: 0,
+        skippedNoDiscord: 0,
+        skippedMissingClerkUser: 0,
+        skippedAlreadyLinkedToOther: 0,
+        skippedErrors: 0,
+        errors: [],
+        batches: 0,
+      };
+      let cursor: number | null = null;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await fetch("/api/admin/identity-linking/backfill", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...(cursor ? { cursor } : {}),
+          }),
+        });
+        const payload = (await response.json()) as BackfillResponse & { error?: string };
+        if (!response.ok) {
+          throw new Error(payload?.error ?? "Backfill request failed.");
+        }
+        aggregate.scannedUsers += payload.batch.scannedUsers;
+        aggregate.linked += payload.batch.linked;
+        aggregate.skippedNoDiscord += payload.batch.skippedNoDiscord;
+        aggregate.skippedMissingClerkUser += payload.batch.skippedMissingClerkUser;
+        aggregate.skippedAlreadyLinkedToOther += payload.batch.skippedAlreadyLinkedToOther;
+        aggregate.skippedErrors += payload.batch.skippedErrors;
+        aggregate.errors.push(...payload.batch.errors);
+        aggregate.batches += 1;
+        hasMore = payload.progress.hasMore;
+        cursor = payload.progress.nextCursor;
       }
-      setResult(payload as BackfillResponse);
+
+      setResult(aggregate);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Backfill request failed.");
     } finally {
-      setRunning(null);
+      setRunning(false);
     }
   }
 
@@ -65,72 +101,88 @@ export default function AdminIdentityLinkingClient() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-gray-800 p-5 space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-400 mb-2">Users to scan (optional)</label>
-            <Input
-              value={limit}
-              onChange={(e) => setLimit(e.target.value)}
-              placeholder="500"
-              type="number"
-              min="1"
-              max="2000"
-              className="w-40"
-            />
+        <div className="rounded-lg border border-gray-800 bg-gray-900/40 p-5 space-y-4">
+          <div className="rounded-md border border-indigo-500/25 bg-indigo-950/15 px-4 py-3">
+            <p className="text-xs text-indigo-200/90">
+              Safe backfill links users only when a Clerk Discord account is present and
+              not already linked to a different user.
+            </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex items-end justify-between gap-4 flex-wrap">
             <Button
-              variant="outline"
-              onClick={() => runBackfill("dry")}
-              disabled={running !== null}
+              onClick={runBackfill}
+              disabled={running}
+              className="bg-indigo-600/25 text-indigo-200 border border-indigo-500/40 hover:bg-indigo-600/35"
             >
-              {running === "dry" ? "Running dry run..." : "Dry Run"}
-            </Button>
-            <Button
-              onClick={() => runBackfill("apply")}
-              disabled={running !== null}
-            >
-              {running === "apply" ? "Applying..." : "Apply Backfill"}
+              {running ? "Running..." : "Run Safe Backfill"}
             </Button>
           </div>
 
           {error && (
-            <div className="rounded-md border border-red-800/50 bg-red-900/20 px-3 py-2 text-sm text-red-400">
+            <div className="rounded-md border border-rose-700/40 bg-rose-900/20 px-3 py-2 text-sm text-rose-300">
               {error}
             </div>
           )}
 
           {result && (
-            <div className="rounded-md border border-gray-800 bg-gray-900/60 px-4 py-3 text-sm space-y-1">
-              <p className="text-gray-300">
-                Mode: <span className="font-medium">{result.dryRun ? "Dry run" : "Apply"}</span>
-              </p>
-              <p className="text-gray-400">Scanned users: {result.summary.scannedUsers}</p>
-              <p className="text-green-400">Linked: {result.summary.linked}</p>
-              <p className="text-gray-400">Skipped (no Discord): {result.summary.skippedNoDiscord}</p>
-              <p className="text-gray-400">
-                Skipped (already linked elsewhere): {result.summary.skippedAlreadyLinkedToOther}
-              </p>
-              <p className="text-yellow-400">Skipped (errors): {result.summary.skippedErrors}</p>
-              {result.summary.errors.length > 0 && (
-                <div className="mt-2 rounded border border-gray-800 bg-gray-950 p-2 max-h-48 overflow-auto">
-                  {result.summary.errors.slice(0, 25).map((entry) => (
-                    <p key={`${entry.clerkUserId}-${entry.reason}`} className="text-xs text-gray-500">
-                      {entry.clerkUserId}: {entry.reason}
-                    </p>
-                  ))}
-                  {result.summary.errors.length > 25 && (
-                    <p className="text-xs text-gray-600 mt-1">
-                      ...and {result.summary.errors.length - 25} more
-                    </p>
-                  )}
-                </div>
+            <div className="rounded-md border border-gray-800 bg-gray-950/60 px-4 py-4 text-sm space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-gray-300">
+                  Last run: <span className="font-medium">Safe Backfill</span>
+                </p>
+                <p className="text-xs text-gray-500">
+                  Batches: {result.batches}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <StatTile label="Scanned" value={result.scannedUsers} />
+                <StatTile label="Linked" value={result.linked} />
+                <StatTile label="No Discord" value={result.skippedNoDiscord} />
+                <StatTile
+                  label="Missing Clerk User"
+                  value={result.skippedMissingClerkUser}
+                />
+                <StatTile
+                  label="Linked Elsewhere"
+                  value={result.skippedAlreadyLinkedToOther}
+                />
+                <StatTile label="Errors" value={result.skippedErrors} />
+              </div>
+
+              {result.errors.length > 0 && (
+                <details className="rounded border border-gray-800 bg-gray-900/70">
+                  <summary className="cursor-pointer px-3 py-2 text-xs text-gray-400">
+                    Show error details ({result.errors.length})
+                  </summary>
+                  <div className="border-t border-gray-800 px-3 py-2 max-h-52 overflow-auto space-y-1">
+                    {result.errors.slice(0, 25).map((entry) => (
+                      <p key={`${entry.clerkUserId}-${entry.reason}`} className="text-xs text-gray-500">
+                        {entry.clerkUserId}: {entry.reason}
+                      </p>
+                    ))}
+                    {result.errors.length > 25 && (
+                      <p className="text-xs text-gray-600 pt-1">
+                        ...and {result.errors.length - 25} more
+                      </p>
+                    )}
+                  </div>
+                </details>
               )}
             </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function StatTile({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-gray-800 bg-gray-900/60 px-3 py-2">
+      <p className="text-[11px] text-gray-500">{label}</p>
+      <p className="text-sm text-gray-200 font-medium">{value}</p>
     </div>
   );
 }
