@@ -184,59 +184,58 @@ export default function PlayerDrilldownClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer
-              className="w-full"
-              style={{ height: `${h2hChartHeight}px` }}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={h2hBarData}
-                  layout="vertical"
-                  margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-                >
-                  <XAxis type="number" hide />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={80}
-                    tick={{ fill: "#9ca3af", fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                    wrapperStyle={{ outline: "none" }}
-                    contentStyle={{
-                      background: "transparent",
-                      border: "none",
-                      padding: 0,
-                    }}
-                    content={({ label, payload }) => (
-                      <ChartTooltipContent
-                        label={typeof label === "string" ? label : undefined}
-                        payload={payload as any}
-                      />
-                    )}
-                  />
-                  <Bar
-                    dataKey="wins"
-                    name="Wins"
-                    fill="#818cf8"
-                    radius={[0, 3, 3, 0]}
-                    stackId="s"
-                    barSize={10}
-                  />
-                  <Bar
-                    dataKey="losses"
-                    name="Losses"
-                    fill="#374151"
-                    radius={[0, 3, 3, 0]}
-                    stackId="s"
-                    barSize={10}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <div style={{ height: `${h2hChartHeight}px` }}>
+              <ChartContainer className="w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={h2hBarData}
+                    layout="vertical"
+                    margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+                  >
+                    <XAxis type="number" hide />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={80}
+                      tick={{ fill: "#9ca3af", fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                      wrapperStyle={{ outline: "none" }}
+                      contentStyle={{
+                        background: "transparent",
+                        border: "none",
+                        padding: 0,
+                      }}
+                      content={({ label, payload }) => (
+                        <ChartTooltipContent
+                          label={typeof label === "string" ? label : undefined}
+                          payload={payload as any}
+                        />
+                      )}
+                    />
+                    <Bar
+                      dataKey="wins"
+                      name="Wins"
+                      fill="#818cf8"
+                      radius={[0, 3, 3, 0]}
+                      stackId="s"
+                      barSize={10}
+                    />
+                    <Bar
+                      dataKey="losses"
+                      name="Losses"
+                      fill="#374151"
+                      radius={[0, 3, 3, 0]}
+                      stackId="s"
+                      barSize={10}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       )}
