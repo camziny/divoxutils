@@ -186,14 +186,15 @@ export default function DraftHistoryClient({
                             </span>
                           ) : null}
 
-                          <span className="text-gray-700 select-none">
-                            &middot;
-                          </span>
-
-                          <span className="inline-flex items-center gap-1.5 text-gray-400">
-                            <FaDiscord className="w-3 h-3 text-indigo-400 flex-shrink-0" />
-                            {row.discordGuildName || row.discordGuildId}
-                          </span>
+                          {row.discordGuildName && (
+                            <span className="text-gray-700 select-none">
+                              &middot;
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 text-gray-400">
+                              <FaDiscord className="w-3 h-3 text-indigo-400 flex-shrink-0" />
+                              {row.discordGuildName}
+                            </span>
+                          )}
 
                           <span className="text-gray-700 select-none">
                             &middot;
