@@ -541,7 +541,7 @@ export async function getPlayerDraftDrilldownStats(
 
 export async function getDraftLogRows(): Promise<DraftLogRow[]> {
   const convex = getConvexClient();
-  const drafts = (await convex.query(
+  const completedDrafts = (await convex.query(
     "drafts:getCompletedDraftResults" as any,
     {}
   )) as Array<{
@@ -570,20 +570,35 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
     }>;
   }>;
 
-  return drafts.map((draft) => ({
-    shortId: draft.shortId,
-    type: draft.type,
-    discordGuildId: draft.discordGuildId,
-    discordGuildName: draft.discordGuildName,
-    createdBy: draft.createdBy,
-    createdByDisplayName: draft.createdByDisplayName,
-    createdByAvatarUrl: draft.createdByAvatarUrl,
-    winnerTeam: draft.winnerTeam,
-    resultStatus: draft.resultStatus ?? "unverified",
-    createdAtMs: draft._creationTime ?? 0,
-    team1Realm: draft.team1Realm,
-    team2Realm: draft.team2Realm,
-    players: draft.players,
-    bans: draft.bans ?? [],
-  }));
+  return completedDrafts
+    .filter(
+      (draft) =>
+        draft.resultStatus === "verified" && draft.winnerTeam !== undefined
+    )
+    .map((draft) => {
+      const creatorPlayer = draft.players.find(
+        (player) => player.discordUserId === draft.createdBy
+      );
+      const createdByDisplayName =
+        draft.createdByDisplayName || creatorPlayer?.displayName;
+      const createdByAvatarUrl =
+        draft.createdByAvatarUrl || creatorPlayer?.avatarUrl;
+
+      return {
+        shortId: draft.shortId,
+        type: draft.type,
+        discordGuildId: draft.discordGuildId,
+        discordGuildName: draft.discordGuildName,
+        createdBy: draft.createdBy,
+        createdByDisplayName,
+        createdByAvatarUrl,
+        winnerTeam: draft.winnerTeam,
+        resultStatus: "verified" as const,
+        createdAtMs: draft._creationTime ?? 0,
+        team1Realm: draft.team1Realm,
+        team2Realm: draft.team2Realm,
+        players: draft.players,
+        bans: draft.bans ?? [],
+      };
+    });
 }

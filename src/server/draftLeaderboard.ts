@@ -22,7 +22,9 @@ export type DraftLeaderboardDraft = {
 };
 
 export type DraftLeaderboardRow = {
+  id: string;
   clerkUserId: string;
+  isVerified: boolean;
   userName: string;
   avatarUrl?: string;
   wins: number;
@@ -51,10 +53,14 @@ export function aggregateDraftLeaderboardRows(
   const stats = new Map<
     string,
     {
+      clerkUserId: string;
+      isVerified: boolean;
       wins: number;
       losses: number;
       captainWins: number;
       captainLosses: number;
+      latestDisplayNameCreatedAt: number;
+      displayName: string;
       latestAvatarCreatedAt: number;
       avatarUrl?: string;
     }
@@ -71,15 +77,19 @@ export function aggregateDraftLeaderboardRows(
       }
 
       const clerkUserId = clerkByDiscordUserId.get(player.discordUserId);
-      if (!clerkUserId) {
-        continue;
-      }
+      const rowId = clerkUserId ?? `discord:${player.discordUserId}`;
+      const isVerified = Boolean(clerkUserId);
+      const fallbackName = player.displayName?.trim() || player.discordUserId;
 
-      const entry = stats.get(clerkUserId) ?? {
+      const entry = stats.get(rowId) ?? {
+        clerkUserId: clerkUserId ?? rowId,
+        isVerified,
         wins: 0,
         losses: 0,
         captainWins: 0,
         captainLosses: 0,
+        latestDisplayNameCreatedAt: -1,
+        displayName: fallbackName,
         latestAvatarCreatedAt: -1,
         avatarUrl: undefined,
       };
@@ -96,6 +106,14 @@ export function aggregateDraftLeaderboardRows(
         }
       }
       if (
+        fallbackName &&
+        typeof draft._creationTime === "number" &&
+        draft._creationTime >= entry.latestDisplayNameCreatedAt
+      ) {
+        entry.latestDisplayNameCreatedAt = draft._creationTime;
+        entry.displayName = fallbackName;
+      }
+      if (
         player.avatarUrl &&
         typeof draft._creationTime === "number" &&
         draft._creationTime >= entry.latestAvatarCreatedAt
@@ -103,17 +121,22 @@ export function aggregateDraftLeaderboardRows(
         entry.latestAvatarCreatedAt = draft._creationTime;
         entry.avatarUrl = player.avatarUrl;
       }
-      stats.set(clerkUserId, entry);
+      stats.set(rowId, entry);
     }
   }
 
   return Array.from(stats.entries())
-    .map(([clerkUserId, value]) => {
+    .map(([id, value]) => {
       const games = value.wins + value.losses;
       const captainGames = value.captainWins + value.captainLosses;
-      const userName = userNameByClerkUserId.get(clerkUserId) ?? clerkUserId;
+      const userName =
+        value.isVerified
+          ? (userNameByClerkUserId.get(value.clerkUserId) ?? value.displayName)
+          : value.displayName;
       return {
-        clerkUserId,
+        id,
+        clerkUserId: value.clerkUserId,
+        isVerified: value.isVerified,
         userName,
         avatarUrl: value.avatarUrl,
         wins: value.wins,

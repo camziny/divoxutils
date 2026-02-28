@@ -12,13 +12,19 @@ import {
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
+  Tooltip as RechartsTooltip,
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { ArrowLeft, ChevronDown, ChevronRight, User } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, User } from "lucide-react";
 import type { DraftPlayerDrilldown, WinLossRecord } from "@/server/draftStats";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const PIE_COLORS = ["#818cf8", "#374151"];
 
@@ -80,16 +86,22 @@ export default function PlayerDrilldownClient({
         <PlayerAvatar name={drilldown.playerName} avatarUrl={drilldown.avatarUrl} />
         <div>
           {drilldown.profileName ? (
-            <Link
-              href={`/user/${drilldown.profileName}/characters`}
-              className="text-xl font-semibold tracking-tight text-gray-100 hover:text-indigo-400 transition-colors duration-100"
-            >
-              {drilldown.playerName}
-            </Link>
+            <div className="inline-flex items-center gap-1.5">
+              <Link
+                href={`/user/${drilldown.profileName}/characters`}
+                className="text-xl font-semibold tracking-tight text-gray-100 hover:text-indigo-400 transition-colors duration-100"
+              >
+                {drilldown.playerName}
+              </Link>
+              <VerifiedCheck />
+            </div>
           ) : (
-            <h1 className="text-xl font-semibold tracking-tight text-gray-100">
-              {drilldown.playerName}
-            </h1>
+            <div className="inline-flex items-center gap-1.5">
+              <h1 className="text-xl font-semibold tracking-tight text-gray-100">
+                {drilldown.playerName}
+              </h1>
+              <VerifiedCheck />
+            </div>
           )}
           <p className="mt-1 text-[13px] text-gray-500">
             {drilldown.overall.games} verified draft
@@ -201,7 +213,7 @@ export default function PlayerDrilldownClient({
                       axisLine={false}
                       tickLine={false}
                     />
-                    <Tooltip
+                    <RechartsTooltip
                       cursor={{ fill: "rgba(255,255,255,0.03)" }}
                       wrapperStyle={{ outline: "none" }}
                       contentStyle={{
@@ -497,4 +509,21 @@ function computeStreak(
     else break;
   }
   return { type: first ? "W" : "L", count };
+}
+
+function VerifiedCheck() {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center flex-shrink-0 cursor-default">
+            <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <span>Verified</span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }

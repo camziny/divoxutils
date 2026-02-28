@@ -4,8 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Pagination } from "@/components/ui/pagination";
-import { ChevronRight, User } from "lucide-react";
+import { CheckCircle2, ChevronRight, User } from "lucide-react";
 import type { DraftLeaderboardRow } from "@/server/draftLeaderboard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type SortKey = "wins" | "winRate" | "games" | "losses";
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -107,12 +113,8 @@ export default function LeaderboardClient({
           <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
             {paginatedRows.map((row, index) => {
               const rank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
-              return (
-                <Link
-                  key={row.clerkUserId}
-                  href={`/draft-history/leaderboard/${row.clerkUserId}`}
-                  className="group flex items-center gap-3 sm:gap-4 px-4 py-3.5 hover:bg-gray-800/20 transition-colors duration-100"
-                >
+              const rowContent = (
+                <div className="group flex items-center gap-3 sm:gap-4 px-4 py-3.5 hover:bg-gray-800/20 transition-colors duration-100">
                   <span className="w-6 text-right text-xs tabular-nums text-gray-600 font-medium flex-shrink-0">
                     {rank}
                   </span>
@@ -124,6 +126,7 @@ export default function LeaderboardClient({
                         <span className="text-sm font-medium text-gray-200 group-hover:text-white truncate transition-colors duration-100">
                           {row.userName}
                         </span>
+                        {row.isVerified ? <VerifiedCheck /> : null}
                       </span>
                       <span className="text-xs text-gray-500 tabular-nums flex-shrink-0">
                         {sortBy === "games" && (
@@ -148,9 +151,24 @@ export default function LeaderboardClient({
                     )}
                   </div>
 
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-gray-500 transition-colors duration-100 flex-shrink-0" />
-                </Link>
+                  {row.isVerified ? (
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-gray-500 transition-colors duration-100 flex-shrink-0" />
+                  ) : (
+                    <span className="w-3.5 h-3.5 flex-shrink-0" />
+                  )}
+                </div>
               );
+              if (row.isVerified) {
+                return (
+                  <Link
+                    key={row.id}
+                    href={`/draft-history/leaderboard/${row.clerkUserId}`}
+                  >
+                    {rowContent}
+                  </Link>
+                );
+              }
+              return <div key={row.id}>{rowContent}</div>;
             })}
           </div>
 
@@ -183,5 +201,22 @@ function AvatarChip({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-gray-400">
       <User className="h-3 w-3" />
     </span>
+  );
+}
+
+function VerifiedCheck() {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center flex-shrink-0 cursor-default">
+            <CheckCircle2 className="w-3 h-3 text-indigo-400" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <span>Verified</span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
