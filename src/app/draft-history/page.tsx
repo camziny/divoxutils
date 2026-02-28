@@ -1,6 +1,8 @@
 import { getDraftLogRows } from "@/server/draftStats";
 import DraftHistoryClient from "./DraftHistoryClient";
 
+export const revalidate = 60;
+
 export const metadata = {
   title: "Draft History - divoxutils",
 };

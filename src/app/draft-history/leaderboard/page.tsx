@@ -1,6 +1,8 @@
 import { getOverallDraftStats } from "@/server/draftStats";
 import LeaderboardClient from "./LeaderboardClient";
 
+export const revalidate = 60;
+
 export const metadata = {
   title: "Draft Leaderboard - divoxutils",
 };

@@ -1,6 +1,8 @@
 import { getPlayerDraftDrilldownStats } from "@/server/draftStats";
 import PlayerDrilldownClient from "./PlayerDrilldownClient";
 
+export const revalidate = 60;
+
 function decodePlayerId(value: string) {
   try {
     return decodeURIComponent(value);
