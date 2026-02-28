@@ -27,6 +27,7 @@ export type DraftHeadToHeadRow = {
   playerName: string;
   opponentClerkUserId: string;
   opponentName: string;
+  opponentIsVerified: boolean;
   wins: number;
   losses: number;
   games: number;
@@ -56,6 +57,7 @@ export type WinLossRecord = {
 
 export type DraftPlayerDrilldown = {
   playerClerkUserId: string;
+  isVerified: boolean;
   playerName: string;
   profileName?: string;
   avatarUrl?: string;
@@ -98,6 +100,13 @@ type DraftIdentityContext = {
   clerkByDiscordUserId: Map<string, string>;
   userNameByClerkUserId: Map<string, string>;
 };
+
+function toLeaderboardPlayerId(
+  discordUserId: string,
+  clerkByDiscordUserId: Map<string, string>
+) {
+  return clerkByDiscordUserId.get(discordUserId) ?? `discord:${discordUserId}`;
+}
 
 function getConvexClient() {
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -202,13 +211,13 @@ export function aggregateHeadToHeadRow(
       if (participant.team === undefined) {
         continue;
       }
-      const clerkUserId = clerkByDiscordUserId.get(participant.discordUserId);
-      if (!clerkUserId) {
-        continue;
-      }
-      if (clerkUserId === playerClerkUserId) {
+      const participantId = toLeaderboardPlayerId(
+        participant.discordUserId,
+        clerkByDiscordUserId
+      );
+      if (participantId === playerClerkUserId) {
         playerTeam = participant.team;
-      } else if (clerkUserId === opponentClerkUserId) {
+      } else if (participantId === opponentClerkUserId) {
         opponentTeam = participant.team;
       }
     }
@@ -232,16 +241,30 @@ export function aggregateHeadToHeadRow(
     return null;
   }
 
-  const playerName =
-    userNameByClerkUserId.get(playerClerkUserId) ?? playerClerkUserId;
-  const opponentName =
+  let playerName = userNameByClerkUserId.get(playerClerkUserId) ?? playerClerkUserId;
+  let opponentName =
     userNameByClerkUserId.get(opponentClerkUserId) ?? opponentClerkUserId;
+  for (const draft of filteredDrafts) {
+    for (const participant of draft.players) {
+      const participantId = toLeaderboardPlayerId(
+        participant.discordUserId,
+        clerkByDiscordUserId
+      );
+      if (participantId === playerClerkUserId && participant.displayName.trim()) {
+        playerName = participant.displayName;
+      }
+      if (participantId === opponentClerkUserId && participant.displayName.trim()) {
+        opponentName = participant.displayName;
+      }
+    }
+  }
 
   return {
     playerClerkUserId,
     playerName,
     opponentClerkUserId,
     opponentName,
+    opponentIsVerified: !opponentClerkUserId.startsWith("discord:"),
     wins,
     losses,
     games,
@@ -276,6 +299,7 @@ export function aggregatePlayerDrilldown(
   recentLimit = 20
 ): DraftPlayerDrilldown | null {
   const filteredDrafts = applyDraftStatsFilters(drafts, filters);
+  const isVerified = !playerClerkUserId.startsWith("discord:");
   const profileName = userNameByClerkUserId.get(playerClerkUserId);
   let playerName = profileName ?? playerClerkUserId;
 
@@ -288,6 +312,7 @@ export function aggregatePlayerDrilldown(
   const realmStats = new Map<string, { wins: number; losses: number }>();
   const recentGames: DraftRecentGameRow[] = [];
   const headToHeadStats = new Map<string, { wins: number; losses: number }>();
+  const headToHeadNameById = new Map<string, string>();
   let avatarUrl: string | undefined;
   let latestAvatarCreatedAt = -1;
   let latestDisplayNameCreatedAt = -1;
@@ -301,11 +326,11 @@ export function aggregatePlayerDrilldown(
       if (participant.team === undefined) {
         continue;
       }
-      const clerkUserId = clerkByDiscordUserId.get(participant.discordUserId);
-      if (!clerkUserId) {
-        continue;
-      }
-      if (clerkUserId === playerClerkUserId) {
+      const participantId = toLeaderboardPlayerId(
+        participant.discordUserId,
+        clerkByDiscordUserId
+      );
+      if (participantId === playerClerkUserId) {
         playerTeam = participant.team;
         wasCaptain = participant.isCaptain;
         if (
@@ -325,7 +350,10 @@ export function aggregatePlayerDrilldown(
           avatarUrl = participant.avatarUrl;
         }
       } else {
-        opponentTeams.set(clerkUserId, participant.team);
+        opponentTeams.set(participantId, participant.team);
+        if (participant.displayName.trim()) {
+          headToHeadNameById.set(participantId, participant.displayName);
+        }
       }
     }
 
@@ -358,12 +386,12 @@ export function aggregatePlayerDrilldown(
     let team2CaptainName = "Unknown";
     for (const p of draft.players) {
       if (p.isCaptain && p.team === 1) {
-        const cId = clerkByDiscordUserId.get(p.discordUserId);
-        team1CaptainName = (cId && userNameByClerkUserId.get(cId)) || p.displayName;
+        const cId = toLeaderboardPlayerId(p.discordUserId, clerkByDiscordUserId);
+        team1CaptainName = userNameByClerkUserId.get(cId) || p.displayName;
       }
       if (p.isCaptain && p.team === 2) {
-        const cId = clerkByDiscordUserId.get(p.discordUserId);
-        team2CaptainName = (cId && userNameByClerkUserId.get(cId)) || p.displayName;
+        const cId = toLeaderboardPlayerId(p.discordUserId, clerkByDiscordUserId);
+        team2CaptainName = userNameByClerkUserId.get(cId) || p.displayName;
       }
     }
 
@@ -408,13 +436,16 @@ export function aggregatePlayerDrilldown(
   const headToHead = Array.from(headToHeadStats.entries())
     .map(([opponentClerkUserId, value]) => {
       const opponentName =
-        userNameByClerkUserId.get(opponentClerkUserId) ?? opponentClerkUserId;
+        userNameByClerkUserId.get(opponentClerkUserId) ??
+        headToHeadNameById.get(opponentClerkUserId) ??
+        opponentClerkUserId;
       const opponentGames = value.wins + value.losses;
       return {
         playerClerkUserId,
         playerName,
         opponentClerkUserId,
         opponentName,
+        opponentIsVerified: !opponentClerkUserId.startsWith("discord:"),
         wins: value.wins,
         losses: value.losses,
         games: opponentGames,
@@ -435,6 +466,7 @@ export function aggregatePlayerDrilldown(
 
   return {
     playerClerkUserId,
+    isVerified,
     playerName,
     profileName,
     avatarUrl,

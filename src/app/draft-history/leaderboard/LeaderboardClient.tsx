@@ -113,8 +113,12 @@ export default function LeaderboardClient({
           <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
             {paginatedRows.map((row, index) => {
               const rank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
-              const rowContent = (
-                <div className="group flex items-center gap-3 sm:gap-4 px-4 py-3.5 hover:bg-gray-800/20 transition-colors duration-100">
+              return (
+                <Link
+                  key={row.id}
+                  href={`/draft-history/leaderboard/${encodeURIComponent(row.id)}`}
+                  className="group flex items-center gap-3 sm:gap-4 px-4 py-3.5 hover:bg-gray-800/20 transition-colors duration-100"
+                >
                   <span className="w-6 text-right text-xs tabular-nums text-gray-600 font-medium flex-shrink-0">
                     {rank}
                   </span>
@@ -151,24 +155,9 @@ export default function LeaderboardClient({
                     )}
                   </div>
 
-                  {row.isVerified ? (
-                    <ChevronRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-gray-500 transition-colors duration-100 flex-shrink-0" />
-                  ) : (
-                    <span className="w-3.5 h-3.5 flex-shrink-0" />
-                  )}
-                </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-gray-500 transition-colors duration-100 flex-shrink-0" />
+                </Link>
               );
-              if (row.isVerified) {
-                return (
-                  <Link
-                    key={row.id}
-                    href={`/draft-history/leaderboard/${row.clerkUserId}`}
-                  >
-                    {rowContent}
-                  </Link>
-                );
-              }
-              return <div key={row.id}>{rowContent}</div>;
             })}
           </div>
 

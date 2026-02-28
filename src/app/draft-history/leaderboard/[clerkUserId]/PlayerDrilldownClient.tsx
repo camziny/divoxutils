@@ -93,14 +93,14 @@ export default function PlayerDrilldownClient({
               >
                 {drilldown.playerName}
               </Link>
-              <VerifiedCheck />
+              {drilldown.isVerified ? <VerifiedCheck /> : null}
             </div>
           ) : (
             <div className="inline-flex items-center gap-1.5">
               <h1 className="text-xl font-semibold tracking-tight text-gray-100">
                 {drilldown.playerName}
               </h1>
-              <VerifiedCheck />
+              {drilldown.isVerified ? <VerifiedCheck /> : null}
             </div>
           )}
           <p className="mt-1 text-[13px] text-gray-500">
@@ -274,7 +274,9 @@ export default function PlayerDrilldownClient({
               {drilldown.headToHead.map((row) => (
                 <Link
                   key={row.opponentClerkUserId}
-                  href={`/draft-history/leaderboard/${row.opponentClerkUserId}`}
+                  href={`/draft-history/leaderboard/${encodeURIComponent(
+                    row.opponentClerkUserId
+                  )}`}
                   className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
                 >
                   <span className="text-sm text-gray-300 group-hover:text-white transition-colors duration-100">
