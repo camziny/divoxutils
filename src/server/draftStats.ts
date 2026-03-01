@@ -72,6 +72,7 @@ export type DraftPlayerDrilldown = {
 export type DraftLogRow = {
   shortId: string;
   type: "traditional" | "pvp";
+  teamSize: number;
   discordGuildId: string;
   discordGuildName?: string;
   createdBy: string;
@@ -579,6 +580,7 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
   )) as Array<{
     shortId: string;
     type: "traditional" | "pvp";
+    teamSize: number;
     discordGuildId: string;
     discordGuildName?: string;
     createdBy: string;
@@ -619,6 +621,7 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
       return {
         shortId: draft.shortId,
         type: draft.type,
+        teamSize: draft.teamSize,
         discordGuildId: draft.discordGuildId,
         discordGuildName: draft.discordGuildName,
         createdBy: draft.createdBy,

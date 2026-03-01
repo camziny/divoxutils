@@ -28,7 +28,7 @@ type ModerationDraft = {
   players: ModerationPlayer[];
 };
 
-type Action = "verify" | "void";
+type Action = "verify" | "void" | "override_team_1" | "override_team_2";
 
 export default function AdminDraftModerationClient() {
   const [pendingDrafts, setPendingDrafts] = useState<ModerationDraft[]>([]);
@@ -85,7 +85,14 @@ export default function AdminDraftModerationClient() {
         throw new Error(payload?.error ?? "Failed to moderate draft.");
       }
       await loadDrafts();
-      const actionLabel = action === "verify" ? "verified" : "voided";
+      const actionLabel =
+        action === "verify"
+          ? "verified"
+          : action === "void"
+            ? "voided"
+            : action === "override_team_1"
+              ? "overridden to Team 1"
+              : "overridden to Team 2";
       setSuccessMessage(`Draft ${shortId} marked as ${actionLabel}.`);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: unknown) {
@@ -261,6 +268,20 @@ export default function AdminDraftModerationClient() {
                       >
                         Void
                       </button>
+                      <button
+                        onClick={() => moderateDraft(draft.shortId, "override_team_1")}
+                        disabled={isActive}
+                        className="rounded-md border border-gray-800 px-3 py-1.5 text-xs text-gray-400 hover:border-gray-700 hover:text-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Override Team 1
+                      </button>
+                      <button
+                        onClick={() => moderateDraft(draft.shortId, "override_team_2")}
+                        disabled={isActive}
+                        className="rounded-md border border-gray-800 px-3 py-1.5 text-xs text-gray-400 hover:border-gray-700 hover:text-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Override Team 2
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -392,6 +413,20 @@ export default function AdminDraftModerationClient() {
                               Mark Verified
                             </button>
                           )}
+                          <button
+                            onClick={() => moderateDraft(draft.shortId, "override_team_1")}
+                            disabled={isActive}
+                            className="rounded-md border border-gray-800 px-3 py-1.5 text-xs text-gray-400 hover:border-gray-700 hover:text-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Override Team 1
+                          </button>
+                          <button
+                            onClick={() => moderateDraft(draft.shortId, "override_team_2")}
+                            disabled={isActive}
+                            className="rounded-md border border-gray-800 px-3 py-1.5 text-xs text-gray-400 hover:border-gray-700 hover:text-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Override Team 2
+                          </button>
                         </div>
                       </div>
                     </div>

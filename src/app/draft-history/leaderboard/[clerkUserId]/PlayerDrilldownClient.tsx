@@ -8,15 +8,9 @@ import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip as RechartsTooltip,
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, User } from "lucide-react";
 import type { DraftPlayerDrilldown, WinLossRecord } from "@/server/draftStats";
 import {
@@ -66,15 +60,6 @@ export default function PlayerDrilldownClient({
   ];
 
   const topH2H = drilldown.headToHead.slice(0, 8);
-  const h2hBarData = topH2H.map((row) => ({
-    name:
-      row.opponentName.length > 10
-        ? row.opponentName.slice(0, 9) + "\u2026"
-        : row.opponentName,
-    wins: row.wins,
-    losses: row.losses,
-  }));
-  const h2hChartHeight = Math.max(64, h2hBarData.length * 24);
 
   const streak = computeStreak(drilldown.recentGames);
 
@@ -188,7 +173,7 @@ export default function PlayerDrilldownClient({
         )}
       </div>
 
-      {h2hBarData.length > 0 && (
+      {topH2H.length > 0 && (
         <Card className="mb-6 bg-transparent">
           <CardHeader className="pb-1">
             <CardTitle className="text-xs font-medium text-gray-500">
@@ -196,57 +181,30 @@ export default function PlayerDrilldownClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div style={{ height: `${h2hChartHeight}px` }}>
-              <ChartContainer className="w-full h-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={h2hBarData}
-                    layout="vertical"
-                    margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-                  >
-                    <XAxis type="number" hide />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={80}
-                      tick={{ fill: "#9ca3af", fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
+            <div className="space-y-2">
+              {topH2H.map((row) => (
+                <div
+                  key={row.opponentClerkUserId}
+                  className="grid grid-cols-[88px_1fr_44px] items-center gap-2"
+                >
+                  <span className="truncate text-xs text-gray-400">
+                    {row.opponentName}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Progress
+                      value={row.winRate}
+                      className="h-1.5 flex-1"
+                      indicatorClassName="bg-indigo-400/60"
                     />
-                    <RechartsTooltip
-                      cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                      wrapperStyle={{ outline: "none" }}
-                      contentStyle={{
-                        background: "transparent",
-                        border: "none",
-                        padding: 0,
-                      }}
-                      content={({ label, payload }) => (
-                        <ChartTooltipContent
-                          label={typeof label === "string" ? label : undefined}
-                          payload={payload as any}
-                        />
-                      )}
-                    />
-                    <Bar
-                      dataKey="wins"
-                      name="Wins"
-                      fill="#818cf8"
-                      radius={[0, 3, 3, 0]}
-                      stackId="s"
-                      barSize={10}
-                    />
-                    <Bar
-                      dataKey="losses"
-                      name="Losses"
-                      fill="#374151"
-                      radius={[0, 3, 3, 0]}
-                      stackId="s"
-                      barSize={10}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+                    <span className="text-[11px] text-gray-500 tabular-nums">
+                      {row.wins}-{row.losses}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-gray-500 tabular-nums text-right">
+                    {row.winRate.toFixed(1)}%
+                  </span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

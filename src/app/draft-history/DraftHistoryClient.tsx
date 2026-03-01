@@ -185,6 +185,10 @@ export default function DraftHistoryClient({
                               {row.team1Realm} vs {row.team2Realm}
                             </span>
                           ) : null}
+                          <span className="text-gray-700 select-none">&middot;</span>
+                          <span className="text-gray-400">
+                            {row.teamSize}v{row.teamSize}
+                          </span>
 
                           {row.discordGuildName && (
                             <>

@@ -117,14 +117,14 @@ export default function LeaderboardClient({
                 <Link
                   key={row.id}
                   href={`/draft-history/leaderboard/${row.id}`}
-                  className="group flex items-center gap-3 sm:gap-4 px-4 py-3.5 hover:bg-gray-800/20 transition-colors duration-100"
+                  className="group flex items-center gap-3 sm:gap-4 px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
                 >
                   <span className="w-6 text-right text-xs tabular-nums text-gray-600 font-medium flex-shrink-0">
                     {rank}
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <div className={`flex items-baseline justify-between gap-3${sortBy === "winRate" ? " mb-1.5" : ""}`}>
+                    <div className={`flex items-center justify-between gap-3${sortBy === "winRate" ? " mb-1.5" : ""}`}>
                       <span className="inline-flex items-center gap-2 min-w-0">
                         <AvatarChip name={row.userName} avatarUrl={row.avatarUrl} />
                         <span className="text-sm font-medium text-gray-200 group-hover:text-white truncate transition-colors duration-100">
@@ -132,14 +132,26 @@ export default function LeaderboardClient({
                         </span>
                         {row.isVerified ? <VerifiedCheck /> : null}
                       </span>
-                      <span className="text-xs text-gray-500 tabular-nums flex-shrink-0">
-                        {sortBy === "games" && (
-                          <span className="text-gray-300 font-medium mr-1.5">
-                            {row.games}
-                          </span>
-                        )}
-                        {row.wins}W {row.losses}L · {row.winRate.toFixed(1)}%
-                      </span>
+                      <div className="flex flex-col items-end flex-shrink-0 tabular-nums">
+                        <span className="text-sm font-semibold text-gray-200">
+                          {sortBy === "winRate"
+                            ? `${row.winRate.toFixed(1)}%`
+                            : sortBy === "wins"
+                              ? `${row.wins}W`
+                              : sortBy === "losses"
+                                ? `${row.losses}L`
+                                : row.games}
+                        </span>
+                        <span className="text-[10px] text-gray-600">
+                          {sortBy === "winRate"
+                            ? `${row.wins}W ${row.losses}L`
+                            : sortBy === "wins"
+                              ? `${row.winRate.toFixed(1)}%`
+                              : sortBy === "losses"
+                                ? `${row.winRate.toFixed(1)}%`
+                                : `${row.wins}W ${row.losses}L`}
+                        </span>
+                      </div>
                     </div>
                     {sortBy === "winRate" && (
                       <div className="h-1 rounded-full bg-gray-800 overflow-hidden">

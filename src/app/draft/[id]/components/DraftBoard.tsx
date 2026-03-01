@@ -63,6 +63,8 @@ interface DraftBoardProps {
   token?: string;
 }
 
+type PickOrderMode = "snake" | "alternating";
+
 export default function DraftBoard({
   draft,
   currentPlayer,
@@ -177,14 +179,19 @@ export default function DraftBoard({
   );
 
   const applySettings = useCallback(
-    async (type: "traditional" | "pvp", teamSize: number) => {
+    async (
+      type: "traditional" | "pvp",
+      teamSize: number,
+      pickOrderMode: PickOrderMode
+    ) => {
       if (busy) return;
       setBusy(true);
       try {
-        await updateSettings({
+        await (updateSettings as any)({
           draftId: draft._id,
           type,
           teamSize,
+          pickOrderMode,
           token: token!,
         });
       } catch (e) {
@@ -211,7 +218,11 @@ export default function DraftBoard({
     const adjustmentKey = `${draft._id}:${draft.teamSize}:${targetTeamSize}:${draft.players.length}`;
     if (autoAdjustedSettingsKey === adjustmentKey) return;
     setAutoAdjustedSettingsKey(adjustmentKey);
-    void applySettings(draft.type, targetTeamSize);
+    void applySettings(
+      draft.type,
+      targetTeamSize,
+      draft.pickOrderMode ?? "snake"
+    );
   }, [
     applySettings,
     autoAdjustedSettingsKey,
@@ -220,6 +231,7 @@ export default function DraftBoard({
     draft.players.length,
     draft.teamSize,
     draft.type,
+    draft.pickOrderMode,
     isCreator,
     isSetup,
     token,
@@ -319,13 +331,29 @@ export default function DraftBoard({
                   text: `Switched to PvP and adjusted team size to ${adjustedTeamSize}v${adjustedTeamSize} for ${draft.players.length} players.`,
                 });
               }
-              return applySettings(type, adjustedTeamSize);
+              return applySettings(
+                type,
+                adjustedTeamSize,
+                draft.pickOrderMode ?? "snake"
+              );
             }
-            return applySettings(type, draft.teamSize);
+            return applySettings(
+              type,
+              draft.teamSize,
+              draft.pickOrderMode ?? "snake"
+            );
           }}
           onUpdateSize={(teamSize) => {
             setSettingsFeedback(null);
-            return applySettings(draft.type, teamSize);
+            return applySettings(
+              draft.type,
+              teamSize,
+              draft.pickOrderMode ?? "snake"
+            );
+          }}
+          onUpdatePickOrderMode={(pickOrderMode) => {
+            setSettingsFeedback(null);
+            return applySettings(draft.type, draft.teamSize, pickOrderMode);
           }}
           onStart={() =>
             act(() => startDraft({ draftId: draft._id, token: token! }))
@@ -650,6 +678,7 @@ function SettingsBar({
   hasCaptain2,
   onUpdateType,
   onUpdateSize,
+  onUpdatePickOrderMode,
   onStart,
   canStart,
 }: {
@@ -659,6 +688,7 @@ function SettingsBar({
   hasCaptain2: boolean;
   onUpdateType: (type: "traditional" | "pvp") => void;
   onUpdateSize: (size: number) => void;
+  onUpdatePickOrderMode: (mode: PickOrderMode) => void;
   onStart: () => void;
   canStart: boolean;
 }) {
@@ -706,6 +736,39 @@ function SettingsBar({
             ))}
           </SelectContent>
         </Select>
+        <div className="flex flex-col gap-1">
+          <Select
+            value={draft.pickOrderMode ?? "snake"}
+            onValueChange={(v) => onUpdatePickOrderMode(v as PickOrderMode)}
+            disabled={busy}
+          >
+            <SelectTrigger className="h-8 w-[170px] text-xs border-gray-700 bg-gray-800/60">
+              <span className="truncate">
+                {(draft.pickOrderMode ?? "snake") === "alternating"
+                  ? "Alternating"
+                  : "Snake"}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="snake">
+                <div className="flex flex-col">
+                  <span>Snake</span>
+                  <span className="text-[10px] text-gray-500">
+                    After the first pick, the other captain picks twice in a row.
+                  </span>
+                </div>
+              </SelectItem>
+              <SelectItem value="alternating">
+                <div className="flex flex-col">
+                  <span>Alternating</span>
+                  <span className="text-[10px] text-gray-500">
+                    Captains alternate one pick at a time.
+                  </span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <Button
         variant={needsCaptains ? "secondary" : "outline"}

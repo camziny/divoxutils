@@ -15,11 +15,21 @@ function generateToken(): string {
 
 function generatePickSequence(
   teamSize: number,
-  firstPickTeam: 1 | 2
+  firstPickTeam: 1 | 2,
+  mode: "snake" | "alternating" = "snake"
 ): (1 | 2)[] {
   const totalPicks = (teamSize - 1) * 2;
   const secondPickTeam: 1 | 2 = firstPickTeam === 1 ? 2 : 1;
   const sequence: (1 | 2)[] = [];
+
+  if (mode === "alternating") {
+    let currentTeam: 1 | 2 = firstPickTeam;
+    while (sequence.length < totalPicks) {
+      sequence.push(currentTeam);
+      currentTeam = currentTeam === 1 ? 2 : 1;
+    }
+    return sequence;
+  }
 
   sequence.push(firstPickTeam);
   if (sequence.length < totalPicks) sequence.push(secondPickTeam);
@@ -118,6 +128,7 @@ export const createDraft = mutation({
       type: "traditional",
       status: "setup",
       teamSize: defaultTeamSize,
+      pickOrderMode: "snake",
       discordGuildId: args.discordGuildId,
       discordGuildName: args.discordGuildName,
       discordChannelId: args.discordChannelId,
@@ -221,6 +232,9 @@ export const updateSettings = mutation({
     draftId: v.id("drafts"),
     type: v.union(v.literal("traditional"), v.literal("pvp")),
     teamSize: v.number(),
+    pickOrderMode: v.optional(
+      v.union(v.literal("snake"), v.literal("alternating"))
+    ),
     token: v.string(),
   },
   handler: async (ctx, args) => {
@@ -257,6 +271,7 @@ export const updateSettings = mutation({
     await ctx.db.patch(args.draftId, {
       type: args.type,
       teamSize: args.teamSize,
+      pickOrderMode: args.pickOrderMode ?? draft.pickOrderMode ?? "snake",
     });
   },
 });
@@ -545,7 +560,8 @@ export const banClass = mutation({
     if (nextBanIndex >= draft.banSequence!.length) {
       const pickSequence = generatePickSequence(
         draft.teamSize,
-        draft.firstPickTeam!
+        draft.firstPickTeam!,
+        draft.pickOrderMode ?? "snake"
       );
       await ctx.db.patch(args.draftId, {
         status: "drafting",
@@ -980,8 +996,12 @@ export const getCompletedDraftResults = query({
         _id: draft._id,
         shortId: draft.shortId,
         type: draft.type,
+        teamSize: draft.teamSize,
         discordGuildId: draft.discordGuildId,
         discordGuildName: draft.discordGuildName,
+        createdBy: draft.createdBy,
+        createdByDisplayName: draft.createdByDisplayName,
+        createdByAvatarUrl: draft.createdByAvatarUrl,
         winnerTeam: draft.winnerTeam,
         resultStatus: draft.resultStatus ?? "unverified",
         _creationTime: draft._creationTime,
@@ -1008,7 +1028,12 @@ export const getCompletedDraftResults = query({
 export const moderateDraftResult = mutation({
   args: {
     shortId: v.string(),
-    action: v.union(v.literal("verify"), v.literal("void")),
+    action: v.union(
+      v.literal("verify"),
+      v.literal("void"),
+      v.literal("override_team_1"),
+      v.literal("override_team_2")
+    ),
     moderatedByClerkUserId: v.string(),
     note: v.optional(v.string()),
   },
@@ -1023,8 +1048,34 @@ export const moderateDraftResult = mutation({
     if (draft.status !== "complete") {
       throw new Error("Only completed drafts can be moderated");
     }
-    if (draft.winnerTeam === undefined) {
+    if (
+      draft.winnerTeam === undefined &&
+      (args.action === "verify" || args.action === "void")
+    ) {
       throw new Error("Draft has no winner to moderate");
+    }
+
+    const trimmedNote = args.note?.trim() ? args.note.trim() : undefined;
+    const now = Date.now();
+
+    if (args.action === "override_team_1" || args.action === "override_team_2") {
+      const winnerTeam = args.action === "override_team_1" ? 1 : 2;
+      const previousWinner = draft.winnerTeam;
+      const overrideNote = trimmedNote
+        ? `Winner override: Team ${previousWinner ?? "none"} -> Team ${winnerTeam}. ${trimmedNote}`
+        : `Winner override: Team ${previousWinner ?? "none"} -> Team ${winnerTeam}.`;
+      await ctx.db.patch(draft._id, {
+        winnerTeam,
+        resultStatus: "verified",
+        resultModeratedBy: args.moderatedByClerkUserId,
+        resultModeratedAt: now,
+        resultModerationNote: overrideNote,
+        winnerOverriddenBy: args.moderatedByClerkUserId,
+        winnerOverriddenAt: now,
+        winnerOverrideNote: overrideNote,
+      });
+
+      return { shortId: draft.shortId, resultStatus: "verified", winnerTeam };
     }
 
     const resultStatus = args.action === "verify" ? "verified" : "voided";
@@ -1032,11 +1083,11 @@ export const moderateDraftResult = mutation({
     await ctx.db.patch(draft._id, {
       resultStatus,
       resultModeratedBy: args.moderatedByClerkUserId,
-      resultModeratedAt: Date.now(),
-      resultModerationNote: args.note?.trim() ? args.note.trim() : undefined,
+      resultModeratedAt: now,
+      resultModerationNote: trimmedNote,
     });
 
-    return { shortId: draft.shortId, resultStatus };
+    return { shortId: draft.shortId, resultStatus, winnerTeam: draft.winnerTeam };
   },
 });
 
