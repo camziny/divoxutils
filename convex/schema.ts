@@ -24,6 +24,9 @@ export default defineSchema({
     team2CaptainId: v.optional(v.string()),
     firstPickTeam: v.optional(teamNumber),
     firstRealmPickTeam: v.optional(teamNumber),
+    pickOrderMode: v.optional(
+      v.union(v.literal("snake"), v.literal("alternating"))
+    ),
     pickSequence: v.optional(v.array(teamNumber)),
     currentPickIndex: v.optional(v.number()),
     banSequence: v.optional(v.array(teamNumber)),
@@ -47,6 +50,9 @@ export default defineSchema({
     resultModeratedBy: v.optional(v.string()),
     resultModeratedAt: v.optional(v.number()),
     resultModerationNote: v.optional(v.string()),
+    winnerOverriddenBy: v.optional(v.string()),
+    winnerOverriddenAt: v.optional(v.number()),
+    winnerOverrideNote: v.optional(v.string()),
     botPostedLink: v.optional(v.boolean()),
     botNotifiedCaptains: v.optional(v.boolean()),
   })

@@ -252,7 +252,7 @@ export default function DraftTestPage() {
             Draft Test
           </h1>
           <p className="text-sm text-gray-500 mt-2">
-            Simulate a draft with a custom lobby size and mode preset.
+            Simulate a draft, then configure settings in the draft board as creator.
           </p>
           <p className="text-xs text-gray-600 mt-2">
             Default team size for this lobby: {defaultTeamSize}v{defaultTeamSize}
@@ -317,7 +317,9 @@ export default function DraftTestPage() {
           size="lg"
           className="w-full"
         >
-          {isCreating ? "Creating..." : `Simulate ${modePreset} draft`}
+          {isCreating
+            ? "Creating..."
+            : `Simulate ${modePreset} draft`}
         </Button>
 
         {createError && (

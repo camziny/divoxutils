@@ -3,7 +3,11 @@ import { getAuth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { isAdminClerkUserId } from "@/server/adminAuth";
 
-type ModerateAction = "verify" | "void";
+type ModerateAction =
+  | "verify"
+  | "void"
+  | "override_team_1"
+  | "override_team_2";
 type ModerateDraftDeps = {
   getAuthUserId: (req: NextApiRequest) => string | null;
   isAdminUserId: (userId: string) => boolean;
@@ -49,8 +53,13 @@ export function createModerateDraftHandler(deps: ModerateDraftDeps) {
     if (!shortId) {
       return res.status(400).json({ error: "shortId is required." });
     }
-    if (!["verify", "void"].includes(action)) {
-      return res.status(400).json({ error: "action must be verify or void." });
+    if (
+      !["verify", "void", "override_team_1", "override_team_2"].includes(action)
+    ) {
+      return res.status(400).json({
+        error:
+          "action must be verify, void, override_team_1, or override_team_2.",
+      });
     }
 
     try {

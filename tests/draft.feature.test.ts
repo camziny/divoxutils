@@ -292,6 +292,41 @@ test("final ban enters drafting with one-time double pick for second team (first
   assert.equal(updated.currentPickIndex, 0);
 });
 
+test("final ban enters drafting with alternating pick mode", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "banning",
+        type: "pvp",
+        teamSize: 4,
+        firstPickTeam: 1,
+        pickOrderMode: "alternating",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        banSequence: [1],
+        currentBanIndex: 0,
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "cap1-token", discordUserId: "cap1", isCaptain: true },
+      { _id: "p2", draftId: "d1", token: "cap2-token", discordUserId: "cap2", isCaptain: true },
+    ],
+  });
+
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Cleric",
+    token: "cap1-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "drafting");
+  assert.deepEqual(updated.pickSequence, [1, 2, 1, 2, 1, 2]);
+  assert.equal(updated.currentPickIndex, 0);
+});
+
 test("final ban enters drafting with one-time double pick for second team (first pick team 2)", async () => {
   const ctx = makeCtx({
     drafts: [
@@ -359,6 +394,43 @@ test("updateSettings applies pvp with valid adjusted team size", async () => {
   const updated = await ctx.db.get("d1");
   assert.equal(updated.type, "pvp");
   assert.equal(updated.teamSize, 3);
+  assert.equal(updated.pickOrderMode, "snake");
+});
+
+test("updateSettings persists selected pick order mode", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "setup",
+        teamSize: 4,
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "x1", discordUserId: "u1" },
+      { _id: "p3", draftId: "d1", token: "x2", discordUserId: "u2" },
+      { _id: "p4", draftId: "d1", token: "x3", discordUserId: "u3" },
+      { _id: "p5", draftId: "d1", token: "x4", discordUserId: "u4" },
+      { _id: "p6", draftId: "d1", token: "x5", discordUserId: "u5" },
+      { _id: "p7", draftId: "d1", token: "x6", discordUserId: "u6" },
+      { _id: "p8", draftId: "d1", token: "x7", discordUserId: "u7" },
+    ],
+  });
+
+  await (draftFns.updateSettings as any)._handler(ctx, {
+    draftId: "d1",
+    type: "traditional",
+    teamSize: 4,
+    pickOrderMode: "alternating",
+    token: "creator-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.pickOrderMode, "alternating");
 });
 
 test("updateSettings rejects team size that exceeds available players", async () => {

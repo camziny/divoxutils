@@ -794,7 +794,9 @@ test("moderate draft validates action", async () => {
   await handler(req, res);
 
   assert.equal(res.statusCode, 400);
-  assert.deepEqual(res.body, { error: "action must be verify or void." });
+  assert.deepEqual(res.body, {
+    error: "action must be verify, void, override_team_1, or override_team_2.",
+  });
 });
 
 test("moderate draft supports reversible actions and trims note", async () => {
@@ -820,5 +822,31 @@ test("moderate draft supports reversible actions and trims note", async () => {
     action: "void",
     moderatedByClerkUserId: "admin_1",
     note: "re-check evidence",
+  });
+});
+
+test("moderate draft forwards winner override actions", async () => {
+  const calls: Array<Record<string, unknown>> = [];
+  const handler = createModerateDraftHandler({
+    getAuthUserId: () => "admin_1",
+    isAdminUserId: () => true,
+    moderateDraftResult: async (args) => {
+      calls.push(args);
+      return { shortId: args.shortId, resultStatus: "verified", winnerTeam: 2 };
+    },
+  });
+
+  const req = createMockRequest({
+    body: { shortId: "abc123", action: "override_team_2", note: "  corrected winner  " },
+  });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(calls[0], {
+    shortId: "abc123",
+    action: "override_team_2",
+    moderatedByClerkUserId: "admin_1",
+    note: "corrected winner",
   });
 });
