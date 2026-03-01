@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import prisma from "../../../prisma/prismaClient";
 
 type Character = {
   characterName: string;
@@ -137,6 +136,7 @@ export function createSearchUsersAndCharactersHandler(
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const prisma = require("../../../prisma/prismaClient").default;
   return createSearchUsersAndCharactersHandler({
     findUsers: ({ normalizedQuery }) =>
       prisma.user.findMany({
