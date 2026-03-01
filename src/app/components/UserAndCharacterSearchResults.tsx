@@ -12,14 +12,9 @@ import SupporterBadge, { supporterRowClass, supporterNameStyle } from "./Support
 
 type Character = {
   characterName: string;
-  heraldName: string;
+  heraldName: string | null;
   totalRealmPoints: number;
   className: string;
-  user: {
-    id: number;
-    clerkUserId: string;
-    name: string;
-  };
 };
 
 type User = {
@@ -33,17 +28,16 @@ type User = {
 export default function CharacterNameSearch() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 500);
-  const [searchResults, setSearchResults] = useState<{
-    users: User[];
-    characters: Character[];
-  }>({ users: [], characters: [] });
+  const [searchResults, setSearchResults] = useState<{ users: User[] }>({
+    users: [],
+  });
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchResults = async () => {
       if (debouncedQuery.trim().length < 3) {
-        setSearchResults({ users: [], characters: [] });
+        setSearchResults({ users: [] });
         setSearchPerformed(false);
         setIsLoading(false);
         return;
@@ -66,11 +60,10 @@ export default function CharacterNameSearch() {
         const results = await response.json();
         setSearchResults({
           users: results.users || [],
-          characters: results.characters || [],
         });
       } catch (error) {
         console.error("Failed to fetch search results:", error);
-        setSearchResults({ users: [], characters: [] });
+        setSearchResults({ users: [] });
       } finally {
         setIsLoading(false);
       }
@@ -96,8 +89,7 @@ export default function CharacterNameSearch() {
           <div className="flex justify-center items-center py-8">
             <Loading />
           </div>
-        ) : (searchResults.users && searchResults.users.length > 0) ||
-          (searchResults.characters && searchResults.characters.length > 0) ? (
+        ) : searchResults.users && searchResults.users.length > 0 ? (
           <div className="space-y-2">
             {searchResults.users.map((user) => (
               <Link
@@ -118,72 +110,33 @@ export default function CharacterNameSearch() {
                   
                   {user.characters.length > 0 && (
                     <div className="divide-y divide-gray-800">
-                      {user.characters
-                        .filter((userCharacter) =>
-                          userCharacter.heraldName
-                            .toLowerCase()
-                            .includes(debouncedQuery.toLowerCase())
-                        )
-                        .map((userCharacter, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between py-1.5"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-300">
-                                {userCharacter.heraldName}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {userCharacter.className}
-                              </span>
-                            </div>
-                            {userCharacter.totalRealmPoints > 0 && (
-                              <span className="text-[11px] font-medium text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded">
-                                {formatRealmRankWithLevel(
-                                  getRealmRankForPoints(
-                                    userCharacter.totalRealmPoints
-                                  )
-                                )}
-                              </span>
-                            )}
+                      {user.characters.map((userCharacter, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between py-1.5"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-300">
+                              {userCharacter.heraldName ||
+                                userCharacter.characterName}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {userCharacter.className}
+                            </span>
                           </div>
-                        ))}
+                          {userCharacter.totalRealmPoints > 0 && (
+                            <span className="text-[11px] font-medium text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded">
+                              {formatRealmRankWithLevel(
+                                getRealmRankForPoints(
+                                  userCharacter.totalRealmPoints
+                                )
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
-                </div>
-              </Link>
-            ))}
-            
-            {searchResults.characters.map((character, index) => (
-              <Link
-                key={`${character.heraldName}-${index}`}
-                href={`/user/${character.user.name}/characters`}
-                className="block bg-gray-900 border border-gray-800 rounded-md hover:border-gray-700 hover:bg-gray-800/50 transition-colors duration-150"
-              >
-                <div className="px-4 py-3">
-                <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-indigo-400">
-                      {character.user.name}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between py-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-300">
-                        {character.heraldName}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {character.className}
-                      </span>
-                    </div>
-                    {character.totalRealmPoints > 0 && (
-                      <span className="text-[11px] font-medium text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded">
-                        {formatRealmRankWithLevel(
-                          getRealmRankForPoints(character.totalRealmPoints)
-                        )}
-                      </span>
-                    )}
-                  </div>
                 </div>
               </Link>
             ))}
