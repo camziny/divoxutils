@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ links: {} });
   }
 
-  const uniqueIds = Array.from(new Set(discordUserIds));
+  const uniqueIds: string[] = Array.from(new Set(discordUserIds));
 
   try {
     const links = await prisma.userIdentityLink.findMany({

@@ -93,14 +93,12 @@ export default function PlayerDrilldownClient({
   }, [classQuery, classRows, classSortBy]);
 
   useEffect(() => {
-    if (!selectedClass) {
-      if (classRows.length > 0) {
-        setSelectedClass(classRows[0].className);
-      } else if (allClasses.length > 0) {
+    if (!selectedClass || !allClasses.includes(selectedClass)) {
+      if (allClasses.length > 0) {
         setSelectedClass(allClasses[0]);
       }
     }
-  }, [classRows, selectedClass]);
+  }, [selectedClass]);
 
   useEffect(() => {
     if (!selectedClass) {
@@ -270,7 +268,7 @@ export default function PlayerDrilldownClient({
         </div>
       )}
 
-      {classRows.length > 0 && (
+      {allClasses.length > 0 && (
         <div className="mb-6">
           <h2 className="mb-2 px-1 text-xs font-medium text-gray-500">
             Class Insights
@@ -317,7 +315,7 @@ export default function PlayerDrilldownClient({
                     {([
                       { key: "winRate" as const, label: "Win %" },
                       { key: "wins" as const, label: "Wins" },
-                      { key: "games" as const, label: "Drafts" },
+                      { key: "games" as const, label: "Fights" },
                       { key: "losses" as const, label: "Losses" },
                     ]).map((option) => (
                       <button
@@ -357,7 +355,7 @@ export default function PlayerDrilldownClient({
                     <span>Class</span>
                     <span className="text-right">Win %</span>
                     <span className="text-right">Wins</span>
-                    <span className="text-right">Drafts</span>
+                    <span className="text-right">Fights</span>
                     <span className="text-right">Losses</span>
                   </div>
                   <div className="max-h-[420px] overflow-y-auto">
@@ -404,7 +402,7 @@ export default function PlayerDrilldownClient({
                   !profileMapRow &&
                   selectedClass ? (
                     <div className="rounded-md border border-gray-800/70 bg-gray-900/35 px-3 py-2 text-xs text-gray-500">
-                      {drilldown.playerName} has no drafts on this class.
+                      {drilldown.playerName} has no data for this class.
                     </div>
                   ) : null}
                   <div className="rounded-md border border-gray-800/70 bg-gray-900/30 p-2">
@@ -414,7 +412,7 @@ export default function PlayerDrilldownClient({
                       </div>
                     ) : classPopulationPoints.length === 0 ? (
                       <div className="flex h-[300px] items-center justify-center text-xs text-gray-500">
-                        No drafts recorded on this class yet.
+                        No data for this class yet.
                       </div>
                     ) : (
                       <div className="max-h-[420px] space-y-1.5 overflow-y-auto pr-1">

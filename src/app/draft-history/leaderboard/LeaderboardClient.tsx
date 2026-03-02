@@ -3,17 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { Pagination } from "@/components/ui/pagination";
-import { CheckCircle2, ChevronRight, User, X } from "lucide-react";
+import { CheckCircle2, ChevronRight, User } from "lucide-react";
 import type { DraftLeaderboardRow } from "@/server/draftLeaderboard";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
@@ -42,17 +34,12 @@ function sortRows(rows: DraftLeaderboardRow[], key: SortKey): DraftLeaderboardRo
 
 export default function LeaderboardClient({
   initialRows,
-  classOptions,
-  selectedClass,
 }: {
   initialRows: DraftLeaderboardRow[];
-  classOptions: string[];
-  selectedClass: string;
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortKey>("winRate");
   const [animate, setAnimate] = useState(false);
-  const router = useRouter();
 
   const sorted = useMemo(() => sortRows(initialRows, sortBy), [initialRows, sortBy]);
 
@@ -78,10 +65,6 @@ export default function LeaderboardClient({
     requestAnimationFrame(() => setAnimate(true));
   }, []);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedClass]);
-
   const handleSort = (key: SortKey) => {
     setAnimate(false);
     setSortBy(key);
@@ -102,44 +85,6 @@ export default function LeaderboardClient({
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span className="text-[11px] text-gray-600 uppercase tracking-wider mr-1">
-              Class
-            </span>
-            <Select
-              value={selectedClass}
-              onValueChange={(value) => {
-                const next =
-                  value === "all"
-                    ? "/draft-history/leaderboard"
-                    : `/draft-history/leaderboard?class=${encodeURIComponent(value)}`;
-                router.push(next);
-              }}
-            >
-              <SelectTrigger className="h-7 w-[150px] border-gray-800 bg-gray-900 text-xs text-gray-200">
-                <SelectValue placeholder="All classes" />
-              </SelectTrigger>
-              <SelectContent className="max-h-80">
-                <SelectItem value="all">All classes</SelectItem>
-                {classOptions.map((className) => (
-                  <SelectItem key={className} value={className}>
-                    {className}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <button
-              type="button"
-              onClick={() => router.push("/draft-history/leaderboard")}
-              aria-label="Clear class filter"
-              title="Clear class filter"
-              className={`inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-gray-500 transition-colors duration-100 hover:text-gray-300 ${
-                selectedClass === "all" ? "invisible pointer-events-none" : ""
-              }`}
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
           <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
             <span className="text-[11px] text-gray-600 uppercase tracking-wider mr-1">
               Sort

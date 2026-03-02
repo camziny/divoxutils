@@ -333,7 +333,8 @@ export default function DraftBoard({
       });
   }, [draftedProfilesFetchKey, draftedDiscordUserIdsCsv]);
 
-  const canRecordFight = isComplete && isCreator && draft.gameStarted && !isSetComplete;
+  const canRecordFight =
+    isComplete && isCreator && Boolean(draft.gameStarted) && !isSetComplete;
   const isClassSnapshotReady = draftedPlayers.every(
     (player) => typeof player.selectedClass === "string" && player.selectedClass.length > 0
   );

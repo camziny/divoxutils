@@ -591,7 +591,7 @@ test("aggregateClassRows returns empty list when no one played class", () => {
   assert.deepEqual(rows, []);
 });
 
-test("aggregateClassRows uses selectedClass fallback when fights are missing", () => {
+test("aggregateClassRows does not infer class data without fight snapshots", () => {
   const classDrafts: DraftLeaderboardDraft[] = [
     {
       shortId: "class1",
@@ -629,11 +629,80 @@ test("aggregateClassRows uses selectedClass fallback when fights are missing", (
     {}
   );
 
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].clerkUserId, "clerk_1");
-  assert.equal(rows[0].wins, 1);
-  assert.equal(rows[0].losses, 0);
-  assert.equal(rows[0].games, 1);
+  assert.deepEqual(rows, []);
+});
+
+test("aggregateClassRows is fight-based when player swaps classes mid-set", () => {
+  const classDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "class-switch",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 2_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        {
+          _id: "p1",
+          discordUserId: "d1",
+          displayName: "Alice",
+          team: 1,
+          isCaptain: false,
+        },
+        {
+          _id: "p2",
+          discordUserId: "d2",
+          displayName: "Bob",
+          team: 2,
+          isCaptain: false,
+        },
+      ],
+      fights: [
+        {
+          fightNumber: 1,
+          winnerTeam: 1,
+          classesByPlayer: [
+            { playerId: "p1", discordUserId: "d1", className: "Armsman" },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+        {
+          fightNumber: 2,
+          winnerTeam: 2,
+          classesByPlayer: [
+            { playerId: "p1", discordUserId: "d1", className: "Paladin" },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+      ],
+    },
+  ];
+
+  const armsmanRows = aggregateClassRows(
+    classDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "Armsman",
+    {}
+  );
+  assert.equal(armsmanRows.length, 1);
+  assert.equal(armsmanRows[0].clerkUserId, "clerk_1");
+  assert.equal(armsmanRows[0].wins, 1);
+  assert.equal(armsmanRows[0].losses, 0);
+  assert.equal(armsmanRows[0].games, 1);
+
+  const paladinRows = aggregateClassRows(
+    classDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "Paladin",
+    {}
+  );
+  assert.equal(paladinRows.length, 1);
+  assert.equal(paladinRows[0].clerkUserId, "clerk_1");
+  assert.equal(paladinRows[0].wins, 0);
+  assert.equal(paladinRows[0].losses, 1);
+  assert.equal(paladinRows[0].games, 1);
 });
 
 test("aggregatePlayerDrilldown returns data for unlinked player id", () => {
@@ -671,4 +740,54 @@ test("aggregatePlayerDrilldown returns data for unlinked player id", () => {
   assert.ok(alice);
   assert.equal(alice.opponentName, "Alice");
   assert.equal(alice.opponentIsVerified, true);
+});
+
+test("aggregatePlayerDrilldown class stats are fight-based for class swaps", () => {
+  const classDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "switch-drilldown",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 3_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        { _id: "p1", discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+        { _id: "p2", discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+      ],
+      fights: [
+        {
+          fightNumber: 1,
+          winnerTeam: 1,
+          classesByPlayer: [
+            { playerId: "p1", discordUserId: "d1", className: "Armsman" },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+        {
+          fightNumber: 2,
+          winnerTeam: 2,
+          classesByPlayer: [
+            { playerId: "p1", discordUserId: "d1", className: "Paladin" },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+      ],
+    },
+  ];
+
+  const drilldown = aggregatePlayerDrilldown(
+    classDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    {}
+  );
+  assert.ok(drilldown);
+  assert.equal(drilldown.byClass.Armsman?.wins, 1);
+  assert.equal(drilldown.byClass.Armsman?.losses, 0);
+  assert.equal(drilldown.byClass.Armsman?.games, 1);
+  assert.equal(drilldown.byClass.Paladin?.wins, 0);
+  assert.equal(drilldown.byClass.Paladin?.losses, 1);
+  assert.equal(drilldown.byClass.Paladin?.games, 1);
 });

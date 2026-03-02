@@ -11,6 +11,15 @@ import type { DraftLogRow } from "@/server/draftStats";
 
 const ITEMS_PER_PAGE = 12;
 
+export function getNormalizedFightIndex(
+  fightsLength: number,
+  selectedIndex?: number
+): number {
+  if (fightsLength <= 0) return 0;
+  if (typeof selectedIndex !== "number" || Number.isNaN(selectedIndex)) return 0;
+  return Math.min(Math.max(selectedIndex, 0), fightsLength - 1);
+}
+
 function formatDate(ms: number) {
   return new Date(ms).toLocaleDateString("en-US", {
     month: "short",
@@ -65,7 +74,7 @@ export default function DraftHistoryClient({
       if (prev[id] !== undefined) return prev;
       return {
         ...prev,
-        [id]: Math.max(0, (fights.length || 1) - 1),
+        [id]: 0,
       };
     });
   };
@@ -114,9 +123,9 @@ export default function DraftHistoryClient({
                     ? cap2?.displayName
                     : null;
               const fights = row.fights ?? [];
-              const selectedFightIndex = Math.min(
-                fights.length > 0 ? fights.length - 1 : 0,
-                selectedFightByShortId[row.shortId] ?? (fights.length > 0 ? fights.length - 1 : 0)
+              const selectedFightIndex = getNormalizedFightIndex(
+                fights.length,
+                selectedFightByShortId[row.shortId] ?? 0
               );
               const selectedFight = fights[selectedFightIndex];
               const selectedFightClassesByDiscordUserId =

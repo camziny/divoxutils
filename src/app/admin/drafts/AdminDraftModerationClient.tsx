@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  allClasses,
   CLASS_CATEGORIES,
   classesByRealm,
   REALM_COLORS,

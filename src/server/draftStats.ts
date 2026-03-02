@@ -258,16 +258,18 @@ export function aggregateClassRows(
   >();
 
   for (const draft of filteredDrafts) {
-    if (draft.winnerTeam === undefined) continue;
     for (const participant of draft.players) {
       if (participant.team === undefined) continue;
-      const playerClasses = resolvePlayerClassesForDraft(
+      const fightOutcomes = resolvePlayerClassFightOutcomes(
         draft,
+        participant.team,
         participant.discordUserId,
-        participant._id,
-        participant.selectedClass
+        participant._id
       );
-      if (!playerClasses.includes(className)) {
+      const matchingOutcomes = fightOutcomes.filter(
+        (outcome) => outcome.className === className
+      );
+      if (matchingOutcomes.length === 0) {
         continue;
       }
       const playerId = toLeaderboardPlayerId(participant.discordUserId, clerkByDiscordUserId);
@@ -278,8 +280,10 @@ export function aggregateClassRows(
         latestAvatarCreatedAt: -1,
         avatarUrl: undefined,
       };
-      if (participant.team === draft.winnerTeam) entry.wins += 1;
-      else entry.losses += 1;
+      for (const outcome of matchingOutcomes) {
+        if (outcome.didWin) entry.wins += 1;
+        else entry.losses += 1;
+      }
       if (participant.displayName?.trim()) {
         entry.latestName = participant.displayName;
       }
@@ -417,26 +421,26 @@ function resolvePlayerRealm(
   return playerTeam === 1 ? draft.team1Realm : draft.team2Realm;
 }
 
-function resolvePlayerClassesForDraft(
+function resolvePlayerClassFightOutcomes(
   draft: DraftLeaderboardDraft,
+  playerTeam: 1 | 2,
   playerDiscordUserId: string,
-  playerId?: string,
-  fallbackClass?: string
-): string[] {
-  const classSet = new Set<string>();
+  playerId?: string
+): Array<{ className: string; didWin: boolean }> {
+  const outcomes: Array<{ className: string; didWin: boolean }> = [];
   for (const fight of draft.fights ?? []) {
     const classEntry = fight.classesByPlayer.find((entry) => {
       if (playerId && entry.playerId === playerId) return true;
       return entry.discordUserId === playerDiscordUserId;
     });
     if (classEntry?.className) {
-      classSet.add(classEntry.className);
+      outcomes.push({
+        className: classEntry.className,
+        didWin: playerTeam === fight.winnerTeam,
+      });
     }
   }
-  if (classSet.size === 0 && fallbackClass) {
-    classSet.add(fallbackClass);
-  }
-  return Array.from(classSet);
+  return outcomes;
 }
 
 export function aggregatePlayerDrilldown(
@@ -473,7 +477,6 @@ export function aggregatePlayerDrilldown(
     let wasCaptain = false;
     let playerDiscordUserId: string | undefined;
     let playerDraftRowId: string | undefined;
-    let fallbackSelectedClass: string | undefined;
     const opponentTeams = new Map<string, 1 | 2>();
 
     for (const participant of draft.players) {
@@ -489,7 +492,6 @@ export function aggregatePlayerDrilldown(
         wasCaptain = participant.isCaptain;
         playerDiscordUserId = participant.discordUserId;
         playerDraftRowId = participant._id;
-        fallbackSelectedClass = participant.selectedClass;
         if (
           participant.displayName &&
           typeof draft._creationTime === "number" &&
@@ -549,17 +551,17 @@ export function aggregatePlayerDrilldown(
     }
 
     if (playerDiscordUserId) {
-      const classesUsed = resolvePlayerClassesForDraft(
+      const classFightOutcomes = resolvePlayerClassFightOutcomes(
         draft,
+        playerTeam,
         playerDiscordUserId,
-        playerDraftRowId,
-        fallbackSelectedClass
+        playerDraftRowId
       );
-      for (const className of classesUsed) {
-        const classEntry = classStats.get(className) ?? { wins: 0, losses: 0 };
-        if (didWin) classEntry.wins += 1;
+      for (const outcome of classFightOutcomes) {
+        const classEntry = classStats.get(outcome.className) ?? { wins: 0, losses: 0 };
+        if (outcome.didWin) classEntry.wins += 1;
         else classEntry.losses += 1;
-        classStats.set(className, classEntry);
+        classStats.set(outcome.className, classEntry);
       }
     }
 
@@ -634,25 +636,25 @@ export function aggregatePlayerDrilldown(
     >();
 
     for (const draft of filteredDrafts) {
-      if (draft.winnerTeam === undefined) continue;
       for (const participant of draft.players) {
         if (participant.team === undefined) continue;
         const participantId = toLeaderboardPlayerId(
           participant.discordUserId,
           clerkByDiscordUserId
         );
-        const classesUsed = resolvePlayerClassesForDraft(
+        const classFightOutcomes = resolvePlayerClassFightOutcomes(
           draft,
+          participant.team,
           participant.discordUserId,
-          participant._id,
-          participant.selectedClass
+          participant._id
         );
-        for (const className of classesUsed) {
+        for (const outcome of classFightOutcomes) {
+          const className = outcome.className;
           const classMap =
             globalClassStats.get(className) ??
             new Map<string, { wins: number; losses: number }>();
           const entry = classMap.get(participantId) ?? { wins: 0, losses: 0 };
-          if (participant.team === draft.winnerTeam) entry.wins += 1;
+          if (outcome.didWin) entry.wins += 1;
           else entry.losses += 1;
           classMap.set(participantId, entry);
           globalClassStats.set(className, classMap);
@@ -660,7 +662,7 @@ export function aggregatePlayerDrilldown(
       }
     }
 
-    for (const className of classStats.keys()) {
+    for (const className of Array.from(classStats.keys())) {
       const classMap = globalClassStats.get(className);
       if (!classMap) continue;
       const rows = Array.from(classMap.entries())
@@ -838,20 +840,20 @@ export async function getClassLeaderOverview(
   >();
 
   for (const draft of filteredDrafts) {
-    if (draft.winnerTeam === undefined) continue;
     for (const participant of draft.players) {
       if (participant.team === undefined) continue;
       const playerId = toLeaderboardPlayerId(
         participant.discordUserId,
         context.clerkByDiscordUserId
       );
-      const classesUsed = resolvePlayerClassesForDraft(
+      const classFightOutcomes = resolvePlayerClassFightOutcomes(
         draft,
+        participant.team,
         participant.discordUserId,
-        participant._id,
-        participant.selectedClass
+        participant._id
       );
-      for (const className of classesUsed) {
+      for (const outcome of classFightOutcomes) {
+        const className = outcome.className;
         const classMap =
           classStatsByPlayer.get(className) ??
           new Map<string, { wins: number; losses: number; latestName: string }>();
@@ -860,7 +862,7 @@ export async function getClassLeaderOverview(
           losses: 0,
           latestName: participant.displayName?.trim() || playerId,
         };
-        if (participant.team === draft.winnerTeam) entry.wins += 1;
+        if (outcome.didWin) entry.wins += 1;
         else entry.losses += 1;
         if (participant.displayName?.trim()) {
           entry.latestName = participant.displayName;
