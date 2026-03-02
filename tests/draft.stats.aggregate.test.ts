@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   aggregateCaptainRows,
+  aggregateClassRows,
   aggregateHeadToHeadRow,
   aggregateOverallRows,
   aggregatePlayerDrilldown,
@@ -583,6 +584,56 @@ test("aggregateHeadToHeadRow supports unlinked player ids from verified drafts",
   assert.equal(row.wins, 1);
   assert.equal(row.losses, 1);
   assert.equal(row.games, 2);
+});
+
+test("aggregateClassRows returns empty list when no one played class", () => {
+  const rows = aggregateClassRows(drafts, clerkByDiscord, namesByClerk, "Armsman", {});
+  assert.deepEqual(rows, []);
+});
+
+test("aggregateClassRows uses selectedClass fallback when fights are missing", () => {
+  const classDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "class1",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 1_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        {
+          _id: "p1",
+          discordUserId: "d1",
+          displayName: "Alice",
+          team: 1,
+          isCaptain: false,
+          selectedClass: "Armsman",
+        },
+        {
+          _id: "p2",
+          discordUserId: "d2",
+          displayName: "Bob",
+          team: 2,
+          isCaptain: false,
+          selectedClass: "Bard",
+        },
+      ],
+    },
+  ];
+
+  const rows = aggregateClassRows(
+    classDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "Armsman",
+    {}
+  );
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].clerkUserId, "clerk_1");
+  assert.equal(rows[0].wins, 1);
+  assert.equal(rows[0].losses, 0);
+  assert.equal(rows[0].games, 1);
 });
 
 test("aggregatePlayerDrilldown returns data for unlinked player id", () => {

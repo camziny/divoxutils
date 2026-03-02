@@ -10,6 +10,7 @@ export interface DraftPlayer {
   team?: 1 | 2;
   isCaptain: boolean;
   pickOrder?: number;
+  selectedClass?: string;
 }
 
 export interface DraftBan {
@@ -55,10 +56,26 @@ export interface DraftData {
   createdByAvatarUrl?: string;
   winnerTeam?: 1 | 2;
   gameStarted?: boolean;
+  team1FightWins?: number;
+  team2FightWins?: number;
+  setScore?: string;
   botPostedLink?: boolean;
   botNotifiedCaptains?: boolean;
   players: DraftPlayer[];
   bans: DraftBan[];
+  fights: Array<{
+    _id: string;
+    _creationTime: number;
+    draftId: Id<"drafts">;
+    fightNumber: number;
+    winnerTeam: 1 | 2;
+    classesByPlayer: Array<{
+      playerId: Id<"draftPlayers">;
+      discordUserId: string;
+      className: string;
+    }>;
+    submittedBy: string;
+  }>;
 }
 
 export interface CurrentPlayer {

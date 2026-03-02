@@ -2,11 +2,23 @@ import { ConvexHttpClient } from "convex/browser";
 import prisma from "../../prisma/prismaClient";
 
 export type DraftLeaderboardPlayer = {
+  _id: string;
   discordUserId: string;
   displayName: string;
   avatarUrl?: string;
   team?: 1 | 2;
   isCaptain: boolean;
+  selectedClass?: string;
+};
+
+export type DraftLeaderboardFight = {
+  fightNumber: number;
+  winnerTeam: 1 | 2;
+  classesByPlayer: Array<{
+    playerId: string;
+    discordUserId: string;
+    className: string;
+  }>;
 };
 
 export type DraftLeaderboardDraft = {
@@ -14,10 +26,14 @@ export type DraftLeaderboardDraft = {
   type: "traditional" | "pvp";
   discordGuildId: string;
   winnerTeam?: 1 | 2;
+  team1FightWins?: number;
+  team2FightWins?: number;
+  setScore?: string;
   resultStatus?: "unverified" | "verified" | "voided";
   _creationTime?: number;
   team1Realm?: string;
   team2Realm?: string;
+  fights?: DraftLeaderboardFight[];
   players: DraftLeaderboardPlayer[];
 };
 

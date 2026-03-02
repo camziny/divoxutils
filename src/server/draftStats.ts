@@ -27,6 +27,7 @@ export type DraftHeadToHeadRow = {
   playerName: string;
   opponentClerkUserId: string;
   opponentName: string;
+  opponentAvatarUrl?: string;
   opponentIsVerified: boolean;
   wins: number;
   losses: number;
@@ -64,6 +65,16 @@ export type DraftPlayerDrilldown = {
   overall: WinLossRecord;
   captain: WinLossRecord;
   byRealm: Record<string, WinLossRecord>;
+  byClass: Record<string, WinLossRecord>;
+  classRanks: Record<
+    string,
+    {
+      overallRank: number;
+      overallTotal: number;
+      verifiedRank?: number;
+      verifiedTotal?: number;
+    }
+  >;
   pvp: WinLossRecord;
   recentGames: DraftRecentGameRow[];
   headToHead: DraftHeadToHeadRow[];
@@ -79,6 +90,9 @@ export type DraftLogRow = {
   createdByDisplayName?: string;
   createdByAvatarUrl?: string;
   winnerTeam?: 1 | 2;
+  team1FightWins?: number;
+  team2FightWins?: number;
+  setScore?: string;
   resultStatus: "unverified" | "verified" | "voided";
   createdAtMs: number;
   team1Realm?: string;
@@ -94,6 +108,38 @@ export type DraftLogRow = {
     team: 1 | 2;
     className: string;
   }>;
+  fights: Array<{
+    fightNumber: number;
+    winnerTeam: 1 | 2;
+    classesByPlayer: Array<{
+      playerId: string;
+      discordUserId: string;
+      className: string;
+    }>;
+  }>;
+};
+
+export type DraftClassLeaderboardRow = {
+  className: string;
+  clerkUserId: string;
+  userName: string;
+  avatarUrl?: string;
+  isVerified: boolean;
+  wins: number;
+  losses: number;
+  games: number;
+  winRate: number;
+};
+
+export type DraftClassLeaderPoint = {
+  className: string;
+  leaderClerkUserId: string;
+  leaderName: string;
+  isVerified: boolean;
+  wins: number;
+  losses: number;
+  games: number;
+  winRate: number;
 };
 
 type DraftIdentityContext = {
@@ -188,6 +234,86 @@ export function aggregateCaptainRows(
     .sort((a, b) => {
       if (b.wins !== a.wins) return b.wins - a.wins;
       if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+      return b.games - a.games;
+    });
+}
+
+export function aggregateClassRows(
+  drafts: DraftLeaderboardDraft[],
+  clerkByDiscordUserId: Map<string, string>,
+  userNameByClerkUserId: Map<string, string>,
+  className: string,
+  filters: DraftStatsFilters
+): DraftClassLeaderboardRow[] {
+  const filteredDrafts = applyDraftStatsFilters(drafts, filters);
+  const stats = new Map<
+    string,
+    {
+      wins: number;
+      losses: number;
+      latestName: string;
+      latestAvatarCreatedAt: number;
+      avatarUrl?: string;
+    }
+  >();
+
+  for (const draft of filteredDrafts) {
+    if (draft.winnerTeam === undefined) continue;
+    for (const participant of draft.players) {
+      if (participant.team === undefined) continue;
+      const playerClasses = resolvePlayerClassesForDraft(
+        draft,
+        participant.discordUserId,
+        participant._id,
+        participant.selectedClass
+      );
+      if (!playerClasses.includes(className)) {
+        continue;
+      }
+      const playerId = toLeaderboardPlayerId(participant.discordUserId, clerkByDiscordUserId);
+      const entry = stats.get(playerId) ?? {
+        wins: 0,
+        losses: 0,
+        latestName: participant.displayName?.trim() || playerId,
+        latestAvatarCreatedAt: -1,
+        avatarUrl: undefined,
+      };
+      if (participant.team === draft.winnerTeam) entry.wins += 1;
+      else entry.losses += 1;
+      if (participant.displayName?.trim()) {
+        entry.latestName = participant.displayName;
+      }
+      if (
+        participant.avatarUrl &&
+        typeof draft._creationTime === "number" &&
+        draft._creationTime >= entry.latestAvatarCreatedAt
+      ) {
+        entry.latestAvatarCreatedAt = draft._creationTime;
+        entry.avatarUrl = participant.avatarUrl;
+      }
+      stats.set(playerId, entry);
+    }
+  }
+
+  return Array.from(stats.entries())
+    .map(([playerId, value]) => {
+      const games = value.wins + value.losses;
+      return {
+        className,
+        clerkUserId: playerId,
+        userName: userNameByClerkUserId.get(playerId) ?? value.latestName,
+        avatarUrl: value.avatarUrl,
+        isVerified: !playerId.startsWith("discord:"),
+        wins: value.wins,
+        losses: value.losses,
+        games,
+        winRate: games > 0 ? Math.round((value.wins / games) * 1000) / 10 : 0,
+      };
+    })
+    .filter((row) => row.games >= (filters.minGames ?? 0))
+    .sort((a, b) => {
+      if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+      if (b.wins !== a.wins) return b.wins - a.wins;
       return b.games - a.games;
     });
 }
@@ -291,6 +417,28 @@ function resolvePlayerRealm(
   return playerTeam === 1 ? draft.team1Realm : draft.team2Realm;
 }
 
+function resolvePlayerClassesForDraft(
+  draft: DraftLeaderboardDraft,
+  playerDiscordUserId: string,
+  playerId?: string,
+  fallbackClass?: string
+): string[] {
+  const classSet = new Set<string>();
+  for (const fight of draft.fights ?? []) {
+    const classEntry = fight.classesByPlayer.find((entry) => {
+      if (playerId && entry.playerId === playerId) return true;
+      return entry.discordUserId === playerDiscordUserId;
+    });
+    if (classEntry?.className) {
+      classSet.add(classEntry.className);
+    }
+  }
+  if (classSet.size === 0 && fallbackClass) {
+    classSet.add(fallbackClass);
+  }
+  return Array.from(classSet);
+}
+
 export function aggregatePlayerDrilldown(
   drafts: DraftLeaderboardDraft[],
   clerkByDiscordUserId: Map<string, string>,
@@ -311,9 +459,11 @@ export function aggregatePlayerDrilldown(
   let pvpWins = 0;
   let pvpLosses = 0;
   const realmStats = new Map<string, { wins: number; losses: number }>();
+  const classStats = new Map<string, { wins: number; losses: number }>();
   const recentGames: DraftRecentGameRow[] = [];
   const headToHeadStats = new Map<string, { wins: number; losses: number }>();
   const headToHeadNameById = new Map<string, string>();
+  const headToHeadAvatarById = new Map<string, { avatarUrl: string; createdAt: number }>();
   let avatarUrl: string | undefined;
   let latestAvatarCreatedAt = -1;
   let latestDisplayNameCreatedAt = -1;
@@ -321,6 +471,9 @@ export function aggregatePlayerDrilldown(
   for (const draft of filteredDrafts) {
     let playerTeam: 1 | 2 | undefined;
     let wasCaptain = false;
+    let playerDiscordUserId: string | undefined;
+    let playerDraftRowId: string | undefined;
+    let fallbackSelectedClass: string | undefined;
     const opponentTeams = new Map<string, 1 | 2>();
 
     for (const participant of draft.players) {
@@ -334,6 +487,9 @@ export function aggregatePlayerDrilldown(
       if (participantId === playerClerkUserId) {
         playerTeam = participant.team;
         wasCaptain = participant.isCaptain;
+        playerDiscordUserId = participant.discordUserId;
+        playerDraftRowId = participant._id;
+        fallbackSelectedClass = participant.selectedClass;
         if (
           participant.displayName &&
           typeof draft._creationTime === "number" &&
@@ -354,6 +510,15 @@ export function aggregatePlayerDrilldown(
         opponentTeams.set(participantId, participant.team);
         if (participant.displayName.trim()) {
           headToHeadNameById.set(participantId, participant.displayName);
+        }
+        if (participant.avatarUrl && typeof draft._creationTime === "number") {
+          const current = headToHeadAvatarById.get(participantId);
+          if (!current || draft._creationTime >= current.createdAt) {
+            headToHeadAvatarById.set(participantId, {
+              avatarUrl: participant.avatarUrl,
+              createdAt: draft._creationTime,
+            });
+          }
         }
       }
     }
@@ -381,6 +546,21 @@ export function aggregatePlayerDrilldown(
       if (didWin) entry.wins += 1;
       else entry.losses += 1;
       realmStats.set(playerRealm, entry);
+    }
+
+    if (playerDiscordUserId) {
+      const classesUsed = resolvePlayerClassesForDraft(
+        draft,
+        playerDiscordUserId,
+        playerDraftRowId,
+        fallbackSelectedClass
+      );
+      for (const className of classesUsed) {
+        const classEntry = classStats.get(className) ?? { wins: 0, losses: 0 };
+        if (didWin) classEntry.wins += 1;
+        else classEntry.losses += 1;
+        classStats.set(className, classEntry);
+      }
     }
 
     let team1CaptainName = "Unknown";
@@ -433,6 +613,93 @@ export function aggregatePlayerDrilldown(
   realmStats.forEach((entry, realm) => {
     byRealm[realm] = computeWinRate(entry.wins, entry.losses);
   });
+  const byClass: Record<string, WinLossRecord> = {};
+  classStats.forEach((entry, className) => {
+    byClass[className] = computeWinRate(entry.wins, entry.losses);
+  });
+  const classRanks: Record<
+    string,
+    {
+      overallRank: number;
+      overallTotal: number;
+      verifiedRank?: number;
+      verifiedTotal?: number;
+    }
+  > = {};
+
+  if (classStats.size > 0) {
+    const globalClassStats = new Map<
+      string,
+      Map<string, { wins: number; losses: number }>
+    >();
+
+    for (const draft of filteredDrafts) {
+      if (draft.winnerTeam === undefined) continue;
+      for (const participant of draft.players) {
+        if (participant.team === undefined) continue;
+        const participantId = toLeaderboardPlayerId(
+          participant.discordUserId,
+          clerkByDiscordUserId
+        );
+        const classesUsed = resolvePlayerClassesForDraft(
+          draft,
+          participant.discordUserId,
+          participant._id,
+          participant.selectedClass
+        );
+        for (const className of classesUsed) {
+          const classMap =
+            globalClassStats.get(className) ??
+            new Map<string, { wins: number; losses: number }>();
+          const entry = classMap.get(participantId) ?? { wins: 0, losses: 0 };
+          if (participant.team === draft.winnerTeam) entry.wins += 1;
+          else entry.losses += 1;
+          classMap.set(participantId, entry);
+          globalClassStats.set(className, classMap);
+        }
+      }
+    }
+
+    for (const className of classStats.keys()) {
+      const classMap = globalClassStats.get(className);
+      if (!classMap) continue;
+      const rows = Array.from(classMap.entries())
+        .map(([playerId, value]) => {
+          const gamesForClass = value.wins + value.losses;
+          return {
+            playerId,
+            wins: value.wins,
+            losses: value.losses,
+            games: gamesForClass,
+            winRate:
+              gamesForClass > 0
+                ? Math.round((value.wins / gamesForClass) * 1000) / 10
+                : 0,
+          };
+        })
+        .filter((row) => row.games > 0)
+        .sort((a, b) => {
+          if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+          if (b.wins !== a.wins) return b.wins - a.wins;
+          return b.games - a.games;
+        });
+
+      const rankIndex = rows.findIndex((row) => row.playerId === playerClerkUserId);
+      if (rankIndex < 0) continue;
+
+      const verifiedRows = rows.filter((row) => !row.playerId.startsWith("discord:"));
+      const verifiedRankIndex = verifiedRows.findIndex(
+        (row) => row.playerId === playerClerkUserId
+      );
+
+      classRanks[className] = {
+        overallRank: rankIndex + 1,
+        overallTotal: rows.length,
+        verifiedRank: verifiedRankIndex >= 0 ? verifiedRankIndex + 1 : undefined,
+        verifiedTotal: verifiedRows.length > 0 ? verifiedRows.length : undefined,
+      };
+    }
+  }
 
   const headToHead = Array.from(headToHeadStats.entries())
     .map(([opponentClerkUserId, value]) => {
@@ -446,6 +713,7 @@ export function aggregatePlayerDrilldown(
         playerName,
         opponentClerkUserId,
         opponentName,
+        opponentAvatarUrl: headToHeadAvatarById.get(opponentClerkUserId)?.avatarUrl,
         opponentIsVerified: !opponentClerkUserId.startsWith("discord:"),
         wins: value.wins,
         losses: value.losses,
@@ -474,6 +742,8 @@ export function aggregatePlayerDrilldown(
     overall: computeWinRate(wins, losses),
     captain: computeWinRate(captainWins, captainLosses),
     byRealm,
+    byClass,
+    classRanks,
     pvp: computeWinRate(pvpWins, pvpLosses),
     recentGames: recentGames.slice(0, recentLimit),
     headToHead,
@@ -542,6 +812,104 @@ export async function getCaptainDraftStats(filters: DraftStatsFilters) {
   return aggregateCaptainRows(overallRows, filters.minGames ?? 0);
 }
 
+export async function getClassDraftStats(
+  className: string,
+  filters: DraftStatsFilters
+) {
+  const context = await loadDraftIdentityContext();
+  return aggregateClassRows(
+    context.drafts,
+    context.clerkByDiscordUserId,
+    context.userNameByClerkUserId,
+    className,
+    filters
+  );
+}
+
+export async function getClassLeaderOverview(
+  filters: DraftStatsFilters,
+  minGamesPerLeader = 1
+): Promise<DraftClassLeaderPoint[]> {
+  const context = await loadDraftIdentityContext();
+  const filteredDrafts = applyDraftStatsFilters(context.drafts, filters);
+  const classStatsByPlayer = new Map<
+    string,
+    Map<string, { wins: number; losses: number; latestName: string }>
+  >();
+
+  for (const draft of filteredDrafts) {
+    if (draft.winnerTeam === undefined) continue;
+    for (const participant of draft.players) {
+      if (participant.team === undefined) continue;
+      const playerId = toLeaderboardPlayerId(
+        participant.discordUserId,
+        context.clerkByDiscordUserId
+      );
+      const classesUsed = resolvePlayerClassesForDraft(
+        draft,
+        participant.discordUserId,
+        participant._id,
+        participant.selectedClass
+      );
+      for (const className of classesUsed) {
+        const classMap =
+          classStatsByPlayer.get(className) ??
+          new Map<string, { wins: number; losses: number; latestName: string }>();
+        const entry = classMap.get(playerId) ?? {
+          wins: 0,
+          losses: 0,
+          latestName: participant.displayName?.trim() || playerId,
+        };
+        if (participant.team === draft.winnerTeam) entry.wins += 1;
+        else entry.losses += 1;
+        if (participant.displayName?.trim()) {
+          entry.latestName = participant.displayName;
+        }
+        classMap.set(playerId, entry);
+        classStatsByPlayer.set(className, classMap);
+      }
+    }
+  }
+
+  return Array.from(classStatsByPlayer.entries())
+    .map(([className, classMap]) => {
+      const rows = Array.from(classMap.entries())
+        .map(([playerId, value]) => {
+          const games = value.wins + value.losses;
+          return {
+            playerId,
+            wins: value.wins,
+            losses: value.losses,
+            games,
+            winRate: games > 0 ? Math.round((value.wins / games) * 1000) / 10 : 0,
+            latestName: value.latestName,
+          };
+        })
+        .filter((row) => row.games >= minGamesPerLeader)
+        .sort((a, b) => {
+          if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+          if (b.wins !== a.wins) return b.wins - a.wins;
+          return b.games - a.games;
+        });
+
+      const leader = rows[0];
+      if (!leader) return null;
+      return {
+        className,
+        leaderClerkUserId: leader.playerId,
+        leaderName:
+          context.userNameByClerkUserId.get(leader.playerId) ?? leader.latestName,
+        isVerified: !leader.playerId.startsWith("discord:"),
+        wins: leader.wins,
+        losses: leader.losses,
+        games: leader.games,
+        winRate: leader.winRate,
+      } satisfies DraftClassLeaderPoint;
+    })
+    .filter((row): row is DraftClassLeaderPoint => row !== null)
+    .sort((a, b) => a.className.localeCompare(b.className));
+}
+
 export async function getHeadToHeadDraftStats(
   playerClerkUserId: string,
   opponentClerkUserId: string,
@@ -587,16 +955,30 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
     createdByDisplayName?: string;
     createdByAvatarUrl?: string;
     winnerTeam?: 1 | 2;
+    team1FightWins?: number;
+    team2FightWins?: number;
+    setScore?: string;
     resultStatus?: "unverified" | "verified" | "voided";
     _creationTime?: number;
     team1Realm?: string;
     team2Realm?: string;
     players: Array<{
+      _id: string;
       discordUserId: string;
       displayName: string;
       avatarUrl?: string;
       team?: 1 | 2;
       isCaptain: boolean;
+      selectedClass?: string;
+    }>;
+    fights?: Array<{
+      fightNumber: number;
+      winnerTeam: 1 | 2;
+      classesByPlayer: Array<{
+        playerId: string;
+        discordUserId: string;
+        className: string;
+      }>;
     }>;
     bans?: Array<{
       team: 1 | 2;
@@ -628,12 +1010,18 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
         createdByDisplayName,
         createdByAvatarUrl,
         winnerTeam: draft.winnerTeam,
+        team1FightWins: draft.team1FightWins ?? 0,
+        team2FightWins: draft.team2FightWins ?? 0,
+        setScore:
+          draft.setScore ??
+          `${draft.team1FightWins ?? 0}-${draft.team2FightWins ?? 0}`,
         resultStatus: "verified" as const,
         createdAtMs: draft._creationTime ?? 0,
         team1Realm: draft.team1Realm,
         team2Realm: draft.team2Realm,
         players: draft.players,
         bans: draft.bans ?? [],
+        fights: draft.fights ?? [],
       };
     });
 }
