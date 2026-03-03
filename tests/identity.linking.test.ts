@@ -681,6 +681,7 @@ test("admin drafts rejects unauthenticated requests", async () => {
     isAdminUserId: () => true,
     listPendingDrafts: async () => [],
     listReviewedDrafts: async () => [],
+    listCancelableDrafts: async () => [],
   });
 
   const req = createMockRequest({ method: "GET" });
@@ -697,6 +698,7 @@ test("admin drafts rejects non-admin requests", async () => {
     isAdminUserId: () => false,
     listPendingDrafts: async () => [],
     listReviewedDrafts: async () => [],
+    listCancelableDrafts: async () => [],
   });
 
   const req = createMockRequest({ method: "GET" });
@@ -707,7 +709,7 @@ test("admin drafts rejects non-admin requests", async () => {
   assert.deepEqual(res.body, { error: "Forbidden" });
 });
 
-test("admin drafts returns pending and reviewed draft lists for admins", async () => {
+test("admin drafts returns pending, reviewed, and cancelable draft lists for admins", async () => {
   const pendingDrafts = [
     {
       shortId: "abc123",
@@ -748,11 +750,19 @@ test("admin drafts returns pending and reviewed draft lists for admins", async (
       ],
     },
   ];
+  const cancelableDrafts = [
+    {
+      shortId: "limbo123",
+      status: "setup",
+      ageMinutes: 90,
+    },
+  ];
   const handler = createAdminDraftsHandler({
     getAuthUserId: () => "admin_1",
     isAdminUserId: () => true,
     listPendingDrafts: async () => pendingDrafts,
     listReviewedDrafts: async () => reviewedDrafts,
+    listCancelableDrafts: async () => cancelableDrafts,
   });
 
   const req = createMockRequest({ method: "GET" });
@@ -760,7 +770,7 @@ test("admin drafts returns pending and reviewed draft lists for admins", async (
   await handler(req, res);
 
   assert.equal(res.statusCode, 200);
-  assert.deepEqual(res.body, { pendingDrafts, reviewedDrafts });
+  assert.deepEqual(res.body, { pendingDrafts, reviewedDrafts, cancelableDrafts });
 });
 
 test("moderate draft rejects non-admin requests", async () => {

@@ -3,12 +3,14 @@ import { getAuth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { isAdminClerkUserId } from "@/server/adminAuth";
 
-type AdminDraftsDeps = {
+type CancelDraftDeps = {
   getAuthUserId: (req: NextApiRequest) => string | null;
   isAdminUserId: (userId: string) => boolean;
-  listPendingDrafts: () => Promise<unknown>;
-  listReviewedDrafts: () => Promise<unknown>;
-  listCancelableDrafts: () => Promise<unknown>;
+  cancelDraft: (args: {
+    shortId: string;
+    cancelledByClerkUserId: string;
+    reason?: string;
+  }) => Promise<unknown>;
 };
 
 function getConvexClient() {
@@ -19,9 +21,9 @@ function getConvexClient() {
   return new ConvexHttpClient(url);
 }
 
-export function createAdminDraftsHandler(deps: AdminDraftsDeps) {
+export function createCancelDraftHandler(deps: CancelDraftDeps) {
   return async function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method !== "GET") {
+    if (req.method !== "POST") {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
@@ -33,33 +35,35 @@ export function createAdminDraftsHandler(deps: AdminDraftsDeps) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
+    const shortId = typeof req.body?.shortId === "string" ? req.body.shortId.trim() : "";
+    const reason =
+      typeof req.body?.reason === "string" && req.body.reason.trim()
+        ? req.body.reason.trim()
+        : undefined;
+
+    if (!shortId) {
+      return res.status(400).json({ error: "shortId is required." });
+    }
+
     try {
-      const [pendingDrafts, reviewedDrafts, cancelableDrafts] = await Promise.all([
-        deps.listPendingDrafts(),
-        deps.listReviewedDrafts(),
-        deps.listCancelableDrafts(),
-      ]);
-      return res.status(200).json({ pendingDrafts, reviewedDrafts, cancelableDrafts });
+      const result = await deps.cancelDraft({
+        shortId,
+        cancelledByClerkUserId: userId,
+        reason,
+      });
+      return res.status(200).json({ success: true, result });
     } catch (error: any) {
-      return res.status(500).json({ error: error?.message ?? "Failed to fetch drafts." });
+      return res.status(500).json({ error: error?.message ?? "Failed to cancel draft." });
     }
   };
 }
 
-const handler = createAdminDraftsHandler({
+const handler = createCancelDraftHandler({
   getAuthUserId: (req) => getAuth(req).userId ?? null,
   isAdminUserId: (userId) => isAdminClerkUserId(userId),
-  listPendingDrafts: async () => {
+  cancelDraft: async (args) => {
     const convex = getConvexClient();
-    return convex.query("drafts:getDraftsForModeration" as any, {});
-  },
-  listReviewedDrafts: async () => {
-    const convex = getConvexClient();
-    return convex.query("drafts:getReviewedDraftsForModeration" as any, {});
-  },
-  listCancelableDrafts: async () => {
-    const convex = getConvexClient();
-    return convex.query("drafts:getCancelableDrafts" as any, {});
+    return convex.mutation("drafts:cancelDraftAsAdmin" as any, args);
   },
 });
 

@@ -18,6 +18,9 @@ export type DraftLeaderboardFight = {
     playerId: string;
     discordUserId: string;
     className: string;
+    substituteMode?: "known" | "manual";
+    substituteDiscordUserId?: string;
+    substituteDisplayName?: string;
   }>;
 };
 

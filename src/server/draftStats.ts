@@ -116,6 +116,9 @@ export type DraftLogRow = {
       playerId: string;
       discordUserId: string;
       className: string;
+      substituteMode?: "known" | "manual";
+      substituteDiscordUserId?: string;
+      substituteDisplayName?: string;
     }>;
   }>;
 };
@@ -259,44 +262,58 @@ export function aggregateClassRows(
   >();
 
   for (const draft of filteredDrafts) {
-    for (const participant of draft.players) {
-      if (participant.team === undefined) continue;
-      const fightOutcomes = resolvePlayerClassFightOutcomes(
-        draft,
-        participant.team,
-        participant.discordUserId,
-        participant._id
-      );
-      const matchingOutcomes = fightOutcomes.filter(
-        (outcome) => outcome.className === className
-      );
-      if (matchingOutcomes.length === 0) {
-        continue;
-      }
-      const playerId = toLeaderboardPlayerId(participant.discordUserId, clerkByDiscordUserId);
-      const entry = stats.get(playerId) ?? {
-        wins: 0,
-        losses: 0,
-        latestName: participant.displayName?.trim() || playerId,
-        latestAvatarCreatedAt: -1,
-        avatarUrl: undefined,
-      };
-      for (const outcome of matchingOutcomes) {
-        if (outcome.didWin) entry.wins += 1;
+    const draftedPlayersById = new Map(
+      draft.players
+        .filter((participant) => participant.team !== undefined)
+        .map((participant) => [participant._id, participant])
+    );
+    for (const fight of draft.fights ?? []) {
+      for (const classEntry of fight.classesByPlayer) {
+        if (classEntry.className !== className) continue;
+        const draftedPlayer = draftedPlayersById.get(classEntry.playerId);
+        if (!draftedPlayer || draftedPlayer.team === undefined) continue;
+
+        const creditedDiscordUserId =
+          classEntry.substituteMode === "known" && classEntry.substituteDiscordUserId
+            ? classEntry.substituteDiscordUserId
+            : classEntry.substituteMode === "manual"
+              ? undefined
+              : classEntry.discordUserId;
+        if (!creditedDiscordUserId) continue;
+
+        const playerId = toLeaderboardPlayerId(creditedDiscordUserId, clerkByDiscordUserId);
+        const entry = stats.get(playerId) ?? {
+          wins: 0,
+          losses: 0,
+          latestName:
+            classEntry.substituteDisplayName?.trim() ||
+            draftedPlayer.displayName?.trim() ||
+            playerId,
+          latestAvatarCreatedAt: -1,
+          avatarUrl: undefined,
+        };
+
+        if (fight.winnerTeam === draftedPlayer.team) entry.wins += 1;
         else entry.losses += 1;
+
+        if (classEntry.substituteDisplayName?.trim()) {
+          entry.latestName = classEntry.substituteDisplayName;
+        } else if (draftedPlayer.displayName?.trim()) {
+          entry.latestName = draftedPlayer.displayName;
+        }
+
+        if (
+          creditedDiscordUserId === draftedPlayer.discordUserId &&
+          draftedPlayer.avatarUrl &&
+          typeof draft._creationTime === "number" &&
+          draft._creationTime >= entry.latestAvatarCreatedAt
+        ) {
+          entry.latestAvatarCreatedAt = draft._creationTime;
+          entry.avatarUrl = draftedPlayer.avatarUrl;
+        }
+
+        stats.set(playerId, entry);
       }
-      if (participant.displayName?.trim()) {
-        entry.latestName = participant.displayName;
-      }
-      if (
-        participant.avatarUrl &&
-        typeof draft._creationTime === "number" &&
-        draft._creationTime >= entry.latestAvatarCreatedAt
-      ) {
-        entry.latestAvatarCreatedAt = draft._creationTime;
-        entry.avatarUrl = participant.avatarUrl;
-      }
-      stats.set(playerId, entry);
     }
   }
 
@@ -431,7 +448,15 @@ function resolvePlayerClassFightOutcomes(
   const outcomes: Array<{ className: string; didWin: boolean }> = [];
   for (const fight of draft.fights ?? []) {
     const classEntry = fight.classesByPlayer.find((entry) => {
-      if (playerId && entry.playerId === playerId) return true;
+      if (playerId && entry.playerId === playerId) {
+        if (entry.substituteMode === "manual") {
+          return false;
+        }
+        if (entry.substituteMode === "known" && entry.substituteDiscordUserId) {
+          return entry.substituteDiscordUserId === playerDiscordUserId;
+        }
+        return entry.discordUserId === playerDiscordUserId;
+      }
       return entry.discordUserId === playerDiscordUserId;
     });
     if (classEntry?.className) {
@@ -1011,6 +1036,9 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
         playerId: string;
         discordUserId: string;
         className: string;
+        substituteMode?: "known" | "manual";
+        substituteDiscordUserId?: string;
+        substituteDisplayName?: string;
       }>;
     }>;
     bans?: Array<{

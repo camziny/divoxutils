@@ -2,7 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import * as draftFns from "../convex/drafts";
 
-type TableName = "drafts" | "draftPlayers" | "draftBans" | "draftGuildSettings";
+type TableName =
+  | "drafts"
+  | "draftPlayers"
+  | "draftBans"
+  | "draftFights"
+  | "draftGuildSettings";
 
 class MockDb {
   private tables: Record<TableName, any[]>;
@@ -13,6 +18,7 @@ class MockDb {
       drafts: seed?.drafts ? [...seed.drafts] : [],
       draftPlayers: seed?.draftPlayers ? [...seed.draftPlayers] : [],
       draftBans: seed?.draftBans ? [...seed.draftBans] : [],
+      draftFights: seed?.draftFights ? [...seed.draftFights] : [],
       draftGuildSettings: seed?.draftGuildSettings ? [...seed.draftGuildSettings] : [],
     };
   }
@@ -464,5 +470,272 @@ test("updateSettings rejects team size that exceeds available players", async ()
       token: "creator-token",
     }),
     /Need at least 8 players for 4v4/
+  );
+});
+
+test("cancelDraftAsAdmin marks draft as cancelled with audit fields", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "setup",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+  });
+
+  const result = await (draftFns.cancelDraftAsAdmin as any)._handler(ctx, {
+    shortId: "aaa",
+    cancelledByClerkUserId: "admin_1",
+    reason: "Restarting draft",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "cancelled");
+  assert.equal(updated.cancelledBy, "admin_1");
+  assert.equal(updated.cancelReason, "Restarting draft");
+  assert.equal(typeof updated.cancelledAt, "number");
+  assert.equal(result.shortId, "aaa");
+  assert.equal(result.status, "cancelled");
+});
+
+test("cancelDraftAsAdmin rejects completed started drafts", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "complete",
+        gameStarted: true,
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.cancelDraftAsAdmin as any)._handler(ctx, {
+      shortId: "aaa",
+      cancelledByClerkUserId: "admin_1",
+      reason: "cleanup",
+    }),
+    /Cannot cancel a draft with a started game/
+  );
+});
+
+test("getActiveDrafts excludes cancelled drafts", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "active-setup",
+        status: "setup",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+      {
+        _id: "d2",
+        shortId: "active-complete",
+        status: "complete",
+        teamSize: 5,
+        gameStarted: false,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+      {
+        _id: "d3",
+        shortId: "cancelled-one",
+        status: "cancelled",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", discordUserId: "u1", displayName: "U1", token: "t1" },
+      { _id: "p2", draftId: "d2", discordUserId: "u2", displayName: "U2", token: "t2" },
+      { _id: "p3", draftId: "d3", discordUserId: "u3", displayName: "U3", token: "t3" },
+    ],
+  });
+
+  const active = await (draftFns.getActiveDrafts as any)._handler(ctx, {});
+  const shortIds = active.map((draft: { shortId: string }) => draft.shortId).sort();
+  assert.deepEqual(shortIds, ["active-complete", "active-setup"]);
+});
+
+test("adminReplaceDraftFights persists known substitute metadata", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "subtest",
+        status: "complete",
+        teamSize: 1,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p1",
+        draftId: "d1",
+        discordUserId: "d1",
+        displayName: "Alice",
+        token: "t1",
+        team: 1,
+        isCaptain: true,
+      },
+      {
+        _id: "p2",
+        draftId: "d1",
+        discordUserId: "d2",
+        displayName: "Bob",
+        token: "t2",
+        team: 2,
+        isCaptain: true,
+      },
+    ],
+  });
+
+  await (draftFns.adminReplaceDraftFights as any)._handler(ctx, {
+    shortId: "subtest",
+    submittedBy: "admin_1",
+    fights: [
+      {
+        winnerTeam: 1,
+        classesByPlayer: [
+          { playerId: "p1", className: "Armsman" },
+          { playerId: "p2", className: "Bard" },
+        ],
+      },
+      {
+        winnerTeam: 2,
+        classesByPlayer: [
+          { playerId: "p1", className: "Paladin" },
+          { playerId: "p2", className: "Bard" },
+        ],
+      },
+      {
+        winnerTeam: 1,
+        classesByPlayer: [
+          {
+            playerId: "p1",
+            className: "Paladin",
+            substituteMode: "known",
+            substituteDiscordUserId: "d5",
+            substituteDisplayName: "SubFive",
+          },
+          { playerId: "p2", className: "Bard" },
+        ],
+      },
+      {
+        winnerTeam: 2,
+        classesByPlayer: [
+          { playerId: "p1", className: "Armsman" },
+          { playerId: "p2", className: "Bard" },
+        ],
+      },
+      {
+        winnerTeam: 1,
+        classesByPlayer: [
+          { playerId: "p1", className: "Paladin" },
+          { playerId: "p2", className: "Bard" },
+        ],
+      },
+    ],
+  });
+
+  const fights = await ctx.db.query("draftFights").collect();
+  assert.equal(fights.length, 5);
+  const fightThree = fights.find((fight: any) => fight.fightNumber === 3);
+  assert.ok(fightThree);
+  const p1Class = fightThree.classesByPlayer.find((entry: any) => entry.playerId === "p1");
+  assert.ok(p1Class);
+  assert.equal(p1Class.substituteMode, "known");
+  assert.equal(p1Class.substituteDiscordUserId, "d5");
+  assert.equal(p1Class.substituteDisplayName, "SubFive");
+});
+
+test("adminReplaceDraftFights rejects manual substitute with discord user id", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "subtest2",
+        status: "complete",
+        teamSize: 1,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p1",
+        draftId: "d1",
+        discordUserId: "d1",
+        displayName: "Alice",
+        token: "t1",
+        team: 1,
+        isCaptain: true,
+      },
+      {
+        _id: "p2",
+        draftId: "d1",
+        discordUserId: "d2",
+        displayName: "Bob",
+        token: "t2",
+        team: 2,
+        isCaptain: true,
+      },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.adminReplaceDraftFights as any)._handler(ctx, {
+      shortId: "subtest2",
+      submittedBy: "admin_1",
+      fights: [
+        {
+          winnerTeam: 1,
+          classesByPlayer: [
+            {
+              playerId: "p1",
+              className: "Armsman",
+              substituteMode: "manual",
+              substituteDiscordUserId: "d9",
+              substituteDisplayName: "ManualSub",
+            },
+            { playerId: "p2", className: "Bard" },
+          ],
+        },
+        {
+          winnerTeam: 1,
+          classesByPlayer: [
+            { playerId: "p1", className: "Armsman" },
+            { playerId: "p2", className: "Bard" },
+          ],
+        },
+        {
+          winnerTeam: 1,
+          classesByPlayer: [
+            { playerId: "p1", className: "Armsman" },
+            { playerId: "p2", className: "Bard" },
+          ],
+        },
+      ],
+    }),
+    /Manual substitute cannot include a discord user id/
   );
 });

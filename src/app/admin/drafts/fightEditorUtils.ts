@@ -13,6 +13,9 @@ export type FightEditorFight = {
     playerId: string;
     discordUserId?: string;
     className: string;
+    substituteMode?: "known" | "manual";
+    substituteDiscordUserId?: string;
+    substituteDisplayName?: string;
   }>;
 };
 
@@ -24,6 +27,15 @@ export type FightEditorDraft = {
 export type FightEditorRow = {
   winnerTeam: 1 | 2 | null;
   classesByPlayer: Record<string, string>;
+  substitutesByPlayer: Record<
+    string,
+    | {
+        mode: "known" | "manual";
+        discordUserId?: string;
+        displayName: string;
+      }
+    | null
+  >;
 };
 
 export function createEmptyFightRow(
@@ -32,6 +44,7 @@ export function createEmptyFightRow(
   return {
     winnerTeam: null,
     classesByPlayer: Object.fromEntries(draftedPlayers.map((player) => [player._id, ""])),
+    substitutesByPlayer: Object.fromEntries(draftedPlayers.map((player) => [player._id, null])),
   };
 }
 
@@ -45,13 +58,31 @@ export function toFightEditorRows(draft: FightEditorDraft): FightEditorRow[] {
     .sort((a, b) => a.fightNumber - b.fightNumber)
     .map((fight) => {
       const classesByPlayer: Record<string, string> = {};
+      const substitutesByPlayer: FightEditorRow["substitutesByPlayer"] = {};
       for (const player of draftedPlayers) {
-        const existingClass = fight.classesByPlayer.find(
+        const classEntry = fight.classesByPlayer.find(
           (entry) => entry.playerId === player._id
-        )?.className;
-        classesByPlayer[player._id] = existingClass ?? "";
+        );
+        classesByPlayer[player._id] = classEntry?.className ?? "";
+        if (classEntry?.substituteMode === "known" && classEntry.substituteDisplayName) {
+          substitutesByPlayer[player._id] = {
+            mode: "known",
+            discordUserId: classEntry.substituteDiscordUserId,
+            displayName: classEntry.substituteDisplayName,
+          };
+        } else if (
+          classEntry?.substituteMode === "manual" &&
+          classEntry.substituteDisplayName
+        ) {
+          substitutesByPlayer[player._id] = {
+            mode: "manual",
+            displayName: classEntry.substituteDisplayName,
+          };
+        } else {
+          substitutesByPlayer[player._id] = null;
+        }
       }
-      return { winnerTeam: fight.winnerTeam, classesByPlayer };
+      return { winnerTeam: fight.winnerTeam, classesByPlayer, substitutesByPlayer };
     });
 }
 

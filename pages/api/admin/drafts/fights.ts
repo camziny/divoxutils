@@ -10,11 +10,138 @@ type AdminDraftFightsDeps = {
     shortId: string;
     fights: Array<{
       winnerTeam: 1 | 2;
-      classesByPlayer: Array<{ playerId: string; className: string }>;
+      classesByPlayer: Array<{
+        playerId: string;
+        className: string;
+        substituteMode?: "known" | "manual";
+        substituteDiscordUserId?: string;
+        substituteDisplayName?: string;
+      }>;
     }>;
     submittedBy: string;
   }) => Promise<unknown>;
 };
+
+function parseFightPayload(rawFights: unknown) {
+  if (!Array.isArray(rawFights) || rawFights.length === 0) {
+    return { error: "At least one fight is required." as const };
+  }
+
+  const fights: Array<{
+    winnerTeam: 1 | 2;
+    classesByPlayer: Array<{
+      playerId: string;
+      className: string;
+      substituteMode?: "known" | "manual";
+      substituteDiscordUserId?: string;
+      substituteDisplayName?: string;
+    }>;
+  }> = [];
+
+  for (const rawFight of rawFights) {
+    if (!rawFight || typeof rawFight !== "object") {
+      return { error: "Invalid fight payload." as const };
+    }
+    const winnerTeam = (rawFight as { winnerTeam?: unknown }).winnerTeam;
+    if (winnerTeam !== 1 && winnerTeam !== 2) {
+      return { error: "Each fight winner must be Team 1 or Team 2." as const };
+    }
+    const rawClasses = (rawFight as { classesByPlayer?: unknown }).classesByPlayer;
+    if (!Array.isArray(rawClasses) || rawClasses.length === 0) {
+      return { error: "Each fight must include at least one class entry." as const };
+    }
+
+    const classesByPlayer: Array<{
+      playerId: string;
+      className: string;
+      substituteMode?: "known" | "manual";
+      substituteDiscordUserId?: string;
+      substituteDisplayName?: string;
+    }> = [];
+
+    for (const rawEntry of rawClasses) {
+      if (!rawEntry || typeof rawEntry !== "object") {
+        return { error: "Invalid class entry payload." as const };
+      }
+      const playerId =
+        typeof (rawEntry as { playerId?: unknown }).playerId === "string"
+          ? (rawEntry as { playerId: string }).playerId.trim()
+          : "";
+      const className =
+        typeof (rawEntry as { className?: unknown }).className === "string"
+          ? (rawEntry as { className: string }).className.trim()
+          : "";
+      if (!playerId || !className) {
+        return { error: "Each class entry requires playerId and className." as const };
+      }
+
+      const substituteModeRaw = (rawEntry as { substituteMode?: unknown }).substituteMode;
+      const substituteMode =
+        substituteModeRaw === "known" || substituteModeRaw === "manual"
+          ? substituteModeRaw
+          : undefined;
+      const substituteDiscordUserId =
+        typeof (rawEntry as { substituteDiscordUserId?: unknown }).substituteDiscordUserId ===
+        "string"
+          ? (rawEntry as { substituteDiscordUserId: string }).substituteDiscordUserId.trim()
+          : "";
+      const substituteDisplayName =
+        typeof (rawEntry as { substituteDisplayName?: unknown }).substituteDisplayName ===
+        "string"
+          ? (rawEntry as { substituteDisplayName: string }).substituteDisplayName.trim()
+          : "";
+
+      if (substituteMode === "known") {
+        if (!substituteDiscordUserId || !substituteDisplayName) {
+          return {
+            error:
+              "Known substitute entries require substituteDiscordUserId and substituteDisplayName." as const,
+          };
+        }
+      } else if (substituteMode === "manual") {
+        if (!substituteDisplayName) {
+          return {
+            error: "Manual substitute entries require substituteDisplayName." as const,
+          };
+        }
+        if (substituteDiscordUserId) {
+          return {
+            error: "Manual substitute entries cannot include substituteDiscordUserId." as const,
+          };
+        }
+      } else if (substituteDiscordUserId || substituteDisplayName) {
+        return {
+          error: "substituteMode is required when substitute fields are provided." as const,
+        };
+      }
+
+      const normalizedEntry: {
+        playerId: string;
+        className: string;
+        substituteMode?: "known" | "manual";
+        substituteDiscordUserId?: string;
+        substituteDisplayName?: string;
+      } = {
+        playerId,
+        className,
+      };
+      if (substituteMode === "known") {
+        normalizedEntry.substituteMode = "known";
+        normalizedEntry.substituteDiscordUserId = substituteDiscordUserId;
+        normalizedEntry.substituteDisplayName = substituteDisplayName;
+      }
+      if (substituteMode === "manual") {
+        normalizedEntry.substituteMode = "manual";
+        normalizedEntry.substituteDisplayName = substituteDisplayName;
+      }
+      classesByPlayer.push(normalizedEntry);
+    }
+
+    fights.push({ winnerTeam, classesByPlayer });
+  }
+
+  return { fights };
+}
 
 function getConvexClient() {
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -39,19 +166,19 @@ export function createAdminDraftFightsHandler(deps: AdminDraftFightsDeps) {
     }
 
     const shortId = typeof req.body?.shortId === "string" ? req.body.shortId.trim() : "";
-    const fights = Array.isArray(req.body?.fights) ? req.body.fights : [];
+    const parsedFights = parseFightPayload(req.body?.fights);
 
     if (!shortId) {
       return res.status(400).json({ error: "shortId is required." });
     }
-    if (!Array.isArray(fights) || fights.length === 0) {
-      return res.status(400).json({ error: "At least one fight is required." });
+    if ("error" in parsedFights) {
+      return res.status(400).json({ error: parsedFights.error });
     }
 
     try {
       await deps.replaceDraftFights({
         shortId,
-        fights,
+        fights: parsedFights.fights,
         submittedBy: userId,
       });
       return res.status(200).json({ success: true });

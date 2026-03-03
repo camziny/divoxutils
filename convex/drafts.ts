@@ -1110,6 +1110,9 @@ export const adminReplaceDraftFights = mutation({
           v.object({
             playerId: v.id("draftPlayers"),
             className: v.string(),
+            substituteMode: v.optional(v.union(v.literal("known"), v.literal("manual"))),
+            substituteDiscordUserId: v.optional(v.string()),
+            substituteDisplayName: v.optional(v.string()),
           })
         ),
       })
@@ -1160,20 +1163,61 @@ export const adminReplaceDraftFights = mutation({
       const classByPlayerId = new Map(
         fight.classesByPlayer.map((entry) => [entry.playerId, entry.className])
       );
+      const entryByPlayerId = new Map(
+        fight.classesByPlayer.map((entry) => [entry.playerId, entry])
+      );
       const normalizedClassesByPlayer: {
         playerId: typeof draftedPlayers[number]["_id"];
         discordUserId: string;
         className: string;
+        substituteMode?: "known" | "manual";
+        substituteDiscordUserId?: string;
+        substituteDisplayName?: string;
       }[] = [];
 
       for (const draftedPlayer of draftedPlayers) {
         const className = classByPlayerId.get(draftedPlayer._id);
         if (!className) throw new Error("Missing player class assignment");
         if (!allClasses.includes(className)) throw new Error(`Invalid class: ${className}`);
+        const classEntry = entryByPlayerId.get(draftedPlayer._id);
+        if (!classEntry) throw new Error("Missing player class assignment");
+
+        const normalizedClassName = className.trim();
+        if (!normalizedClassName) throw new Error("Player class cannot be empty");
+
+        const substituteMode = classEntry.substituteMode;
+        const substituteDiscordUserId = classEntry.substituteDiscordUserId?.trim();
+        const substituteDisplayName = classEntry.substituteDisplayName?.trim();
+
+        if (substituteMode === "known") {
+          if (!substituteDiscordUserId) {
+            throw new Error("Known substitute requires a discord user id");
+          }
+          if (!substituteDisplayName) {
+            throw new Error("Known substitute requires a display name");
+          }
+        } else if (substituteMode === "manual") {
+          if (!substituteDisplayName) {
+            throw new Error("Manual substitute requires a display name");
+          }
+          if (substituteDiscordUserId) {
+            throw new Error("Manual substitute cannot include a discord user id");
+          }
+        } else if (substituteDiscordUserId || substituteDisplayName) {
+          throw new Error("Substitute mode is required when substitute details are provided");
+        }
+
         normalizedClassesByPlayer.push({
           playerId: draftedPlayer._id,
           discordUserId: draftedPlayer.discordUserId,
-          className,
+          className: normalizedClassName,
+          substituteMode: substituteMode ?? undefined,
+          substituteDiscordUserId:
+            substituteMode === "known" ? substituteDiscordUserId : undefined,
+          substituteDisplayName:
+            substituteMode === "known" || substituteMode === "manual"
+              ? substituteDisplayName
+              : undefined,
         });
       }
 
@@ -1355,13 +1399,7 @@ export const getReviewedDraftsForModeration = query({
       });
     }
 
-    return results
-      .sort(
-        (a, b) =>
-          (b.resultModeratedAt ?? b._creationTime) -
-          (a.resultModeratedAt ?? a._creationTime)
-      )
-      .slice(0, 50);
+    return results.sort((a, b) => b._creationTime - a._creationTime).slice(0, 50);
   },
 });
 
@@ -1564,6 +1602,122 @@ export const moderateDraftResult = mutation({
     });
 
     return { shortId: draft.shortId, resultStatus, winnerTeam: draft.winnerTeam };
+  },
+});
+
+export const cancelDraftAsAdmin = mutation({
+  args: {
+    shortId: v.string(),
+    cancelledByClerkUserId: v.string(),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db
+      .query("drafts")
+      .withIndex("by_shortId", (q) => q.eq("shortId", args.shortId))
+      .unique();
+    if (!draft) {
+      throw new Error("Draft not found");
+    }
+    if (draft.status === "cancelled") {
+      throw new Error("Draft is already cancelled");
+    }
+    if (draft.status === "complete" && draft.gameStarted) {
+      throw new Error("Cannot cancel a draft with a started game");
+    }
+
+    const trimmedReason = args.reason?.trim() ? args.reason.trim() : undefined;
+    const now = Date.now();
+    await ctx.db.patch(draft._id, {
+      status: "cancelled",
+      cancelledBy: args.cancelledByClerkUserId,
+      cancelledAt: now,
+      cancelReason: trimmedReason,
+    });
+
+    return {
+      shortId: draft.shortId,
+      status: "cancelled" as const,
+      cancelledAt: now,
+      cancelledBy: args.cancelledByClerkUserId,
+      cancelReason: trimmedReason,
+    };
+  },
+});
+
+export const getCancelableDrafts = query({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const statuses = [
+      "setup",
+      "coin_flip",
+      "realm_pick",
+      "banning",
+      "drafting",
+      "complete",
+    ] as const;
+    const drafts = [];
+    for (const status of statuses) {
+      const byStatus = await ctx.db
+        .query("drafts")
+        .withIndex("by_status", (q) => q.eq("status", status))
+        .collect();
+      drafts.push(...byStatus);
+    }
+
+    const results = [];
+    for (const draft of drafts) {
+      if (draft.status === "complete" && draft.gameStarted) {
+        continue;
+      }
+
+      const players = await ctx.db
+        .query("draftPlayers")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      const fights = await ctx.db
+        .query("draftFights")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      const captainCount = players.filter((player) => player.isCaptain).length;
+      const assignedCount = players.filter((player) => player.team !== undefined).length;
+      const selectedClassCount = players.filter(
+        (player) => !!player.selectedClass?.trim()
+      ).length;
+      const fightCount = fights.length;
+      const ageMinutes = Math.floor((now - draft._creationTime) / 60000);
+      const minimumPlayers = draft.teamSize * 2;
+      const hasEnoughPlayers = players.length >= minimumPlayers;
+      const hasNoMeaningfulProgress =
+        assignedCount === 0 && selectedClassCount === 0 && fightCount === 0;
+      const isLikelyStale = ageMinutes >= 30 && hasNoMeaningfulProgress;
+
+      results.push({
+        _id: draft._id,
+        shortId: draft.shortId,
+        status: draft.status,
+        gameStarted: draft.gameStarted,
+        discordGuildId: draft.discordGuildId,
+        discordGuildName: draft.discordGuildName,
+        createdBy: draft.createdBy,
+        createdByDisplayName: draft.createdByDisplayName,
+        createdByAvatarUrl: draft.createdByAvatarUrl,
+        teamSize: draft.teamSize,
+        playerCount: players.length,
+        assignedCount,
+        captainCount,
+        selectedClassCount,
+        fightCount,
+        minimumPlayers,
+        hasEnoughPlayers,
+        ageMinutes,
+        isLikelyStale,
+        _creationTime: draft._creationTime,
+      });
+    }
+
+    return results.sort((a, b) => b._creationTime - a._creationTime);
   },
 });
 

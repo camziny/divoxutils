@@ -6,6 +6,9 @@ const draftClassSnapshot = v.object({
   playerId: v.id("draftPlayers"),
   discordUserId: v.string(),
   className: v.string(),
+  substituteMode: v.optional(v.union(v.literal("known"), v.literal("manual"))),
+  substituteDiscordUserId: v.optional(v.string()),
+  substituteDisplayName: v.optional(v.string()),
 });
 
 export default defineSchema({
@@ -18,7 +21,8 @@ export default defineSchema({
       v.literal("realm_pick"),
       v.literal("banning"),
       v.literal("drafting"),
-      v.literal("complete")
+      v.literal("complete"),
+      v.literal("cancelled")
     ),
     teamSize: v.number(),
     coinFlipWinnerId: v.optional(v.string()),
@@ -61,6 +65,9 @@ export default defineSchema({
     winnerOverriddenBy: v.optional(v.string()),
     winnerOverriddenAt: v.optional(v.number()),
     winnerOverrideNote: v.optional(v.string()),
+    cancelledBy: v.optional(v.string()),
+    cancelledAt: v.optional(v.number()),
+    cancelReason: v.optional(v.string()),
     botPostedLink: v.optional(v.boolean()),
     botNotifiedCaptains: v.optional(v.boolean()),
   })
