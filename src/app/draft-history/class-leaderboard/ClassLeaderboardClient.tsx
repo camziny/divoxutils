@@ -74,7 +74,7 @@ export default function ClassLeaderboardClient({
             Class Leaderboard
           </h1>
           <p className="mt-1 text-[13px] text-gray-500">
-            Fight record by class across verified drafts
+            Verified fight stats by class
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -149,8 +149,13 @@ export default function ClassLeaderboardClient({
                         </span>
                         {row.isVerified ? <VerifiedCheck /> : null}
                       </span>
-                      <span className="text-sm text-gray-200 tabular-nums">
-                        {row.wins}-{row.losses}
+                      <span className="inline-flex flex-col items-end tabular-nums leading-tight">
+                        <span className="text-sm text-gray-200">
+                          {row.winRate.toFixed(1)}%
+                        </span>
+                        <span className="text-[10px] text-gray-500">
+                          {row.wins}-{row.losses}
+                        </span>
                       </span>
                     </div>
                     <div className="h-1 rounded-full bg-gray-800 overflow-hidden">
