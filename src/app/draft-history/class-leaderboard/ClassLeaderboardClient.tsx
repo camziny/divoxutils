@@ -50,6 +50,7 @@ export default function ClassLeaderboardClient({
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortKey>("winRate");
+  const [animate, setAnimate] = useState(false);
   const router = useRouter();
   const sortedRows = useMemo(() => sortRows(rows, sortBy), [rows, sortBy]);
 
@@ -65,7 +66,13 @@ export default function ClassLeaderboardClient({
   useEffect(() => {
     setCurrentPage(1);
     setSortBy("winRate");
+    setAnimate(false);
+    requestAnimationFrame(() => requestAnimationFrame(() => setAnimate(true)));
   }, [className]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setAnimate(true));
+  }, []);
 
   return (
     <>
@@ -75,7 +82,7 @@ export default function ClassLeaderboardClient({
             Class Leaderboard
           </h1>
           <p className="mt-1 text-[13px] text-gray-500">
-            Verified fight stats by class
+            Verified drafts only
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -88,8 +95,10 @@ export default function ClassLeaderboardClient({
                 key={opt.key}
                 type="button"
                 onClick={() => {
+                  setAnimate(false);
                   setSortBy(opt.key);
                   setCurrentPage(1);
+                  requestAnimationFrame(() => requestAnimationFrame(() => setAnimate(true)));
                 }}
                 className={`px-2 py-1 rounded text-xs font-medium transition-colors duration-100 ${
                   sortBy === opt.key
@@ -112,7 +121,7 @@ export default function ClassLeaderboardClient({
             <SelectTrigger className="h-8 w-full sm:w-[220px] border-gray-800 bg-gray-900 text-xs text-gray-200">
               <SelectValue placeholder="Select class" />
             </SelectTrigger>
-            <SelectContent className="max-h-80">
+            <SelectContent className="max-h-80 w-[var(--radix-select-trigger-width)]">
               {classOptions.map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}
@@ -161,9 +170,11 @@ export default function ClassLeaderboardClient({
                     </div>
                     <div className="h-1 rounded-full bg-gray-800 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-indigo-400/60"
+                        className="h-full rounded-full bg-indigo-400/60 transition-all duration-700 ease-out"
                         style={{
-                          width: `${Math.min(100, Math.max(0, row.winRate))}%`,
+                          width: animate
+                            ? `${Math.min(100, Math.max(0, row.winRate))}%`
+                            : "0%",
                         }}
                       />
                     </div>

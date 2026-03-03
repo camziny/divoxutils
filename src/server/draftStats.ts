@@ -78,6 +78,7 @@ export type DraftPlayerDrilldown = {
   pvp: WinLossRecord;
   recentGames: DraftRecentGameRow[];
   headToHead: DraftHeadToHeadRow[];
+  headToHeadCaptain: DraftHeadToHeadRow[];
 };
 
 export type DraftLogRow = {
@@ -466,6 +467,7 @@ export function aggregatePlayerDrilldown(
   const classStats = new Map<string, { wins: number; losses: number }>();
   const recentGames: DraftRecentGameRow[] = [];
   const headToHeadStats = new Map<string, { wins: number; losses: number }>();
+  const headToHeadCaptainStats = new Map<string, { wins: number; losses: number }>();
   const headToHeadNameById = new Map<string, string>();
   const headToHeadAvatarById = new Map<string, { avatarUrl: string; createdAt: number }>();
   let avatarUrl: string | undefined;
@@ -478,6 +480,8 @@ export function aggregatePlayerDrilldown(
     let playerDiscordUserId: string | undefined;
     let playerDraftRowId: string | undefined;
     const opponentTeams = new Map<string, 1 | 2>();
+    let opponentCaptainClerkUserId: string | undefined;
+    let opponentCaptainTeam: 1 | 2 | undefined;
 
     for (const participant of draft.players) {
       if (participant.team === undefined) {
@@ -510,6 +514,10 @@ export function aggregatePlayerDrilldown(
         }
       } else {
         opponentTeams.set(participantId, participant.team);
+        if (participant.isCaptain) {
+          opponentCaptainClerkUserId = participantId;
+          opponentCaptainTeam = participant.team;
+        }
         if (participant.displayName.trim()) {
           headToHeadNameById.set(participantId, participant.displayName);
         }
@@ -604,6 +612,24 @@ export function aggregatePlayerDrilldown(
       }
       headToHeadStats.set(opponentClerkUserId, entry);
     });
+
+    if (
+      wasCaptain &&
+      opponentCaptainClerkUserId &&
+      opponentCaptainTeam !== undefined &&
+      opponentCaptainTeam !== playerTeam
+    ) {
+      const entry = headToHeadCaptainStats.get(opponentCaptainClerkUserId) ?? {
+        wins: 0,
+        losses: 0,
+      };
+      if (didWin) {
+        entry.wins += 1;
+      } else {
+        entry.losses += 1;
+      }
+      headToHeadCaptainStats.set(opponentCaptainClerkUserId, entry);
+    }
   }
 
   const games = wins + losses;
@@ -703,35 +729,39 @@ export function aggregatePlayerDrilldown(
     }
   }
 
-  const headToHead = Array.from(headToHeadStats.entries())
-    .map(([opponentClerkUserId, value]) => {
-      const opponentName =
-        userNameByClerkUserId.get(opponentClerkUserId) ??
-        headToHeadNameById.get(opponentClerkUserId) ??
-        opponentClerkUserId;
-      const opponentGames = value.wins + value.losses;
-      return {
-        playerClerkUserId,
-        playerName,
-        opponentClerkUserId,
-        opponentName,
-        opponentAvatarUrl: headToHeadAvatarById.get(opponentClerkUserId)?.avatarUrl,
-        opponentIsVerified: !opponentClerkUserId.startsWith("discord:"),
-        wins: value.wins,
-        losses: value.losses,
-        games: opponentGames,
-        winRate:
-          opponentGames > 0
-            ? Math.round((value.wins / opponentGames) * 1000) / 10
-            : 0,
-      };
-    })
-    .filter((row) => row.games >= (filters.minGames ?? 0))
-    .sort((a, b) => {
-      if (b.games !== a.games) return b.games - a.games;
-      if (b.wins !== a.wins) return b.wins - a.wins;
-      return b.winRate - a.winRate;
-    });
+  const toHeadToHeadRows = (statsMap: Map<string, { wins: number; losses: number }>) =>
+    Array.from(statsMap.entries())
+      .map(([opponentClerkUserId, value]) => {
+        const opponentName =
+          userNameByClerkUserId.get(opponentClerkUserId) ??
+          headToHeadNameById.get(opponentClerkUserId) ??
+          opponentClerkUserId;
+        const opponentGames = value.wins + value.losses;
+        return {
+          playerClerkUserId,
+          playerName,
+          opponentClerkUserId,
+          opponentName,
+          opponentAvatarUrl: headToHeadAvatarById.get(opponentClerkUserId)?.avatarUrl,
+          opponentIsVerified: !opponentClerkUserId.startsWith("discord:"),
+          wins: value.wins,
+          losses: value.losses,
+          games: opponentGames,
+          winRate:
+            opponentGames > 0
+              ? Math.round((value.wins / opponentGames) * 1000) / 10
+              : 0,
+        };
+      })
+      .filter((row) => row.games >= (filters.minGames ?? 0))
+      .sort((a, b) => {
+        if (b.games !== a.games) return b.games - a.games;
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        return b.winRate - a.winRate;
+      });
+
+  const headToHead = toHeadToHeadRows(headToHeadStats);
+  const headToHeadCaptain = toHeadToHeadRows(headToHeadCaptainStats);
 
   recentGames.sort((a, b) => b.createdAtMs - a.createdAtMs);
 
@@ -749,6 +779,7 @@ export function aggregatePlayerDrilldown(
     pvp: computeWinRate(pvpWins, pvpLosses),
     recentGames: recentGames.slice(0, recentLimit),
     headToHead,
+    headToHeadCaptain,
   };
 }
 
