@@ -4,11 +4,29 @@ import { api, internal } from "./_generated/api";
 import { corsHeaders, requireBotAuth } from "./httpAuth";
 
 const http = httpRouter();
+const internalErrorBody = JSON.stringify({ error: "Internal server error" });
+
+function safeHttpAction(
+  endpoint: string,
+  handler: Parameters<typeof httpAction>[0]
+) {
+  return httpAction(async (ctx, request) => {
+    try {
+      return await handler(ctx, request);
+    } catch (error) {
+      console.error(`[convex-http] ${endpoint} failed`, error);
+      return new Response(internalErrorBody, {
+        status: 500,
+        headers: corsHeaders,
+      });
+    }
+  });
+}
 
 http.route({
   path: "/createDraft",
   method: "POST",
-  handler: httpAction(async (ctx, request) => {
+  handler: safeHttpAction("/createDraft", async (ctx, request) => {
     const authError = requireBotAuth(request, process.env.BOT_API_KEY);
     if (authError) return authError;
 
@@ -62,7 +80,7 @@ http.route({
 http.route({
   path: "/getDraftStatus",
   method: "GET",
-  handler: httpAction(async (ctx, request) => {
+  handler: safeHttpAction("/getDraftStatus", async (ctx, request) => {
     const url = new URL(request.url);
     const shortId = url.searchParams.get("shortId");
 
@@ -112,7 +130,7 @@ http.route({
 http.route({
   path: "/guildSettings",
   method: "POST",
-  handler: httpAction(async (ctx, request) => {
+  handler: safeHttpAction("/guildSettings:POST", async (ctx, request) => {
     const authError = requireBotAuth(request, process.env.BOT_API_KEY);
     if (authError) return authError;
 
@@ -143,7 +161,7 @@ http.route({
 http.route({
   path: "/guildSettings",
   method: "GET",
-  handler: httpAction(async (ctx, request) => {
+  handler: safeHttpAction("/guildSettings:GET", async (ctx, request) => {
     const authError = requireBotAuth(request, process.env.BOT_API_KEY);
     if (authError) return authError;
 
@@ -178,7 +196,7 @@ http.route({
 http.route({
   path: "/activeDrafts",
   method: "GET",
-  handler: httpAction(async (ctx, request) => {
+  handler: safeHttpAction("/activeDrafts", async (ctx, request) => {
     const authError = requireBotAuth(request, process.env.BOT_API_KEY);
     if (authError) return authError;
 
@@ -193,7 +211,7 @@ http.route({
 http.route({
   path: "/getDraftTokens",
   method: "GET",
-  handler: httpAction(async (ctx, request) => {
+  handler: safeHttpAction("/getDraftTokens", async (ctx, request) => {
     const authError = requireBotAuth(request, process.env.BOT_API_KEY);
     if (authError) return authError;
 
@@ -226,7 +244,7 @@ http.route({
 http.route({
   path: "/markBotPostedLink",
   method: "POST",
-  handler: httpAction(async (ctx, request) => {
+  handler: safeHttpAction("/markBotPostedLink", async (ctx, request) => {
     const authError = requireBotAuth(request, process.env.BOT_API_KEY);
     if (authError) return authError;
 
@@ -242,7 +260,7 @@ http.route({
 http.route({
   path: "/markBotNotifiedCaptains",
   method: "POST",
-  handler: httpAction(async (ctx, request) => {
+  handler: safeHttpAction("/markBotNotifiedCaptains", async (ctx, request) => {
     const authError = requireBotAuth(request, process.env.BOT_API_KEY);
     if (authError) return authError;
 

@@ -113,6 +113,64 @@ test("draft fights API validates required shortId and fights", async () => {
   assert.deepEqual(missingFightsRes.body, { error: "At least one fight is required." });
 });
 
+test("draft fights API validates substitute payload consistency", async () => {
+  const handler = createAdminDraftFightsHandler({
+    getAuthUserId: () => "admin_1",
+    isAdminUserId: () => true,
+    replaceDraftFights: async () => ({}),
+  });
+
+  const missingModeReq = createMockRequest({
+    body: {
+      shortId: "abc123",
+      fights: [
+        {
+          winnerTeam: 1,
+          classesByPlayer: [
+            {
+              playerId: "p1",
+              className: "Armsman",
+              substituteDisplayName: "Sub",
+            },
+          ],
+        },
+      ],
+    },
+  });
+  const missingModeRes = createMockResponse();
+  await handler(missingModeReq, missingModeRes);
+  assert.equal(missingModeRes.statusCode, 400);
+  assert.deepEqual(missingModeRes.body, {
+    error: "substituteMode is required when substitute fields are provided.",
+  });
+
+  const manualDiscordReq = createMockRequest({
+    body: {
+      shortId: "abc123",
+      fights: [
+        {
+          winnerTeam: 1,
+          classesByPlayer: [
+            {
+              playerId: "p1",
+              className: "Armsman",
+              substituteMode: "manual",
+              substituteDiscordUserId: "d5",
+              substituteDisplayName: "Sub",
+            },
+          ],
+        },
+      ],
+    },
+  });
+  const manualDiscordRes = createMockResponse();
+  await handler(manualDiscordReq, manualDiscordRes);
+  assert.equal(manualDiscordRes.statusCode, 400);
+  assert.deepEqual(manualDiscordRes.body, {
+    error: "Manual substitute entries cannot include substituteDiscordUserId.",
+  });
+});
+
 test("draft fights API passes payload to mutation and returns success", async () => {
   let captured: any = null;
   const handler = createAdminDraftFightsHandler({
@@ -130,7 +188,13 @@ test("draft fights API passes payload to mutation and returns success", async ()
         {
           winnerTeam: 1,
           classesByPlayer: [
-            { playerId: "p1", className: "Armsman" },
+            {
+              playerId: "p1",
+              className: "Armsman",
+              substituteMode: "known",
+              substituteDiscordUserId: "d5",
+              substituteDisplayName: "SubFive",
+            },
             { playerId: "p2", className: "Bard" },
           ],
         },
@@ -150,7 +214,13 @@ test("draft fights API passes payload to mutation and returns success", async ()
       {
         winnerTeam: 1,
         classesByPlayer: [
-          { playerId: "p1", className: "Armsman" },
+          {
+            playerId: "p1",
+            className: "Armsman",
+            substituteMode: "known",
+            substituteDiscordUserId: "d5",
+            substituteDisplayName: "SubFive",
+          },
           { playerId: "p2", className: "Bard" },
         ],
       },

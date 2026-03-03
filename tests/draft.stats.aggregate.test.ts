@@ -709,6 +709,90 @@ test("aggregateClassRows is fight-based when player swaps classes mid-set", () =
   assert.equal(paladinRows[0].games, 1);
 });
 
+test("aggregateClassRows credits known substitutes and skips manual substitutes", () => {
+  const substituteClerkMap = new Map<string, string>([
+    ...clerkByDiscord.entries(),
+    ["d5", "clerk_5"],
+  ]);
+  const substituteNames = new Map<string, string>([
+    ...namesByClerk.entries(),
+    ["clerk_5", "SubFive"],
+  ]);
+
+  const classDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "sub-class",
+      type: "traditional",
+      discordGuildId: "g1",
+      _creationTime: 8_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        { _id: "p1", discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+        { _id: "p2", discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+      ],
+      fights: [
+        {
+          fightNumber: 1,
+          winnerTeam: 1,
+          classesByPlayer: [
+            { playerId: "p1", discordUserId: "d1", className: "Armsman" },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+        {
+          fightNumber: 2,
+          winnerTeam: 2,
+          classesByPlayer: [
+            {
+              playerId: "p1",
+              discordUserId: "d1",
+              className: "Armsman",
+              substituteMode: "known",
+              substituteDiscordUserId: "d5",
+              substituteDisplayName: "SubFive",
+            },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+        {
+          fightNumber: 3,
+          winnerTeam: 1,
+          classesByPlayer: [
+            {
+              playerId: "p1",
+              discordUserId: "d1",
+              className: "Armsman",
+              substituteMode: "manual",
+              substituteDisplayName: "ManualSub",
+            },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+      ],
+    },
+  ];
+
+  const armsmanRows = aggregateClassRows(
+    classDrafts,
+    substituteClerkMap,
+    substituteNames,
+    "Armsman",
+    {}
+  );
+
+  const aliceRow = armsmanRows.find((row) => row.clerkUserId === "clerk_1");
+  const subRow = armsmanRows.find((row) => row.clerkUserId === "clerk_5");
+  assert.ok(aliceRow);
+  assert.equal(aliceRow.wins, 1);
+  assert.equal(aliceRow.losses, 0);
+  assert.equal(aliceRow.games, 1);
+  assert.ok(subRow);
+  assert.equal(subRow.wins, 0);
+  assert.equal(subRow.losses, 1);
+  assert.equal(subRow.games, 1);
+});
+
 test("aggregatePlayerDrilldown returns data for unlinked player id", () => {
   const mixedDrafts: DraftLeaderboardDraft[] = [
     {
