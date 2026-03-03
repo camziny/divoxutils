@@ -5,6 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Pagination } from "@/components/ui/pagination";
 import { CheckCircle2, User } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { DraftClassLeaderboardRow } from "@/server/draftStats";
 import {
   Tooltip,
@@ -14,6 +21,22 @@ import {
 } from "@/components/ui/tooltip";
 
 const ITEMS_PER_PAGE = 20;
+type SortKey = "wins" | "winRate" | "games" | "losses";
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "winRate", label: "Win %" },
+  { key: "wins", label: "Wins" },
+  { key: "games", label: "Fights" },
+  { key: "losses", label: "Losses" },
+];
+
+function sortRows(rows: DraftClassLeaderboardRow[], key: SortKey): DraftClassLeaderboardRow[] {
+  return [...rows].sort((a, b) => {
+    const diff = b[key] - a[key];
+    if (diff !== 0) return diff;
+    if (key !== "wins" && b.wins !== a.wins) return b.wins - a.wins;
+    return b.games - a.games;
+  });
+}
 
 export default function ClassLeaderboardClient({
   className,
@@ -25,19 +48,22 @@ export default function ClassLeaderboardClient({
   rows: DraftClassLeaderboardRow[];
 }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<SortKey>("winRate");
   const router = useRouter();
+  const sortedRows = useMemo(() => sortRows(rows, sortBy), [rows, sortBy]);
 
   const totalPages = useMemo(
-    () => Math.ceil(rows.length / ITEMS_PER_PAGE),
-    [rows.length]
+    () => Math.ceil(sortedRows.length / ITEMS_PER_PAGE),
+    [sortedRows.length]
   );
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return rows.slice(start, start + ITEMS_PER_PAGE);
-  }, [rows, currentPage]);
+    return sortedRows.slice(start, start + ITEMS_PER_PAGE);
+  }, [sortedRows, currentPage]);
 
   useEffect(() => {
     setCurrentPage(1);
+    setSortBy("winRate");
   }, [className]);
 
   return (
@@ -48,27 +74,55 @@ export default function ClassLeaderboardClient({
             Class Leaderboard
           </h1>
           <p className="mt-1 text-[13px] text-gray-500">
-            Set record by class across verified drafts
+            Fight record by class across verified drafts
           </p>
         </div>
-        <select
-          value={className}
-          onChange={(event) =>
-            router.push(
-              `/draft-history/class-leaderboard?class=${encodeURIComponent(event.target.value)}`
-            )
-          }
-          className="rounded-md border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200"
-        >
-          {classOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="text-[11px] text-gray-600 uppercase tracking-wider mr-1">
+              Sort
+            </span>
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => {
+                  setSortBy(opt.key);
+                  setCurrentPage(1);
+                }}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors duration-100 ${
+                  sortBy === opt.key
+                    ? "bg-gray-800 text-gray-200"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <Select
+            value={className}
+            onValueChange={(value) =>
+              router.push(
+                `/draft-history/class-leaderboard?class=${encodeURIComponent(value)}`
+              )
+            }
+          >
+            <SelectTrigger className="h-8 w-full sm:w-[220px] border-gray-800 bg-gray-900 text-xs text-gray-200">
+              <SelectValue placeholder="Select class" />
+            </SelectTrigger>
+            <SelectContent className="max-h-80">
+              {classOptions.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {rows.length === 0 ? (
+      {sortedRows.length === 0 ? (
         <div className="rounded-lg border border-gray-800 px-4 py-8 text-center text-sm text-gray-500">
           No verified records yet for {className}.
         </div>

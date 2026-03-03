@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { key: "history", label: "History", href: "/draft-history" },
   { key: "leaderboard", label: "Leaderboard", href: "/draft-history/leaderboard" },
+  {
+    key: "classRankings",
+    label: "Class Rankings",
+    href: "/draft-history/class-leaderboard",
+  },
 ] as const;
 
 export default function DraftHistoryNav() {
@@ -18,7 +23,9 @@ export default function DraftHistoryNav() {
         const isActive =
           tab.key === "history"
             ? pathname === "/draft-history"
-            : pathname.startsWith("/draft-history/leaderboard");
+            : tab.key === "leaderboard"
+              ? pathname.startsWith("/draft-history/leaderboard")
+              : pathname.startsWith("/draft-history/class-leaderboard");
 
         return (
           <Link
