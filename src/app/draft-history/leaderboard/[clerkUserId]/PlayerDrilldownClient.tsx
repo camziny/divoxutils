@@ -41,6 +41,7 @@ const REALM_BAR_COLOR: Record<string, string> = {
 
 type ClassSortKey = "games" | "winRate" | "wins" | "losses";
 type ClassView = "table" | "map";
+type HeadToHeadView = "all" | "captain";
 
 export default function PlayerDrilldownClient({
   initialData,
@@ -52,6 +53,8 @@ export default function PlayerDrilldownClient({
   const [classSortBy, setClassSortBy] = useState<ClassSortKey>("winRate");
   const [classQuery, setClassQuery] = useState("");
   const [classView, setClassView] = useState<ClassView>("table");
+  const [headToHeadView, setHeadToHeadView] = useState<HeadToHeadView>("all");
+  const [progressAnimate, setProgressAnimate] = useState(false);
   const [classPopulationRows, setClassPopulationRows] = useState<DraftClassLeaderboardRow[]>([]);
   const [classPopulationLoading, setClassPopulationLoading] = useState(false);
   const classRows = useMemo(
@@ -99,6 +102,17 @@ export default function PlayerDrilldownClient({
       return a.className.localeCompare(b.className);
     });
   }, [classQuery, classRows, classSortBy]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setProgressAnimate(true));
+  }, []);
+
+  const handleHeadToHeadViewChange = (view: HeadToHeadView) => {
+    if (view === headToHeadView) return;
+    setProgressAnimate(false);
+    setHeadToHeadView(view);
+    requestAnimationFrame(() => requestAnimationFrame(() => setProgressAnimate(true)));
+  };
 
   useEffect(() => {
     const firstPlayedClass = alphabeticalPlayedClasses[0];
@@ -162,7 +176,11 @@ export default function PlayerDrilldownClient({
     { name: "Losses", value: drilldown.captain.losses },
   ];
 
-  const topH2H = drilldown.headToHead.slice(0, 8);
+  const activeHeadToHeadRows =
+    headToHeadView === "captain" ? drilldown.headToHeadCaptain : drilldown.headToHead;
+  const topH2H = activeHeadToHeadRows.slice(0, 8);
+  const hasAnyHeadToHeadData =
+    drilldown.headToHead.length > 0 || drilldown.headToHeadCaptain.length > 0;
 
   const streak = computeStreak(drilldown.recentGames);
   const classPopulationPoints = classPopulationRows
@@ -229,6 +247,7 @@ export default function PlayerDrilldownClient({
           data={overallPie}
           record={`${drilldown.overall.wins}-${drilldown.overall.losses}`}
           winRate={drilldown.overall.winRate}
+          animate={progressAnimate}
         />
         {drilldown.captain.games > 0 ? (
           <StatCard
@@ -236,6 +255,7 @@ export default function PlayerDrilldownClient({
             data={captainPie}
             record={`${drilldown.captain.wins}-${drilldown.captain.losses}`}
             winRate={drilldown.captain.winRate}
+            animate={progressAnimate}
           />
         ) : (
           <Card className="bg-transparent">
@@ -262,6 +282,7 @@ export default function PlayerDrilldownClient({
                 label="PvP"
                 barClass={REALM_BAR_COLOR["PvP"]}
                 stats={drilldown.pvp}
+                animate={progressAnimate}
               />
             )}
             {Object.entries(drilldown.byRealm)
@@ -272,6 +293,7 @@ export default function PlayerDrilldownClient({
                   label={realm}
                   barClass={REALM_BAR_COLOR[realm] ?? "bg-gray-500/30"}
                   stats={stats}
+                  animate={progressAnimate}
                 />
               ))}
           </div>
@@ -472,7 +494,7 @@ export default function PlayerDrilldownClient({
                             </div>
                             <div className="mt-1.5">
                               <Progress
-                                value={row.winRate}
+                                value={progressAnimate ? row.winRate : 0}
                                 className="h-2"
                                 indicatorClassName={
                                   row.isCurrentPlayer ? "bg-indigo-400/90" : "bg-indigo-400/65"
@@ -514,61 +536,95 @@ export default function PlayerDrilldownClient({
         )}
       </div>
 
-      {topH2H.length > 0 && (
+      {hasAnyHeadToHeadData && (
         <Card className="mb-6 bg-transparent">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-gray-500">
-              Head-to-Head
-            </CardTitle>
+          <CardHeader className="pb-2 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-xs font-medium text-gray-500">
+                Head-to-Head
+              </CardTitle>
+              <div className="inline-flex items-center gap-1 rounded border border-gray-800/80 bg-gray-900/40 p-1">
+                <button
+                  type="button"
+                  onClick={() => handleHeadToHeadViewChange("all")}
+                  className={
+                    headToHeadView === "all"
+                      ? "rounded px-2 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
+                      : "rounded px-2 py-1 text-[11px] text-gray-500 hover:text-gray-300"
+                  }
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleHeadToHeadViewChange("captain")}
+                  className={
+                    headToHeadView === "captain"
+                      ? "rounded px-2 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
+                      : "rounded px-2 py-1 text-[11px] text-gray-500 hover:text-gray-300"
+                  }
+                >
+                  Captain
+                </button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="pt-2">
-            <div className="space-y-2">
-              {topH2H.map((row) => (
-                <div
-                  key={row.opponentClerkUserId}
-                  className="grid grid-cols-[160px_1fr_44px] items-center gap-2"
-                >
-                  <span className="inline-flex min-w-0 items-center gap-2">
-                    <InlineMiniAvatar
-                      name={row.opponentName}
-                      avatarUrl={row.opponentAvatarUrl}
-                    />
-                    {row.opponentIsVerified ? (
-                      <Link
-                        href={`/draft-history/leaderboard/${encodeURIComponent(
-                          row.opponentClerkUserId
-                        )}`}
-                        className="truncate text-xs text-gray-300 hover:text-white"
-                      >
-                        {row.opponentName}
-                      </Link>
-                    ) : (
-                      <span className="truncate text-xs text-gray-400">
-                        {row.opponentName}
+            {headToHeadView === "captain" && drilldown.captain.games === 0 ? (
+              <p className="text-sm text-gray-600">
+                {drilldown.playerName} has yet to captain a draft.
+              </p>
+            ) : topH2H.length === 0 ? (
+              <p className="text-sm text-gray-600">No captain head-to-head data yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {topH2H.map((row) => (
+                  <div
+                    key={row.opponentClerkUserId}
+                    className="grid grid-cols-[160px_1fr_44px] items-center gap-2"
+                  >
+                    <span className="inline-flex min-w-0 items-center gap-2">
+                      <InlineMiniAvatar
+                        name={row.opponentName}
+                        avatarUrl={row.opponentAvatarUrl}
+                      />
+                      {row.opponentIsVerified ? (
+                        <Link
+                          href={`/draft-history/leaderboard/${encodeURIComponent(
+                            row.opponentClerkUserId
+                          )}`}
+                          className="truncate text-xs text-gray-300 hover:text-white"
+                        >
+                          {row.opponentName}
+                        </Link>
+                      ) : (
+                        <span className="truncate text-xs text-gray-400">
+                          {row.opponentName}
+                        </span>
+                      )}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Progress
+                        value={progressAnimate ? row.winRate : 0}
+                        className="h-1.5 flex-1"
+                        indicatorClassName="bg-indigo-400/60"
+                      />
+                      <span className="text-[11px] text-gray-500 tabular-nums">
+                        {row.wins}-{row.losses}
                       </span>
-                    )}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Progress
-                      value={row.winRate}
-                      className="h-1.5 flex-1"
-                      indicatorClassName="bg-indigo-400/60"
-                    />
-                    <span className="text-[11px] text-gray-500 tabular-nums">
-                      {row.wins}-{row.losses}
+                    </div>
+                    <span className="text-[11px] text-gray-500 tabular-nums text-right">
+                      {row.winRate.toFixed(1)}%
                     </span>
                   </div>
-                  <span className="text-[11px] text-gray-500 tabular-nums text-right">
-                    {row.winRate.toFixed(1)}%
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {drilldown.headToHead.length > 0 && (
+      {activeHeadToHeadRows.length > 0 && (
         <div className="mb-6">
           <button
             type="button"
@@ -582,12 +638,12 @@ export default function PlayerDrilldownClient({
             />
             vs Opponents
             <span className="text-gray-600 font-normal">
-              ({drilldown.headToHead.length})
+              ({activeHeadToHeadRows.length})
             </span>
           </button>
           {opponentsOpen && (
             <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
-              {drilldown.headToHead.map((row) => {
+              {activeHeadToHeadRows.map((row) => {
                 const rowContent = (
                   <>
                     <span className="inline-flex min-w-0 items-center gap-2">
@@ -772,11 +828,13 @@ function StatCard({
   data,
   record,
   winRate,
+  animate,
 }: {
   label: string;
   data: Array<{ name: string; value: number }>;
   record: string;
   winRate: number;
+  animate: boolean;
 }) {
   return (
     <Card className="bg-transparent">
@@ -798,7 +856,7 @@ function StatCard({
           </div>
         </div>
         <Progress
-          value={winRate}
+          value={animate ? winRate : 0}
           className="mt-3 h-1"
           indicatorClassName="bg-indigo-400/60"
         />
@@ -840,10 +898,12 @@ function BreakdownRow({
   label,
   barClass,
   stats,
+  animate,
 }: {
   label: string;
   barClass: string;
   stats: WinLossRecord;
+  animate: boolean;
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5">
@@ -851,14 +911,11 @@ function BreakdownRow({
       <span className="text-sm text-gray-100 font-medium tabular-nums">
         {stats.wins}-{stats.losses}
       </span>
-      <div className="flex-1 h-1 rounded-full bg-gray-800 overflow-hidden">
-        <div
-          className={`h-full rounded-full ${barClass}`}
-          style={{
-            width: `${Math.min(100, Math.max(0, stats.winRate))}%`,
-          }}
-        />
-      </div>
+      <Progress
+        value={animate ? stats.winRate : 0}
+        className="h-1 flex-1"
+        indicatorClassName={barClass}
+      />
       <span className="text-xs text-gray-500 tabular-nums w-12 text-right">
         {stats.winRate.toFixed(1)}%
       </span>

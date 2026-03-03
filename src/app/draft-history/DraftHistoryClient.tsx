@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, ChevronLeft, ChevronRight, Trophy, User } from "lucide-react";
+import { CheckCircle2, ChevronRight, Trophy, User } from "lucide-react";
 import { FaDiscord } from "react-icons/fa";
 import DiscordIdentityLinkCard from "./DiscordIdentityLinkCard";
 import type { DraftLogRow } from "@/server/draftStats";
@@ -208,42 +208,28 @@ export default function DraftHistoryClient({
 
                   {isExpanded && (
                     <div className="border-t border-gray-800/60 px-4 py-4 bg-gray-950/40">
-                      {fights.length > 0 ? (
-                        <div className="mb-2 flex justify-end">
-                          <div className="inline-flex items-center gap-2">
-                            <span className="text-[10px] font-medium tracking-wide text-gray-500">
-                              Fight {selectedFight?.fightNumber ?? fights.length}
-                            </span>
-                            <div className="inline-flex items-center rounded border border-gray-800/80 bg-gray-900/40 p-0.5">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedFightByShortId((prev) => ({
-                                ...prev,
-                                [row.shortId]: Math.max(0, selectedFightIndex - 1),
-                              }))
-                            }
-                            disabled={selectedFightIndex <= 0}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded text-gray-300 hover:bg-gray-800/60 disabled:cursor-not-allowed disabled:text-gray-600 disabled:hover:bg-transparent"
-                            aria-label="Previous fight"
-                          >
-                            <ChevronLeft className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedFightByShortId((prev) => ({
-                                ...prev,
-                                [row.shortId]: Math.min(fights.length - 1, selectedFightIndex + 1),
-                              }))
-                            }
-                            disabled={selectedFightIndex >= fights.length - 1}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded text-gray-300 hover:bg-gray-800/60 disabled:cursor-not-allowed disabled:text-gray-600 disabled:hover:bg-transparent"
-                            aria-label="Next fight"
-                          >
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                            </div>
+                      {fights.length > 1 ? (
+                        <div className="mb-3 flex justify-start">
+                          <div className="inline-flex items-center gap-1 rounded border border-gray-800/80 bg-gray-900/40 p-1">
+                            {fights.map((fight, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() =>
+                                  setSelectedFightByShortId((prev) => ({
+                                    ...prev,
+                                    [row.shortId]: i,
+                                  }))
+                                }
+                                className={
+                                  i === selectedFightIndex
+                                    ? "rounded px-3 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
+                                    : "rounded px-3 py-1 text-[11px] text-gray-500 hover:text-gray-300 transition-colors duration-100"
+                                }
+                              >
+                                Fight {fight.fightNumber ?? i + 1}
+                              </button>
+                            ))}
                           </div>
                         </div>
                       ) : null}
@@ -273,58 +259,54 @@ export default function DraftHistoryClient({
                           classByPlayerId={selectedFightClassesByPlayerId}
                         />
                       </div>
-                      <div className="mt-4 pt-3 border-t border-gray-800/40 flex items-center justify-between text-[11px]">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {row.type === "pvp" ? (
-                            <span className="inline-flex items-center rounded bg-indigo-500/10 border border-indigo-400/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300">
-                              PvP
-                            </span>
-                          ) : row.team1Realm && row.team2Realm ? (
-                            <span className="text-gray-400">
-                              {row.team1Realm} vs {row.team2Realm}
-                            </span>
-                          ) : null}
-                          <span className="text-gray-700 select-none">&middot;</span>
+                      <div className="mt-4 pt-3 border-t border-gray-800/40 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[11px]">
+                        {row.type === "pvp" ? (
+                          <span className="inline-flex items-center rounded bg-indigo-500/10 border border-indigo-400/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300">
+                            PvP
+                          </span>
+                        ) : row.team1Realm && row.team2Realm ? (
                           <span className="text-gray-400">
-                            {row.teamSize}v{row.teamSize}
+                            {row.team1Realm} vs {row.team2Realm}
                           </span>
-
-                          {row.discordGuildName && (
-                            <>
-                            <span className="text-gray-700 select-none">
-                              &middot;
+                        ) : null}
+                        <span className="text-gray-700 select-none">&middot;</span>
+                        <span className="text-gray-400">
+                          {row.teamSize}v{row.teamSize}
+                        </span>
+                        {row.discordGuildName && (
+                          <>
+                            <span className="text-gray-700 select-none">&middot;</span>
+                            <span className="inline-flex min-w-0 items-center gap-1.5 text-gray-400">
+                              <FaDiscord className="w-3 h-3 flex-shrink-0 text-indigo-400" />
+                              <span className="truncate max-w-[140px] sm:max-w-[220px]">
+                                {row.discordGuildName}
+                              </span>
                             </span>
-                            <span className="inline-flex items-center gap-1.5 text-gray-400">
-                              <FaDiscord className="w-3 h-3 text-indigo-400 flex-shrink-0" />
-                              {row.discordGuildName}
-                            </span>
-                            </>
-                          )}
-
-                          <span className="text-gray-700 select-none">
-                            &middot;
-                          </span>
-
-                          <span className="inline-flex items-center gap-1.5 text-gray-500">
-                            <User className="w-3 h-3 text-gray-600 flex-shrink-0" />
+                          </>
+                        )}
+                        <span className="text-gray-700 select-none">&middot;</span>
+                        <span className="inline-flex min-w-0 items-center gap-1.5 text-gray-500">
+                          <User className="w-3 h-3 flex-shrink-0 text-gray-600" />
+                          <span className="truncate max-w-[100px] sm:max-w-[180px]">
                             {row.createdByDisplayName || row.createdBy}
                           </span>
-                        </div>
-
-                        {row.resultStatus === "verified" ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-indigo-400 flex-shrink-0 ml-3">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Verified
-                          </span>
-                        ) : row.resultStatus === "voided" ? (
-                          <span className="text-[10px] font-medium text-red-400/70 flex-shrink-0 ml-3">
-                            Voided
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-medium text-gray-600 flex-shrink-0 ml-3">
-                            Unverified
-                          </span>
-                        )}
+                        </span>
+                        <span className="ml-auto flex-shrink-0">
+                          {row.resultStatus === "verified" ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-indigo-400">
+                              <CheckCircle2 className="w-3 h-3" />
+                              Verified
+                            </span>
+                          ) : row.resultStatus === "voided" ? (
+                            <span className="text-[10px] font-medium text-red-400/70">
+                              Voided
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium text-gray-600">
+                              Unverified
+                            </span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   )}
