@@ -637,6 +637,7 @@ test("adminReplaceDraftFights persists known substitute metadata", async () => {
             substituteMode: "known",
             substituteDiscordUserId: "d5",
             substituteDisplayName: "SubFive",
+            substituteAvatarUrl: "https://cdn.example.com/subfive.png",
           },
           { playerId: "p2", className: "Bard" },
         ],
@@ -667,6 +668,7 @@ test("adminReplaceDraftFights persists known substitute metadata", async () => {
   assert.equal(p1Class.substituteMode, "known");
   assert.equal(p1Class.substituteDiscordUserId, "d5");
   assert.equal(p1Class.substituteDisplayName, "SubFive");
+  assert.equal(p1Class.substituteAvatarUrl, "https://cdn.example.com/subfive.png");
 });
 
 test("adminReplaceDraftFights rejects manual substitute with discord user id", async () => {

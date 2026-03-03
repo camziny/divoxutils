@@ -16,6 +16,7 @@ export type FightEditorFight = {
     substituteMode?: "known" | "manual";
     substituteDiscordUserId?: string;
     substituteDisplayName?: string;
+    substituteAvatarUrl?: string;
   }>;
 };
 
@@ -33,6 +34,7 @@ export type FightEditorRow = {
         mode: "known" | "manual";
         discordUserId?: string;
         displayName: string;
+        avatarUrl?: string;
       }
     | null
   >;
@@ -69,6 +71,7 @@ export function toFightEditorRows(draft: FightEditorDraft): FightEditorRow[] {
             mode: "known",
             discordUserId: classEntry.substituteDiscordUserId,
             displayName: classEntry.substituteDisplayName,
+            avatarUrl: classEntry.substituteAvatarUrl,
           };
         } else if (
           classEntry?.substituteMode === "manual" &&

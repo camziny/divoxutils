@@ -21,6 +21,7 @@ export type DraftLeaderboardFight = {
     substituteMode?: "known" | "manual";
     substituteDiscordUserId?: string;
     substituteDisplayName?: string;
+    substituteAvatarUrl?: string;
   }>;
 };
 

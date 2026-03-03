@@ -37,6 +37,7 @@ type ModerationFight = {
     substituteMode?: "known" | "manual";
     substituteDiscordUserId?: string;
     substituteDisplayName?: string;
+    substituteAvatarUrl?: string;
   }>;
 };
 
@@ -109,7 +110,7 @@ export default function AdminDraftModerationClient() {
   const [substituteSearchByDraft, setSubstituteSearchByDraft] = useState<Record<string, string>>({});
   const [substituteDropdownByDraft, setSubstituteDropdownByDraft] = useState<Record<string, boolean>>({});
   const [selectedKnownSubByDraft, setSelectedKnownSubByDraft] = useState<
-    Record<string, { discordUserId: string; displayName: string } | null>
+    Record<string, { discordUserId: string; displayName: string; avatarUrl?: string } | null>
   >({});
 
   const loadDrafts = useCallback(async () => {
@@ -264,6 +265,10 @@ export default function AdminDraftModerationClient() {
                 ? row.substitutesByPlayer[player._id]?.discordUserId
                 : undefined,
             substituteDisplayName: row.substitutesByPlayer[player._id]?.displayName,
+            substituteAvatarUrl:
+              row.substitutesByPlayer[player._id]?.mode === "known"
+                ? row.substitutesByPlayer[player._id]?.avatarUrl
+                : undefined,
           })),
         }));
         const response = await fetch("/api/admin/drafts/fights", {
@@ -354,13 +359,17 @@ export default function AdminDraftModerationClient() {
   }, [reviewedDrafts, matchesGuild, reviewedFilter, sortFn]);
 
   const knownPlayers = useMemo(() => {
-    const byDiscordId = new Map<string, { discordUserId: string; displayName: string }>();
+    const byDiscordId = new Map<
+      string,
+      { discordUserId: string; displayName: string; avatarUrl?: string }
+    >();
     for (const draft of [...pendingDrafts, ...reviewedDrafts]) {
       for (const player of draft.players) {
         if (player.discordUserId && player.displayName?.trim()) {
           byDiscordId.set(player.discordUserId, {
             discordUserId: player.discordUserId,
             displayName: player.displayName.trim(),
+            avatarUrl: player.avatarUrl,
           });
         }
       }
@@ -584,6 +593,7 @@ export default function AdminDraftModerationClient() {
                                 ? {
                                     discordUserId: subForPlayer.discordUserId,
                                     displayName: subForPlayer.displayName,
+                                    avatarUrl: subForPlayer.avatarUrl,
                                   }
                                 : null,
                           }));
@@ -715,6 +725,7 @@ export default function AdminDraftModerationClient() {
                                       ? {
                                           discordUserId: existingSub.discordUserId,
                                           displayName: existingSub.displayName,
+                                          avatarUrl: existingSub.avatarUrl,
                                         }
                                       : null,
                                 }));
@@ -857,6 +868,7 @@ export default function AdminDraftModerationClient() {
                                         [draft.shortId]: {
                                           discordUserId: kp.discordUserId,
                                           displayName: kp.displayName,
+                                          avatarUrl: kp.avatarUrl,
                                         },
                                       }));
                                       setSubstituteDropdownByDraft((current) => ({
@@ -900,6 +912,7 @@ export default function AdminDraftModerationClient() {
                                             mode: "known",
                                             discordUserId: nextKnownSub.discordUserId,
                                             displayName: nextKnownSub.displayName,
+                                            avatarUrl: nextKnownSub.avatarUrl,
                                           }
                                         : { mode: "manual", displayName: typedSubstituteName },
                                     },

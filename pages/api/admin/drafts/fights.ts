@@ -16,6 +16,7 @@ type AdminDraftFightsDeps = {
         substituteMode?: "known" | "manual";
         substituteDiscordUserId?: string;
         substituteDisplayName?: string;
+        substituteAvatarUrl?: string;
       }>;
     }>;
     submittedBy: string;
@@ -35,6 +36,7 @@ function parseFightPayload(rawFights: unknown) {
       substituteMode?: "known" | "manual";
       substituteDiscordUserId?: string;
       substituteDisplayName?: string;
+      substituteAvatarUrl?: string;
     }>;
   }> = [];
 
@@ -57,6 +59,7 @@ function parseFightPayload(rawFights: unknown) {
       substituteMode?: "known" | "manual";
       substituteDiscordUserId?: string;
       substituteDisplayName?: string;
+      substituteAvatarUrl?: string;
     }> = [];
 
     for (const rawEntry of rawClasses) {
@@ -90,6 +93,10 @@ function parseFightPayload(rawFights: unknown) {
         "string"
           ? (rawEntry as { substituteDisplayName: string }).substituteDisplayName.trim()
           : "";
+      const substituteAvatarUrl =
+        typeof (rawEntry as { substituteAvatarUrl?: unknown }).substituteAvatarUrl === "string"
+          ? (rawEntry as { substituteAvatarUrl: string }).substituteAvatarUrl.trim()
+          : "";
 
       if (substituteMode === "known") {
         if (!substituteDiscordUserId || !substituteDisplayName) {
@@ -109,7 +116,12 @@ function parseFightPayload(rawFights: unknown) {
             error: "Manual substitute entries cannot include substituteDiscordUserId." as const,
           };
         }
-      } else if (substituteDiscordUserId || substituteDisplayName) {
+        if (substituteAvatarUrl) {
+          return {
+            error: "Manual substitute entries cannot include substituteAvatarUrl." as const,
+          };
+        }
+      } else if (substituteDiscordUserId || substituteDisplayName || substituteAvatarUrl) {
         return {
           error: "substituteMode is required when substitute fields are provided." as const,
         };
@@ -121,6 +133,7 @@ function parseFightPayload(rawFights: unknown) {
         substituteMode?: "known" | "manual";
         substituteDiscordUserId?: string;
         substituteDisplayName?: string;
+        substituteAvatarUrl?: string;
       } = {
         playerId,
         className,
@@ -129,6 +142,9 @@ function parseFightPayload(rawFights: unknown) {
         normalizedEntry.substituteMode = "known";
         normalizedEntry.substituteDiscordUserId = substituteDiscordUserId;
         normalizedEntry.substituteDisplayName = substituteDisplayName;
+        if (substituteAvatarUrl) {
+          normalizedEntry.substituteAvatarUrl = substituteAvatarUrl;
+        }
       }
       if (substituteMode === "manual") {
         normalizedEntry.substituteMode = "manual";
