@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Pagination } from "@/components/ui/pagination";
 import { CheckCircle2, User } from "lucide-react";
@@ -143,7 +144,7 @@ export default function ClassLeaderboardClient({
                   <div className="flex-1 min-w-0">
                     <div className="mb-1 flex items-center justify-between gap-3">
                       <span className="inline-flex items-center gap-2 min-w-0">
-                        <AvatarChip name={row.userName} />
+                        <AvatarChip name={row.userName} avatarUrl={row.avatarUrl} />
                         <span className="truncate text-sm font-medium text-gray-200 group-hover:text-white">
                           {row.userName}
                         </span>
@@ -184,7 +185,18 @@ export default function ClassLeaderboardClient({
   );
 }
 
-function AvatarChip({ name }: { name: string }) {
+function AvatarChip({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
+  if (avatarUrl) {
+    return (
+      <Image
+        src={avatarUrl}
+        alt={name}
+        width={20}
+        height={20}
+        className="h-5 w-5 rounded-full object-cover"
+      />
+    );
+  }
   return (
     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-gray-400">
       <User className="h-3 w-3" />
