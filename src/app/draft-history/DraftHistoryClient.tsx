@@ -409,10 +409,10 @@ function TeamPanel({
                   </span>
                 ) : null}
               </span>
-              <span className="text-[10px] text-gray-400">
+              <span className="text-[10px] text-gray-600">
                 {classByPlayerId[p._id ?? ""] ??
                   classByDiscordUserId[p.discordUserId] ??
-                  "No class"}
+                  "—"}
               </span>
             </div>
           ))

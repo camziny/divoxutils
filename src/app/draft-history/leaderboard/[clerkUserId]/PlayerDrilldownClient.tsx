@@ -361,7 +361,9 @@ export default function PlayerDrilldownClient({
                   <div className="max-h-[420px] overflow-y-auto">
                     {filteredClassRows.length === 0 ? (
                       <div className="px-3 py-6 text-center text-xs text-gray-500">
-                        No classes match your search.
+                        {classQuery.trim().length > 0
+                          ? "No classes match your search."
+                          : "No class data recorded yet."}
                       </div>
                     ) : (
                       filteredClassRows.map((row) => (

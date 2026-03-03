@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Check } from "lucide-react";
 import {
   CLASS_CATEGORIES,
   classesByRealm,
-  REALM_COLORS,
   REALMS,
   type ClassCategory,
 } from "@/app/draft/constants";
@@ -295,12 +295,13 @@ export default function AdminDraftModerationClient() {
                   {analysis.completedFightCount}/{editorRows.length} fights complete
                 </span>
                 <span
-                  className={`rounded border px-2 py-1 ${
+                  className={`inline-flex items-center gap-1 rounded border px-2 py-1 ${
                     editorComplete
-                      ? "border-emerald-900/60 text-emerald-300"
+                      ? "border-indigo-500/40 text-indigo-300"
                       : "border-gray-700 text-gray-500"
                   }`}
                 >
+                  {editorComplete && <Check className="h-3 w-3" />}
                   {editorComplete ? "Score valid" : "Score incomplete"}
                 </span>
               </div>
@@ -315,9 +316,19 @@ export default function AdminDraftModerationClient() {
                     const fightCount = Number(event.target.value);
                     setFightEditorByDraft((current) => {
                       const existing = current[draft.shortId] ?? [];
+                      const lastRow = existing[existing.length - 1];
                       const nextRows: FightEditorRow[] = [];
                       for (let i = 0; i < fightCount; i += 1) {
-                        nextRows.push(existing[i] ?? createEmptyFightRow(draftedPlayers));
+                        if (existing[i]) {
+                          nextRows.push(existing[i]);
+                        } else {
+                          nextRows.push({
+                            winnerTeam: null,
+                            classesByPlayer: lastRow
+                              ? { ...lastRow.classesByPlayer }
+                              : createEmptyFightRow(draftedPlayers).classesByPlayer,
+                          });
+                        }
                       }
                       return { ...current, [draft.shortId]: nextRows };
                     });
@@ -360,15 +371,13 @@ export default function AdminDraftModerationClient() {
                       disabled={isActive}
                     >
                       <span>Fight {fightIndex + 1}</span>
-                      <span
-                        className={
-                          complete
-                            ? "rounded border border-emerald-900/70 px-1 text-emerald-300"
-                            : "rounded border border-gray-700 px-1 text-gray-500"
-                        }
-                      >
-                        {complete ? "Complete" : "Incomplete"}
-                      </span>
+                      {complete ? (
+                        <Check className="h-3 w-3 text-indigo-400" />
+                      ) : (
+                        <span className="rounded border border-gray-700 px-1 text-[10px] text-gray-500">
+                          –
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -380,15 +389,16 @@ export default function AdminDraftModerationClient() {
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <div className="inline-flex items-center gap-2">
                     <span className="text-xs text-gray-400">Fight {activeFightIndex + 1}</span>
-                    <span
-                      className={
-                        analysis.rowCompleteness[activeFightIndex]
-                          ? "rounded border border-emerald-900/60 px-1.5 py-0.5 text-[10px] text-emerald-300"
-                          : "rounded border border-gray-700 px-1.5 py-0.5 text-[10px] text-gray-500"
-                      }
-                    >
-                      {analysis.rowCompleteness[activeFightIndex] ? "Complete" : "Incomplete"}
-                    </span>
+                    {analysis.rowCompleteness[activeFightIndex] ? (
+                      <span className="inline-flex items-center gap-1 rounded border border-indigo-500/40 px-1.5 py-0.5 text-[10px] text-indigo-300">
+                        <Check className="h-2.5 w-2.5" />
+                        Complete
+                      </span>
+                    ) : (
+                      <span className="rounded border border-gray-700 px-1.5 py-0.5 text-[10px] text-gray-500">
+                        Incomplete
+                      </span>
+                    )}
                   </div>
                   <div className="inline-flex items-center gap-1">
                     <span className="text-[11px] text-gray-500">Fight winner</span>
@@ -539,11 +549,16 @@ export default function AdminDraftModerationClient() {
                                   )
                                   .sort((a, b) => a.localeCompare(b));
                                 if (realmClasses.length === 0) return null;
-                                const realmColors = REALM_COLORS[realm];
+                                const groupBg =
+                                  realm === "Albion"
+                                    ? "bg-red-900/15"
+                                    : realm === "Midgard"
+                                      ? "bg-blue-900/15"
+                                      : "bg-green-900/15";
                                 return (
                                   <div
                                     key={`${draft.shortId}-${category}-${realm}`}
-                                    className={`flex items-center gap-0.5 rounded-md px-1.5 py-0.5 ${realmColors.bg}`}
+                                    className={`flex items-center gap-0.5 rounded-md px-1.5 py-0.5 ${groupBg}`}
                                   >
                                     {realmClasses.map((className) => {
                                       const isSelected =
@@ -575,7 +590,7 @@ export default function AdminDraftModerationClient() {
                                               ? "bg-gray-700/70 text-white"
                                               : isActive || !selectedPlayer
                                                 ? "text-gray-600"
-                                                : `${realmColors.text} hover:bg-gray-700 hover:text-white`
+                                                : "text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer"
                                           }`}
                                         >
                                           {className}
@@ -758,10 +773,10 @@ function TeamPreview({
   highlight: boolean;
 }) {
   return (
-    <div className={`rounded-md border p-3 ${highlight ? "border-emerald-900/60" : "border-gray-800"}`}>
-      <div className={`mb-1.5 text-xs ${highlight ? "text-emerald-500" : "text-gray-500"}`}>
+    <div className={`rounded-md border p-3 ${highlight ? "border-indigo-500/40" : "border-gray-800"}`}>
+      <div className={`mb-1.5 flex items-center gap-1.5 text-xs ${highlight ? "text-indigo-300" : "text-gray-500"}`}>
         {title}
-        {highlight ? " (W)" : ""}
+        {highlight ? <Check className="h-3 w-3" /> : null}
       </div>
       <div className="space-y-0.5">
         {players.map((player) => (
