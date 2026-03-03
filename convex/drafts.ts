@@ -47,6 +47,8 @@ function generatePickSequence(
 
 const MAX_FIGHTS = 5;
 const REQUIRED_WINS = 3;
+const STALE_DRAFT_NO_PROGRESS_MS = 30 * 60 * 1000;
+const STALE_DRAFT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
 function buildSetScore(team1Wins: number, team2Wins: number): string {
   return `${team1Wins}-${team2Wins}`;
@@ -108,6 +110,45 @@ export const getDraft = query({
       players: sanitizedPlayers,
       bans,
       fights: fights.sort((a, b) => a.fightNumber - b.fightNumber),
+    };
+  },
+});
+
+export const getDraftStatus = query({
+  args: { shortId: v.string() },
+  handler: async (ctx, { shortId }) => {
+    const draft = await ctx.db
+      .query("drafts")
+      .withIndex("by_shortId", (q) => q.eq("shortId", shortId))
+      .unique();
+
+    if (!draft) return null;
+
+    const players = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+      .collect();
+
+    return {
+      status: draft.status,
+      gameStarted: draft.gameStarted,
+      winnerTeam: draft.winnerTeam,
+      discordGuildId: draft.discordGuildId,
+      discordGuildName: draft.discordGuildName,
+      createdBy: draft.createdBy,
+      createdByDisplayName: draft.createdByDisplayName,
+      createdByAvatarUrl: draft.createdByAvatarUrl,
+      discordTextChannelId: draft.discordTextChannelId,
+      team1CaptainId: draft.team1CaptainId,
+      team2CaptainId: draft.team2CaptainId,
+      botPostedLink: draft.botPostedLink,
+      botNotifiedCaptains: draft.botNotifiedCaptains,
+      players: players.map((p) => ({
+        discordUserId: p.discordUserId,
+        displayName: p.displayName,
+        avatarUrl: p.avatarUrl,
+        team: p.team,
+      })),
     };
   },
 });
@@ -2129,6 +2170,7 @@ export const devBackfillCompletedDraftTracking = mutation({
 export const getActiveDrafts = query({
   args: {},
   handler: async (ctx) => {
+    const now = Date.now();
     const statuses = ["setup", "coin_flip", "realm_pick", "banning", "drafting"] as const;
     const active = [];
     for (const status of statuses) {
@@ -2148,10 +2190,26 @@ export const getActiveDrafts = query({
 
     const results = [];
     for (const draft of active) {
+      const ageMs = now - draft._creationTime;
+      if (ageMs >= STALE_DRAFT_MAX_AGE_MS) {
+        continue;
+      }
+
       const players = await ctx.db
         .query("draftPlayers")
         .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
         .collect();
+
+      const hasAssignedPlayers = players.some((player) => player.team !== undefined);
+      const hasSelectedClasses = players.some(
+        (player) => !!player.selectedClass?.trim()
+      );
+      const hasCaptains = players.some((player) => player.isCaptain);
+      const hasProgress = hasAssignedPlayers || hasSelectedClasses || hasCaptains;
+
+      if (ageMs >= STALE_DRAFT_NO_PROGRESS_MS && !hasProgress) {
+        continue;
+      }
 
       results.push({
         shortId: draft.shortId,

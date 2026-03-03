@@ -81,6 +81,9 @@ http.route({
   path: "/getDraftStatus",
   method: "GET",
   handler: safeHttpAction("/getDraftStatus", async (ctx, request) => {
+    const authError = requireBotAuth(request, process.env.BOT_API_KEY);
+    if (authError) return authError;
+
     const url = new URL(request.url);
     const shortId = url.searchParams.get("shortId");
 
@@ -91,7 +94,7 @@ http.route({
       });
     }
 
-    const draft = await ctx.runQuery(api.drafts.getDraft, { shortId });
+    const draft = await ctx.runQuery(api.drafts.getDraftStatus, { shortId });
 
     if (!draft) {
       return new Response(JSON.stringify({ error: "Draft not found" }), {
