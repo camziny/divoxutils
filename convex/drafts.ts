@@ -1633,6 +1633,8 @@ export const cancelDraftAsAdmin = mutation({
       cancelledBy: args.cancelledByClerkUserId,
       cancelledAt: now,
       cancelReason: trimmedReason,
+      botPostedLink: true,
+      botNotifiedCaptains: true,
     });
 
     return {

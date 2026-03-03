@@ -144,6 +144,66 @@ export default function DraftHistoryClient({
                   },
                   {}
                 ) ?? {};
+              const selectedFightOccupantNameByPlayerId =
+                (selectedFight?.classesByPlayer ?? []).reduce<Record<string, string>>(
+                  (acc, entry) => {
+                    if (entry.playerId && entry.substituteDisplayName) {
+                      acc[String(entry.playerId)] = entry.substituteDisplayName;
+                    }
+                    return acc;
+                  },
+                  {}
+                ) ?? {};
+              const selectedFightOccupantNameByDiscordUserId =
+                (selectedFight?.classesByPlayer ?? []).reduce<Record<string, string>>(
+                  (acc, entry) => {
+                    const effectiveDiscordUserId =
+                      entry.substituteMode === "known" && entry.substituteDiscordUserId
+                        ? entry.substituteDiscordUserId
+                        : entry.discordUserId;
+                    if (effectiveDiscordUserId && entry.substituteDisplayName) {
+                      acc[effectiveDiscordUserId] = entry.substituteDisplayName;
+                    }
+                    return acc;
+                  },
+                  {}
+                ) ?? {};
+              const playerByDiscordUserId = new Map(
+                row.players.map((player) => [player.discordUserId, player])
+              );
+              const selectedFightSubstituteByPlayerId =
+                (selectedFight?.classesByPlayer ?? []).reduce<
+                  Record<string, { displayName: string; avatarUrl?: string }>
+                >((acc, entry) => {
+                  if (!entry.playerId || !entry.substituteDisplayName) return acc;
+                  const substituteDiscordUserId =
+                    entry.substituteMode === "known" && entry.substituteDiscordUserId
+                      ? entry.substituteDiscordUserId
+                      : undefined;
+                  const substituteAvatarUrl = substituteDiscordUserId
+                    ? playerByDiscordUserId.get(substituteDiscordUserId)?.avatarUrl
+                    : undefined;
+                  acc[String(entry.playerId)] = {
+                    displayName: entry.substituteDisplayName,
+                    avatarUrl: substituteAvatarUrl,
+                  };
+                  return acc;
+                }, {}) ?? {};
+              const selectedFightSubstituteByDiscordUserId =
+                (selectedFight?.classesByPlayer ?? []).reduce<
+                  Record<string, { displayName: string; avatarUrl?: string }>
+                >((acc, entry) => {
+                  const substituteDiscordUserId =
+                    entry.substituteMode === "known" && entry.substituteDiscordUserId
+                      ? entry.substituteDiscordUserId
+                      : undefined;
+                  if (!substituteDiscordUserId || !entry.substituteDisplayName) return acc;
+                  acc[substituteDiscordUserId] = {
+                    displayName: entry.substituteDisplayName,
+                    avatarUrl: playerByDiscordUserId.get(substituteDiscordUserId)?.avatarUrl,
+                  };
+                  return acc;
+                }, {}) ?? {};
 
               return (
                 <div
@@ -245,6 +305,12 @@ export default function DraftHistoryClient({
                           bans={row.bans.filter((b) => b.team === 1)}
                           classByDiscordUserId={selectedFightClassesByDiscordUserId}
                           classByPlayerId={selectedFightClassesByPlayerId}
+                          occupantNameByPlayerId={selectedFightOccupantNameByPlayerId}
+                          occupantNameByDiscordUserId={
+                            selectedFightOccupantNameByDiscordUserId
+                          }
+                          substituteByPlayerId={selectedFightSubstituteByPlayerId}
+                          substituteByDiscordUserId={selectedFightSubstituteByDiscordUserId}
                         />
                         <TeamPanel
                           label={row.team2Realm ?? "Team 2"}
@@ -257,6 +323,12 @@ export default function DraftHistoryClient({
                           bans={row.bans.filter((b) => b.team === 2)}
                           classByDiscordUserId={selectedFightClassesByDiscordUserId}
                           classByPlayerId={selectedFightClassesByPlayerId}
+                          occupantNameByPlayerId={selectedFightOccupantNameByPlayerId}
+                          occupantNameByDiscordUserId={
+                            selectedFightOccupantNameByDiscordUserId
+                          }
+                          substituteByPlayerId={selectedFightSubstituteByPlayerId}
+                          substituteByDiscordUserId={selectedFightSubstituteByDiscordUserId}
                         />
                       </div>
                       <div className="mt-4 pt-3 border-t border-gray-800/40 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[11px]">
@@ -335,6 +407,10 @@ function TeamPanel({
   bans,
   classByDiscordUserId,
   classByPlayerId,
+  occupantNameByPlayerId,
+  occupantNameByDiscordUserId,
+  substituteByPlayerId,
+  substituteByDiscordUserId,
 }: {
   label: string;
   players: Array<{
@@ -348,6 +424,10 @@ function TeamPanel({
   bans: Array<{ className: string }>;
   classByDiscordUserId: Record<string, string>;
   classByPlayerId: Record<string, string>;
+  occupantNameByPlayerId: Record<string, string>;
+  occupantNameByDiscordUserId: Record<string, string>;
+  substituteByPlayerId: Record<string, { displayName: string; avatarUrl?: string }>;
+  substituteByDiscordUserId: Record<string, { displayName: string; avatarUrl?: string }>;
 }) {
   return (
     <div
@@ -377,27 +457,42 @@ function TeamPanel({
         {players.length === 0 ? (
           <p className="text-sm text-gray-600">No players</p>
         ) : (
-          players.map((p) => (
-            <div
-              key={p.discordUserId}
-              className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm text-gray-300"
-            >
-              <InlineAvatar name={p.displayName} avatarUrl={p.avatarUrl} size={18} />
-              <span className="truncate">
-                {p.displayName}
-                {p.isCaptain ? (
-                  <span className="ml-1 text-[10px] text-gray-600 font-medium uppercase tracking-wider">
-                    C
-                  </span>
-                ) : null}
-              </span>
-              <span className="text-[10px] text-gray-600">
-                {classByPlayerId[p._id ?? ""] ??
-                  classByDiscordUserId[p.discordUserId] ??
-                  "—"}
-              </span>
-            </div>
-          ))
+          players.map((p) => {
+            const substitute =
+              substituteByPlayerId[p._id ?? ""] ??
+              substituteByDiscordUserId[p.discordUserId];
+            const resolvedName =
+              occupantNameByPlayerId[p._id ?? ""] ??
+              occupantNameByDiscordUserId[p.discordUserId] ??
+              p.displayName;
+            const resolvedAvatarUrl = substitute ? substitute.avatarUrl : p.avatarUrl;
+            const showCaptainBadge = p.isCaptain && !substitute;
+            return (
+              <div
+                key={`${p.discordUserId}-${p._id ?? "no-id"}`}
+                className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm text-gray-300"
+              >
+                <InlineAvatar
+                  name={resolvedName}
+                  avatarUrl={resolvedAvatarUrl}
+                  size={18}
+                />
+                <span className="truncate">
+                  {resolvedName}
+                  {showCaptainBadge ? (
+                    <span className="ml-1 text-[10px] text-gray-600 font-medium uppercase tracking-wider">
+                      C
+                    </span>
+                  ) : null}
+                </span>
+                <span className="text-[10px] text-gray-600">
+                  {classByPlayerId[p._id ?? ""] ??
+                    classByDiscordUserId[p.discordUserId] ??
+                    "—"}
+                </span>
+              </div>
+            );
+          })
         )}
       </div>
       {bans.length > 0 && (

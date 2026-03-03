@@ -498,6 +498,8 @@ test("cancelDraftAsAdmin marks draft as cancelled with audit fields", async () =
   assert.equal(updated.status, "cancelled");
   assert.equal(updated.cancelledBy, "admin_1");
   assert.equal(updated.cancelReason, "Restarting draft");
+  assert.equal(updated.botPostedLink, true);
+  assert.equal(updated.botNotifiedCaptains, true);
   assert.equal(typeof updated.cancelledAt, "number");
   assert.equal(result.shortId, "aaa");
   assert.equal(result.status, "cancelled");
