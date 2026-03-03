@@ -84,23 +84,25 @@ export default function LeaderboardClient({
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-gray-600 uppercase tracking-wider mr-1">
-            Sort
-          </span>
-          {SORT_OPTIONS.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => handleSort(opt.key)}
-              className={`px-2 py-1 rounded text-xs font-medium transition-colors duration-100 ${
-                sortBy === opt.key
-                  ? "bg-gray-800 text-gray-200"
-                  : "text-gray-500 hover:text-gray-300"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="text-[11px] text-gray-600 uppercase tracking-wider mr-1">
+              Sort
+            </span>
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => handleSort(opt.key)}
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors duration-100 ${
+                  sortBy === opt.key
+                    ? "bg-gray-800 text-gray-200"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

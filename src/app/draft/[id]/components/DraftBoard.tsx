@@ -2,7 +2,7 @@
 
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DraftData, CurrentPlayer } from "../../types";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -23,6 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import DiscordIdentityLinkCard from "@/app/draft-history/DiscordIdentityLinkCard";
 import { getPlayerPoolEmptyState } from "./playerPoolState";
@@ -31,7 +37,7 @@ import {
   isTeamSizeSelectable,
   toUserSettingsError,
 } from "./settingsUtils";
-import { User } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ExternalLink, User } from "lucide-react";
 
 function PlayerAvatar({ url, name, size = 20 }: { url?: string; name?: string; size?: number }) {
   if (!url) {
@@ -65,6 +71,42 @@ interface DraftBoardProps {
 
 type PickOrderMode = "snake" | "alternating";
 
+const REALM_CLASS_COLORS: Record<
+  string,
+  {
+    pill: string;
+    button: string;
+    selected: string;
+    banned: string;
+  }
+> = {
+  Albion: {
+    pill: "bg-red-900/20 text-red-300 border-red-700/40",
+    button:
+      "border-red-700/50 bg-red-900/15 text-red-200 hover:bg-red-800/25 hover:border-red-500/60",
+    selected: "border-red-400/70 bg-red-700/30 text-red-100",
+    banned: "border-red-900/40 bg-red-950/30 text-red-300/50",
+  },
+  Midgard: {
+    pill: "bg-blue-900/20 text-blue-300 border-blue-700/40",
+    button:
+      "border-blue-700/50 bg-blue-900/15 text-blue-200 hover:bg-blue-800/25 hover:border-blue-500/60",
+    selected: "border-blue-400/70 bg-blue-700/30 text-blue-100",
+    banned: "border-blue-900/40 bg-blue-950/30 text-blue-300/50",
+  },
+  Hibernia: {
+    pill: "bg-green-900/20 text-green-300 border-green-700/40",
+    button:
+      "border-green-700/50 bg-green-900/15 text-green-200 hover:bg-green-800/25 hover:border-green-500/60",
+    selected: "border-green-400/70 bg-green-700/30 text-green-100",
+    banned: "border-green-900/40 bg-green-950/30 text-green-300/50",
+  },
+};
+
+function realmsForClass(className: string) {
+  return REALMS.filter((realm) => (classesByRealm[realm] || []).includes(className));
+}
+
 export default function DraftBoard({
   draft,
   currentPlayer,
@@ -78,7 +120,9 @@ export default function DraftBoard({
   const pickRealm = useMutation(api.drafts.pickRealm);
   const banClass = useMutation(api.drafts.banClass);
   const pickPlayer = useMutation(api.drafts.pickPlayer);
-  const setWinner = useMutation(api.drafts.setWinner);
+  const setPlayerClass = useMutation(api.drafts.setPlayerClass);
+  const recordFightResult = useMutation(api.drafts.recordFightResult);
+  const updateFightWinner = useMutation(api.drafts.updateFightWinner);
   const beginGame = useMutation(api.drafts.beginGame);
   const undoLastAction = useMutation(api.drafts.undoLastAction);
 
@@ -88,6 +132,9 @@ export default function DraftBoard({
     text: string;
   } | null>(null);
   const [autoAdjustedSettingsKey, setAutoAdjustedSettingsKey] = useState<string | null>(null);
+  const [linkedProfiles, setLinkedProfiles] = useState<
+    Record<string, { profileName: string; characterListUrl: string }>
+  >({});
 
   const team1Captain = draft.players.find(
     (p) => p.discordUserId === draft.team1CaptainId
@@ -104,6 +151,22 @@ export default function DraftBoard({
   const availablePlayers = draft.players.filter(
     (p) => p.team === undefined && !p.isCaptain
   );
+  const draftedPlayers = draft.players.filter((p) => p.team !== undefined);
+  const draftedDiscordUserIds = useMemo(
+    () =>
+      draftedPlayers
+        .map((player) => player.discordUserId)
+        .sort((a, b) => a.localeCompare(b)),
+    [draftedPlayers]
+  );
+  const draftedDiscordUserIdsCsv = useMemo(
+    () => draftedDiscordUserIds.join(","),
+    [draftedDiscordUserIds]
+  );
+  const draftedProfilesFetchKey = useMemo(
+    () => `${draft._id}:${draftedDiscordUserIdsCsv}`,
+    [draft._id, draftedDiscordUserIdsCsv]
+  );
 
   const team1Bans = draft.bans.filter((b) => b.team === 1);
   const team2Bans = draft.bans.filter((b) => b.team === 2);
@@ -117,6 +180,11 @@ export default function DraftBoard({
   const isComplete = draft.status === "complete";
 
   const showBans = isBanning || isDrafting || isComplete;
+  const team1FightWins = draft.team1FightWins ?? 0;
+  const team2FightWins = draft.team2FightWins ?? 0;
+  const displayedSetScore = draft.setScore ?? `${team1FightWins}-${team2FightWins}`;
+  const isSetComplete =
+    draft.winnerTeam !== undefined || team1FightWins >= 3 || team2FightWins >= 3;
 
   const coinFlipWinner = draft.players.find(
     (p) => p.discordUserId === draft.coinFlipWinnerId
@@ -236,6 +304,47 @@ export default function DraftBoard({
     isSetup,
     token,
   ]);
+
+  useEffect(() => {
+    if (!draftedDiscordUserIdsCsv) {
+      setLinkedProfiles((current) =>
+        Object.keys(current).length === 0 ? current : {}
+      );
+      return;
+    }
+    const discordUserIds = draftedDiscordUserIdsCsv.split(",");
+    fetch("/api/draft/linked-profiles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ discordUserIds }),
+    })
+      .then((res) => res.json())
+      .then((payload) => {
+        if (payload?.links && typeof payload.links === "object") {
+          setLinkedProfiles(
+            payload.links as Record<string, { profileName: string; characterListUrl: string }>
+          );
+        }
+      })
+      .catch(() => {
+        setLinkedProfiles((current) =>
+          Object.keys(current).length === 0 ? current : {}
+        );
+      });
+  }, [draftedProfilesFetchKey, draftedDiscordUserIdsCsv]);
+
+  const canRecordFight =
+    isComplete && isCreator && Boolean(draft.gameStarted) && !isSetComplete;
+  const isClassSnapshotReady = draftedPlayers.every(
+    (player) => typeof player.selectedClass === "string" && player.selectedClass.length > 0
+  );
+  const editableTeam =
+    currentPlayer?.discordUserId === draft.team1CaptainId
+      ? 1
+      : currentPlayer?.discordUserId === draft.team2CaptainId
+        ? 2
+        : null;
+  const showPrimaryTeamGrid = !(isComplete && draft.gameStarted && !isSetComplete);
 
   const canUndo =
     isCreator &&
@@ -461,6 +570,7 @@ export default function DraftBoard({
         />
       )}
 
+      {showPrimaryTeamGrid && (
       <div className="grid grid-cols-2 lg:grid-cols-[1fr_minmax(200px,280px)_1fr] gap-3">
         <div className="order-1">
           <TeamPanel
@@ -481,46 +591,50 @@ export default function DraftBoard({
         </div>
 
         <div className="order-3 lg:order-2 col-span-2 lg:col-span-1 mx-auto w-full max-w-xs lg:max-w-none">
-          <PlayerPool
-            players={
-              isSetup
-                ? draft.players.filter(
-                    (p) =>
-                      p.discordUserId !== draft.team1CaptainId &&
-                      p.discordUserId !== draft.team2CaptainId
-                  )
-                : availablePlayers
-            }
-            isSetup={isSetup}
-            isDrafting={isDrafting}
-            isCreator={isCreator}
-            isMyPickTurn={isMyPickTurn}
-            currentPickCaptainName={currentPickCaptain?.displayName}
-            needsCaptain1={isSetup && !draft.team1CaptainId}
-            needsCaptain2={
-              isSetup && !!draft.team1CaptainId && !draft.team2CaptainId
-            }
-            busy={busy}
-            onAssignCaptain={(discordUserId, team) =>
-              act(() =>
-                assignCaptain({
-                  draftId: draft._id,
-                  discordUserId,
-                  team,
-                  token: token!,
-                })
-              )
-            }
-            onPickPlayer={(playerId) =>
-              act(() =>
-                pickPlayer({
-                  draftId: draft._id,
-                  playerId,
-                  token: token!,
-                })
-              )
-            }
-          />
+          {isComplete && draft.gameStarted && isSetComplete ? (
+            <MatchCenterScore score={displayedSetScore} />
+          ) : (
+            <PlayerPool
+              players={
+                isSetup
+                  ? draft.players.filter(
+                      (p) =>
+                        p.discordUserId !== draft.team1CaptainId &&
+                        p.discordUserId !== draft.team2CaptainId
+                    )
+                  : availablePlayers
+              }
+              isSetup={isSetup}
+              isDrafting={isDrafting}
+              isCreator={isCreator}
+              isMyPickTurn={isMyPickTurn}
+              currentPickCaptainName={currentPickCaptain?.displayName}
+              needsCaptain1={isSetup && !draft.team1CaptainId}
+              needsCaptain2={
+                isSetup && !!draft.team1CaptainId && !draft.team2CaptainId
+              }
+              busy={busy}
+              onAssignCaptain={(discordUserId, team) =>
+                act(() =>
+                  assignCaptain({
+                    draftId: draft._id,
+                    discordUserId,
+                    team,
+                    token: token!,
+                  })
+                )
+              }
+              onPickPlayer={(playerId) =>
+                act(() =>
+                  pickPlayer({
+                    draftId: draft._id,
+                    playerId,
+                    token: token!,
+                  })
+                )
+              }
+            />
+          )}
         </div>
 
         <div className="order-2 lg:order-3">
@@ -541,6 +655,81 @@ export default function DraftBoard({
           />
         </div>
       </div>
+      )}
+
+      {isComplete && draft.gameStarted && !isSetComplete && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-center py-1">
+            <div className="text-center">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500">
+                Current score
+              </p>
+              <p className="text-base font-semibold text-gray-100 tabular-nums">
+                {displayedSetScore}
+              </p>
+            </div>
+          </div>
+          <FightClassSetup
+            fightNumber={(draft.fights?.length ?? 0) + 1}
+            team1={{
+              label: team1Captain?.displayName ?? "Team 1",
+              players: [team1Captain, ...team1Players].filter(
+                Boolean
+              ) as DraftData["players"],
+            }}
+            team2={{
+              label: team2Captain?.displayName ?? "Team 2",
+              players: [team2Captain, ...team2Players].filter(
+                Boolean
+              ) as DraftData["players"],
+            }}
+            fights={draft.fights}
+            allPlayers={draft.players}
+            linkedProfiles={linkedProfiles}
+            classOptions={allClasses}
+            bannedClassNames={bannedClassNames}
+            canEditClasses={editableTeam !== null}
+            editableTeam={editableTeam}
+            canRecordWinner={isCreator}
+            busy={busy}
+            onSetPlayerClass={(playerId, className) =>
+              act(() =>
+                setPlayerClass({
+                  draftId: draft._id,
+                  playerId,
+                  className,
+                  token: token!,
+                })
+              )
+            }
+            canRecordFight={canRecordFight}
+            isClassSnapshotReady={isClassSnapshotReady}
+            onRecordWinner={(winnerTeam) =>
+              act(() =>
+                recordFightResult({
+                  draftId: draft._id,
+                  classesByPlayer: draftedPlayers.map((player) => ({
+                    playerId: player._id,
+                    className: player.selectedClass!,
+                  })),
+                  winnerTeam,
+                  token: token!,
+                })
+              )
+            }
+          onUpdateFightWinner={(fightNumber, winnerTeam) =>
+            act(() =>
+              updateFightWinner({
+                draftId: draft._id,
+                fightNumber,
+                winnerTeam,
+                token: token!,
+              })
+            )
+          }
+          />
+        </div>
+      )}
 
       {isComplete && isCreator && !draft.gameStarted && (
         <div className="flex justify-center pt-2">
@@ -567,43 +756,6 @@ export default function DraftBoard({
           <span className="text-xs text-gray-600">
             Waiting for creator...
           </span>
-        </div>
-      )}
-
-      {isComplete && isCreator && draft.gameStarted && !draft.winnerTeam && (
-        <div className="flex justify-center gap-3 pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            onClick={() =>
-              act(() =>
-                setWinner({
-                  draftId: draft._id,
-                  winnerTeam: 1,
-                  token: token!,
-                })
-              )
-            }
-          >
-            Team 1 Wins
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            onClick={() =>
-              act(() =>
-                setWinner({
-                  draftId: draft._id,
-                  winnerTeam: 2,
-                  token: token!,
-                })
-              )
-            }
-          >
-            Team 2 Wins
-          </Button>
         </div>
       )}
 
@@ -637,10 +789,11 @@ function StatusBar({
   } else if (draft.status === "drafting") {
     subtitle = `Pick ${(draft.currentPickIndex ?? 0) + 1} of ${(draft.pickSequence ?? []).length}`;
   } else if (draft.status === "complete") {
-    if (draft.winnerTeam) {
-      subtitle = `Team ${draft.winnerTeam} wins`;
-    } else if (draft.gameStarted) {
-      subtitle = "Teams are set — good luck";
+    if (draft.gameStarted) {
+      subtitle = "";
+    } else if (draft.winnerTeam) {
+      const score = draft.setScore ?? `${draft.team1FightWins ?? 0}-${draft.team2FightWins ?? 0}`;
+      subtitle = `Team ${draft.winnerTeam} wins (${score})`;
     } else {
       subtitle = "Draft complete";
     }
@@ -1318,8 +1471,21 @@ function TeamPanel({
   showWinner,
 }: {
   team: number;
-  captain?: { displayName: string; _id: Id<"draftPlayers">; avatarUrl?: string } | null;
-  players: { _id: Id<"draftPlayers">; displayName: string; pickOrder?: number; avatarUrl?: string }[];
+  captain?: {
+    displayName: string;
+    _id: Id<"draftPlayers">;
+    discordUserId: string;
+    avatarUrl?: string;
+    selectedClass?: string;
+  } | null;
+  players: {
+    _id: Id<"draftPlayers">;
+    discordUserId: string;
+    displayName: string;
+    pickOrder?: number;
+    avatarUrl?: string;
+    selectedClass?: string;
+  }[];
   realm?: string;
   teamSize: number;
   isActive: boolean;
@@ -1456,7 +1622,9 @@ function TeamPanel({
               <PlayerAvatar url={p.avatarUrl} name={p.displayName} size={16} />
               <span>{p.displayName}</span>
             </div>
-            <span className="text-[10px] text-gray-600">#{p.pickOrder}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-600">#{p.pickOrder}</span>
+            </div>
           </motion.div>
         ))}
       </AnimatePresence>
@@ -1616,6 +1784,524 @@ function PlayerPool({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function MatchCenterScore({ score }: { score: string }) {
+  return (
+    <div className="px-4 py-4">
+      <div className="text-center">
+        <p className="text-[10px] uppercase tracking-wider text-gray-500">Final score</p>
+        <p className="text-lg font-semibold text-gray-100 tabular-nums">{score}</p>
+      </div>
+    </div>
+  );
+}
+
+function FightClassSetup({
+  fightNumber,
+  team1,
+  team2,
+  fights,
+  allPlayers,
+  linkedProfiles,
+  classOptions,
+  bannedClassNames,
+  canEditClasses,
+  editableTeam,
+  canRecordWinner,
+  busy,
+  onSetPlayerClass,
+  canRecordFight,
+  isClassSnapshotReady,
+  onRecordWinner,
+  onUpdateFightWinner,
+}: {
+  fightNumber: number;
+  team1: { label: string; players: DraftData["players"] };
+  team2: { label: string; players: DraftData["players"] };
+  fights: DraftData["fights"];
+  allPlayers: DraftData["players"];
+  linkedProfiles: Record<string, { profileName: string; characterListUrl: string }>;
+  classOptions: string[];
+  bannedClassNames: string[];
+  canEditClasses: boolean;
+  editableTeam: 1 | 2 | null;
+  canRecordWinner: boolean;
+  busy: boolean;
+  onSetPlayerClass: (playerId: Id<"draftPlayers">, className: string) => void;
+  canRecordFight: boolean;
+  isClassSnapshotReady: boolean;
+  onRecordWinner: (winnerTeam: 1 | 2) => void;
+  onUpdateFightWinner: (fightNumber: number, winnerTeam: 1 | 2) => void;
+}) {
+  const [viewFightIndex, setViewFightIndex] = useState(fights.length);
+  const [pendingWinnerTeam, setPendingWinnerTeam] = useState<1 | 2 | null>(null);
+  const [pendingWinnerEdit, setPendingWinnerEdit] = useState<{
+    fightNumber: number;
+    from: 1 | 2;
+    to: 1 | 2;
+  } | null>(null);
+  const [activeTeam, setActiveTeam] = useState<1 | 2>(1);
+  const [activePlayerId, setActivePlayerId] = useState<Id<"draftPlayers"> | null>(
+    team1.players[0]?._id ?? team2.players[0]?._id ?? null
+  );
+  const bannedSet = useMemo(() => new Set(bannedClassNames), [bannedClassNames]);
+  const playerById = useMemo(
+    () => new Map(allPlayers.map((player) => [String(player._id), player])),
+    [allPlayers]
+  );
+
+  useEffect(() => {
+    setViewFightIndex(fights.length);
+  }, [fights.length]);
+
+  useEffect(() => {
+    const teamPlayers = activeTeam === 1 ? team1.players : team2.players;
+    if (teamPlayers.some((player) => player._id === activePlayerId)) {
+      return;
+    }
+    const fallback = teamPlayers[0]?._id ?? (activeTeam === 1 ? team2.players[0]?._id : team1.players[0]?._id) ?? null;
+    setActivePlayerId(fallback);
+  }, [activePlayerId, activeTeam, team1.players, team2.players]);
+
+  const activePlayer =
+    team1.players.find((player) => player._id === activePlayerId) ??
+    team2.players.find((player) => player._id === activePlayerId) ??
+    null;
+  const activePlayerTeam = activePlayer
+    ? team1.players.some((player) => player._id === activePlayer._id)
+      ? 1
+      : 2
+    : null;
+  const viewingRecordedFight = viewFightIndex < fights.length;
+  const viewedFight = viewingRecordedFight ? fights[viewFightIndex] : null;
+  const viewedWinnerTeam = viewedFight?.winnerTeam;
+
+  const displayClassForPlayer = useCallback(
+    (player: DraftData["players"][number]) => {
+      if (!viewedFight) return player.selectedClass;
+      return (
+        viewedFight.classesByPlayer.find(
+          (entry) => String(entry.playerId) === String(player._id)
+        )?.className ?? player.selectedClass
+      );
+    },
+    [viewedFight]
+  );
+
+  return (
+    <div className="rounded-lg border border-gray-700 bg-gray-800/60 p-4 space-y-3">
+      <div className="relative min-h-[44px]">
+        <div className="text-left pr-16">
+          <p className="text-sm font-semibold text-gray-100">
+            Fight {viewingRecordedFight ? viewedFight?.fightNumber : fightNumber}
+          </p>
+        </div>
+        <div className="absolute right-0 top-0 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setViewFightIndex((index) => Math.max(0, index - 1))}
+            disabled={viewFightIndex <= 0}
+            className={cn(
+              "inline-flex h-7 w-7 items-center justify-center rounded border",
+              viewFightIndex <= 0
+                ? "border-gray-700/40 text-gray-600 cursor-not-allowed"
+                : "border-gray-600 text-gray-300 hover:bg-gray-700/40"
+            )}
+            aria-label="Previous fight"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewFightIndex((index) => Math.min(fights.length, index + 1))}
+            disabled={viewFightIndex >= fights.length}
+            className={cn(
+              "inline-flex h-7 w-7 items-center justify-center rounded border",
+              viewFightIndex >= fights.length
+                ? "border-gray-700/40 text-gray-600 cursor-not-allowed"
+                : "border-gray-600 text-gray-300 hover:bg-gray-700/40"
+            )}
+            aria-label="Next fight"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        {[
+          { team: 1 as const, data: team1 },
+          { team: 2 as const, data: team2 },
+        ].map(({ team, data }) => (
+          <div
+            key={team}
+            className={cn(
+              "rounded border p-2.5 space-y-2",
+              team === 1
+                ? "border-slate-500/40 bg-slate-900/20"
+                : "border-indigo-500/40 bg-indigo-900/15"
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <p className={cn("text-xs font-medium", team === 1 ? "text-slate-200" : "text-indigo-200")}>
+                Team {team}
+              </p>
+              {viewingRecordedFight && viewedWinnerTeam === team ? (
+                <Badge variant="winner" className="text-[9px]">
+                  Winner
+                </Badge>
+              ) : (
+                <Badge variant="winner" className="text-[9px] opacity-0 pointer-events-none">
+                  Winner
+                </Badge>
+              )}
+            </div>
+            {data.players.map((player) => (
+              <button
+                type="button"
+                key={player._id}
+                onClick={() => {
+                  setActiveTeam(team);
+                  setActivePlayerId(player._id);
+                }}
+                className={cn(
+                  "w-full grid grid-cols-[20px_1fr_22px_88px] items-center gap-2 rounded border px-2 py-1.5 text-left transition-colors",
+                  activePlayerId === player._id
+                    ? team === 1
+                      ? "border-slate-300/60 bg-slate-700/20"
+                      : "border-indigo-400/60 bg-indigo-500/15"
+                    : team === 1
+                      ? "border-slate-500/30 bg-slate-900/20 hover:border-slate-400/60"
+                      : "border-indigo-500/30 bg-indigo-900/10 hover:border-indigo-400/60"
+                )}
+                disabled={canEditClasses && editableTeam !== null && editableTeam !== team}
+              >
+                <PlayerAvatar
+                  url={player.avatarUrl}
+                  name={player.displayName}
+                  size={16}
+                />
+                <span className="truncate text-xs text-gray-300">
+                  {player.displayName}
+                  {player.isCaptain ? (
+                    <span className="ml-1 text-[10px] text-gray-600 font-medium uppercase tracking-wider">
+                      C
+                    </span>
+                  ) : null}
+                </span>
+                {linkedProfiles[player.discordUserId] ? (
+                  <TooltipProvider delayDuration={150}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <a
+                          href={linkedProfiles[player.discordUserId].characterListUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex justify-center text-indigo-300 hover:text-indigo-200"
+                          aria-label="Open character list"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <span>View user character list</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <span />
+                )}
+                <span
+                  className={cn(
+                    "truncate text-[10px]",
+                    team === 1 ? "text-slate-300/90" : "text-indigo-300/90"
+                  )}
+                >
+                  {displayClassForPlayer(player) ?? "No class"}
+                </span>
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {canEditClasses && !viewingRecordedFight && (
+      <div className="rounded border border-gray-700/50 p-3 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-gray-500">Selected:</span>
+          <span className="text-xs text-gray-200">
+            {activePlayer ? activePlayer.displayName : "None"}
+          </span>
+          {activePlayerTeam && (
+            <span
+              className={cn(
+                "rounded px-1.5 py-0.5 text-[10px]",
+                activePlayerTeam === 1
+                  ? "bg-slate-700/30 text-slate-200"
+                  : "bg-indigo-500/20 text-indigo-200"
+              )}
+            >
+              Team {activePlayerTeam}
+            </span>
+          )}
+          {activePlayer?.selectedClass && (
+            <span className="text-xs text-indigo-300">{activePlayer.selectedClass}</span>
+          )}
+        </div>
+        <div className="text-[11px] text-gray-500">
+          {editableTeam
+            ? `You can set classes for Team ${editableTeam}.`
+            : canRecordWinner
+              ? "Creator records fight winner after captains set classes."
+              : "Waiting for captains to set classes."}
+        </div>
+        <div className="space-y-2">
+          {(Object.entries(CLASS_CATEGORIES) as [ClassCategory, string[]][]).map(
+            ([category, classes]) => {
+              const hasAny = REALMS.some((realm) =>
+                classes.some(
+                  (className) =>
+                    classOptions.includes(className) &&
+                    (classesByRealm[realm] || []).includes(className)
+                )
+              );
+              if (!hasAny) return null;
+              const canPickClass =
+                canEditClasses &&
+                !busy &&
+                !!activePlayer &&
+                activePlayerTeam !== null &&
+                editableTeam !== null &&
+                activePlayerTeam === editableTeam;
+              return (
+                <div key={category} className="flex items-start gap-2">
+                  <span className="w-16 shrink-0 pt-1.5 text-[10px] uppercase tracking-wider font-medium text-gray-500">
+                    {category}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {REALMS.map((realm) => {
+                      const realmClasses = classes
+                        .filter(
+                          (className) =>
+                            classOptions.includes(className) &&
+                            (classesByRealm[realm] || []).includes(className)
+                        )
+                        .sort((a, b) => a.localeCompare(b));
+                      if (realmClasses.length === 0) return null;
+                      const groupBg =
+                        realm === "Albion"
+                          ? "bg-red-900/15"
+                          : realm === "Midgard"
+                            ? "bg-blue-900/15"
+                            : "bg-green-900/15";
+                      return (
+                        <div
+                          key={`${category}-${realm}`}
+                          className={cn(
+                            "flex items-center gap-0.5 rounded-md px-1.5 py-0.5",
+                            groupBg
+                          )}
+                        >
+                          {realmClasses.map((className) => {
+                            const isBanned = bannedSet.has(className);
+                            const isSelected = activePlayer?.selectedClass === className;
+                            return (
+                              <button
+                                key={className}
+                                type="button"
+                                disabled={!canPickClass || isBanned}
+                                onClick={() =>
+                                  activePlayer &&
+                                  onSetPlayerClass(activePlayer._id, className)
+                                }
+                                className={cn(
+                                  "rounded px-1.5 py-0.5 text-[10px] font-medium transition-all",
+                                  isBanned && "text-gray-600 line-through",
+                                  !isBanned &&
+                                    isSelected &&
+                                    "bg-gray-700/70 text-white",
+                                  !isBanned &&
+                                    !isSelected &&
+                                    canPickClass &&
+                                    "text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer",
+                                  !isBanned &&
+                                    !isSelected &&
+                                    !canPickClass &&
+                                    "text-gray-600"
+                                )}
+                              >
+                                {className}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+          )}
+        </div>
+      </div>
+      )}
+
+      {canRecordWinner && (
+        <div className="rounded-lg border border-gray-700/60 bg-gray-900/40 p-2.5">
+          <p className="mb-1.5 text-center text-[10px] font-medium tracking-wide text-gray-500">
+            {viewingRecordedFight ? "Change Winner" : "Select Winner"}
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <button
+              type="button"
+              disabled={
+                viewingRecordedFight
+                  ? busy
+                  : busy || !canRecordFight || !isClassSnapshotReady
+              }
+              onClick={() => {
+                if (viewingRecordedFight && viewedFight) {
+                  if (viewedFight.winnerTeam !== 1) {
+                    setPendingWinnerEdit({
+                      fightNumber: viewedFight.fightNumber,
+                      from: viewedFight.winnerTeam,
+                      to: 1,
+                    });
+                  }
+                  return;
+                }
+                setPendingWinnerTeam(1);
+              }}
+              className={cn(
+                "min-w-[110px] inline-flex items-center justify-center gap-1.5 rounded-md border px-4 py-1.5 text-xs font-medium transition-all",
+                viewingRecordedFight && viewedFight?.winnerTeam === 1
+                  ? "border-slate-200/80 bg-slate-600/60 text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-slate-200/30"
+                  : viewingRecordedFight
+                    ? "border-slate-500/60 bg-slate-700/20 text-slate-100 hover:bg-slate-700/35"
+                    : busy || !canRecordFight || !isClassSnapshotReady
+                      ? "border-slate-700/50 bg-slate-900/20 text-slate-500 cursor-not-allowed"
+                      : "border-slate-500/60 bg-slate-700/25 text-slate-100 hover:bg-slate-700/40"
+              )}
+            >
+              {viewingRecordedFight && viewedFight?.winnerTeam === 1 ? (
+                <Check className="h-3 w-3 opacity-90" />
+              ) : null}
+              <span>Team 1</span>
+            </button>
+            <button
+              type="button"
+              disabled={
+                viewingRecordedFight
+                  ? busy
+                  : busy || !canRecordFight || !isClassSnapshotReady
+              }
+              onClick={() => {
+                if (viewingRecordedFight && viewedFight) {
+                  if (viewedFight.winnerTeam !== 2) {
+                    setPendingWinnerEdit({
+                      fightNumber: viewedFight.fightNumber,
+                      from: viewedFight.winnerTeam,
+                      to: 2,
+                    });
+                  }
+                  return;
+                }
+                setPendingWinnerTeam(2);
+              }}
+              className={cn(
+                "min-w-[110px] inline-flex items-center justify-center gap-1.5 rounded-md border px-4 py-1.5 text-xs font-medium transition-all",
+                viewingRecordedFight && viewedFight?.winnerTeam === 2
+                  ? "border-indigo-200/80 bg-indigo-500/55 text-indigo-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-indigo-200/35"
+                  : viewingRecordedFight
+                    ? "border-indigo-500/60 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/35"
+                    : busy || !canRecordFight || !isClassSnapshotReady
+                      ? "border-indigo-900/40 bg-indigo-950/20 text-indigo-400/50 cursor-not-allowed"
+                      : "border-indigo-500/60 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/35"
+              )}
+            >
+              {viewingRecordedFight && viewedFight?.winnerTeam === 2 ? (
+                <Check className="h-3 w-3 opacity-90" />
+              ) : null}
+              <span>Team 2</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pendingWinnerTeam !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setPendingWinnerTeam(null)}
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
+            <div className="px-5 pt-5 pb-3">
+              <p className="text-sm font-medium text-gray-100">
+                Confirm Team {pendingWinnerTeam} won Fight {fightNumber}
+              </p>
+            </div>
+            <div className="px-5 pb-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingWinnerTeam(null)}
+                className="rounded-md border border-gray-800 px-3 py-1.5 text-xs text-gray-400 hover:border-gray-700 hover:text-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (pendingWinnerTeam) onRecordWinner(pendingWinnerTeam);
+                  setPendingWinnerTeam(null);
+                }}
+                className="rounded-md border border-indigo-500/60 bg-indigo-500/20 px-3 py-1.5 text-xs font-medium text-indigo-100 hover:bg-indigo-500/35 transition-colors"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingWinnerEdit !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setPendingWinnerEdit(null)}
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
+            <div className="px-5 pt-5 pb-3">
+              <p className="text-sm font-medium text-gray-100">
+                Change Fight {pendingWinnerEdit.fightNumber} winner?
+              </p>
+            </div>
+            <div className="px-5 pb-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingWinnerEdit(null)}
+                className="rounded-md border border-gray-800 px-3 py-1.5 text-xs text-gray-400 hover:border-gray-700 hover:text-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateFightWinner(
+                    pendingWinnerEdit.fightNumber,
+                    pendingWinnerEdit.to
+                  );
+                  setPendingWinnerEdit(null);
+                }}
+                className="rounded-md border border-indigo-500/60 bg-indigo-500/20 px-3 py-1.5 text-xs font-medium text-indigo-100 hover:bg-indigo-500/35 transition-colors"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

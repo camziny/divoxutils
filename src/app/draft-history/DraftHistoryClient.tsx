@@ -4,12 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, ChevronRight, Trophy, User } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Trophy, User } from "lucide-react";
 import { FaDiscord } from "react-icons/fa";
 import DiscordIdentityLinkCard from "./DiscordIdentityLinkCard";
 import type { DraftLogRow } from "@/server/draftStats";
 
 const ITEMS_PER_PAGE = 12;
+
+export function getNormalizedFightIndex(
+  fightsLength: number,
+  selectedIndex?: number
+): number {
+  if (fightsLength <= 0) return 0;
+  if (typeof selectedIndex !== "number" || Number.isNaN(selectedIndex)) return 0;
+  return Math.min(Math.max(selectedIndex, 0), fightsLength - 1);
+}
 
 function formatDate(ms: number) {
   return new Date(ms).toLocaleDateString("en-US", {
@@ -28,6 +37,9 @@ export default function DraftHistoryClient({
   const [expandedShortIds, setExpandedShortIds] = useState<Set<string>>(
     new Set()
   );
+  const [selectedFightByShortId, setSelectedFightByShortId] = useState<
+    Record<string, number>
+  >({});
 
   const totalPages = useMemo(
     () => Math.ceil(initialRows.length / ITEMS_PER_PAGE),
@@ -47,12 +59,25 @@ export default function DraftHistoryClient({
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
 
-  const toggle = (id: string) =>
+  const toggle = (id: string, row: DraftLogRow) => {
+    const fights = row.fights ?? [];
     setExpandedShortIds((s) => {
       const next = new Set(s);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
+    setSelectedFightByShortId((prev) => {
+      if (prev[id] !== undefined) return prev;
+      return {
+        ...prev,
+        [id]: 0,
+      };
+    });
+  };
 
   const teamPlayers = (row: DraftLogRow, team: 1 | 2) =>
     row.players
@@ -97,6 +122,28 @@ export default function DraftHistoryClient({
                   : row.winnerTeam === 2
                     ? cap2?.displayName
                     : null;
+              const fights = row.fights ?? [];
+              const selectedFightIndex = getNormalizedFightIndex(
+                fights.length,
+                selectedFightByShortId[row.shortId] ?? 0
+              );
+              const selectedFight = fights[selectedFightIndex];
+              const selectedFightClassesByDiscordUserId =
+                (selectedFight?.classesByPlayer ?? []).reduce<Record<string, string>>(
+                  (acc, entry) => {
+                    if (entry.discordUserId) acc[entry.discordUserId] = entry.className;
+                    return acc;
+                  },
+                  {}
+                ) ?? {};
+              const selectedFightClassesByPlayerId =
+                (selectedFight?.classesByPlayer ?? []).reduce<Record<string, string>>(
+                  (acc, entry) => {
+                    if (entry.playerId) acc[String(entry.playerId)] = entry.className;
+                    return acc;
+                  },
+                  {}
+                ) ?? {};
 
               return (
                 <div
@@ -105,7 +152,7 @@ export default function DraftHistoryClient({
                 >
                   <button
                     type="button"
-                    onClick={() => toggle(row.shortId)}
+                    onClick={() => toggle(row.shortId, row)}
                     className="w-full px-4 py-3 text-left hover:bg-gray-800/20 transition-colors duration-100 group"
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -144,9 +191,10 @@ export default function DraftHistoryClient({
 
                       <div className="flex items-center gap-4 flex-shrink-0 text-xs">
                         {winnerName ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-md border border-indigo-400/30 bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-200">
-                            <Trophy className="w-3 h-3 text-indigo-400" />
-                            {winnerName}
+                          <span className="inline-flex items-center gap-1.5 rounded-md border border-indigo-400/30 bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-100">
+                            <Trophy className="w-3 h-3 text-indigo-300" />
+                            <span>{winnerName}</span>
+                            {row.setScore ? <span className="text-indigo-200/90">{row.setScore}</span> : null}
                           </span>
                         ) : (
                           <span className="text-gray-600">No result</span>
@@ -160,18 +208,69 @@ export default function DraftHistoryClient({
 
                   {isExpanded && (
                     <div className="border-t border-gray-800/60 px-4 py-4 bg-gray-950/40">
+                      {fights.length > 0 ? (
+                        <div className="mb-2 flex justify-end">
+                          <div className="inline-flex items-center gap-2">
+                            <span className="text-[10px] font-medium tracking-wide text-gray-500">
+                              Fight {selectedFight?.fightNumber ?? fights.length}
+                            </span>
+                            <div className="inline-flex items-center rounded border border-gray-800/80 bg-gray-900/40 p-0.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedFightByShortId((prev) => ({
+                                ...prev,
+                                [row.shortId]: Math.max(0, selectedFightIndex - 1),
+                              }))
+                            }
+                            disabled={selectedFightIndex <= 0}
+                            className="inline-flex h-6 w-6 items-center justify-center rounded text-gray-300 hover:bg-gray-800/60 disabled:cursor-not-allowed disabled:text-gray-600 disabled:hover:bg-transparent"
+                            aria-label="Previous fight"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedFightByShortId((prev) => ({
+                                ...prev,
+                                [row.shortId]: Math.min(fights.length - 1, selectedFightIndex + 1),
+                              }))
+                            }
+                            disabled={selectedFightIndex >= fights.length - 1}
+                            className="inline-flex h-6 w-6 items-center justify-center rounded text-gray-300 hover:bg-gray-800/60 disabled:cursor-not-allowed disabled:text-gray-600 disabled:hover:bg-transparent"
+                            aria-label="Next fight"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
                       <div className="grid gap-4 sm:grid-cols-2">
                         <TeamPanel
                           label={row.team1Realm ?? "Team 1"}
                           players={teamPlayers(row, 1)}
-                          isWinner={row.winnerTeam === 1}
+                          isWinner={
+                            fights.length > 0
+                              ? selectedFight?.winnerTeam === 1
+                              : row.winnerTeam === 1
+                          }
                           bans={row.bans.filter((b) => b.team === 1)}
+                          classByDiscordUserId={selectedFightClassesByDiscordUserId}
+                          classByPlayerId={selectedFightClassesByPlayerId}
                         />
                         <TeamPanel
                           label={row.team2Realm ?? "Team 2"}
                           players={teamPlayers(row, 2)}
-                          isWinner={row.winnerTeam === 2}
+                          isWinner={
+                            fights.length > 0
+                              ? selectedFight?.winnerTeam === 2
+                              : row.winnerTeam === 2
+                          }
                           bans={row.bans.filter((b) => b.team === 2)}
+                          classByDiscordUserId={selectedFightClassesByDiscordUserId}
+                          classByPlayerId={selectedFightClassesByPlayerId}
                         />
                       </div>
                       <div className="mt-4 pt-3 border-t border-gray-800/40 flex items-center justify-between text-[11px]">
@@ -252,9 +351,12 @@ function TeamPanel({
   players,
   isWinner,
   bans,
+  classByDiscordUserId,
+  classByPlayerId,
 }: {
   label: string;
   players: Array<{
+    _id?: string;
     discordUserId: string;
     displayName: string;
     avatarUrl?: string;
@@ -262,6 +364,8 @@ function TeamPanel({
   }>;
   isWinner: boolean;
   bans: Array<{ className: string }>;
+  classByDiscordUserId: Record<string, string>;
+  classByPlayerId: Record<string, string>;
 }) {
   return (
     <div
@@ -271,10 +375,18 @@ function TeamPanel({
           : "rounded-lg border border-gray-800/40 p-3"
       }
     >
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex min-h-[20px] items-center justify-between">
         <p className="text-xs font-medium text-gray-500">{label}</p>
         {isWinner && (
           <Badge variant="winner" className="text-[9px]">
+            Winner
+          </Badge>
+        )}
+        {!isWinner && (
+          <Badge
+            variant="winner"
+            className="pointer-events-none text-[9px] opacity-0"
+          >
             Winner
           </Badge>
         )}
@@ -286,15 +398,22 @@ function TeamPanel({
           players.map((p) => (
             <div
               key={p.discordUserId}
-              className="flex items-center gap-2 text-sm text-gray-300"
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm text-gray-300"
             >
               <InlineAvatar name={p.displayName} avatarUrl={p.avatarUrl} size={18} />
-              <span>{p.displayName}</span>
-              {p.isCaptain && (
-                <span className="text-[10px] text-gray-600 font-medium uppercase tracking-wider">
-                  C
-                </span>
-              )}
+              <span className="truncate">
+                {p.displayName}
+                {p.isCaptain ? (
+                  <span className="ml-1 text-[10px] text-gray-600 font-medium uppercase tracking-wider">
+                    C
+                  </span>
+                ) : null}
+              </span>
+              <span className="text-[10px] text-gray-600">
+                {classByPlayerId[p._id ?? ""] ??
+                  classByDiscordUserId[p.discordUserId] ??
+                  "—"}
+              </span>
             </div>
           ))
         )}

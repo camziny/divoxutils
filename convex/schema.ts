@@ -2,6 +2,11 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 const teamNumber = v.union(v.literal(1), v.literal(2));
+const draftClassSnapshot = v.object({
+  playerId: v.id("draftPlayers"),
+  discordUserId: v.string(),
+  className: v.string(),
+});
 
 export default defineSchema({
   drafts: defineTable({
@@ -40,6 +45,9 @@ export default defineSchema({
     createdByAvatarUrl: v.optional(v.string()),
     winnerTeam: v.optional(teamNumber),
     gameStarted: v.optional(v.boolean()),
+    team1FightWins: v.optional(v.number()),
+    team2FightWins: v.optional(v.number()),
+    setScore: v.optional(v.string()),
     resultStatus: v.optional(
       v.union(
         v.literal("unverified"),
@@ -67,6 +75,7 @@ export default defineSchema({
     team: v.optional(teamNumber),
     isCaptain: v.boolean(),
     pickOrder: v.optional(v.number()),
+    selectedClass: v.optional(v.string()),
     token: v.string(),
   })
     .index("by_draft", ["draftId"])
@@ -77,6 +86,16 @@ export default defineSchema({
     team: teamNumber,
     className: v.string(),
   }).index("by_draft", ["draftId"]),
+
+  draftFights: defineTable({
+    draftId: v.id("drafts"),
+    fightNumber: v.number(),
+    winnerTeam: teamNumber,
+    classesByPlayer: v.array(draftClassSnapshot),
+    submittedBy: v.string(),
+  })
+    .index("by_draft", ["draftId"])
+    .index("by_draft_fight", ["draftId", "fightNumber"]),
 
   draftGuildSettings: defineTable({
     discordGuildId: v.string(),

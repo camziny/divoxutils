@@ -31,6 +31,7 @@ const DUMMY_NAMES = [
 
 export default function DraftTestPage() {
   const createDraft = useMutation(api.drafts.createDraft);
+  const seedTrackingDemoDraft = useMutation(api.drafts.seedTrackingDemoDraft);
   const updateSettings = useMutation(api.drafts.updateSettings);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -116,36 +117,54 @@ export default function DraftTestPage() {
             : `https://cdn.discordapp.com/embed/avatars/${i % 5}.png`,
       }));
 
-      const result = await createDraft({
-        discordGuildId: "test-guild",
-        discordChannelId: "test-channel",
-        createdBy: "player_0",
-        players,
-      });
-
-      const creatorToken = result.playerTokens.find(
-        (p) => p.discordUserId === "player_0"
-      )?.token;
-
-      if (modePreset === "pvp" && creatorToken) {
-        const adjustedTeamSize = Math.max(
-          2,
-          Math.min(8, Math.floor(players.length / 2))
-        );
-        await updateSettings({
-          draftId: result.draftId,
-          type: "pvp",
-          teamSize: adjustedTeamSize,
-          token: creatorToken,
+      if (modePreset === "traditional" && lobbySize >= 10) {
+        const result = await seedTrackingDemoDraft({
+          discordGuildId: "test-guild",
+          discordGuildName: "Test Guild",
+          createdBy: "player_0",
+          players: players.slice(0, 10),
         });
-      }
+        const creatorToken = result.playerTokens.find(
+          (p) => p.discordUserId === "player_0"
+        )?.token;
+        setDraftState({
+          shortId: result.shortId,
+          playerTokens: result.playerTokens,
+        });
+        setActiveToken(creatorToken);
+        setManualOverride(false);
+      } else {
+        const result = await createDraft({
+          discordGuildId: "test-guild",
+          discordChannelId: "test-channel",
+          createdBy: "player_0",
+          players,
+        });
 
-      setDraftState({
-        shortId: result.shortId,
-        playerTokens: result.playerTokens,
-      });
-      setActiveToken(creatorToken);
-      setManualOverride(false);
+        const creatorToken = result.playerTokens.find(
+          (p) => p.discordUserId === "player_0"
+        )?.token;
+
+        if (modePreset === "pvp" && creatorToken) {
+          const adjustedTeamSize = Math.max(
+            2,
+            Math.min(8, Math.floor(players.length / 2))
+          );
+          await updateSettings({
+            draftId: result.draftId,
+            type: "pvp",
+            teamSize: adjustedTeamSize,
+            token: creatorToken,
+          });
+        }
+
+        setDraftState({
+          shortId: result.shortId,
+          playerTokens: result.playerTokens,
+        });
+        setActiveToken(creatorToken);
+        setManualOverride(false);
+      }
     } catch (error: any) {
       console.error("Failed to create test draft:", error);
       const message =
@@ -252,7 +271,7 @@ export default function DraftTestPage() {
             Draft Test
           </h1>
           <p className="text-sm text-gray-500 mt-2">
-            Simulate a draft, then configure settings in the draft board as creator.
+            Simulate a draft. Traditional with 10+ players starts in tracking demo mode.
           </p>
           <p className="text-xs text-gray-600 mt-2">
             Default team size for this lobby: {defaultTeamSize}v{defaultTeamSize}
@@ -321,7 +340,6 @@ export default function DraftTestPage() {
             ? "Creating..."
             : `Simulate ${modePreset} draft`}
         </Button>
-
         {createError && (
           <div className="rounded-md border border-red-700/40 bg-red-900/20 px-3 py-2 text-left text-xs text-red-300">
             {createError}

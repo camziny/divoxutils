@@ -1,6 +1,7 @@
 import { query, mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { classesByRealm, allClasses, REALMS } from "./constants";
+import { Id } from "./_generated/dataModel";
 
 function generateShortId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -44,6 +45,38 @@ function generatePickSequence(
   return sequence;
 }
 
+const MAX_FIGHTS = 5;
+const REQUIRED_WINS = 3;
+
+function buildSetScore(team1Wins: number, team2Wins: number): string {
+  return `${team1Wins}-${team2Wins}`;
+}
+
+async function recomputeDraftScoreFromFights(
+  ctx: any,
+  draftId: Id<"drafts">
+): Promise<{
+  team1Wins: number;
+  team2Wins: number;
+  setScore: string;
+  winnerTeam: 1 | 2 | undefined;
+}> {
+  const fights = await ctx.db
+    .query("draftFights")
+    .withIndex("by_draft", (q: any) => q.eq("draftId", draftId))
+    .collect();
+  const team1Wins = fights.filter((fight: any) => fight.winnerTeam === 1).length;
+  const team2Wins = fights.filter((fight: any) => fight.winnerTeam === 2).length;
+  const winnerTeam =
+    team1Wins >= REQUIRED_WINS ? 1 : team2Wins >= REQUIRED_WINS ? 2 : undefined;
+  return {
+    team1Wins,
+    team2Wins,
+    setScore: buildSetScore(team1Wins, team2Wins),
+    winnerTeam,
+  };
+}
+
 export const getDraft = query({
   args: { shortId: v.string() },
   handler: async (ctx, { shortId }) => {
@@ -63,10 +96,19 @@ export const getDraft = query({
       .query("draftBans")
       .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
       .collect();
+    const fights = await ctx.db
+      .query("draftFights")
+      .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+      .collect();
 
     const sanitizedPlayers = players.map(({ token, ...rest }) => rest);
 
-    return { ...draft, players: sanitizedPlayers, bans };
+    return {
+      ...draft,
+      players: sanitizedPlayers,
+      bans,
+      fights: fights.sort((a, b) => a.fightNumber - b.fightNumber),
+    };
   },
 });
 
@@ -632,6 +674,231 @@ export const pickPlayer = mutation({
   },
 });
 
+export const setPlayerClass = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    playerId: v.id("draftPlayers"),
+    className: v.string(),
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found");
+    if (draft.status !== "drafting" && draft.status !== "complete") {
+      throw new Error("Classes can only be set after drafting starts");
+    }
+
+    const callerPlayer = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+    if (!callerPlayer || callerPlayer.draftId !== args.draftId) {
+      throw new Error("Invalid token for this draft");
+    }
+
+    if (!allClasses.includes(args.className)) {
+      throw new Error("Invalid class");
+    }
+
+    const targetPlayer = await ctx.db.get(args.playerId);
+    if (!targetPlayer || targetPlayer.draftId !== args.draftId) {
+      throw new Error("Player not found");
+    }
+    if (targetPlayer.team === undefined) {
+      throw new Error("Player is not on a team");
+    }
+
+    const callerTeam =
+      callerPlayer.discordUserId === draft.team1CaptainId
+        ? 1
+        : callerPlayer.discordUserId === draft.team2CaptainId
+          ? 2
+          : undefined;
+    if (!callerTeam) {
+      throw new Error("Only captains can set classes");
+    }
+    if (targetPlayer.team !== callerTeam) {
+      throw new Error("Captains can only set classes for their own team");
+    }
+
+    await ctx.db.patch(args.playerId, { selectedClass: args.className });
+  },
+});
+
+export const recordFightResult = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    winnerTeam: v.union(v.literal(1), v.literal(2)),
+    classesByPlayer: v.array(
+      v.object({
+        playerId: v.id("draftPlayers"),
+        className: v.string(),
+      })
+    ),
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found");
+    if (draft.status !== "complete") throw new Error("Draft is not complete");
+    if (!draft.gameStarted) throw new Error("Game has not started");
+    if (draft.winnerTeam !== undefined) throw new Error("Winner already set");
+
+    const callerPlayer = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
+      throw new Error("Only the draft creator can record fights");
+    }
+
+    const players = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .collect();
+    const draftedPlayers = players.filter((p) => p.team !== undefined);
+
+    if (draftedPlayers.length === 0) {
+      throw new Error("No drafted players found");
+    }
+    if (args.classesByPlayer.length !== draftedPlayers.length) {
+      throw new Error("Classes must include every drafted player");
+    }
+
+    const classByPlayerId = new Map(
+      args.classesByPlayer.map((entry) => [entry.playerId, entry.className])
+    );
+    const seenPlayerIds = new Set(args.classesByPlayer.map((entry) => entry.playerId));
+    if (seenPlayerIds.size !== args.classesByPlayer.length) {
+      throw new Error("Duplicate player class entries are not allowed");
+    }
+
+    const normalizedClassesByPlayer: {
+      playerId: typeof draftedPlayers[number]["_id"];
+      discordUserId: string;
+      className: string;
+    }[] = [];
+
+    for (const player of draftedPlayers) {
+      const className = classByPlayerId.get(player._id);
+      if (!className) {
+        throw new Error("Missing class entry for a drafted player");
+      }
+      if (!allClasses.includes(className)) {
+        throw new Error(`Invalid class: ${className}`);
+      }
+      normalizedClassesByPlayer.push({
+        playerId: player._id,
+        discordUserId: player.discordUserId,
+        className,
+      });
+    }
+
+    const existingFights = await ctx.db
+      .query("draftFights")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .collect();
+    const nextFightNumber = existingFights.length + 1;
+
+    if (nextFightNumber > MAX_FIGHTS) {
+      throw new Error("Maximum fights already recorded");
+    }
+
+    const team1WinsBefore = existingFights.filter((fight) => fight.winnerTeam === 1).length;
+    const team2WinsBefore = existingFights.filter((fight) => fight.winnerTeam === 2).length;
+    if (team1WinsBefore >= REQUIRED_WINS || team2WinsBefore >= REQUIRED_WINS) {
+      throw new Error("Set is already complete");
+    }
+
+    await ctx.db.insert("draftFights", {
+      draftId: args.draftId,
+      fightNumber: nextFightNumber,
+      winnerTeam: args.winnerTeam,
+      classesByPlayer: normalizedClassesByPlayer,
+      submittedBy: callerPlayer.discordUserId,
+    });
+
+    for (const entry of normalizedClassesByPlayer) {
+      await ctx.db.patch(entry.playerId, { selectedClass: entry.className });
+    }
+
+    const team1Wins = team1WinsBefore + (args.winnerTeam === 1 ? 1 : 0);
+    const team2Wins = team2WinsBefore + (args.winnerTeam === 2 ? 1 : 0);
+    const winnerTeam =
+      team1Wins >= REQUIRED_WINS ? 1 : team2Wins >= REQUIRED_WINS ? 2 : undefined;
+
+    await ctx.db.patch(args.draftId, {
+      team1FightWins: team1Wins,
+      team2FightWins: team2Wins,
+      setScore: buildSetScore(team1Wins, team2Wins),
+      winnerTeam,
+      resultStatus: winnerTeam ? "unverified" : draft.resultStatus,
+      resultModeratedBy: winnerTeam ? undefined : draft.resultModeratedBy,
+      resultModeratedAt: winnerTeam ? undefined : draft.resultModeratedAt,
+      resultModerationNote: winnerTeam ? undefined : draft.resultModerationNote,
+      winnerOverriddenBy: winnerTeam ? undefined : draft.winnerOverriddenBy,
+      winnerOverriddenAt: winnerTeam ? undefined : draft.winnerOverriddenAt,
+      winnerOverrideNote: winnerTeam ? undefined : draft.winnerOverrideNote,
+    });
+  },
+});
+
+export const updateFightWinner = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    fightNumber: v.number(),
+    winnerTeam: v.union(v.literal(1), v.literal(2)),
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found");
+    if (draft.status !== "complete") throw new Error("Draft is not complete");
+    if (!draft.gameStarted) throw new Error("Game has not started");
+
+    const callerPlayer = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
+      throw new Error("Only the draft creator can edit fight winners");
+    }
+
+    const fight = await ctx.db
+      .query("draftFights")
+      .withIndex("by_draft_fight", (q) =>
+        q.eq("draftId", args.draftId).eq("fightNumber", args.fightNumber)
+      )
+      .unique();
+    if (!fight) throw new Error("Fight not found");
+
+    await ctx.db.patch(fight._id, { winnerTeam: args.winnerTeam });
+
+    const recomputed = await recomputeDraftScoreFromFights(ctx, args.draftId);
+    await ctx.db.patch(args.draftId, {
+      team1FightWins: recomputed.team1Wins,
+      team2FightWins: recomputed.team2Wins,
+      setScore: recomputed.setScore,
+      winnerTeam: recomputed.winnerTeam,
+      resultStatus: recomputed.winnerTeam ? "unverified" : draft.resultStatus,
+      resultModeratedBy: recomputed.winnerTeam ? undefined : draft.resultModeratedBy,
+      resultModeratedAt: recomputed.winnerTeam ? undefined : draft.resultModeratedAt,
+      resultModerationNote: recomputed.winnerTeam ? undefined : draft.resultModerationNote,
+      winnerOverriddenBy: recomputed.winnerTeam ? undefined : draft.winnerOverriddenBy,
+      winnerOverriddenAt: recomputed.winnerTeam ? undefined : draft.winnerOverriddenAt,
+      winnerOverrideNote: recomputed.winnerTeam ? undefined : draft.winnerOverrideNote,
+    });
+  },
+});
+
 export const beginGame = mutation({
   args: {
     draftId: v.id("drafts"),
@@ -833,6 +1100,131 @@ export const setWinner = mutation({
   },
 });
 
+export const adminReplaceDraftFights = mutation({
+  args: {
+    shortId: v.string(),
+    fights: v.array(
+      v.object({
+        winnerTeam: v.union(v.literal(1), v.literal(2)),
+        classesByPlayer: v.array(
+          v.object({
+            playerId: v.id("draftPlayers"),
+            className: v.string(),
+          })
+        ),
+      })
+    ),
+    submittedBy: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db
+      .query("drafts")
+      .withIndex("by_shortId", (q) => q.eq("shortId", args.shortId))
+      .unique();
+    if (!draft) throw new Error("Draft not found");
+    if (draft.status !== "complete") throw new Error("Only completed drafts can be edited");
+
+    const players = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+      .collect();
+    const draftedPlayers = players.filter((p) => p.team !== undefined);
+    const playerById = new Map(players.map((p) => [p._id, p]));
+
+    if (args.fights.length === 0) throw new Error("At least one fight is required");
+    if (args.fights.length > MAX_FIGHTS) throw new Error("Too many fights");
+
+    const existingFights = await ctx.db
+      .query("draftFights")
+      .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+      .collect();
+    for (const fight of existingFights) {
+      await ctx.db.delete(fight._id);
+    }
+
+    let team1Wins = 0;
+    let team2Wins = 0;
+
+    for (let index = 0; index < args.fights.length; index += 1) {
+      const fight = args.fights[index];
+      if (fight.classesByPlayer.length !== draftedPlayers.length) {
+        throw new Error("Each fight must include classes for all drafted players");
+      }
+      const seenPlayerIds = new Set(
+        fight.classesByPlayer.map((entry) => entry.playerId)
+      );
+      if (seenPlayerIds.size !== fight.classesByPlayer.length) {
+        throw new Error("Duplicate player class entries are not allowed");
+      }
+
+      const classByPlayerId = new Map(
+        fight.classesByPlayer.map((entry) => [entry.playerId, entry.className])
+      );
+      const normalizedClassesByPlayer: {
+        playerId: typeof draftedPlayers[number]["_id"];
+        discordUserId: string;
+        className: string;
+      }[] = [];
+
+      for (const draftedPlayer of draftedPlayers) {
+        const className = classByPlayerId.get(draftedPlayer._id);
+        if (!className) throw new Error("Missing player class assignment");
+        if (!allClasses.includes(className)) throw new Error(`Invalid class: ${className}`);
+        normalizedClassesByPlayer.push({
+          playerId: draftedPlayer._id,
+          discordUserId: draftedPlayer.discordUserId,
+          className,
+        });
+      }
+
+      await ctx.db.insert("draftFights", {
+        draftId: draft._id,
+        fightNumber: index + 1,
+        winnerTeam: fight.winnerTeam,
+        classesByPlayer: normalizedClassesByPlayer,
+        submittedBy: args.submittedBy,
+      });
+
+      if (fight.winnerTeam === 1) team1Wins += 1;
+      else team2Wins += 1;
+      if (
+        index < args.fights.length - 1 &&
+        (team1Wins >= REQUIRED_WINS || team2Wins >= REQUIRED_WINS)
+      ) {
+        throw new Error("Cannot record fights after set is complete");
+      }
+    }
+
+    const finalWinnerTeam =
+      team1Wins >= REQUIRED_WINS ? 1 : team2Wins >= REQUIRED_WINS ? 2 : undefined;
+    if (!finalWinnerTeam) {
+      throw new Error("At least one team must reach 3 wins");
+    }
+
+    const lastFight = args.fights[args.fights.length - 1];
+    for (const classEntry of lastFight.classesByPlayer) {
+      const player = playerById.get(classEntry.playerId);
+      if (player) {
+        await ctx.db.patch(player._id, { selectedClass: classEntry.className });
+      }
+    }
+
+    await ctx.db.patch(draft._id, {
+      winnerTeam: finalWinnerTeam,
+      team1FightWins: team1Wins,
+      team2FightWins: team2Wins,
+      setScore: buildSetScore(team1Wins, team2Wins),
+      resultStatus: "unverified",
+      resultModeratedBy: undefined,
+      resultModeratedAt: undefined,
+      resultModerationNote: undefined,
+      winnerOverriddenBy: undefined,
+      winnerOverriddenAt: undefined,
+      winnerOverrideNote: undefined,
+    });
+  },
+});
+
 export const getDraftsForModeration = query({
   args: {},
   handler: async (ctx) => {
@@ -853,6 +1245,10 @@ export const getDraftsForModeration = query({
         .query("draftPlayers")
         .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
         .collect();
+      const fights = await ctx.db
+        .query("draftFights")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
       results.push({
         _id: draft._id,
         shortId: draft.shortId,
@@ -863,13 +1259,30 @@ export const getDraftsForModeration = query({
         createdByDisplayName: draft.createdByDisplayName,
         createdByAvatarUrl: draft.createdByAvatarUrl,
         resultStatus: draft.resultStatus ?? "unverified",
+        team1FightWins: draft.team1FightWins ?? 0,
+        team2FightWins: draft.team2FightWins ?? 0,
+        setScore:
+          draft.setScore ??
+          buildSetScore(
+            draft.team1FightWins ?? 0,
+            draft.team2FightWins ?? 0
+          ),
         _creationTime: draft._creationTime,
+        fights: fights
+          .sort((a, b) => a.fightNumber - b.fightNumber)
+          .map((fight) => ({
+            fightNumber: fight.fightNumber,
+            winnerTeam: fight.winnerTeam,
+            classesByPlayer: fight.classesByPlayer,
+          })),
         players: players.map((p) => ({
+          _id: p._id,
           discordUserId: p.discordUserId,
           displayName: p.displayName,
           avatarUrl: p.avatarUrl,
           team: p.team,
           isCaptain: p.isCaptain,
+          selectedClass: p.selectedClass,
         })),
       });
     }
@@ -898,6 +1311,10 @@ export const getReviewedDraftsForModeration = query({
         .query("draftPlayers")
         .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
         .collect();
+      const fights = await ctx.db
+        .query("draftFights")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
       results.push({
         _id: draft._id,
         shortId: draft.shortId,
@@ -910,13 +1327,30 @@ export const getReviewedDraftsForModeration = query({
         resultStatus: draft.resultStatus,
         resultModeratedAt: draft.resultModeratedAt,
         resultModeratedBy: draft.resultModeratedBy,
+        team1FightWins: draft.team1FightWins ?? 0,
+        team2FightWins: draft.team2FightWins ?? 0,
+        setScore:
+          draft.setScore ??
+          buildSetScore(
+            draft.team1FightWins ?? 0,
+            draft.team2FightWins ?? 0
+          ),
         _creationTime: draft._creationTime,
+        fights: fights
+          .sort((a, b) => a.fightNumber - b.fightNumber)
+          .map((fight) => ({
+            fightNumber: fight.fightNumber,
+            winnerTeam: fight.winnerTeam,
+            classesByPlayer: fight.classesByPlayer,
+          })),
         players: players.map((p) => ({
+          _id: p._id,
           discordUserId: p.discordUserId,
           displayName: p.displayName,
           avatarUrl: p.avatarUrl,
           team: p.team,
           isCaptain: p.isCaptain,
+          selectedClass: p.selectedClass,
         })),
       });
     }
@@ -949,6 +1383,10 @@ export const getVerifiedDraftResults = query({
         .query("draftPlayers")
         .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
         .collect();
+      const fights = await ctx.db
+        .query("draftFights")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
       results.push({
         _id: draft._id,
         shortId: draft.shortId,
@@ -957,15 +1395,32 @@ export const getVerifiedDraftResults = query({
         discordGuildName: draft.discordGuildName,
         winnerTeam: draft.winnerTeam,
         resultStatus: draft.resultStatus,
+        team1FightWins: draft.team1FightWins ?? 0,
+        team2FightWins: draft.team2FightWins ?? 0,
+        setScore:
+          draft.setScore ??
+          buildSetScore(
+            draft.team1FightWins ?? 0,
+            draft.team2FightWins ?? 0
+          ),
         _creationTime: draft._creationTime,
         team1Realm: draft.team1Realm,
         team2Realm: draft.team2Realm,
+        fights: fights
+          .sort((a, b) => a.fightNumber - b.fightNumber)
+          .map((fight) => ({
+            fightNumber: fight.fightNumber,
+            winnerTeam: fight.winnerTeam,
+            classesByPlayer: fight.classesByPlayer,
+          })),
         players: players.map((p) => ({
+          _id: p._id,
           discordUserId: p.discordUserId,
           displayName: p.displayName,
           avatarUrl: p.avatarUrl,
           team: p.team,
           isCaptain: p.isCaptain,
+          selectedClass: p.selectedClass,
         })),
       });
     }
@@ -992,6 +1447,10 @@ export const getCompletedDraftResults = query({
         .query("draftBans")
         .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
         .collect();
+      const fights = await ctx.db
+        .query("draftFights")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
       results.push({
         _id: draft._id,
         shortId: draft.shortId,
@@ -1004,15 +1463,32 @@ export const getCompletedDraftResults = query({
         createdByAvatarUrl: draft.createdByAvatarUrl,
         winnerTeam: draft.winnerTeam,
         resultStatus: draft.resultStatus ?? "unverified",
+        team1FightWins: draft.team1FightWins ?? 0,
+        team2FightWins: draft.team2FightWins ?? 0,
+        setScore:
+          draft.setScore ??
+          buildSetScore(
+            draft.team1FightWins ?? 0,
+            draft.team2FightWins ?? 0
+          ),
         _creationTime: draft._creationTime,
         team1Realm: draft.team1Realm,
         team2Realm: draft.team2Realm,
+        fights: fights
+          .sort((a, b) => a.fightNumber - b.fightNumber)
+          .map((fight) => ({
+            fightNumber: fight.fightNumber,
+            winnerTeam: fight.winnerTeam,
+            classesByPlayer: fight.classesByPlayer,
+          })),
         players: players.map((p) => ({
+          _id: p._id,
           discordUserId: p.discordUserId,
           displayName: p.displayName,
           avatarUrl: p.avatarUrl,
           team: p.team,
           isCaptain: p.isCaptain,
+          selectedClass: p.selectedClass,
         })),
         bans: bans.map((b) => ({
           team: b.team,
@@ -1177,6 +1653,139 @@ export const seedVerifiedDraft = mutation({
   },
 });
 
+export const seedTrackingDemoDraft = mutation({
+  args: {
+    discordGuildId: v.string(),
+    discordGuildName: v.optional(v.string()),
+    createdBy: v.string(),
+    players: v.array(
+      v.object({
+        discordUserId: v.string(),
+        displayName: v.string(),
+        avatarUrl: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    if (args.players.length < 10) {
+      throw new Error("Need at least 10 players for tracking demo draft");
+    }
+
+    let shortId = `demo-${generateShortId()}`;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const existing = await ctx.db
+        .query("drafts")
+        .withIndex("by_shortId", (q) => q.eq("shortId", shortId))
+        .unique();
+      if (!existing) break;
+      shortId = `demo-${generateShortId()}`;
+    }
+
+    const teamSize = 5;
+    const selectedPlayers = args.players.slice(0, teamSize * 2);
+    const team1 = selectedPlayers.slice(0, teamSize);
+    const team2 = selectedPlayers.slice(teamSize, teamSize * 2);
+
+    const draftId = await ctx.db.insert("drafts", {
+      shortId,
+      type: "traditional",
+      status: "complete",
+      teamSize,
+      discordGuildId: args.discordGuildId,
+      discordGuildName: args.discordGuildName,
+      discordChannelId: "demo-channel",
+      createdBy: args.createdBy,
+      team1CaptainId: team1[0]?.discordUserId,
+      team2CaptainId: team2[0]?.discordUserId,
+      team1Realm: "Albion",
+      team2Realm: "Midgard",
+      gameStarted: true,
+      team1FightWins: 1,
+      team2FightWins: 0,
+      setScore: "1-0",
+    });
+
+    const playerTokens: { discordUserId: string; token: string }[] = [];
+    const draftedRows: {
+      _id: Id<"draftPlayers">;
+      discordUserId: string;
+      className: string;
+      team: 1 | 2;
+    }[] = [];
+
+    for (let i = 0; i < team1.length; i += 1) {
+      const player = team1[i];
+      const className = classesByRealm.Albion[i % classesByRealm.Albion.length];
+      const token = generateToken();
+      const playerId = await ctx.db.insert("draftPlayers", {
+        draftId,
+        discordUserId: player.discordUserId,
+        displayName: player.displayName,
+        avatarUrl: player.avatarUrl,
+        team: 1,
+        isCaptain: i === 0,
+        token,
+        selectedClass: className,
+      });
+      playerTokens.push({ discordUserId: player.discordUserId, token });
+      draftedRows.push({
+        _id: playerId,
+        discordUserId: player.discordUserId,
+        className,
+        team: 1,
+      });
+    }
+
+    for (let i = 0; i < team2.length; i += 1) {
+      const player = team2[i];
+      const className = classesByRealm.Midgard[i % classesByRealm.Midgard.length];
+      const token = generateToken();
+      const playerId = await ctx.db.insert("draftPlayers", {
+        draftId,
+        discordUserId: player.discordUserId,
+        displayName: player.displayName,
+        avatarUrl: player.avatarUrl,
+        team: 2,
+        isCaptain: i === 0,
+        token,
+        selectedClass: className,
+      });
+      playerTokens.push({ discordUserId: player.discordUserId, token });
+      draftedRows.push({
+        _id: playerId,
+        discordUserId: player.discordUserId,
+        className,
+        team: 2,
+      });
+    }
+
+    await ctx.db.insert("draftBans", {
+      draftId,
+      team: 1,
+      className: "Berserker",
+    });
+    await ctx.db.insert("draftBans", {
+      draftId,
+      team: 2,
+      className: "Cleric",
+    });
+
+    await ctx.db.insert("draftFights", {
+      draftId,
+      fightNumber: 1,
+      winnerTeam: 1,
+      classesByPlayer: draftedRows.map((row) => ({
+        playerId: row._id,
+        discordUserId: row.discordUserId,
+        className: row.className,
+      })),
+      submittedBy: args.createdBy,
+    });
+
+    return { draftId, shortId, playerTokens };
+  },
+});
+
 /**
  * Dev-only mutation to delete all seed drafts (shortId starts with "seed-").
  */
@@ -1203,11 +1812,154 @@ export const cleanupSeedDrafts = mutation({
         for (const ban of bans) {
           await ctx.db.delete(ban._id);
         }
+        const fights = await ctx.db
+          .query("draftFights")
+          .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+          .collect();
+        for (const fight of fights) {
+          await ctx.db.delete(fight._id);
+        }
         await ctx.db.delete(draft._id);
         deleted += 1;
       }
     }
     return { deleted };
+  },
+});
+
+export const devBackfillCompletedDraftTracking = mutation({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.max(1, Math.min(args.limit ?? 200, 1000));
+    const drafts = await ctx.db.query("drafts").collect();
+    let patchedDrafts = 0;
+    let insertedFights = 0;
+    const touchedShortIds: string[] = [];
+
+    const resolveRealmForTeam = (draft: any, team: 1 | 2): string | undefined =>
+      team === 1 ? draft.team1Realm : draft.team2Realm;
+
+    const parseSetScore = (
+      score: string | undefined,
+      winnerTeam: 1 | 2 | undefined
+    ): { team1Wins: number; team2Wins: number } => {
+      if (score && /^\d+-\d+$/.test(score)) {
+        const [a, b] = score.split("-").map((value) => Number(value));
+        if (
+          Number.isFinite(a) &&
+          Number.isFinite(b) &&
+          a >= 0 &&
+          b >= 0 &&
+          a + b <= MAX_FIGHTS &&
+          (a >= REQUIRED_WINS || b >= REQUIRED_WINS)
+        ) {
+          return { team1Wins: a, team2Wins: b };
+        }
+      }
+      if (winnerTeam === 2) return { team1Wins: 1, team2Wins: REQUIRED_WINS };
+      return { team1Wins: REQUIRED_WINS, team2Wins: 1 };
+    };
+
+    const buildWinnerSequence = (
+      team1Wins: number,
+      team2Wins: number
+    ): (1 | 2)[] => {
+      const winnerTeam: 1 | 2 = team1Wins > team2Wins ? 1 : 2;
+      const loserTeam: 1 | 2 = winnerTeam === 1 ? 2 : 1;
+      const winnerWins = Math.max(team1Wins, team2Wins);
+      const loserWins = Math.min(team1Wins, team2Wins);
+      const sequence: (1 | 2)[] = [];
+      for (let i = 0; i < loserWins; i += 1) {
+        sequence.push(i % 2 === 0 ? winnerTeam : loserTeam);
+      }
+      while (sequence.filter((team) => team === winnerTeam).length < winnerWins - 1) {
+        sequence.push(winnerTeam);
+      }
+      while (sequence.filter((team) => team === loserTeam).length < loserWins) {
+        sequence.push(loserTeam);
+      }
+      sequence.push(winnerTeam);
+      return sequence.slice(0, winnerWins + loserWins);
+    };
+
+    for (const draft of drafts) {
+      if (patchedDrafts >= limit) break;
+      if (draft.status !== "complete") continue;
+
+      const existingFights = await ctx.db
+        .query("draftFights")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      if (existingFights.length > 0) continue;
+
+      const players = await ctx.db
+        .query("draftPlayers")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      if (players.length === 0) continue;
+
+      const winnerTeam =
+        draft.winnerTeam === 1 || draft.winnerTeam === 2 ? draft.winnerTeam : 1;
+      const parsed = parseSetScore(draft.setScore, winnerTeam);
+      const team1Wins = parsed.team1Wins;
+      const team2Wins = parsed.team2Wins;
+      const winnerSequence = buildWinnerSequence(team1Wins, team2Wins);
+
+      for (let fightIndex = 0; fightIndex < winnerSequence.length; fightIndex += 1) {
+        const fightNumber = fightIndex + 1;
+        const classesByPlayer = players.map((player, playerIndex) => {
+          const realm = resolveRealmForTeam(draft, player.team ?? 1);
+          const pool =
+            (realm && classesByRealm[realm as keyof typeof classesByRealm]) || allClasses;
+          const className =
+            player.selectedClass || pool[(playerIndex + fightIndex) % pool.length];
+          return {
+            playerId: player._id,
+            discordUserId: player.discordUserId,
+            className,
+          };
+        });
+
+        await ctx.db.insert("draftFights", {
+          draftId: draft._id,
+          fightNumber,
+          winnerTeam: winnerSequence[fightIndex],
+          classesByPlayer,
+          submittedBy: draft.createdBy,
+        });
+        insertedFights += 1;
+      }
+
+      const lastFightIndex = winnerSequence.length - 1;
+      for (let playerIndex = 0; playerIndex < players.length; playerIndex += 1) {
+        const player = players[playerIndex];
+        const realm = resolveRealmForTeam(draft, player.team ?? 1);
+        const pool =
+          (realm && classesByRealm[realm as keyof typeof classesByRealm]) || allClasses;
+        const className =
+          player.selectedClass || pool[(playerIndex + lastFightIndex) % pool.length];
+        await ctx.db.patch(player._id, { selectedClass: className });
+      }
+
+      await ctx.db.patch(draft._id, {
+        gameStarted: true,
+        team1FightWins: team1Wins,
+        team2FightWins: team2Wins,
+        setScore: buildSetScore(team1Wins, team2Wins),
+        winnerTeam: team1Wins > team2Wins ? 1 : 2,
+      });
+
+      patchedDrafts += 1;
+      touchedShortIds.push(draft.shortId);
+    }
+
+    return {
+      patchedDrafts,
+      insertedFights,
+      touchedShortIds,
+    };
   },
 });
 
