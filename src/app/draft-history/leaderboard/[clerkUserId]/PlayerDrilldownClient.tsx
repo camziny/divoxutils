@@ -68,6 +68,14 @@ export default function PlayerDrilldownClient({
         }),
     [initialData?.byClass]
   );
+  const alphabeticalPlayedClasses = useMemo(
+    () =>
+      classRows
+        .filter((row) => row.games > 0)
+        .map((row) => row.className)
+        .sort((a, b) => a.localeCompare(b)),
+    [classRows]
+  );
   const [selectedClass, setSelectedClass] = useState<string>("");
   const filteredClassRows = useMemo(() => {
     const query = classQuery.trim().toLowerCase();
@@ -93,12 +101,14 @@ export default function PlayerDrilldownClient({
   }, [classQuery, classRows, classSortBy]);
 
   useEffect(() => {
+    const firstPlayedClass = alphabeticalPlayedClasses[0];
+    const fallbackClass = allClasses[0];
+    const nextDefault = firstPlayedClass ?? fallbackClass ?? "";
+    if (!nextDefault) return;
     if (!selectedClass || !allClasses.includes(selectedClass)) {
-      if (allClasses.length > 0) {
-        setSelectedClass(allClasses[0]);
-      }
+      setSelectedClass(nextDefault);
     }
-  }, [selectedClass]);
+  }, [selectedClass, alphabeticalPlayedClasses]);
 
   useEffect(() => {
     if (!selectedClass) {
@@ -516,7 +526,7 @@ export default function PlayerDrilldownClient({
               {topH2H.map((row) => (
                 <div
                   key={row.opponentClerkUserId}
-                  className="grid grid-cols-[1fr_1fr_44px] items-center gap-2"
+                  className="grid grid-cols-[160px_1fr_44px] items-center gap-2"
                 >
                   <span className="inline-flex min-w-0 items-center gap-2">
                     <InlineMiniAvatar
