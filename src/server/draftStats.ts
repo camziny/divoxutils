@@ -119,6 +119,7 @@ export type DraftLogRow = {
       substituteMode?: "known" | "manual";
       substituteDiscordUserId?: string;
       substituteDisplayName?: string;
+      substituteAvatarUrl?: string;
     }>;
   }>;
 };
@@ -1039,6 +1040,7 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
         substituteMode?: "known" | "manual";
         substituteDiscordUserId?: string;
         substituteDisplayName?: string;
+        substituteAvatarUrl?: string;
       }>;
     }>;
     bans?: Array<{

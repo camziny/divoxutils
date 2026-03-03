@@ -51,6 +51,18 @@ export default function DraftHistoryClient({
     return initialRows.slice(start, start + ITEMS_PER_PAGE);
   }, [initialRows, currentPage]);
 
+  const avatarByDiscordUserId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of initialRows) {
+      for (const player of row.players ?? []) {
+        if (player.discordUserId && player.avatarUrl) {
+          map.set(player.discordUserId, player.avatarUrl);
+        }
+      }
+    }
+    return map;
+  }, [initialRows]);
+
   useEffect(() => {
     if (totalPages === 0) {
       if (currentPage !== 1) setCurrentPage(1);
@@ -168,9 +180,6 @@ export default function DraftHistoryClient({
                   },
                   {}
                 ) ?? {};
-              const playerByDiscordUserId = new Map(
-                row.players.map((player) => [player.discordUserId, player])
-              );
               const selectedFightSubstituteByPlayerId =
                 (selectedFight?.classesByPlayer ?? []).reduce<
                   Record<string, { displayName: string; avatarUrl?: string }>
@@ -180,9 +189,11 @@ export default function DraftHistoryClient({
                     entry.substituteMode === "known" && entry.substituteDiscordUserId
                       ? entry.substituteDiscordUserId
                       : undefined;
-                  const substituteAvatarUrl = substituteDiscordUserId
-                    ? playerByDiscordUserId.get(substituteDiscordUserId)?.avatarUrl
-                    : undefined;
+                  const substituteAvatarUrl =
+                    entry.substituteAvatarUrl ??
+                    (substituteDiscordUserId
+                      ? avatarByDiscordUserId.get(substituteDiscordUserId)
+                      : undefined);
                   acc[String(entry.playerId)] = {
                     displayName: entry.substituteDisplayName,
                     avatarUrl: substituteAvatarUrl,
@@ -200,7 +211,9 @@ export default function DraftHistoryClient({
                   if (!substituteDiscordUserId || !entry.substituteDisplayName) return acc;
                   acc[substituteDiscordUserId] = {
                     displayName: entry.substituteDisplayName,
-                    avatarUrl: playerByDiscordUserId.get(substituteDiscordUserId)?.avatarUrl,
+                    avatarUrl:
+                      entry.substituteAvatarUrl ??
+                      avatarByDiscordUserId.get(substituteDiscordUserId),
                   };
                   return acc;
                 }, {}) ?? {};

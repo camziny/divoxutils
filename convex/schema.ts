@@ -9,6 +9,7 @@ const draftClassSnapshot = v.object({
   substituteMode: v.optional(v.union(v.literal("known"), v.literal("manual"))),
   substituteDiscordUserId: v.optional(v.string()),
   substituteDisplayName: v.optional(v.string()),
+  substituteAvatarUrl: v.optional(v.string()),
 });
 
 export default defineSchema({

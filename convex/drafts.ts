@@ -1113,6 +1113,7 @@ export const adminReplaceDraftFights = mutation({
             substituteMode: v.optional(v.union(v.literal("known"), v.literal("manual"))),
             substituteDiscordUserId: v.optional(v.string()),
             substituteDisplayName: v.optional(v.string()),
+            substituteAvatarUrl: v.optional(v.string()),
           })
         ),
       })
@@ -1173,6 +1174,7 @@ export const adminReplaceDraftFights = mutation({
         substituteMode?: "known" | "manual";
         substituteDiscordUserId?: string;
         substituteDisplayName?: string;
+        substituteAvatarUrl?: string;
       }[] = [];
 
       for (const draftedPlayer of draftedPlayers) {
@@ -1188,6 +1190,7 @@ export const adminReplaceDraftFights = mutation({
         const substituteMode = classEntry.substituteMode;
         const substituteDiscordUserId = classEntry.substituteDiscordUserId?.trim();
         const substituteDisplayName = classEntry.substituteDisplayName?.trim();
+        const substituteAvatarUrl = classEntry.substituteAvatarUrl?.trim();
 
         if (substituteMode === "known") {
           if (!substituteDiscordUserId) {
@@ -1203,7 +1206,10 @@ export const adminReplaceDraftFights = mutation({
           if (substituteDiscordUserId) {
             throw new Error("Manual substitute cannot include a discord user id");
           }
-        } else if (substituteDiscordUserId || substituteDisplayName) {
+          if (substituteAvatarUrl) {
+            throw new Error("Manual substitute cannot include an avatar url");
+          }
+        } else if (substituteDiscordUserId || substituteDisplayName || substituteAvatarUrl) {
           throw new Error("Substitute mode is required when substitute details are provided");
         }
 
@@ -1218,6 +1224,7 @@ export const adminReplaceDraftFights = mutation({
             substituteMode === "known" || substituteMode === "manual"
               ? substituteDisplayName
               : undefined,
+          substituteAvatarUrl: substituteMode === "known" ? substituteAvatarUrl : undefined,
         });
       }
 
