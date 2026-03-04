@@ -238,6 +238,23 @@ test("aggregatePlayerDrilldown returns recent verified drafts and captain split"
   assert.equal(drilldown.headToHeadCaptain[0].opponentClerkUserId, "clerk_2");
   assert.equal(drilldown.headToHeadCaptain[0].wins, 1);
   assert.equal(drilldown.headToHeadCaptain[0].losses, 0);
+  assert.equal(drilldown.teammateRecords.length, 2);
+  const withCara = drilldown.teammateRecords.find(
+    (row) => row.teammateClerkUserId === "clerk_3"
+  );
+  const withBob = drilldown.teammateRecords.find(
+    (row) => row.teammateClerkUserId === "clerk_2"
+  );
+  assert.ok(withCara);
+  assert.equal(withCara.wins, 1);
+  assert.equal(withCara.losses, 0);
+  assert.equal(withCara.winRate, 100);
+  assert.equal(withCara.lossRate, 0);
+  assert.ok(withBob);
+  assert.equal(withBob.wins, 0);
+  assert.equal(withBob.losses, 1);
+  assert.equal(withBob.winRate, 0);
+  assert.equal(withBob.lossRate, 100);
 });
 
 test("aggregatePlayerDrilldown returns null when filters eliminate qualifying games", () => {
@@ -826,6 +843,7 @@ test("aggregatePlayerDrilldown returns data for unlinked player id", () => {
   assert.equal(drilldown.headToHead.length, 2);
   assert.equal(drilldown.headToHeadCaptain.length, 1);
   assert.equal(drilldown.headToHeadCaptain[0].opponentClerkUserId, "clerk_2");
+  assert.equal(drilldown.teammateRecords.length, 0);
   const alice = drilldown.headToHead.find((row) => row.opponentClerkUserId === "clerk_1");
   assert.ok(alice);
   assert.equal(alice.opponentName, "Alice");

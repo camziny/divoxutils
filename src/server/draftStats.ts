@@ -35,6 +35,20 @@ export type DraftHeadToHeadRow = {
   winRate: number;
 };
 
+export type DraftTeammateRow = {
+  playerClerkUserId: string;
+  playerName: string;
+  teammateClerkUserId: string;
+  teammateName: string;
+  teammateAvatarUrl?: string;
+  teammateIsVerified: boolean;
+  wins: number;
+  losses: number;
+  games: number;
+  winRate: number;
+  lossRate: number;
+};
+
 export type DraftRecentGameRow = {
   shortId: string;
   discordGuildId: string;
@@ -79,6 +93,7 @@ export type DraftPlayerDrilldown = {
   recentGames: DraftRecentGameRow[];
   headToHead: DraftHeadToHeadRow[];
   headToHeadCaptain: DraftHeadToHeadRow[];
+  teammateRecords: DraftTeammateRow[];
 };
 
 export type DraftLogRow = {
@@ -494,6 +509,7 @@ export function aggregatePlayerDrilldown(
   const recentGames: DraftRecentGameRow[] = [];
   const headToHeadStats = new Map<string, { wins: number; losses: number }>();
   const headToHeadCaptainStats = new Map<string, { wins: number; losses: number }>();
+  const teammateStats = new Map<string, { wins: number; losses: number }>();
   const headToHeadNameById = new Map<string, string>();
   const headToHeadAvatarById = new Map<string, { avatarUrl: string; createdAt: number }>();
   let avatarUrl: string | undefined;
@@ -628,6 +644,13 @@ export function aggregatePlayerDrilldown(
 
     opponentTeams.forEach((opponentTeam, opponentClerkUserId) => {
       if (opponentTeam === playerTeam) {
+        const teammateEntry = teammateStats.get(opponentClerkUserId) ?? { wins: 0, losses: 0 };
+        if (didWin) {
+          teammateEntry.wins += 1;
+        } else {
+          teammateEntry.losses += 1;
+        }
+        teammateStats.set(opponentClerkUserId, teammateEntry);
         return;
       }
       const entry = headToHeadStats.get(opponentClerkUserId) ?? { wins: 0, losses: 0 };
@@ -788,6 +811,37 @@ export function aggregatePlayerDrilldown(
 
   const headToHead = toHeadToHeadRows(headToHeadStats);
   const headToHeadCaptain = toHeadToHeadRows(headToHeadCaptainStats);
+  const teammateRecords = Array.from(teammateStats.entries())
+    .map(([teammateClerkUserId, value]) => {
+      const teammateName =
+        userNameByClerkUserId.get(teammateClerkUserId) ??
+        headToHeadNameById.get(teammateClerkUserId) ??
+        teammateClerkUserId;
+      const teammateGames = value.wins + value.losses;
+      const winRate =
+        teammateGames > 0 ? Math.round((value.wins / teammateGames) * 1000) / 10 : 0;
+      const lossRate =
+        teammateGames > 0 ? Math.round((value.losses / teammateGames) * 1000) / 10 : 0;
+      return {
+        playerClerkUserId,
+        playerName,
+        teammateClerkUserId,
+        teammateName,
+        teammateAvatarUrl: headToHeadAvatarById.get(teammateClerkUserId)?.avatarUrl,
+        teammateIsVerified: !teammateClerkUserId.startsWith("discord:"),
+        wins: value.wins,
+        losses: value.losses,
+        games: teammateGames,
+        winRate,
+        lossRate,
+      };
+    })
+    .filter((row) => row.games >= (filters.minGames ?? 0))
+    .sort((a, b) => {
+      if (b.games !== a.games) return b.games - a.games;
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return b.winRate - a.winRate;
+    });
 
   recentGames.sort((a, b) => b.createdAtMs - a.createdAtMs);
 
@@ -806,6 +860,7 @@ export function aggregatePlayerDrilldown(
     recentGames: recentGames.slice(0, recentLimit),
     headToHead,
     headToHeadCaptain,
+    teammateRecords,
   };
 }
 

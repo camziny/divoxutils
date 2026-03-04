@@ -42,6 +42,7 @@ const REALM_BAR_COLOR: Record<string, string> = {
 type ClassSortKey = "games" | "winRate" | "wins" | "losses";
 type ClassView = "table" | "map";
 type HeadToHeadView = "all" | "captain";
+type TeammateView = "winning" | "losing";
 
 export default function PlayerDrilldownClient({
   initialData,
@@ -54,7 +55,9 @@ export default function PlayerDrilldownClient({
   const [classQuery, setClassQuery] = useState("");
   const [classView, setClassView] = useState<ClassView>("table");
   const [headToHeadView, setHeadToHeadView] = useState<HeadToHeadView>("all");
+  const [teammateView, setTeammateView] = useState<TeammateView>("winning");
   const [progressAnimate, setProgressAnimate] = useState(false);
+  const [teammatesOpen, setTeammatesOpen] = useState(false);
   const [classPopulationRows, setClassPopulationRows] = useState<DraftClassLeaderboardRow[]>([]);
   const [classPopulationLoading, setClassPopulationLoading] = useState(false);
   const classRows = useMemo(
@@ -111,6 +114,13 @@ export default function PlayerDrilldownClient({
     if (view === headToHeadView) return;
     setProgressAnimate(false);
     setHeadToHeadView(view);
+    requestAnimationFrame(() => requestAnimationFrame(() => setProgressAnimate(true)));
+  };
+
+  const handleTeammateViewChange = (view: TeammateView) => {
+    if (view === teammateView) return;
+    setProgressAnimate(false);
+    setTeammateView(view);
     requestAnimationFrame(() => requestAnimationFrame(() => setProgressAnimate(true)));
   };
 
@@ -181,6 +191,19 @@ export default function PlayerDrilldownClient({
   const topH2H = activeHeadToHeadRows.slice(0, 8);
   const hasAnyHeadToHeadData =
     drilldown.headToHead.length > 0 || drilldown.headToHeadCaptain.length > 0;
+  const teammateWinningRows = [...drilldown.teammateRecords].sort((a, b) => {
+    if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+    if (b.games !== a.games) return b.games - a.games;
+    return b.wins - a.wins;
+  });
+  const teammateLosingRows = [...drilldown.teammateRecords].sort((a, b) => {
+    if (a.winRate !== b.winRate) return a.winRate - b.winRate;
+    if (b.games !== a.games) return b.games - a.games;
+    return b.losses - a.losses;
+  });
+  const activeTeammateRows =
+    teammateView === "winning" ? teammateWinningRows : teammateLosingRows;
+  const topTeammates = activeTeammateRows.slice(0, 8);
 
   const streak = computeStreak(drilldown.recentGames);
   const classPopulationPoints = classPopulationRows
@@ -541,7 +564,16 @@ export default function PlayerDrilldownClient({
           <CardHeader className="pb-2 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-xs font-medium text-gray-500">
-                Head-to-Head
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-default">Head-to-Head</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="center">
+                      <span>Your win/loss record against specific opponents</span>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </CardTitle>
               <div className="inline-flex items-center gap-1 rounded border border-gray-800/80 bg-gray-900/40 p-1">
                 <button
@@ -693,6 +725,170 @@ export default function PlayerDrilldownClient({
             </div>
           )}
         </div>
+      )}
+
+      {drilldown.teammateRecords.length > 0 && (
+        <>
+          <Card className="mb-6 bg-transparent">
+            <CardHeader className="pb-2 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-xs font-medium text-gray-500">
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-default">Teammate Synergy</span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" align="center">
+                        <span>Your win rate when on the same team as others</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </CardTitle>
+                <div className="inline-flex items-center gap-1 rounded border border-gray-800/80 bg-gray-900/40 p-1">
+                  <button
+                    type="button"
+                    onClick={() => handleTeammateViewChange("winning")}
+                    className={
+                      teammateView === "winning"
+                        ? "rounded px-2 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
+                        : "rounded px-2 py-1 text-[11px] text-gray-500 hover:text-gray-300"
+                    }
+                  >
+                    Best Results
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTeammateViewChange("losing")}
+                    className={
+                      teammateView === "losing"
+                        ? "rounded px-2 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
+                        : "rounded px-2 py-1 text-[11px] text-gray-500 hover:text-gray-300"
+                    }
+                  >
+                    Worst Results
+                  </button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-2">
+              {topTeammates.length === 0 ? (
+                <p className="text-sm text-gray-600">No teammate data yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {topTeammates.map((row) => {
+                    return (
+                      <div
+                        key={row.teammateClerkUserId}
+                        className="grid grid-cols-[160px_1fr_44px] items-center gap-2"
+                      >
+                        <span className="inline-flex min-w-0 items-center gap-2">
+                          <InlineMiniAvatar
+                            name={row.teammateName}
+                            avatarUrl={row.teammateAvatarUrl}
+                          />
+                          {row.teammateIsVerified ? (
+                            <Link
+                              href={`/draft-history/leaderboard/${encodeURIComponent(
+                                row.teammateClerkUserId
+                              )}`}
+                              className="truncate text-xs text-gray-300 hover:text-white"
+                            >
+                              {row.teammateName}
+                            </Link>
+                          ) : (
+                            <span className="truncate text-xs text-gray-400">
+                              {row.teammateName}
+                            </span>
+                          )}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Progress
+                            value={progressAnimate ? row.winRate : 0}
+                            className="h-1.5 flex-1"
+                            indicatorClassName="bg-indigo-400/60"
+                          />
+                          <span className="text-[11px] text-gray-500 tabular-nums">
+                            {row.wins}-{row.losses}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-gray-500 tabular-nums text-right">
+                          {row.winRate.toFixed(1)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setTeammatesOpen((v) => !v)}
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-2 px-1 hover:text-gray-400 transition-colors duration-100"
+            >
+              <ChevronDown
+                className={`w-3.5 h-3.5 transition-transform duration-150 ${
+                  teammatesOpen ? "" : "-rotate-90"
+                }`}
+              />
+              Teammates
+              <span className="text-gray-600 font-normal">({activeTeammateRows.length})</span>
+            </button>
+            {teammatesOpen && (
+              <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
+                {activeTeammateRows.map((row) => {
+                  const rowContent = (
+                    <>
+                      <span className="inline-flex min-w-0 items-center gap-2">
+                        <InlineMiniAvatar
+                          name={row.teammateName}
+                          avatarUrl={row.teammateAvatarUrl}
+                        />
+                        <span className="truncate text-sm text-gray-300 group-hover:text-white transition-colors duration-100">
+                          {row.teammateName}
+                        </span>
+                      </span>
+                      <div className="flex items-center gap-3 text-sm tabular-nums">
+                        <span className="text-gray-300 font-medium">
+                          {row.wins}-{row.losses}
+                        </span>
+                        <span className="text-gray-600 w-12 text-right text-xs">
+                          {row.winRate.toFixed(1)}%
+                        </span>
+                        {row.teammateIsVerified ? (
+                          <ChevronRight className="w-3 h-3 text-gray-700 group-hover:text-gray-500 transition-colors duration-100" />
+                        ) : null}
+                      </div>
+                    </>
+                  );
+
+                  if (!row.teammateIsVerified) {
+                    return (
+                      <div
+                        key={row.teammateClerkUserId}
+                        className="flex items-center justify-between px-4 py-2.5"
+                      >
+                        {rowContent}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={row.teammateClerkUserId}
+                      href={`/draft-history/leaderboard/${row.teammateClerkUserId}`}
+                      className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
+                    >
+                      {rowContent}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {drilldown.recentGames.length > 0 && (
