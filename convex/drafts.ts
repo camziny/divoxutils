@@ -54,6 +54,13 @@ function buildSetScore(team1Wins: number, team2Wins: number): string {
   return `${team1Wins}-${team2Wins}`;
 }
 
+function isSetFinalized(draft: {
+  setFinalizedAt?: number;
+  setFinalizedBy?: string;
+}): boolean {
+  return draft.setFinalizedAt !== undefined || draft.setFinalizedBy !== undefined;
+}
+
 async function recomputeDraftScoreFromFights(
   ctx: any,
   draftId: Id<"drafts">
@@ -61,7 +68,7 @@ async function recomputeDraftScoreFromFights(
   team1Wins: number;
   team2Wins: number;
   setScore: string;
-  winnerTeam: 1 | 2 | undefined;
+  pendingWinnerTeam: 1 | 2 | undefined;
 }> {
   const fights = await ctx.db
     .query("draftFights")
@@ -69,13 +76,13 @@ async function recomputeDraftScoreFromFights(
     .collect();
   const team1Wins = fights.filter((fight: any) => fight.winnerTeam === 1).length;
   const team2Wins = fights.filter((fight: any) => fight.winnerTeam === 2).length;
-  const winnerTeam =
+  const pendingWinnerTeam =
     team1Wins >= REQUIRED_WINS ? 1 : team2Wins >= REQUIRED_WINS ? 2 : undefined;
   return {
     team1Wins,
     team2Wins,
     setScore: buildSetScore(team1Wins, team2Wins),
-    winnerTeam,
+    pendingWinnerTeam,
   };
 }
 
@@ -133,6 +140,9 @@ export const getDraftStatus = query({
       status: draft.status,
       gameStarted: draft.gameStarted,
       winnerTeam: draft.winnerTeam,
+      pendingWinnerTeam: draft.pendingWinnerTeam,
+      setFinalizedAt: draft.setFinalizedAt,
+      setFinalizedBy: draft.setFinalizedBy,
       discordGuildId: draft.discordGuildId,
       discordGuildName: draft.discordGuildName,
       createdBy: draft.createdBy,
@@ -783,7 +793,7 @@ export const recordFightResult = mutation({
     if (!draft) throw new Error("Draft not found");
     if (draft.status !== "complete") throw new Error("Draft is not complete");
     if (!draft.gameStarted) throw new Error("Game has not started");
-    if (draft.winnerTeam !== undefined) throw new Error("Winner already set");
+    if (isSetFinalized(draft)) throw new Error("Set is already finalized");
 
     const callerPlayer = await ctx.db
       .query("draftPlayers")
@@ -869,21 +879,14 @@ export const recordFightResult = mutation({
 
     const team1Wins = team1WinsBefore + (args.winnerTeam === 1 ? 1 : 0);
     const team2Wins = team2WinsBefore + (args.winnerTeam === 2 ? 1 : 0);
-    const winnerTeam =
+    const pendingWinnerTeam =
       team1Wins >= REQUIRED_WINS ? 1 : team2Wins >= REQUIRED_WINS ? 2 : undefined;
 
     await ctx.db.patch(args.draftId, {
       team1FightWins: team1Wins,
       team2FightWins: team2Wins,
       setScore: buildSetScore(team1Wins, team2Wins),
-      winnerTeam,
-      resultStatus: winnerTeam ? "unverified" : draft.resultStatus,
-      resultModeratedBy: winnerTeam ? undefined : draft.resultModeratedBy,
-      resultModeratedAt: winnerTeam ? undefined : draft.resultModeratedAt,
-      resultModerationNote: winnerTeam ? undefined : draft.resultModerationNote,
-      winnerOverriddenBy: winnerTeam ? undefined : draft.winnerOverriddenBy,
-      winnerOverriddenAt: winnerTeam ? undefined : draft.winnerOverriddenAt,
-      winnerOverrideNote: winnerTeam ? undefined : draft.winnerOverrideNote,
+      pendingWinnerTeam,
     });
   },
 });
@@ -900,6 +903,7 @@ export const updateFightWinner = mutation({
     if (!draft) throw new Error("Draft not found");
     if (draft.status !== "complete") throw new Error("Draft is not complete");
     if (!draft.gameStarted) throw new Error("Game has not started");
+    if (isSetFinalized(draft)) throw new Error("Set is already finalized");
 
     const callerPlayer = await ctx.db
       .query("draftPlayers")
@@ -928,14 +932,57 @@ export const updateFightWinner = mutation({
       team1FightWins: recomputed.team1Wins,
       team2FightWins: recomputed.team2Wins,
       setScore: recomputed.setScore,
-      winnerTeam: recomputed.winnerTeam,
-      resultStatus: recomputed.winnerTeam ? "unverified" : draft.resultStatus,
-      resultModeratedBy: recomputed.winnerTeam ? undefined : draft.resultModeratedBy,
-      resultModeratedAt: recomputed.winnerTeam ? undefined : draft.resultModeratedAt,
-      resultModerationNote: recomputed.winnerTeam ? undefined : draft.resultModerationNote,
-      winnerOverriddenBy: recomputed.winnerTeam ? undefined : draft.winnerOverriddenBy,
-      winnerOverriddenAt: recomputed.winnerTeam ? undefined : draft.winnerOverriddenAt,
-      winnerOverrideNote: recomputed.winnerTeam ? undefined : draft.winnerOverrideNote,
+      pendingWinnerTeam: recomputed.pendingWinnerTeam,
+    });
+  },
+});
+
+export const finalizeSetResult = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found");
+    if (draft.status !== "complete") throw new Error("Draft is not complete");
+    if (!draft.gameStarted) throw new Error("Game has not started");
+    if (isSetFinalized(draft)) throw new Error("Set is already finalized");
+
+    const callerPlayer = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
+      throw new Error("Only the draft creator can finalize the set");
+    }
+
+    const recomputed = await recomputeDraftScoreFromFights(ctx, args.draftId);
+    const winnerToFinalize = draft.pendingWinnerTeam ?? recomputed.pendingWinnerTeam;
+    if (winnerToFinalize === undefined) {
+      throw new Error("Set winner is not ready to finalize");
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(args.draftId, {
+      winnerTeam: winnerToFinalize,
+      pendingWinnerTeam: winnerToFinalize,
+      setFinalizedAt: now,
+      setFinalizedBy: callerPlayer.discordUserId,
+      team1FightWins: recomputed.team1Wins,
+      team2FightWins: recomputed.team2Wins,
+      setScore: recomputed.setScore,
+      resultStatus: "unverified",
+      resultModeratedBy: undefined,
+      resultModeratedAt: undefined,
+      resultModerationNote: undefined,
+      winnerOverriddenBy: undefined,
+      winnerOverriddenAt: undefined,
+      winnerOverrideNote: undefined,
     });
   },
 });
@@ -1133,6 +1180,9 @@ export const setWinner = mutation({
 
     await ctx.db.patch(args.draftId, {
       winnerTeam: args.winnerTeam,
+      pendingWinnerTeam: args.winnerTeam,
+      setFinalizedAt: Date.now(),
+      setFinalizedBy: callerPlayer.discordUserId,
       resultStatus: "unverified",
       resultModeratedBy: undefined,
       resultModeratedAt: undefined,
@@ -1303,6 +1353,9 @@ export const adminReplaceDraftFights = mutation({
 
     await ctx.db.patch(draft._id, {
       winnerTeam: finalWinnerTeam,
+      pendingWinnerTeam: finalWinnerTeam,
+      setFinalizedAt: Date.now(),
+      setFinalizedBy: args.submittedBy,
       team1FightWins: team1Wins,
       team2FightWins: team2Wins,
       setScore: buildSetScore(team1Wins, team2Wins),
@@ -1822,6 +1875,9 @@ export const seedVerifiedDraft = mutation({
       createdByDisplayName: args.createdByDisplayName,
       createdByAvatarUrl: args.createdByAvatarUrl,
       winnerTeam: args.winnerTeam,
+      pendingWinnerTeam: args.winnerTeam,
+      setFinalizedAt: Date.now(),
+      setFinalizedBy: args.createdBy,
       resultStatus: "verified" as const,
       resultModeratedBy: "seed-admin",
       resultModeratedAt: Date.now(),
@@ -2153,6 +2209,9 @@ export const devBackfillCompletedDraftTracking = mutation({
         team2FightWins: team2Wins,
         setScore: buildSetScore(team1Wins, team2Wins),
         winnerTeam: team1Wins > team2Wins ? 1 : 2,
+        pendingWinnerTeam: team1Wins > team2Wins ? 1 : 2,
+        setFinalizedAt: Date.now(),
+        setFinalizedBy: draft.createdBy,
       });
 
       patchedDrafts += 1;

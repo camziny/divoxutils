@@ -27,10 +27,17 @@ class MockDb {
     const rows = this.tables[table];
     return {
       withIndex: (_index: string, builder: (q: { eq: (field: string, value: any) => any }) => any) => {
-        const filter = builder({
-          eq: (field: string, value: any) => ({ field, value }),
-        });
-        const filtered = rows.filter((row) => row[filter.field] === filter.value);
+        const conditions: Array<{ field: string; value: any }> = [];
+        const chain = {
+          eq(field: string, value: any) {
+            conditions.push({ field, value });
+            return chain;
+          },
+        };
+        builder(chain);
+        const filtered = rows.filter((row) =>
+          conditions.every((condition) => row[condition.field] === condition.value)
+        );
         return {
           unique: async () => {
             if (filtered.length > 1) throw new Error("Unique query returned multiple rows");
@@ -741,5 +748,242 @@ test("adminReplaceDraftFights rejects manual substitute with discord user id", a
       ],
     }),
     /Manual substitute cannot include a discord user id/
+  );
+});
+
+test("recordFightResult sets pending winner after third win", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-final",
+        shortId: "final",
+        status: "complete",
+        gameStarted: true,
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-creator",
+        draftId: "d-final",
+        token: "creator-token",
+        discordUserId: "creator",
+        displayName: "Creator",
+        team: 1,
+      },
+      {
+        _id: "p2",
+        draftId: "d-final",
+        token: "x2",
+        discordUserId: "u2",
+        displayName: "U2",
+        team: 2,
+      },
+    ],
+    draftFights: [
+      {
+        _id: "f1",
+        draftId: "d-final",
+        fightNumber: 1,
+        winnerTeam: 1,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+      {
+        _id: "f2",
+        draftId: "d-final",
+        fightNumber: 2,
+        winnerTeam: 2,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+      {
+        _id: "f3",
+        draftId: "d-final",
+        fightNumber: 3,
+        winnerTeam: 1,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+      {
+        _id: "f4",
+        draftId: "d-final",
+        fightNumber: 4,
+        winnerTeam: 2,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+    ],
+  });
+
+  await (draftFns.recordFightResult as any)._handler(ctx, {
+    draftId: "d-final",
+    winnerTeam: 1,
+    classesByPlayer: [
+      { playerId: "p-creator", className: "Armsman" },
+      { playerId: "p2", className: "Bard" },
+    ],
+    token: "creator-token",
+  });
+
+  const updated = await ctx.db.get("d-final");
+  assert.equal(updated.team1FightWins, 3);
+  assert.equal(updated.team2FightWins, 2);
+  assert.equal(updated.setScore, "3-2");
+  assert.equal(updated.pendingWinnerTeam, 1);
+  assert.equal(updated.winnerTeam, undefined);
+  assert.equal(updated.setFinalizedAt, undefined);
+});
+
+test("updateFightWinner recomputes pending winner while unfinalized", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-edit",
+        shortId: "edit",
+        status: "complete",
+        gameStarted: true,
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-creator",
+        draftId: "d-edit",
+        token: "creator-token",
+        discordUserId: "creator",
+        displayName: "Creator",
+        team: 1,
+      },
+    ],
+    draftFights: [
+      {
+        _id: "e1",
+        draftId: "d-edit",
+        fightNumber: 1,
+        winnerTeam: 1,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+      {
+        _id: "e2",
+        draftId: "d-edit",
+        fightNumber: 2,
+        winnerTeam: 1,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+      {
+        _id: "e3",
+        draftId: "d-edit",
+        fightNumber: 3,
+        winnerTeam: 2,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+      {
+        _id: "e4",
+        draftId: "d-edit",
+        fightNumber: 4,
+        winnerTeam: 1,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+    ],
+  });
+
+  await (draftFns.updateFightWinner as any)._handler(ctx, {
+    draftId: "d-edit",
+    fightNumber: 4,
+    winnerTeam: 2,
+    token: "creator-token",
+  });
+
+  const updated = await ctx.db.get("d-edit");
+  assert.equal(updated.team1FightWins, 2);
+  assert.equal(updated.team2FightWins, 2);
+  assert.equal(updated.setScore, "2-2");
+  assert.equal(updated.pendingWinnerTeam, undefined);
+  assert.equal(updated.winnerTeam, undefined);
+});
+
+test("finalizeSetResult finalizes pending winner and blocks further edits", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-lock",
+        shortId: "lock",
+        status: "complete",
+        gameStarted: true,
+        createdBy: "creator",
+        pendingWinnerTeam: 2,
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-creator",
+        draftId: "d-lock",
+        token: "creator-token",
+        discordUserId: "creator",
+        displayName: "Creator",
+        team: 1,
+      },
+    ],
+    draftFights: [
+      {
+        _id: "l1",
+        draftId: "d-lock",
+        fightNumber: 1,
+        winnerTeam: 2,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+      {
+        _id: "l2",
+        draftId: "d-lock",
+        fightNumber: 2,
+        winnerTeam: 2,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+      {
+        _id: "l3",
+        draftId: "d-lock",
+        fightNumber: 3,
+        winnerTeam: 1,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+      {
+        _id: "l4",
+        draftId: "d-lock",
+        fightNumber: 4,
+        winnerTeam: 2,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+    ],
+  });
+
+  await (draftFns.finalizeSetResult as any)._handler(ctx, {
+    draftId: "d-lock",
+    token: "creator-token",
+  });
+
+  const finalized = await ctx.db.get("d-lock");
+  assert.equal(finalized.winnerTeam, 2);
+  assert.equal(finalized.pendingWinnerTeam, 2);
+  assert.equal(finalized.setScore, "1-3");
+  assert.equal(finalized.setFinalizedBy, "creator");
+  assert.equal(typeof finalized.setFinalizedAt, "number");
+
+  await assert.rejects(
+    (draftFns.updateFightWinner as any)._handler(ctx, {
+      draftId: "d-lock",
+      fightNumber: 4,
+      winnerTeam: 1,
+      token: "creator-token",
+    }),
+    /Set is already finalized/
   );
 });
