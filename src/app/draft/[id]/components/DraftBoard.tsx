@@ -123,6 +123,7 @@ export default function DraftBoard({
   const setPlayerClass = useMutation(api.drafts.setPlayerClass);
   const recordFightResult = useMutation(api.drafts.recordFightResult);
   const updateFightWinner = useMutation(api.drafts.updateFightWinner);
+  const finalizeSetResult = useMutation(api.drafts.finalizeSetResult);
   const beginGame = useMutation(api.drafts.beginGame);
   const undoLastAction = useMutation(api.drafts.undoLastAction);
 
@@ -131,10 +132,12 @@ export default function DraftBoard({
     type: "error" | "info";
     text: string;
   } | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [autoAdjustedSettingsKey, setAutoAdjustedSettingsKey] = useState<string | null>(null);
   const [linkedProfiles, setLinkedProfiles] = useState<
     Record<string, { profileName: string; characterListUrl: string }>
   >({});
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
   const team1Captain = draft.players.find(
     (p) => p.discordUserId === draft.team1CaptainId
@@ -183,8 +186,21 @@ export default function DraftBoard({
   const team1FightWins = draft.team1FightWins ?? 0;
   const team2FightWins = draft.team2FightWins ?? 0;
   const displayedSetScore = draft.setScore ?? `${team1FightWins}-${team2FightWins}`;
-  const isSetComplete =
-    draft.winnerTeam !== undefined || team1FightWins >= 3 || team2FightWins >= 3;
+  const isSetFinalized =
+    draft.setFinalizedAt !== undefined || draft.setFinalizedBy !== undefined;
+  const pendingSetWinnerTeam =
+    draft.pendingWinnerTeam ??
+    (!isSetFinalized
+      ? team1FightWins >= 3
+        ? 1
+        : team2FightWins >= 3
+          ? 2
+          : undefined
+      : undefined);
+  const isSetComplete = isSetFinalized;
+  const isCreatorView =
+    isCreator || currentPlayer?.discordUserId === draft.createdBy;
+  const actionToken = token ?? currentPlayer?.token;
 
   const coinFlipWinner = draft.players.find(
     (p) => p.discordUserId === draft.coinFlipWinnerId
@@ -235,10 +251,16 @@ export default function DraftBoard({
     async (fn: () => Promise<unknown>) => {
       if (busy) return;
       setBusy(true);
+      setActionError(null);
       try {
         await fn();
       } catch (e) {
         console.error(e);
+        const message =
+          e && typeof e === "object" && "message" in e && typeof (e as any).message === "string"
+            ? (e as any).message
+            : "Action failed. Please try again.";
+        setActionError(message);
       } finally {
         setBusy(false);
       }
@@ -334,7 +356,11 @@ export default function DraftBoard({
   }, [draftedProfilesFetchKey, draftedDiscordUserIdsCsv]);
 
   const canRecordFight =
-    isComplete && isCreator && Boolean(draft.gameStarted) && !isSetComplete;
+    isComplete &&
+    isCreatorView &&
+    Boolean(draft.gameStarted) &&
+    !isSetComplete &&
+    pendingSetWinnerTeam === undefined;
   const isClassSnapshotReady = draftedPlayers.every(
     (player) => typeof player.selectedClass === "string" && player.selectedClass.length > 0
   );
@@ -412,6 +438,11 @@ export default function DraftBoard({
           ) : null
         }
       />
+      {actionError ? (
+        <div className="rounded-md border border-red-700/40 bg-red-900/20 px-3 py-2 text-xs text-red-200">
+          {actionError}
+        </div>
+      ) : null}
 
       {isSetup && isCreator && (
         <SettingsBar
@@ -658,18 +689,12 @@ export default function DraftBoard({
       )}
 
       {isComplete && draft.gameStarted && !isSetComplete && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-center py-1">
-            <div className="text-center">
-              <p className="text-[10px] uppercase tracking-wider text-gray-500">
-                Current score
-              </p>
-              <p className="text-base font-semibold text-gray-100 tabular-nums">
-                {displayedSetScore}
-              </p>
-            </div>
-          </div>
+        <div>
           <FightClassSetup
+            pendingSetWinnerTeam={pendingSetWinnerTeam}
+            displayedSetScore={displayedSetScore}
+            isCreatorView={isCreatorView}
+            onFinalizeSet={() => setShowFinalizeConfirm(true)}
             fightNumber={(draft.fights?.length ?? 0) + 1}
             team1={{
               label: team1Captain?.displayName ?? "Team 1",
@@ -690,7 +715,7 @@ export default function DraftBoard({
             bannedClassNames={bannedClassNames}
             canEditClasses={editableTeam !== null}
             editableTeam={editableTeam}
-            canRecordWinner={isCreator}
+            canRecordWinner={isCreatorView}
             busy={busy}
             onSetPlayerClass={(playerId, className) =>
               act(() =>
@@ -731,7 +756,7 @@ export default function DraftBoard({
         </div>
       )}
 
-      {isComplete && isCreator && !draft.gameStarted && (
+      {isComplete && isCreatorView && !draft.gameStarted && (
         <div className="flex justify-center pt-2">
           <Button
             variant="outline"
@@ -751,7 +776,7 @@ export default function DraftBoard({
         </div>
       )}
 
-      {isComplete && !isCreator && !draft.gameStarted && (
+      {isComplete && !isCreatorView && !draft.gameStarted && (
         <div className="flex justify-center pt-2">
           <span className="text-xs text-gray-600">
             Waiting for creator...
@@ -764,6 +789,49 @@ export default function DraftBoard({
           <DiscordIdentityLinkCard
             draftDiscordUserId={currentPlayer?.discordUserId}
           />
+        </div>
+      )}
+
+      {showFinalizeConfirm && pendingSetWinnerTeam && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowFinalizeConfirm(false)}
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-lg border border-gray-800 bg-gray-900 shadow-xl">
+            <div className="px-5 pt-5 pb-4">
+              <p className="text-sm font-medium text-white">Finalize set result</p>
+              <p className="mt-1 text-sm text-gray-400">Team {pendingSetWinnerTeam} wins</p>
+            </div>
+            <div className="flex justify-end gap-2 px-5 pb-4">
+              <button
+                type="button"
+                onClick={() => setShowFinalizeConfirm(false)}
+                className="rounded-md px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!actionToken) {
+                    setActionError("Missing player token for finalizing set.");
+                    return;
+                  }
+                  act(async () => {
+                    await finalizeSetResult({
+                      draftId: draft._id,
+                      token: actionToken,
+                    });
+                    setShowFinalizeConfirm(false);
+                  });
+                }}
+                className="rounded-md border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
+              >
+                Finalize
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -789,9 +857,27 @@ function StatusBar({
   } else if (draft.status === "drafting") {
     subtitle = `Pick ${(draft.currentPickIndex ?? 0) + 1} of ${(draft.pickSequence ?? []).length}`;
   } else if (draft.status === "complete") {
+    const isSetFinalized =
+      draft.setFinalizedAt !== undefined || draft.setFinalizedBy !== undefined;
+    const inferredPendingWinnerTeam =
+      draft.pendingWinnerTeam ??
+      (!isSetFinalized
+        ? (draft.team1FightWins ?? 0) >= 3
+          ? 1
+          : (draft.team2FightWins ?? 0) >= 3
+            ? 2
+            : undefined
+        : undefined);
     if (draft.gameStarted) {
-      subtitle = "";
-    } else if (draft.winnerTeam) {
+      if (isSetFinalized && draft.winnerTeam) {
+        const score = draft.setScore ?? `${draft.team1FightWins ?? 0}-${draft.team2FightWins ?? 0}`;
+        subtitle = `Team ${draft.winnerTeam} wins (${score})`;
+      } else if (inferredPendingWinnerTeam) {
+        subtitle = "Set point reached - awaiting creator finalization";
+      } else {
+        subtitle = "Record fight results";
+      }
+    } else if (isSetFinalized && draft.winnerTeam) {
       const score = draft.setScore ?? `${draft.team1FightWins ?? 0}-${draft.team2FightWins ?? 0}`;
       subtitle = `Team ${draft.winnerTeam} wins (${score})`;
     } else {
@@ -1817,6 +1903,10 @@ function FightClassSetup({
   isClassSnapshotReady,
   onRecordWinner,
   onUpdateFightWinner,
+  pendingSetWinnerTeam,
+  displayedSetScore,
+  isCreatorView,
+  onFinalizeSet,
 }: {
   fightNumber: number;
   team1: { label: string; players: DraftData["players"] };
@@ -1835,6 +1925,10 @@ function FightClassSetup({
   isClassSnapshotReady: boolean;
   onRecordWinner: (winnerTeam: 1 | 2) => void;
   onUpdateFightWinner: (fightNumber: number, winnerTeam: 1 | 2) => void;
+  pendingSetWinnerTeam?: 1 | 2;
+  displayedSetScore?: string;
+  isCreatorView?: boolean;
+  onFinalizeSet?: () => void;
 }) {
   const [viewFightIndex, setViewFightIndex] = useState(fights.length);
   const [pendingWinnerTeam, setPendingWinnerTeam] = useState<1 | 2 | null>(null);
@@ -1853,9 +1947,13 @@ function FightClassSetup({
     [allPlayers]
   );
 
+  const maxViewFightIndex = canRecordFight
+    ? fights.length
+    : Math.max(0, fights.length - 1);
+
   useEffect(() => {
-    setViewFightIndex(fights.length);
-  }, [fights.length]);
+    setViewFightIndex(maxViewFightIndex);
+  }, [maxViewFightIndex]);
 
   useEffect(() => {
     const teamPlayers = activeTeam === 1 ? team1.players : team2.players;
@@ -1875,7 +1973,7 @@ function FightClassSetup({
       ? 1
       : 2
     : null;
-  const viewingRecordedFight = viewFightIndex < fights.length;
+  const viewingRecordedFight = fights.length > 0 && viewFightIndex < fights.length;
   const viewedFight = viewingRecordedFight ? fights[viewFightIndex] : null;
   const viewedWinnerTeam = viewedFight?.winnerTeam;
 
@@ -1891,9 +1989,38 @@ function FightClassSetup({
     [viewedFight]
   );
 
+  const setClassAndAdvance = useCallback(
+    (playerId: Id<"draftPlayers">, className: string) => {
+      const activeTeamPlayers = activePlayerTeam === 1 ? team1.players : team2.players;
+      const currentIndex = activeTeamPlayers.findIndex(
+        (player) => player._id === playerId
+      );
+      const nextPlayer =
+        currentIndex >= 0 && currentIndex < activeTeamPlayers.length - 1
+          ? activeTeamPlayers[currentIndex + 1]
+          : null;
+      onSetPlayerClass(playerId, className);
+      if (nextPlayer) {
+        setActivePlayerId(nextPlayer._id);
+      }
+    },
+    [activePlayerTeam, onSetPlayerClass, team1.players, team2.players]
+  );
+
   return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-center py-1">
+        <div className="text-center">
+          <p className="text-[10px] uppercase tracking-wider text-gray-500">
+            {pendingSetWinnerTeam ? "Final score" : "Current score"}
+          </p>
+          <p className="text-base font-semibold text-gray-100 tabular-nums">
+            {displayedSetScore}
+          </p>
+        </div>
+      </div>
     <div className="rounded-lg border border-gray-700 bg-gray-800/60 p-4 space-y-3">
-      <div className="relative min-h-[44px]">
+      <div className="relative min-h-[32px]">
         <div className="text-left pr-16">
           <p className="text-sm font-semibold text-gray-100">
             Fight {viewingRecordedFight ? viewedFight?.fightNumber : fightNumber}
@@ -1916,11 +2043,13 @@ function FightClassSetup({
           </button>
           <button
             type="button"
-            onClick={() => setViewFightIndex((index) => Math.min(fights.length, index + 1))}
-            disabled={viewFightIndex >= fights.length}
+            onClick={() =>
+              setViewFightIndex((index) => Math.min(maxViewFightIndex, index + 1))
+            }
+            disabled={viewFightIndex >= maxViewFightIndex}
             className={cn(
               "inline-flex h-7 w-7 items-center justify-center rounded border",
-              viewFightIndex >= fights.length
+              viewFightIndex >= maxViewFightIndex
                 ? "border-gray-700/40 text-gray-600 cursor-not-allowed"
                 : "border-gray-600 text-gray-300 hover:bg-gray-700/40"
             )}
@@ -2029,33 +2158,24 @@ function FightClassSetup({
 
       {canEditClasses && !viewingRecordedFight && (
       <div className="rounded border border-gray-700/50 p-3 space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-gray-500">Selected:</span>
-          <span className="text-xs text-gray-200">
-            {activePlayer ? activePlayer.displayName : "None"}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-gray-600 shrink-0">
+            Select class for
           </span>
-          {activePlayerTeam && (
-            <span
-              className={cn(
-                "rounded px-1.5 py-0.5 text-[10px]",
-                activePlayerTeam === 1
-                  ? "bg-slate-700/30 text-slate-200"
-                  : "bg-indigo-500/20 text-indigo-200"
-              )}
-            >
-              Team {activePlayerTeam}
-            </span>
+          {activePlayer ? (
+            <>
+              <PlayerAvatar
+                url={activePlayer.avatarUrl}
+                name={activePlayer.displayName}
+                size={16}
+              />
+              <span className="text-xs font-medium text-gray-200">
+                {activePlayer.displayName}
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-gray-600">—</span>
           )}
-          {activePlayer?.selectedClass && (
-            <span className="text-xs text-indigo-300">{activePlayer.selectedClass}</span>
-          )}
-        </div>
-        <div className="text-[11px] text-gray-500">
-          {editableTeam
-            ? `You can set classes for Team ${editableTeam}.`
-            : canRecordWinner
-              ? "Creator records fight winner after captains set classes."
-              : "Waiting for captains to set classes."}
         </div>
         <div className="space-y-2">
           {(Object.entries(CLASS_CATEGORIES) as [ClassCategory, string[]][]).map(
@@ -2114,7 +2234,7 @@ function FightClassSetup({
                                 disabled={!canPickClass || isBanned}
                                 onClick={() =>
                                   activePlayer &&
-                                  onSetPlayerClass(activePlayer._id, className)
+                                  setClassAndAdvance(activePlayer._id, className)
                                 }
                                 className={cn(
                                   "rounded px-1.5 py-0.5 text-[10px] font-medium transition-all",
@@ -2148,10 +2268,10 @@ function FightClassSetup({
       </div>
       )}
 
-      {canRecordWinner && (
-        <div className="rounded-lg border border-gray-700/60 bg-gray-900/40 p-2.5">
-          <p className="mb-1.5 text-center text-[10px] font-medium tracking-wide text-gray-500">
-            {viewingRecordedFight ? "Change Winner" : "Select Winner"}
+      {canRecordWinner && (viewingRecordedFight || !pendingSetWinnerTeam) && (
+        <div className="space-y-2">
+          <p className="text-center text-[10px] font-medium tracking-wide text-gray-500">
+            {viewingRecordedFight ? "Change winner" : "Select winner"}
           </p>
           <div className="flex items-center justify-center gap-2">
             <button
@@ -2177,16 +2297,16 @@ function FightClassSetup({
               className={cn(
                 "min-w-[110px] inline-flex items-center justify-center gap-1.5 rounded-md border px-4 py-1.5 text-xs font-medium transition-all",
                 viewingRecordedFight && viewedFight?.winnerTeam === 1
-                  ? "border-slate-200/80 bg-slate-600/60 text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-slate-200/30"
+                  ? "border-slate-400/60 bg-slate-600/40 text-white"
                   : viewingRecordedFight
-                    ? "border-slate-500/60 bg-slate-700/20 text-slate-100 hover:bg-slate-700/35"
+                    ? "border-slate-500/40 text-slate-300 hover:bg-slate-700/30"
                     : busy || !canRecordFight || !isClassSnapshotReady
-                      ? "border-slate-700/50 bg-slate-900/20 text-slate-500 cursor-not-allowed"
-                      : "border-slate-500/60 bg-slate-700/25 text-slate-100 hover:bg-slate-700/40"
+                      ? "border-gray-700/50 text-gray-600 cursor-not-allowed"
+                      : "border-slate-500/40 text-slate-300 hover:bg-slate-700/30"
               )}
             >
               {viewingRecordedFight && viewedFight?.winnerTeam === 1 ? (
-                <Check className="h-3 w-3 opacity-90" />
+                <Check className="h-3 w-3 opacity-80" />
               ) : null}
               <span>Team 1</span>
             </button>
@@ -2213,16 +2333,16 @@ function FightClassSetup({
               className={cn(
                 "min-w-[110px] inline-flex items-center justify-center gap-1.5 rounded-md border px-4 py-1.5 text-xs font-medium transition-all",
                 viewingRecordedFight && viewedFight?.winnerTeam === 2
-                  ? "border-indigo-200/80 bg-indigo-500/55 text-indigo-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-indigo-200/35"
+                  ? "border-indigo-400/60 bg-indigo-500/30 text-white"
                   : viewingRecordedFight
-                    ? "border-indigo-500/60 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/35"
+                    ? "border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/20"
                     : busy || !canRecordFight || !isClassSnapshotReady
-                      ? "border-indigo-900/40 bg-indigo-950/20 text-indigo-400/50 cursor-not-allowed"
-                      : "border-indigo-500/60 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/35"
+                      ? "border-gray-700/50 text-gray-600 cursor-not-allowed"
+                      : "border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/20"
               )}
             >
               {viewingRecordedFight && viewedFight?.winnerTeam === 2 ? (
-                <Check className="h-3 w-3 opacity-90" />
+                <Check className="h-3 w-3 opacity-80" />
               ) : null}
               <span>Team 2</span>
             </button>
@@ -2230,23 +2350,45 @@ function FightClassSetup({
         </div>
       )}
 
+      {pendingSetWinnerTeam && canRecordWinner && (
+        <div className="flex items-center justify-between border-t border-gray-700/60 pt-3">
+          <p className="text-xs text-gray-400">
+            Team {pendingSetWinnerTeam} wins the set
+          </p>
+          {isCreatorView && onFinalizeSet ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={onFinalizeSet}
+            >
+              Finalize Set
+            </Button>
+          ) : (
+            <span className="text-xs text-gray-600">
+              Waiting for creator
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+
       {pendingWinnerTeam !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-black/50"
             onClick={() => setPendingWinnerTeam(null)}
           />
-          <div className="relative z-10 w-full max-w-sm rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
-            <div className="px-5 pt-5 pb-3">
-              <p className="text-sm font-medium text-gray-100">
-                Confirm Team {pendingWinnerTeam} won Fight {fightNumber}
-              </p>
+          <div className="relative z-10 w-full max-w-sm rounded-lg border border-gray-800 bg-gray-900 shadow-xl">
+            <div className="px-5 pt-5 pb-4">
+              <p className="text-sm font-medium text-white">Fight {fightNumber} winner</p>
+              <p className="mt-1 text-sm text-gray-400">Team {pendingWinnerTeam}</p>
             </div>
-            <div className="px-5 pb-5 flex justify-end gap-2">
+            <div className="flex justify-end gap-2 px-5 pb-4">
               <button
                 type="button"
                 onClick={() => setPendingWinnerTeam(null)}
-                className="rounded-md border border-gray-800 px-3 py-1.5 text-xs text-gray-400 hover:border-gray-700 hover:text-gray-200 transition-colors"
+                className="rounded-md px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200 transition-colors"
               >
                 Cancel
               </button>
@@ -2256,7 +2398,7 @@ function FightClassSetup({
                   if (pendingWinnerTeam) onRecordWinner(pendingWinnerTeam);
                   setPendingWinnerTeam(null);
                 }}
-                className="rounded-md border border-indigo-500/60 bg-indigo-500/20 px-3 py-1.5 text-xs font-medium text-indigo-100 hover:bg-indigo-500/35 transition-colors"
+                className="rounded-md border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
               >
                 Confirm
               </button>
@@ -2268,20 +2410,19 @@ function FightClassSetup({
       {pendingWinnerEdit !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-black/50"
             onClick={() => setPendingWinnerEdit(null)}
           />
-          <div className="relative z-10 w-full max-w-sm rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
-            <div className="px-5 pt-5 pb-3">
-              <p className="text-sm font-medium text-gray-100">
-                Change Fight {pendingWinnerEdit.fightNumber} winner?
-              </p>
+          <div className="relative z-10 w-full max-w-sm rounded-lg border border-gray-800 bg-gray-900 shadow-xl">
+            <div className="px-5 pt-5 pb-4">
+              <p className="text-sm font-medium text-white">Change Fight {pendingWinnerEdit.fightNumber} winner</p>
+              <p className="mt-1 text-sm text-gray-400">Team {pendingWinnerEdit.from} &rarr; Team {pendingWinnerEdit.to}</p>
             </div>
-            <div className="px-5 pb-5 flex justify-end gap-2">
+            <div className="flex justify-end gap-2 px-5 pb-4">
               <button
                 type="button"
                 onClick={() => setPendingWinnerEdit(null)}
-                className="rounded-md border border-gray-800 px-3 py-1.5 text-xs text-gray-400 hover:border-gray-700 hover:text-gray-200 transition-colors"
+                className="rounded-md px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200 transition-colors"
               >
                 Cancel
               </button>
@@ -2294,7 +2435,7 @@ function FightClassSetup({
                   );
                   setPendingWinnerEdit(null);
                 }}
-                className="rounded-md border border-indigo-500/60 bg-indigo-500/20 px-3 py-1.5 text-xs font-medium text-indigo-100 hover:bg-indigo-500/35 transition-colors"
+                className="rounded-md border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
               >
                 Confirm
               </button>

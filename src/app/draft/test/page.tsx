@@ -274,6 +274,9 @@ export default function DraftTestPage() {
             Simulate a draft. Traditional with 10+ players starts in tracking demo mode.
           </p>
           <p className="text-xs text-gray-600 mt-2">
+            New flow: after 3 wins, set enters pending finalization until creator confirms Finalize Set.
+          </p>
+          <p className="text-xs text-gray-600 mt-2">
             Default team size for this lobby: {defaultTeamSize}v{defaultTeamSize}
           </p>
         </div>

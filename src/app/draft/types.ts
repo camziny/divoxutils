@@ -55,6 +55,9 @@ export interface DraftData {
   createdByDisplayName?: string;
   createdByAvatarUrl?: string;
   winnerTeam?: 1 | 2;
+  pendingWinnerTeam?: 1 | 2;
+  setFinalizedAt?: number;
+  setFinalizedBy?: string;
   gameStarted?: boolean;
   team1FightWins?: number;
   team2FightWins?: number;
