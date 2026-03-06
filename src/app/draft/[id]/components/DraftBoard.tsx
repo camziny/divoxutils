@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import DiscordIdentityLinkCard from "@/app/draft-history/DiscordIdentityLinkCard";
 import { getPlayerPoolEmptyState } from "./playerPoolState";
 import {
+  getFightSetupMaxViewFightIndex,
   getMaxSelectableTeamSize,
   isTeamSizeSelectable,
   toUserSettingsError,
@@ -1947,9 +1948,11 @@ function FightClassSetup({
     [allPlayers]
   );
 
-  const maxViewFightIndex = canRecordFight
-    ? fights.length
-    : Math.max(0, fights.length - 1);
+  const maxViewFightIndex = getFightSetupMaxViewFightIndex({
+    canRecordFight,
+    canEditClasses,
+    fightsLength: fights.length,
+  });
 
   useEffect(() => {
     setViewFightIndex(maxViewFightIndex);
@@ -1976,6 +1979,23 @@ function FightClassSetup({
   const viewingRecordedFight = fights.length > 0 && viewFightIndex < fights.length;
   const viewedFight = viewingRecordedFight ? fights[viewFightIndex] : null;
   const viewedWinnerTeam = viewedFight?.winnerTeam;
+  const waitingOnTeams = useMemo(() => {
+    if (isClassSnapshotReady || viewingRecordedFight) return [] as number[];
+    const team1NeedsClasses = team1.players.some(
+      (player) =>
+        typeof playerById.get(String(player._id))?.selectedClass !== "string" ||
+        playerById.get(String(player._id))?.selectedClass?.length === 0
+    );
+    const team2NeedsClasses = team2.players.some(
+      (player) =>
+        typeof playerById.get(String(player._id))?.selectedClass !== "string" ||
+        playerById.get(String(player._id))?.selectedClass?.length === 0
+    );
+    const pending: number[] = [];
+    if (team1NeedsClasses) pending.push(1);
+    if (team2NeedsClasses) pending.push(2);
+    return pending;
+  }, [isClassSnapshotReady, playerById, team1.players, team2.players, viewingRecordedFight]);
 
   const displayClassForPlayer = useCallback(
     (player: DraftData["players"][number]) => {
@@ -2270,6 +2290,15 @@ function FightClassSetup({
 
       {canRecordWinner && (viewingRecordedFight || !pendingSetWinnerTeam) && (
         <div className="space-y-2">
+          {isCreatorView && !viewingRecordedFight && !isClassSnapshotReady && waitingOnTeams.length > 0 ? (
+            <p className="text-center text-[10px] font-medium tracking-wide text-indigo-300">
+              {waitingOnTeams.length === 2
+                ? `Waiting for ${team1.label} and ${team2.label} to finish assigning classes to their teams.`
+                : waitingOnTeams[0] === 1
+                  ? `Waiting for ${team1.label} to finish assigning classes to their team.`
+                  : `Waiting for ${team2.label} to finish assigning classes to their team.`}
+            </p>
+          ) : null}
           <p className="text-center text-[10px] font-medium tracking-wide text-gray-500">
             {viewingRecordedFight ? "Change winner" : "Select winner"}
           </p>

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  getFightSetupMaxViewFightIndex,
   getMaxSelectableTeamSize,
   isTeamSizeSelectable,
   toUserSettingsError,
@@ -29,4 +30,39 @@ test("toUserSettingsError normalizes convex need-at-least message", () => {
 test("toUserSettingsError keeps plain errors and fallback", () => {
   assert.equal(toUserSettingsError(new Error("Team size must be between 2 and 8")), "Team size must be between 2 and 8");
   assert.equal(toUserSettingsError({}), "Unable to update draft settings.");
+});
+
+test("getFightSetupMaxViewFightIndex keeps captains on upcoming fight setup", () => {
+  assert.equal(
+    getFightSetupMaxViewFightIndex({
+      canRecordFight: false,
+      canEditClasses: true,
+      fightsLength: 1,
+    }),
+    1
+  );
+  assert.equal(
+    getFightSetupMaxViewFightIndex({
+      canRecordFight: true,
+      canEditClasses: false,
+      fightsLength: 2,
+    }),
+    2
+  );
+  assert.equal(
+    getFightSetupMaxViewFightIndex({
+      canRecordFight: false,
+      canEditClasses: false,
+      fightsLength: 3,
+    }),
+    2
+  );
+  assert.equal(
+    getFightSetupMaxViewFightIndex({
+      canRecordFight: false,
+      canEditClasses: false,
+      fightsLength: 0,
+    }),
+    0
+  );
 });
