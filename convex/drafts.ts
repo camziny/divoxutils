@@ -1723,7 +1723,11 @@ export const cancelDraftAsAdmin = mutation({
     if (draft.status === "cancelled") {
       throw new Error("Draft is already cancelled");
     }
-    if (draft.status === "complete" && draft.gameStarted) {
+    if (
+      draft.status === "complete" &&
+      draft.gameStarted &&
+      draft.resultStatus === "verified"
+    ) {
       throw new Error("Cannot cancel a draft with a started game");
     }
 
@@ -1771,7 +1775,11 @@ export const getCancelableDrafts = query({
 
     const results = [];
     for (const draft of drafts) {
-      if (draft.status === "complete" && draft.gameStarted) {
+      if (
+        draft.status === "complete" &&
+        draft.gameStarted &&
+        draft.resultStatus === "verified"
+      ) {
         continue;
       }
 
