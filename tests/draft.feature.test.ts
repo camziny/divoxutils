@@ -512,7 +512,7 @@ test("cancelDraftAsAdmin marks draft as cancelled with audit fields", async () =
   assert.equal(result.status, "cancelled");
 });
 
-test("cancelDraftAsAdmin rejects completed started drafts", async () => {
+test("cancelDraftAsAdmin allows unverified completed started drafts", async () => {
   const ctx = makeCtx({
     drafts: [
       {
@@ -520,6 +520,36 @@ test("cancelDraftAsAdmin rejects completed started drafts", async () => {
         shortId: "aaa",
         status: "complete",
         gameStarted: true,
+        resultStatus: "unverified",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+  });
+
+  const result = await (draftFns.cancelDraftAsAdmin as any)._handler(ctx, {
+    shortId: "aaa",
+    cancelledByClerkUserId: "admin_1",
+    reason: "cleanup",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "cancelled");
+  assert.equal(updated.cancelledBy, "admin_1");
+  assert.equal(result.status, "cancelled");
+});
+
+test("cancelDraftAsAdmin rejects verified completed started drafts", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "complete",
+        gameStarted: true,
+        resultStatus: "verified",
         teamSize: 5,
         createdBy: "creator",
         discordGuildId: "g1",

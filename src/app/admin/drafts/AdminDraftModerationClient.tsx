@@ -1089,6 +1089,15 @@ export default function AdminDraftModerationClient() {
             />
 
             <div className="flex gap-2">
+              {draft.resultStatus !== "verified" && (
+                <button
+                  onClick={() => cancelDraft(draft.shortId)}
+                  disabled={isActive}
+                  className="rounded-md border border-red-700/40 px-3 py-1.5 text-xs text-red-300 hover:border-red-600/50 hover:text-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel Draft
+                </button>
+              )}
               {draft.resultStatus !== "verified" ? (
                 <button
                   onClick={() => moderateDraft(draft.shortId, "verify")}
