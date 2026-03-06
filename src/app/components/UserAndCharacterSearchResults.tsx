@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import useDebounce from "./UseDebounce";
 import Loading from "../loading";
+import { buildSearchUrl, shouldHideUserListForQuery } from "../search/urlState";
+import { useSearchActive } from "../search/SearchContext";
 import {
   formatRealmRankWithLevel,
   getRealmRankForPoints,
@@ -26,7 +29,12 @@ type User = {
 };
 
 export default function CharacterNameSearch() {
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const safePathname = pathname ?? "/search";
+  const { setSearchActive } = useSearchActive();
+  const urlQuery = searchParams?.get("q") ?? "";
+  const [query, setQuery] = useState(urlQuery);
   const debouncedQuery = useDebounce(query, 500);
   const [searchResults, setSearchResults] = useState<{ users: User[] }>({
     users: [],
@@ -35,8 +43,32 @@ export default function CharacterNameSearch() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    setQuery((currentQuery) => (currentQuery === urlQuery ? currentQuery : urlQuery));
+  }, [urlQuery]);
+
+  useEffect(() => {
+    setSearchActive(shouldHideUserListForQuery(query));
+  }, [query, setSearchActive]);
+
+  useEffect(() => {
+    const { didChange, nextUrl } = buildSearchUrl({
+      pathname: safePathname,
+      currentSearch: window.location.search.replace(/^\?/, ""),
+      debouncedQuery,
+    });
+
+    if (!didChange) return;
+
+    window.history.replaceState(null, "", nextUrl);
+  }, [debouncedQuery, safePathname]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
     const fetchResults = async () => {
-      if (debouncedQuery.trim().length < 3) {
+      const normalizedQuery = debouncedQuery.trim();
+
+      if (normalizedQuery.length < 3) {
         setSearchResults({ users: [] });
         setSearchPerformed(false);
         setIsLoading(false);
@@ -49,8 +81,9 @@ export default function CharacterNameSearch() {
       try {
         const response = await fetch(
           `/api/searchUsersAndCharacters?name=${encodeURIComponent(
-            debouncedQuery
-          )}`
+            normalizedQuery
+          )}`,
+          { signal: controller.signal }
         );
 
         if (!response.ok) {
@@ -62,14 +95,23 @@ export default function CharacterNameSearch() {
           users: results.users || [],
         });
       } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
         console.error("Failed to fetch search results:", error);
         setSearchResults({ users: [] });
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchResults();
+
+    return () => {
+      controller.abort();
+    };
   }, [debouncedQuery]);
 
   return (

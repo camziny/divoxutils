@@ -3,6 +3,7 @@ import React, { useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import SupporterBadge, { supporterRowClass, supporterNameStyle } from "./SupporterBadge";
+import { useSearchActive } from "../search/SearchContext";
 
 type User = {
   id: number;
@@ -24,22 +25,30 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { isSearchActive } = useSearchActive();
   const observerRef = useRef<IntersectionObserver | null>(null);
   const isInitialLoad = useRef(true);
+  const pendingSectionRef = useRef<string>("");
+  const settleTimerRef = useRef<number | null>(null);
 
   const currentSection = searchParams?.get('section') || (alphabet.length > 0 ? alphabet[0] : '');
 
   const updateURLSection = useCallback((section: string) => {
     if (isInitialLoad.current) return;
-    
-    const newSearchParams = new URLSearchParams(searchParams?.toString() || '');
+    if (isSearchActive) return;
+
+    const urlSection = new URLSearchParams(window.location.search).get('section') || '';
+    if (urlSection === section) return;
+
+    const newSearchParams = new URLSearchParams(window.location.search);
     newSearchParams.set('section', section);
     const newURL = `${pathname}?${newSearchParams.toString()}`;
     router.replace(newURL, { scroll: false });
-  }, [searchParams, pathname, router]);
+  }, [isSearchActive, pathname, router]);
 
   useEffect(() => {
     if (alphabet.length === 0) return;
+    if (isSearchActive) return;
 
     const observerOptions = {
       root: null,
@@ -47,35 +56,71 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
       threshold: 0.1
     };
 
-    observerRef.current = new IntersectionObserver((entries) => {
+    observerRef.current = new IntersectionObserver(() => {
       if (isInitialLoad.current) return;
-      
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const letter = entry.target.id.replace('group-', '');
-          updateURLSection(letter);
+
+      const activationLine = 230;
+      type SectionCandidate = { letter: string; top: number };
+      let closestPassed: SectionCandidate | null = null;
+      let closestUpcoming: SectionCandidate | null = null;
+
+      for (const letter of alphabet) {
+        const element = document.getElementById(`group-${letter}`);
+        if (!element) continue;
+
+        const top = element.getBoundingClientRect().top;
+        if (top <= activationLine) {
+          if (!closestPassed || top > closestPassed.top) {
+            closestPassed = { letter, top };
+          }
+          continue;
         }
-      });
+
+        if (!closestUpcoming || top < closestUpcoming.top) {
+          closestUpcoming = { letter, top };
+        }
+      }
+
+      let nextSection = "";
+      if (closestPassed) {
+        nextSection = closestPassed.letter;
+      } else if (closestUpcoming) {
+        nextSection = closestUpcoming.letter;
+      }
+      if (!nextSection) return;
+
+      pendingSectionRef.current = nextSection;
+
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
+      }
+      settleTimerRef.current = window.setTimeout(() => {
+        settleTimerRef.current = null;
+        if (pendingSectionRef.current) {
+          updateURLSection(pendingSectionRef.current);
+        }
+      }, 120);
     }, observerOptions);
 
-    const timer = setTimeout(() => {
-      if (!isInitialLoad.current) {
-        alphabet.forEach((letter) => {
-          const element = document.getElementById(`group-${letter}`);
-          if (element && observerRef.current) {
-            observerRef.current.observe(element);
-          }
-        });
-      }
-    }, 1000);
+    if (!isInitialLoad.current) {
+      alphabet.forEach((letter) => {
+        const element = document.getElementById(`group-${letter}`);
+        if (element && observerRef.current) {
+          observerRef.current.observe(element);
+        }
+      });
+    }
 
     return () => {
-      clearTimeout(timer);
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
+        settleTimerRef.current = null;
+      }
     };
-  }, [alphabet, updateURLSection]);
+  }, [alphabet, isSearchActive, updateURLSection]);
 
   useEffect(() => {
     if (!isInitialLoad.current) return;
@@ -117,6 +162,10 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
   const handleLetterClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, letter: string) => {
     e.preventDefault();
     isInitialLoad.current = false;
+    if (settleTimerRef.current !== null) {
+      window.clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
     const element = document.getElementById(`group-${letter}`);
     if (element) {
       const navbarHeight = 80;
@@ -130,7 +179,7 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
   }, [updateURLSection]);
 
   const AlphabetNav = useMemo(() => (
-    <div className="hidden sm:block sticky top-20 z-30 bg-gray-900 border-b border-gray-800">
+    <div className="hidden sm:block sticky top-14 z-30 bg-gray-900 border-b border-gray-800">
       <div className="container mx-auto py-1.5 px-2 sm:px-4">
         <div className="flex flex-wrap sm:flex-nowrap justify-center gap-0.5 sm:gap-0 max-w-none
           sm:overflow-x-auto

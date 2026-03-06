@@ -3,7 +3,7 @@ import React from "react";
 const UserListSkeleton = () => {
   return (
     <div className="w-full">
-      <div className="hidden sm:block sticky top-20 z-30 bg-gray-900 border-b border-gray-800">
+      <div className="hidden sm:block sticky top-14 z-30 bg-gray-900 border-b border-gray-800">
         <div className="container mx-auto py-1.5 px-2 sm:px-4">
           <div className="flex flex-wrap sm:flex-nowrap justify-center gap-0.5 sm:gap-0 max-w-none">
             {Array.from({ length: 15 }).map((_, idx) => (
