@@ -62,27 +62,53 @@ export default function DiscordPage() {
           <CommandSection
             id="draft"
             title="/draft"
-            description="Start a live draft from your Discord server. The bot pulls all players from the configured lobby voice channel and creates a real-time draft page where captains pick teams, ban classes, and choose realms."
+            description="Start a live draft from your Discord server. The bot pulls players from your configured lobby voice channel and creates a real-time draft page where captains pick teams, ban classes, and choose realms."
             usage="/draft"
-            how={[
-              "Run the command in any text channel.",
-              "The bot creates a draft and DMs you a private link to set it up.",
-              "Choose mode (Traditional or PvP), team size, and assign captains.",
-              "Once you start the draft, a public link is posted in the channel for everyone to watch and captains are DM'd their personal links.",
-              "Captains take turns banning classes and picking players.",
-              "When the draft is complete, players are moved to their team voice channels.",
+            howSections={[
+              {
+                title: "Starting Draft",
+                steps: [
+                  "Before /draft, all players must already be in the configured lobby voice channel. Bots are not pulled into drafts.",
+                  "The person who runs /draft is the creator and gets the private setup DM.",
+                  "Creator sets mode/team size and assigns captains. Creator can be a captain, but it is usually better if not.",
+                  "After start, a public draft link is posted and each captain gets a private captain link by DM.",
+                ],
+              },
+              {
+                title: "During Draft Set",
+                steps: [
+                  "Captains must update each player's class every fight if anything changes.",
+                  "Creator must update the set score after each fight.",
+                  "If class or score updates are incomplete, the draft won't be verified and stats won't be recorded.",
+                ],
+              },
             ]}
           />
+          <div className="border-l-2 border-indigo-900 bg-gray-900/30 pl-3 pr-3 py-2.5 rounded-r-sm space-y-2">
+            <p className="text-xs text-gray-500 leading-relaxed">
+              If a player is swapped mid-draft, continue recording for the
+              original slot. You must message me so I can correct it after the set.
+            </p>
+            <a
+              href="https://discord.com/users/310750671576236033"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              <FaDiscord className="h-3 w-3" />
+              <span>Message me on Discord</span>
+            </a>
+          </div>
 
           <CommandSection
             id="draft-setup"
             title="/draft-setup"
-            description="Configure the voice channels used by the draft system. This must be run once before using /draft. Requires Manage Channels permission."
+            description="Configure the voice channels used by the draft system. Run this once before /draft. Requires Manage Channels permission."
             usage="/draft-setup lobby-channel:#lobby team1-channel:#team-1 team2-channel:#team-2"
             params={[
               {
                 name: "lobby-channel",
-                desc: "Voice channel to pull players from when /draft is run.",
+                desc: "Voice channel to pull players from when /draft is run. Do not use your server's default General voice channel as the lobby.",
               },
               {
                 name: "team1-channel",
@@ -201,6 +227,7 @@ function CommandSection({
   imageWidth,
   params,
   how,
+  howSections,
 }: {
   id: string;
   title: string;
@@ -211,6 +238,7 @@ function CommandSection({
   imageWidth?: number;
   params?: { name: string; desc: string; optional?: boolean; options?: string }[];
   how?: string[];
+  howSections?: { title: string; steps: string[] }[];
 }) {
   return (
     <section id={id} className="scroll-mt-8 space-y-4">
@@ -233,6 +261,21 @@ function CommandSection({
               <li key={i}>{step}</li>
             ))}
           </ol>
+        </div>
+      )}
+
+      {howSections && (
+        <div className="space-y-3">
+          {howSections.map((section) => (
+            <div key={section.title} className="space-y-1.5">
+              <p className="text-xs font-medium text-gray-400">{section.title}</p>
+              <ol className="space-y-1 text-xs text-gray-500 list-decimal list-inside">
+                {section.steps.map((step, i) => (
+                  <li key={`${section.title}-${i}`}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          ))}
         </div>
       )}
 

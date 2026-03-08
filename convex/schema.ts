@@ -72,6 +72,16 @@ export default defineSchema({
     cancelledBy: v.optional(v.string()),
     cancelledAt: v.optional(v.number()),
     cancelReason: v.optional(v.string()),
+    cancelledFromStatus: v.optional(
+      v.union(
+        v.literal("setup"),
+        v.literal("coin_flip"),
+        v.literal("realm_pick"),
+        v.literal("banning"),
+        v.literal("drafting"),
+        v.literal("complete")
+      )
+    ),
     botPostedLink: v.optional(v.boolean()),
     botNotifiedCaptains: v.optional(v.boolean()),
   })

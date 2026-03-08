@@ -505,6 +505,7 @@ test("cancelDraftAsAdmin marks draft as cancelled with audit fields", async () =
   assert.equal(updated.status, "cancelled");
   assert.equal(updated.cancelledBy, "admin_1");
   assert.equal(updated.cancelReason, "Restarting draft");
+  assert.equal(updated.cancelledFromStatus, "setup");
   assert.equal(updated.botPostedLink, true);
   assert.equal(updated.botNotifiedCaptains, true);
   assert.equal(typeof updated.cancelledAt, "number");
@@ -538,6 +539,7 @@ test("cancelDraftAsAdmin allows unverified completed started drafts", async () =
   const updated = await ctx.db.get("d1");
   assert.equal(updated.status, "cancelled");
   assert.equal(updated.cancelledBy, "admin_1");
+  assert.equal(updated.cancelledFromStatus, "complete");
   assert.equal(result.status, "cancelled");
 });
 
@@ -1016,4 +1018,243 @@ test("finalizeSetResult finalizes pending winner and blocks further edits", asyn
     }),
     /Set is already finalized/
   );
+});
+
+test("getCancelableDrafts marks older duplicate as safe when newer same-creator draft exists", async () => {
+  const now = Date.now();
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-old",
+        shortId: "old1",
+        status: "setup",
+        teamSize: 5,
+        createdBy: "creator",
+        createdByDisplayName: "Creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+        _creationTime: now - 45 * 60 * 1000,
+      },
+      {
+        _id: "d-new",
+        shortId: "new1",
+        status: "setup",
+        teamSize: 5,
+        createdBy: "creator",
+        createdByDisplayName: "Creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+        _creationTime: now - 5 * 60 * 1000,
+      },
+    ],
+    draftPlayers: [],
+  });
+
+  const drafts = await (draftFns.getCancelableDrafts as any)._handler(ctx, {});
+  const oldDraft = drafts.find((d: any) => d.shortId === "old1");
+  assert.ok(oldDraft);
+  assert.equal(oldDraft.cancelConfidence, "safe");
+  assert.ok(
+    oldDraft.cancelReasons.some((reason: string) =>
+      reason.includes("newer draft by the same creator")
+    )
+  );
+});
+
+test("restoreCancelledDraftAsAdmin restores to pre-cancel status", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "to-restore",
+        status: "cancelled",
+        cancelledBy: "admin_1",
+        cancelledAt: Date.now(),
+        cancelledFromStatus: "drafting",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+  });
+
+  const result = await (draftFns.restoreCancelledDraftAsAdmin as any)._handler(
+    ctx,
+    {
+      shortId: "to-restore",
+      restoredByClerkUserId: "admin_2",
+    }
+  );
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "drafting");
+  assert.equal(updated.cancelledBy, undefined);
+  assert.equal(updated.cancelledAt, undefined);
+  assert.equal(updated.cancelReason, undefined);
+  assert.equal(updated.cancelledFromStatus, undefined);
+  assert.equal(result.status, "drafting");
+});
+
+test("getCancelableDrafts does not classify age-only draft with activity as safe", async () => {
+  const now = Date.now();
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "active-old",
+        status: "setup",
+        teamSize: 5,
+        createdBy: "creator",
+        createdByDisplayName: "Creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+        _creationTime: now - 2 * 24 * 60 * 60 * 1000,
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p1",
+        draftId: "d1",
+        discordUserId: "u1",
+        displayName: "U1",
+        token: "t1",
+        team: 1,
+        isCaptain: true,
+        selectedClass: "Bard",
+      },
+      {
+        _id: "p2",
+        draftId: "d1",
+        discordUserId: "u2",
+        displayName: "U2",
+        token: "t2",
+        team: 2,
+        isCaptain: false,
+      },
+    ],
+    draftFights: [
+      {
+        _id: "f1",
+        draftId: "d1",
+        fightNumber: 1,
+        winnerTeam: 1,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+    ],
+  });
+
+  const drafts = await (draftFns.getCancelableDrafts as any)._handler(ctx, {});
+  const draft = drafts.find((d: any) => d.shortId === "active-old");
+  assert.ok(draft);
+  assert.notEqual(draft.cancelConfidence, "safe");
+});
+
+test("getCancelledDraftsForAdmin returns only entries within retention window", async () => {
+  const now = Date.now();
+  const ninetyOneDaysMs = 91 * 24 * 60 * 60 * 1000;
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-keep",
+        shortId: "keep",
+        status: "cancelled",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+        _creationTime: now - 2 * 24 * 60 * 60 * 1000,
+        cancelledAt: now - 2 * 24 * 60 * 60 * 1000,
+      },
+      {
+        _id: "d-drop",
+        shortId: "drop",
+        status: "cancelled",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+        _creationTime: now - ninetyOneDaysMs,
+        cancelledAt: now - ninetyOneDaysMs,
+      },
+    ],
+  });
+
+  const archived = await (draftFns.getCancelledDraftsForAdmin as any)._handler(
+    ctx,
+    {}
+  );
+  const shortIds = archived.map((d: any) => d.shortId);
+  assert.deepEqual(shortIds, ["keep"]);
+});
+
+test("purgeExpiredCancelledDrafts deletes cancelled draft and related rows beyond 90 days", async () => {
+  const now = Date.now();
+  const oldTs = now - 91 * 24 * 60 * 60 * 1000;
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-old",
+        shortId: "old",
+        status: "cancelled",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+        _creationTime: oldTs,
+        cancelledAt: oldTs,
+      },
+      {
+        _id: "d-new",
+        shortId: "new",
+        status: "cancelled",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+        _creationTime: now - 24 * 60 * 60 * 1000,
+        cancelledAt: now - 24 * 60 * 60 * 1000,
+      },
+    ],
+    draftPlayers: [
+      { _id: "p-old", draftId: "d-old", token: "t1", discordUserId: "u1" },
+      { _id: "p-new", draftId: "d-new", token: "t2", discordUserId: "u2" },
+    ],
+    draftBans: [
+      { _id: "b-old", draftId: "d-old", className: "Cleric", bannedByTeam: 1 },
+    ],
+    draftFights: [
+      {
+        _id: "f-old",
+        draftId: "d-old",
+        fightNumber: 1,
+        winnerTeam: 1,
+        classesByPlayer: [],
+        submittedBy: "creator",
+      },
+    ],
+  });
+
+  const result = await (draftFns.purgeExpiredCancelledDrafts as any)._handler(
+    ctx,
+    { retentionDays: 90 }
+  );
+  assert.equal(result.deletedDrafts, 1);
+
+  const remainingDrafts = await ctx.db.query("drafts").collect();
+  const remainingPlayers = await ctx.db.query("draftPlayers").collect();
+  const remainingBans = await ctx.db.query("draftBans").collect();
+  const remainingFights = await ctx.db.query("draftFights").collect();
+
+  assert.deepEqual(
+    remainingDrafts.map((d: any) => d.shortId),
+    ["new"]
+  );
+  assert.deepEqual(
+    remainingPlayers.map((p: any) => p._id),
+    ["p-new"]
+  );
+  assert.equal(remainingBans.length, 0);
+  assert.equal(remainingFights.length, 0);
 });
