@@ -1738,6 +1738,7 @@ export const cancelDraftAsAdmin = mutation({
       cancelledBy: args.cancelledByClerkUserId,
       cancelledAt: now,
       cancelReason: trimmedReason,
+      cancelledFromStatus: draft.status,
       botPostedLink: true,
       botNotifiedCaptains: true,
     });
@@ -1773,12 +1774,48 @@ export const getCancelableDrafts = query({
       drafts.push(...byStatus);
     }
 
-    const results = [];
+    const results: Array<{
+      _id: (typeof drafts)[number]["_id"];
+      shortId: string;
+      status: string;
+      gameStarted?: boolean;
+      discordGuildId: string;
+      discordGuildName?: string;
+      createdBy: string;
+      createdByDisplayName?: string;
+      createdByAvatarUrl?: string;
+      teamSize: number;
+      playerCount: number;
+      assignedCount: number;
+      captainCount: number;
+      selectedClassCount: number;
+      fightCount: number;
+      minimumPlayers: number;
+      hasEnoughPlayers: boolean;
+      ageMinutes: number;
+      isLikelyStale: boolean;
+      cancelConfidence: "safe" | "probably_abandoned" | "needs_review";
+      cancelReasons: string[];
+      _creationTime: number;
+    }> = [];
+    const draftMetrics: Array<{
+      draft: (typeof drafts)[number];
+      playerCount: number;
+      assignedCount: number;
+      captainCount: number;
+      selectedClassCount: number;
+      fightCount: number;
+      minimumPlayers: number;
+      hasEnoughPlayers: boolean;
+      ageMinutes: number;
+      isLikelyStale: boolean;
+    }> = [];
+
     for (const draft of drafts) {
+      if (draft.status === "complete" && draft.gameStarted) continue;
       if (
         draft.status === "complete" &&
-        draft.gameStarted &&
-        draft.resultStatus === "verified"
+        (draft.resultStatus === "verified" || draft.resultStatus === "voided")
       ) {
         continue;
       }
@@ -1792,7 +1829,9 @@ export const getCancelableDrafts = query({
         .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
         .collect();
       const captainCount = players.filter((player) => player.isCaptain).length;
-      const assignedCount = players.filter((player) => player.team !== undefined).length;
+      const assignedCount = players.filter(
+        (player) => player.team !== undefined
+      ).length;
       const selectedClassCount = players.filter(
         (player) => !!player.selectedClass?.trim()
       ).length;
@@ -1801,8 +1840,183 @@ export const getCancelableDrafts = query({
       const minimumPlayers = draft.teamSize * 2;
       const hasEnoughPlayers = players.length >= minimumPlayers;
       const hasNoMeaningfulProgress =
-        assignedCount === 0 && selectedClassCount === 0 && fightCount === 0;
+        assignedCount === 0 &&
+        selectedClassCount === 0 &&
+        fightCount === 0 &&
+        captainCount === 0;
       const isLikelyStale = ageMinutes >= 30 && hasNoMeaningfulProgress;
+      draftMetrics.push({
+        draft,
+        playerCount: players.length,
+        assignedCount,
+        captainCount,
+        selectedClassCount,
+        fightCount,
+        minimumPlayers,
+        hasEnoughPlayers,
+        ageMinutes,
+        isLikelyStale,
+      });
+    }
+
+    for (const row of draftMetrics) {
+      const draft = row.draft;
+      const {
+        playerCount,
+        assignedCount,
+        captainCount,
+        selectedClassCount,
+        fightCount,
+        minimumPlayers,
+        hasEnoughPlayers,
+        ageMinutes,
+        isLikelyStale,
+      } = row;
+      const hasNoMeaningfulProgress =
+        assignedCount === 0 &&
+        selectedClassCount === 0 &&
+        fightCount === 0 &&
+        captainCount === 0;
+
+      const isEarlyStage =
+        draft.status === "setup" || draft.status === "coin_flip";
+      const isMidStage =
+        draft.status === "realm_pick" ||
+        draft.status === "banning" ||
+        draft.status === "drafting";
+
+      const cancelReasons: string[] = [];
+      let cancelConfidence: "safe" | "probably_abandoned" | "needs_review";
+
+      const hasAnyProgress =
+        assignedCount > 0 ||
+        selectedClassCount > 0 ||
+        fightCount > 0 ||
+        captainCount > 0;
+      const newerSameGuildDrafts = draftMetrics.filter(
+        (other) =>
+          other.draft._id !== draft._id &&
+          other.draft.discordGuildId === draft.discordGuildId &&
+          other.draft.status !== "cancelled" &&
+          other.draft._creationTime > draft._creationTime
+      );
+      const newerSameCreatorInGuild = newerSameGuildDrafts.filter(
+        (other) => other.draft.createdBy === draft.createdBy
+      );
+      const closeParallelStarts = draftMetrics.filter(
+        (other) =>
+          other.draft._id !== draft._id &&
+          other.draft.discordGuildId === draft.discordGuildId &&
+          other.draft.status !== "cancelled" &&
+          Math.abs(other.draft._creationTime - draft._creationTime) <= 10 * 60 * 1000
+      );
+      const hasNewerParallelStart = closeParallelStarts.some(
+        (other) => other.draft._creationTime > draft._creationTime
+      );
+
+      if (
+        newerSameCreatorInGuild.length > 0 &&
+        fightCount === 0 &&
+        selectedClassCount === 0
+      ) {
+        cancelConfidence = "safe";
+        cancelReasons.push("A newer draft by the same creator exists in this guild");
+        cancelReasons.push("No fights or class selections on this draft");
+      } else if (
+        newerSameGuildDrafts.length > 0 &&
+        hasNoMeaningfulProgress &&
+        fightCount === 0
+      ) {
+        cancelConfidence = "safe";
+        cancelReasons.push("A newer draft exists in this guild");
+        cancelReasons.push("This one has no meaningful progress");
+      } else if (
+        hasNewerParallelStart &&
+        fightCount === 0 &&
+        assignedCount === 0 &&
+        selectedClassCount === 0
+      ) {
+        cancelConfidence = "safe";
+        cancelReasons.push("Multiple drafts were started around the same time");
+        cancelReasons.push("This appears to be the older duplicate");
+      } else if (isEarlyStage && ageMinutes >= 180 && hasNoMeaningfulProgress) {
+        cancelConfidence = "safe";
+        cancelReasons.push(
+          `Stuck in ${draft.status.replace("_", " ")} for over 3 hours`
+        );
+        if (playerCount === 0) cancelReasons.push("No players joined");
+        else cancelReasons.push("No teams formed, no classes picked");
+      } else if (
+        isEarlyStage &&
+        ageMinutes >= 360 &&
+        !hasEnoughPlayers &&
+        assignedCount === 0 &&
+        captainCount === 0 &&
+        selectedClassCount === 0 &&
+        fightCount === 0
+      ) {
+        cancelConfidence = "safe";
+        cancelReasons.push(
+          `Low participation for over 6 hours in ${draft.status.replace(
+            "_",
+            " "
+          )}`
+        );
+        cancelReasons.push(`Only ${playerCount}/${minimumPlayers} players`);
+      } else if (
+        isMidStage &&
+        ageMinutes >= 360 &&
+        assignedCount === 0 &&
+        fightCount === 0 &&
+        selectedClassCount === 0
+      ) {
+        cancelConfidence = "safe";
+        cancelReasons.push(
+          `Stuck in ${draft.status.replace("_", " ")} for over 6 hours`
+        );
+        cancelReasons.push("No classes or fights recorded");
+      } else if (
+        !hasEnoughPlayers &&
+        fightCount === 0 &&
+        selectedClassCount === 0 &&
+        (isEarlyStage || isMidStage)
+      ) {
+        cancelConfidence = "probably_abandoned";
+        cancelReasons.push(`Lobby not filled (${playerCount}/${minimumPlayers} players)`);
+        cancelReasons.push("No classes or fights recorded");
+      } else if (isEarlyStage && ageMinutes >= 30 && hasNoMeaningfulProgress) {
+        cancelConfidence = "probably_abandoned";
+        cancelReasons.push(
+          `In ${draft.status.replace("_", " ")} for ${ageMinutes} minutes with no progress`
+        );
+      } else if (isMidStage && ageMinutes >= 120 && fightCount === 0) {
+        cancelConfidence = "probably_abandoned";
+        cancelReasons.push(
+          `In ${draft.status.replace("_", " ")} for over 2 hours`
+        );
+        cancelReasons.push("No fights started");
+      } else if (ageMinutes >= 1440 && !hasAnyProgress && fightCount === 0) {
+        cancelConfidence = "probably_abandoned";
+        cancelReasons.push("Over 24 hours old with no meaningful progress");
+      } else if (draft.status === "complete" && !draft.gameStarted) {
+        cancelConfidence = "probably_abandoned";
+        cancelReasons.push("Completed without a game starting");
+      } else {
+        cancelConfidence = "needs_review";
+        if (ageMinutes < 30) cancelReasons.push("Recently created");
+        else
+          cancelReasons.push(
+            `${Math.floor(ageMinutes / 60)}h ${ageMinutes % 60}m old`
+          );
+        if (fightCount > 0)
+          cancelReasons.push(
+            `${fightCount} fight${fightCount === 1 ? "" : "s"} played`
+          );
+        if (assignedCount > 0)
+          cancelReasons.push(`${assignedCount} players on teams`);
+        if (selectedClassCount > 0)
+          cancelReasons.push(`${selectedClassCount} classes picked`);
+      }
 
       results.push({
         _id: draft._id,
@@ -1815,7 +2029,7 @@ export const getCancelableDrafts = query({
         createdByDisplayName: draft.createdByDisplayName,
         createdByAvatarUrl: draft.createdByAvatarUrl,
         teamSize: draft.teamSize,
-        playerCount: players.length,
+        playerCount,
         assignedCount,
         captainCount,
         selectedClassCount,
@@ -1824,11 +2038,168 @@ export const getCancelableDrafts = query({
         hasEnoughPlayers,
         ageMinutes,
         isLikelyStale,
+        cancelConfidence,
+        cancelReasons,
         _creationTime: draft._creationTime,
       });
     }
 
-    return results.sort((a, b) => b._creationTime - a._creationTime);
+    const confidenceOrder = {
+      safe: 0,
+      probably_abandoned: 1,
+      needs_review: 2,
+    };
+    return results.sort((a, b) => {
+      const aOrder = confidenceOrder[a.cancelConfidence];
+      const bOrder = confidenceOrder[b.cancelConfidence];
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return b._creationTime - a._creationTime;
+    });
+  },
+});
+
+export const getCancelledDraftsForAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    const CANCELLED_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - CANCELLED_RETENTION_MS;
+    const drafts = await ctx.db
+      .query("drafts")
+      .withIndex("by_status", (q) => q.eq("status", "cancelled"))
+      .collect();
+
+    const results = [];
+    for (const draft of drafts) {
+      const players = await ctx.db
+        .query("draftPlayers")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      const fights = await ctx.db
+        .query("draftFights")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      const assignedCount = players.filter(
+        (player) => player.team !== undefined
+      ).length;
+      const selectedClassCount = players.filter(
+        (player) => !!player.selectedClass?.trim()
+      ).length;
+
+      const cancelledAt = draft.cancelledAt ?? draft._creationTime;
+      if (cancelledAt < cutoff) {
+        continue;
+      }
+
+      results.push({
+        _id: draft._id,
+        shortId: draft.shortId,
+        cancelledAt,
+        cancelledBy: draft.cancelledBy,
+        cancelReason: draft.cancelReason,
+        cancelledFromStatus: draft.cancelledFromStatus,
+        discordGuildId: draft.discordGuildId,
+        discordGuildName: draft.discordGuildName,
+        createdBy: draft.createdBy,
+        createdByDisplayName: draft.createdByDisplayName,
+        playerCount: players.length,
+        assignedCount,
+        selectedClassCount,
+        fightCount: fights.length,
+        _creationTime: draft._creationTime,
+      });
+    }
+
+    return results.sort((a, b) => b.cancelledAt - a.cancelledAt);
+  },
+});
+
+export const restoreCancelledDraftAsAdmin = mutation({
+  args: {
+    shortId: v.string(),
+    restoredByClerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db
+      .query("drafts")
+      .withIndex("by_shortId", (q) => q.eq("shortId", args.shortId))
+      .unique();
+    if (!draft) {
+      throw new Error("Draft not found");
+    }
+    if (draft.status !== "cancelled") {
+      throw new Error("Only cancelled drafts can be restored");
+    }
+
+    const restoreStatus = draft.cancelledFromStatus ?? "setup";
+    await ctx.db.patch(draft._id, {
+      status: restoreStatus,
+      cancelledBy: undefined,
+      cancelledAt: undefined,
+      cancelReason: undefined,
+      cancelledFromStatus: undefined,
+    });
+
+    return {
+      shortId: draft.shortId,
+      status: restoreStatus,
+      restoredBy: args.restoredByClerkUserId,
+      restoredAt: Date.now(),
+    };
+  },
+});
+
+export const purgeExpiredCancelledDrafts = mutation({
+  args: {
+    retentionDays: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const retentionDays =
+      typeof args.retentionDays === "number" && args.retentionDays > 0
+        ? args.retentionDays
+        : 90;
+    const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+    const cancelledDrafts = await ctx.db
+      .query("drafts")
+      .withIndex("by_status", (q) => q.eq("status", "cancelled"))
+      .collect();
+
+    let deletedDrafts = 0;
+    for (const draft of cancelledDrafts) {
+      const cancelledAt = draft.cancelledAt ?? draft._creationTime;
+      if (cancelledAt >= cutoff) {
+        continue;
+      }
+
+      const players = await ctx.db
+        .query("draftPlayers")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      for (const player of players) {
+        await ctx.db.delete(player._id);
+      }
+
+      const bans = await ctx.db
+        .query("draftBans")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      for (const ban of bans) {
+        await ctx.db.delete(ban._id);
+      }
+
+      const fights = await ctx.db
+        .query("draftFights")
+        .withIndex("by_draft", (q) => q.eq("draftId", draft._id))
+        .collect();
+      for (const fight of fights) {
+        await ctx.db.delete(fight._id);
+      }
+
+      await ctx.db.delete(draft._id);
+      deletedDrafts += 1;
+    }
+
+    return { deletedDrafts, retentionDays };
   },
 });
 

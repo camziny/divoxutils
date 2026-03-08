@@ -6,9 +6,11 @@ import { isAdminClerkUserId } from "@/server/adminAuth";
 type AdminDraftsDeps = {
   getAuthUserId: (req: NextApiRequest) => string | null;
   isAdminUserId: (userId: string) => boolean;
+  purgeExpiredCancelledDrafts: () => Promise<unknown>;
   listPendingDrafts: () => Promise<unknown>;
   listReviewedDrafts: () => Promise<unknown>;
   listCancelableDrafts: () => Promise<unknown>;
+  listCancelledDrafts: () => Promise<unknown>;
 };
 
 function getConvexClient() {
@@ -34,12 +36,29 @@ export function createAdminDraftsHandler(deps: AdminDraftsDeps) {
     }
 
     try {
-      const [pendingDrafts, reviewedDrafts, cancelableDrafts] = await Promise.all([
+      let purgeWarning: string | undefined;
+      try {
+        await deps.purgeExpiredCancelledDrafts();
+      } catch (error: any) {
+        purgeWarning = error?.message
+          ? `Archive cleanup skipped: ${error.message}`
+          : "Archive cleanup skipped.";
+      }
+      const [pendingDrafts, reviewedDrafts, cancelableDrafts, cancelledDrafts] = await Promise.all([
         deps.listPendingDrafts(),
         deps.listReviewedDrafts(),
         deps.listCancelableDrafts(),
+        deps.listCancelledDrafts(),
       ]);
-      return res.status(200).json({ pendingDrafts, reviewedDrafts, cancelableDrafts });
+      return res
+        .status(200)
+        .json({
+          pendingDrafts,
+          reviewedDrafts,
+          cancelableDrafts,
+          cancelledDrafts,
+          ...(purgeWarning ? { purgeWarning } : {}),
+        });
     } catch (error: any) {
       return res.status(500).json({ error: error?.message ?? "Failed to fetch drafts." });
     }
@@ -49,6 +68,12 @@ export function createAdminDraftsHandler(deps: AdminDraftsDeps) {
 const handler = createAdminDraftsHandler({
   getAuthUserId: (req) => getAuth(req).userId ?? null,
   isAdminUserId: (userId) => isAdminClerkUserId(userId),
+  purgeExpiredCancelledDrafts: async () => {
+    const convex = getConvexClient();
+    return convex.mutation("drafts:purgeExpiredCancelledDrafts" as any, {
+      retentionDays: 90,
+    });
+  },
   listPendingDrafts: async () => {
     const convex = getConvexClient();
     return convex.query("drafts:getDraftsForModeration" as any, {});
@@ -60,6 +85,10 @@ const handler = createAdminDraftsHandler({
   listCancelableDrafts: async () => {
     const convex = getConvexClient();
     return convex.query("drafts:getCancelableDrafts" as any, {});
+  },
+  listCancelledDrafts: async () => {
+    const convex = getConvexClient();
+    return convex.query("drafts:getCancelledDraftsForAdmin" as any, {});
   },
 });
 

@@ -41,12 +41,18 @@ function createMockRequest(options?: {
 }
 
 test("admin drafts API returns pending, reviewed, and cancelable data", async () => {
+  let purgeCalled = false;
   const handler = createAdminDraftsHandler({
     getAuthUserId: () => "admin_1",
     isAdminUserId: () => true,
+    purgeExpiredCancelledDrafts: async () => {
+      purgeCalled = true;
+      return { deletedDrafts: 0, retentionDays: 90 };
+    },
     listPendingDrafts: async () => [{ shortId: "pending-1" }],
     listReviewedDrafts: async () => [{ shortId: "reviewed-1" }],
     listCancelableDrafts: async () => [{ shortId: "cancel-1" }],
+    listCancelledDrafts: async () => [{ shortId: "archived-1" }],
   });
   const req = createMockRequest({ method: "GET" });
   const res = createMockResponse();
@@ -58,7 +64,9 @@ test("admin drafts API returns pending, reviewed, and cancelable data", async ()
     pendingDrafts: [{ shortId: "pending-1" }],
     reviewedDrafts: [{ shortId: "reviewed-1" }],
     cancelableDrafts: [{ shortId: "cancel-1" }],
+    cancelledDrafts: [{ shortId: "archived-1" }],
   });
+  assert.equal(purgeCalled, true);
 });
 
 test("cancel draft API rejects missing shortId", async () => {
@@ -141,4 +149,31 @@ test("cancel draft API surfaces server errors", async () => {
 
   assert.equal(res.statusCode, 500);
   assert.deepEqual(res.body, { error: "convex failed" });
+});
+
+test("admin drafts API still loads when purge fails", async () => {
+  const handler = createAdminDraftsHandler({
+    getAuthUserId: () => "admin_1",
+    isAdminUserId: () => true,
+    purgeExpiredCancelledDrafts: async () => {
+      throw new Error("cleanup failure");
+    },
+    listPendingDrafts: async () => [{ shortId: "pending-1" }],
+    listReviewedDrafts: async () => [{ shortId: "reviewed-1" }],
+    listCancelableDrafts: async () => [{ shortId: "cancel-1" }],
+    listCancelledDrafts: async () => [{ shortId: "archived-1" }],
+  });
+  const req = createMockRequest({ method: "GET" });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body, {
+    pendingDrafts: [{ shortId: "pending-1" }],
+    reviewedDrafts: [{ shortId: "reviewed-1" }],
+    cancelableDrafts: [{ shortId: "cancel-1" }],
+    cancelledDrafts: [{ shortId: "archived-1" }],
+    purgeWarning: "Archive cleanup skipped: cleanup failure",
+  });
 });

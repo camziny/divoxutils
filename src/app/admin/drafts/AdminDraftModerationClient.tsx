@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import {
   CLASS_CATEGORIES,
   classesByRealm,
@@ -16,6 +16,15 @@ import {
   toFightEditorRows,
   type FightEditorRow,
 } from "./fightEditorUtils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 type ModerationPlayer = {
   _id: string;
@@ -81,20 +90,50 @@ type CancelableDraft = {
   hasEnoughPlayers: boolean;
   ageMinutes: number;
   isLikelyStale: boolean;
+  cancelConfidence: "safe" | "probably_abandoned" | "needs_review";
+  cancelReasons: string[];
+  _creationTime: number;
+};
+
+type CancelledDraftEntry = {
+  _id: string;
+  shortId: string;
+  cancelledAt: number;
+  cancelledBy?: string;
+  cancelReason?: string;
+  discordGuildId: string;
+  discordGuildName?: string;
+  createdBy: string;
+  createdByDisplayName?: string;
+  playerCount: number;
+  assignedCount: number;
+  selectedClassCount: number;
+  fightCount: number;
   _creationTime: number;
 };
 
 type Action = "verify" | "void" | "override_team_1" | "override_team_2";
 type SortOrder = "newest" | "oldest";
-type CancelableFilter = "all" | "stale" | "progress";
+type CancelableFilter = "safe" | "probably_abandoned" | "all";
 type ReviewedFilter = "all" | "verified" | "voided";
+type ConfirmAction = {
+  kind: "cancel" | "restore";
+  shortId: string;
+  title: string;
+  description: string;
+  confirmLabel: string;
+};
 
 export default function AdminDraftModerationClient() {
   const [pendingDrafts, setPendingDrafts] = useState<ModerationDraft[]>([]);
   const [reviewedDrafts, setReviewedDrafts] = useState<ModerationDraft[]>([]);
   const [cancelableDrafts, setCancelableDrafts] = useState<CancelableDraft[]>([]);
+  const [cancelledDrafts, setCancelledDrafts] = useState<CancelledDraftEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [maintenanceWarning, setMaintenanceWarning] = useState<string | null>(
+    null
+  );
   const [activeDraft, setActiveDraft] = useState<string | null>(null);
   const [noteByDraft, setNoteByDraft] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -103,9 +142,13 @@ export default function AdminDraftModerationClient() {
   const [activePlayerByDraft, setActivePlayerByDraft] = useState<Record<string, string | null>>({});
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
 
+  const [showCancelledArchive, setShowCancelledArchive] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [guildSearch, setGuildSearch] = useState("");
-  const [cancelableFilter, setCancelableFilter] = useState<CancelableFilter>("all");
+  const [cancelableFilter, setCancelableFilter] = useState<CancelableFilter>("safe");
   const [reviewedFilter, setReviewedFilter] = useState<ReviewedFilter>("all");
   const [substituteSearchByDraft, setSubstituteSearchByDraft] = useState<Record<string, string>>({});
   const [substituteDropdownByDraft, setSubstituteDropdownByDraft] = useState<Record<string, boolean>>({});
@@ -116,6 +159,7 @@ export default function AdminDraftModerationClient() {
   const loadDrafts = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setMaintenanceWarning(null);
     try {
       const response = await fetch("/api/admin/drafts");
       const payload = await response.json();
@@ -125,9 +169,14 @@ export default function AdminDraftModerationClient() {
       const pending = Array.isArray(payload?.pendingDrafts) ? payload.pendingDrafts : [];
       const reviewed = Array.isArray(payload?.reviewedDrafts) ? payload.reviewedDrafts : [];
       const cancelable = Array.isArray(payload?.cancelableDrafts) ? payload.cancelableDrafts : [];
+      const cancelled = Array.isArray(payload?.cancelledDrafts) ? payload.cancelledDrafts : [];
       setPendingDrafts(pending);
       setReviewedDrafts(reviewed);
       setCancelableDrafts(cancelable);
+      setCancelledDrafts(cancelled);
+      if (typeof payload?.purgeWarning === "string") {
+        setMaintenanceWarning(payload.purgeWarning);
+      }
 
       const nextEditor: Record<string, FightEditorRow[]> = {};
       const nextActiveFight: Record<string, number> = {};
@@ -195,15 +244,8 @@ export default function AdminDraftModerationClient() {
     [loadDrafts, noteByDraft]
   );
 
-  const cancelDraft = useCallback(
+  const executeCancelDraft = useCallback(
     async (shortId: string) => {
-      const confirmation = window.prompt(
-        `Type ${shortId} to confirm cancellation for this draft.`
-      );
-      if (confirmation !== shortId) {
-        return;
-      }
-
       setActiveDraft(shortId);
       setError(null);
       setSuccessMessage(null);
@@ -220,6 +262,7 @@ export default function AdminDraftModerationClient() {
         if (!response.ok) {
           throw new Error(payload?.error ?? "Failed to cancel draft.");
         }
+
         await loadDrafts();
         setSuccessMessage(`Draft ${shortId} cancelled.`);
         setTimeout(() => setSuccessMessage(null), 3000);
@@ -232,6 +275,18 @@ export default function AdminDraftModerationClient() {
     },
     [loadDrafts, noteByDraft]
   );
+
+  const openCancelConfirm = useCallback((shortId: string) => {
+    setConfirmText("");
+    setConfirmAction({
+      kind: "cancel",
+      shortId,
+      title: "Cancel draft",
+      description:
+        "This moves the draft to the cancelled archive for 90 days. Type the short ID to confirm.",
+      confirmLabel: "Cancel Draft",
+    });
+  }, []);
 
   const saveFights = useCallback(
     async (draft: ModerationDraft) => {
@@ -296,6 +351,68 @@ export default function AdminDraftModerationClient() {
     [fightEditorByDraft, loadDrafts]
   );
 
+  const executeRestoreDraft = useCallback(
+    async (shortId: string) => {
+      setActiveDraft(shortId);
+      setError(null);
+      setSuccessMessage(null);
+      try {
+        const response = await fetch("/api/admin/drafts/restore", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ shortId }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload?.error ?? "Failed to restore draft.");
+        }
+        await loadDrafts();
+        const restoredStatus =
+          typeof payload?.result?.status === "string" ? payload.result.status : null;
+        setSuccessMessage(
+          restoredStatus
+            ? `Draft ${shortId} restored to ${restoredStatus}.`
+            : `Draft ${shortId} restored.`
+        );
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to restore draft.";
+        setError(message);
+      } finally {
+        setActiveDraft(null);
+      }
+    },
+    [loadDrafts]
+  );
+
+  const openRestoreConfirm = useCallback((shortId: string) => {
+    setConfirmText("");
+    setConfirmAction({
+      kind: "restore",
+      shortId,
+      title: "Restore cancelled draft",
+      description:
+        "This restores the draft to its previous workflow state. Type the short ID to confirm.",
+      confirmLabel: "Restore Draft",
+    });
+  }, []);
+
+  const handleConfirmAction = useCallback(async () => {
+    if (!confirmAction) return;
+    if (confirmText.trim() !== confirmAction.shortId) {
+      setError(`Confirmation must match ${confirmAction.shortId}.`);
+      return;
+    }
+    const action = confirmAction;
+    setConfirmAction(null);
+    setConfirmText("");
+    if (action.kind === "cancel") {
+      await executeCancelDraft(action.shortId);
+    } else {
+      await executeRestoreDraft(action.shortId);
+    }
+  }, [confirmAction, confirmText, executeCancelDraft, executeRestoreDraft]);
+
   const formatTimestamp = (ts: number) => {
     const d = new Date(ts);
     return (
@@ -305,18 +422,35 @@ export default function AdminDraftModerationClient() {
     );
   };
 
+  const formatAge = (minutes: number) => {
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ${minutes % 60}m`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ${hours % 24}h`;
+  };
+
   const toggleCard = useCallback((key: string) => {
     setExpandedCards((current) => ({ ...current, [key]: !current[key] }));
   }, []);
 
   const guildSearchLower = guildSearch.trim().toLowerCase();
 
-  const matchesGuild = useCallback(
-    (guildId: string, guildName?: string) => {
+  const matchesDraftQuery = useCallback(
+    (draft: {
+      shortId: string;
+      discordGuildId: string;
+      discordGuildName?: string;
+      createdBy?: string;
+      createdByDisplayName?: string;
+    }) => {
       if (!guildSearchLower) return true;
       return (
-        guildId.toLowerCase().includes(guildSearchLower) ||
-        (guildName ?? "").toLowerCase().includes(guildSearchLower)
+        draft.shortId.toLowerCase().includes(guildSearchLower) ||
+        draft.discordGuildId.toLowerCase().includes(guildSearchLower) ||
+        (draft.discordGuildName ?? "").toLowerCase().includes(guildSearchLower) ||
+        (draft.createdBy ?? "").toLowerCase().includes(guildSearchLower) ||
+        (draft.createdByDisplayName ?? "").toLowerCase().includes(guildSearchLower)
       );
     },
     [guildSearchLower]
@@ -332,31 +466,44 @@ export default function AdminDraftModerationClient() {
 
   const filteredCancelable = useMemo(() => {
     return cancelableDrafts
-      .filter((d) => matchesGuild(d.discordGuildId, d.discordGuildName))
+      .filter((d) => matchesDraftQuery(d))
       .filter((d) => {
-        if (cancelableFilter === "stale") return d.isLikelyStale;
-        if (cancelableFilter === "progress") return !d.isLikelyStale;
+        if (cancelableFilter === "safe") return d.cancelConfidence === "safe";
+        if (cancelableFilter === "probably_abandoned")
+          return d.cancelConfidence === "probably_abandoned";
         return true;
-      })
-      .sort(sortFn);
-  }, [cancelableDrafts, matchesGuild, cancelableFilter, sortFn]);
+      });
+  }, [cancelableDrafts, matchesDraftQuery, cancelableFilter]);
+
+  const cancelableCounts = useMemo(() => {
+    const guild = cancelableDrafts.filter((d) => matchesDraftQuery(d));
+    return {
+      safe: guild.filter((d) => d.cancelConfidence === "safe").length,
+      probably_abandoned: guild.filter(
+        (d) => d.cancelConfidence === "probably_abandoned"
+      ).length,
+      needs_review: guild.filter((d) => d.cancelConfidence === "needs_review")
+        .length,
+      total: guild.length,
+    };
+  }, [cancelableDrafts, matchesDraftQuery]);
 
   const filteredPending = useMemo(() => {
     return pendingDrafts
-      .filter((d) => matchesGuild(d.discordGuildId, d.discordGuildName))
+      .filter((d) => matchesDraftQuery(d))
       .sort(sortFn);
-  }, [pendingDrafts, matchesGuild, sortFn]);
+  }, [pendingDrafts, matchesDraftQuery, sortFn]);
 
   const filteredReviewed = useMemo(() => {
     return reviewedDrafts
-      .filter((d) => matchesGuild(d.discordGuildId, d.discordGuildName))
+      .filter((d) => matchesDraftQuery(d))
       .filter((d) => {
         if (reviewedFilter === "verified") return d.resultStatus === "verified";
         if (reviewedFilter === "voided") return d.resultStatus === "voided";
         return true;
       })
       .sort(sortFn);
-  }, [reviewedDrafts, matchesGuild, reviewedFilter, sortFn]);
+  }, [reviewedDrafts, matchesDraftQuery, reviewedFilter, sortFn]);
 
   const knownPlayers = useMemo(() => {
     const byDiscordId = new Map<
@@ -382,7 +529,8 @@ export default function AdminDraftModerationClient() {
   const hasAnyDraftData =
     pendingDrafts.length > 0 ||
     reviewedDrafts.length > 0 ||
-    cancelableDrafts.length > 0;
+    cancelableDrafts.length > 0 ||
+    cancelledDrafts.length > 0;
 
   const renderDraft = (draft: ModerationDraft, reviewed: boolean) => {
     const cardKey = `${reviewed ? "reviewed" : "pending"}:${draft.shortId}`;
@@ -1091,7 +1239,7 @@ export default function AdminDraftModerationClient() {
             <div className="flex gap-2">
               {draft.resultStatus !== "verified" && (
                 <button
-                  onClick={() => cancelDraft(draft.shortId)}
+                  onClick={() => openCancelConfirm(draft.shortId)}
                   disabled={isActive}
                   className="rounded-md border border-red-700/40 px-3 py-1.5 text-xs text-red-300 hover:border-red-600/50 hover:text-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -1156,7 +1304,7 @@ export default function AdminDraftModerationClient() {
           <p className="mt-1 text-xs text-gray-500">
             {loading
               ? "Loading..."
-              : `${pendingDrafts.length} awaiting review · ${reviewedDrafts.length} reviewed · ${cancelableDrafts.length} cancelable`}
+              : `${pendingDrafts.length} awaiting review · ${reviewedDrafts.length} reviewed · ${cancelableDrafts.length} cancelable · ${cancelledDrafts.length} archived`}
           </p>
         </div>
 
@@ -1165,7 +1313,7 @@ export default function AdminDraftModerationClient() {
             type="text"
             value={guildSearch}
             onChange={(e) => setGuildSearch(e.target.value)}
-            placeholder="Filter by guild..."
+            placeholder="Filter by guild, creator, or short ID..."
             className="rounded-md border border-gray-800 bg-transparent px-3 py-1.5 text-xs text-gray-300 placeholder-gray-600 outline-none focus:border-gray-600 transition-colors w-44"
           />
           <div className="flex items-center gap-1 rounded-md border border-gray-800 p-0.5">
@@ -1197,6 +1345,11 @@ export default function AdminDraftModerationClient() {
             {error}
           </div>
         )}
+        {maintenanceWarning && (
+          <div className="mb-4 rounded-md border border-gray-800 bg-gray-900/40 px-3 py-2 text-xs text-gray-400">
+            {maintenanceWarning}
+          </div>
+        )}
 
         {loading ? (
           <p className="text-sm text-gray-500">Loading...</p>
@@ -1207,121 +1360,132 @@ export default function AdminDraftModerationClient() {
         ) : (
           <div className="space-y-8">
             <section>
-              <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="mb-2">
                 <h2 className="text-sm font-medium text-gray-300">
-                  Cancelable drafts
-                  {filteredCancelable.length !== cancelableDrafts.length && (
-                    <span className="ml-2 text-xs font-normal text-gray-500">
-                      {filteredCancelable.length}/{cancelableDrafts.length}
-                    </span>
-                  )}
+                  Stale Draft Cleanup
                 </h2>
-                <div className="flex items-center gap-1 rounded-md border border-gray-800 p-0.5">
-                  {(["all", "stale", "progress"] as CancelableFilter[]).map((f) => (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => setCancelableFilter(f)}
-                      className={`rounded px-2.5 py-1 text-[11px] transition-colors ${
-                        cancelableFilter === f
-                          ? "bg-gray-700 text-gray-200"
-                          : "text-gray-500 hover:text-gray-300"
-                      }`}
-                    >
-                      {f === "all" ? "All" : f === "stale" ? "Likely stale" : "Has progress"}
-                    </button>
-                  ))}
-                </div>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {cancelableCounts.total === 0
+                    ? "No stale drafts to clean up."
+                    : `${cancelableCounts.safe} safe to cancel · ${cancelableCounts.probably_abandoned} probably abandoned · ${cancelableCounts.needs_review} need review`}
+                </p>
               </div>
+
+              <div className="mb-3 flex items-center gap-1 rounded-md border border-gray-800 p-0.5 w-fit">
+                {(
+                  [
+                    { key: "safe" as const, label: "Safe to cancel", count: cancelableCounts.safe },
+                    { key: "probably_abandoned" as const, label: "Probably abandoned", count: cancelableCounts.probably_abandoned },
+                    { key: "all" as const, label: "All", count: cancelableCounts.total },
+                  ] as const
+                ).map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    onClick={() => setCancelableFilter(f.key)}
+                    className={`rounded px-2.5 py-1 text-[11px] transition-colors ${
+                      cancelableFilter === f.key
+                        ? "bg-gray-700 text-gray-200"
+                        : "text-gray-500 hover:text-gray-300"
+                    }`}
+                  >
+                    {f.label}
+                    {f.count > 0 && (
+                      <span className="ml-1.5 tabular-nums">{f.count}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
               {filteredCancelable.length === 0 ? (
                 <div className="rounded-md border border-gray-800 px-4 py-6">
                   <p className="text-xs text-gray-500">
-                    {cancelableDrafts.length === 0 ? "No cancelable drafts." : "No drafts match this filter."}
+                    {cancelableCounts.total === 0
+                      ? "Nothing to clean up."
+                      : cancelableFilter === "safe"
+                        ? "No drafts are confidently safe to cancel right now."
+                        : "No drafts in this category."}
                   </p>
                 </div>
               ) : (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {filteredCancelable.map((draft) => {
                     const isActive = activeDraft === draft.shortId;
-                    const cardKey = `cancelable:${draft.shortId}`;
-                    const expanded = !!expandedCards[cardKey];
-                    return (
-                      <div key={`cancel-${draft.shortId}`} className="rounded-lg border border-gray-800 overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => toggleCard(cardKey)}
-                          className="w-full px-4 py-3 text-left hover:bg-gray-800/20 transition-colors duration-100 group"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <ChevronRight
-                                className={`w-3.5 h-3.5 text-gray-600 flex-shrink-0 transition-transform duration-150 ${
-                                  expanded ? "rotate-90" : ""
-                                }`}
-                              />
-                              <span className="font-mono text-sm font-medium text-gray-200">{draft.shortId}</span>
-                              <span className="rounded border border-gray-700 px-1.5 py-0.5 text-[10px] text-gray-500">
-                                {draft.status}
-                              </span>
-                              {draft.isLikelyStale ? (
-                                <span className="rounded border border-indigo-700/40 bg-indigo-900/20 px-1.5 py-0.5 text-[10px] text-indigo-300">
-                                  likely stale
-                                </span>
-                              ) : (
-                                <span className="rounded border border-gray-700 px-1.5 py-0.5 text-[10px] text-gray-500">
-                                  has progress
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 shrink-0 text-[11px] text-gray-600">
-                              <span>
-                                {Math.floor(draft.ageMinutes / 60)}h {draft.ageMinutes % 60}m old
-                              </span>
-                              <span>
-                                {draft.playerCount}/{draft.minimumPlayers} players · {draft.assignedCount} assigned · {draft.fightCount} fights
-                              </span>
-                              <span>{formatTimestamp(draft._creationTime)}</span>
-                            </div>
-                          </div>
-                        </button>
+                    const isSafe = draft.cancelConfidence === "safe";
+                    const isProbablyAbandoned =
+                      draft.cancelConfidence === "probably_abandoned";
 
-                        {expanded && (
-                          <div className="px-4 pb-4 border-t border-gray-800/60">
-                            <div className="pt-4 mb-3 grid gap-2 text-xs text-gray-500 sm:grid-cols-2">
-                              <span>
-                                Guild {draft.discordGuildName ? `${draft.discordGuildName} ` : ""}
-                                <span className="font-mono text-gray-400">({draft.discordGuildId})</span>
-                              </span>
-                              <span>
-                                Created by {draft.createdByDisplayName ? `${draft.createdByDisplayName} ` : ""}
-                                <span className="font-mono text-gray-400">({draft.createdBy})</span>
-                              </span>
-                              <span>
-                                Captains {draft.captainCount}/2 · Classes {draft.selectedClassCount}
-                              </span>
-                            </div>
-                            <textarea
-                              value={noteByDraft[draft.shortId] ?? ""}
-                              onChange={(event) =>
-                                setNoteByDraft((current) => ({
-                                  ...current,
-                                  [draft.shortId]: event.target.value,
-                                }))
-                              }
-                              placeholder="Cancellation note (optional)"
-                              className="mb-3 w-full resize-none rounded-md border border-gray-800 bg-transparent px-3 py-2 text-xs text-gray-300 placeholder-gray-700 outline-none focus:border-gray-700 transition-colors"
-                              rows={2}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => cancelDraft(draft.shortId)}
-                              disabled={isActive}
-                              className="rounded-md border border-gray-700 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:border-gray-500 hover:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Cancel Draft
-                            </button>
-                          </div>
-                        )}
+                    const badgeLabel = isSafe
+                      ? "Safe to cancel"
+                      : isProbablyAbandoned
+                        ? "Probably abandoned"
+                        : "Has activity";
+
+                    return (
+                      <div
+                        key={`cancel-${draft.shortId}`}
+                        className="rounded-lg border border-gray-800 p-4"
+                      >
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className="font-mono text-sm font-medium text-gray-200">
+                            {draft.shortId}
+                          </span>
+                          <span
+                            className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium ${
+                              isSafe
+                                ? "border-indigo-700/50 bg-indigo-900/20 text-indigo-300"
+                                : isProbablyAbandoned
+                                  ? "border-gray-600 bg-gray-800/60 text-gray-400"
+                                  : "border-gray-700 bg-gray-800/40 text-gray-500"
+                            }`}
+                          >
+                            {badgeLabel}
+                          </span>
+                          <span className="text-[11px] text-gray-500">
+                            {formatAge(draft.ageMinutes)} old
+                          </span>
+                        </div>
+
+                        <DraftFlowIndicator status={draft.status} />
+
+                        <div className="mt-2.5 space-y-1">
+                          {draft.cancelReasons.map((reason, i) => (
+                            <p key={i} className="text-xs text-gray-400">
+                              {reason}
+                            </p>
+                          ))}
+                        </div>
+
+                        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-600">
+                          <span>
+                            {draft.playerCount}/{draft.minimumPlayers} players
+                          </span>
+                          <span>{draft.assignedCount} on teams</span>
+                          <span>{draft.captainCount}/2 captains</span>
+                          <span>{draft.selectedClassCount} classes picked</span>
+                          <span>{draft.fightCount} fights</span>
+                        </div>
+
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-600">
+                          {draft.discordGuildName && (
+                            <span>{draft.discordGuildName}</span>
+                          )}
+                          {draft.createdByDisplayName && (
+                            <span>Created by {draft.createdByDisplayName}</span>
+                          )}
+                          <span>{formatTimestamp(draft._creationTime)}</span>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={() => openCancelConfirm(draft.shortId)}
+                            disabled={isActive}
+                            className="rounded-md border border-gray-700 px-3 py-1.5 text-xs text-gray-400 transition-colors hover:border-red-800/60 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Cancel Draft
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -1392,9 +1556,173 @@ export default function AdminDraftModerationClient() {
                 </div>
               )}
             </section>
+
+            {cancelledDrafts.length > 0 && (
+              <section>
+                <button
+                  type="button"
+                  onClick={() => setShowCancelledArchive((v) => !v)}
+                  className="mb-2 flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  {showCancelledArchive ? (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  )}
+                  Cancelled archive (last 90 days)
+                  <span className="text-xs font-normal text-gray-600">
+                    {cancelledDrafts.length}
+                  </span>
+                </button>
+                {showCancelledArchive && (
+                  <div className="space-y-1 rounded-md border border-gray-800/60 p-3">
+                    {cancelledDrafts.map((entry) => {
+                      const ago = Math.floor(
+                        (Date.now() - entry.cancelledAt) / 60000
+                      );
+                      const agoLabel =
+                        ago < 1
+                          ? "just now"
+                          : ago === 1
+                            ? "1 minute ago"
+                            : `${ago} minutes ago`;
+                      return (
+                        <div
+                          key={`cancelled-${entry.shortId}-${entry.cancelledAt}`}
+                          className="flex items-center justify-between gap-3 rounded px-2 py-1.5 text-xs text-gray-500"
+                        >
+                          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                            <span className="font-mono text-gray-400">
+                              {entry.shortId}
+                            </span>
+                            <span>
+                              {entry.playerCount} players
+                            </span>
+                            <span>· {entry.fightCount} fights</span>
+                            {entry.discordGuildName && (
+                              <span>· {entry.discordGuildName}</span>
+                            )}
+                            {entry.createdByDisplayName && (
+                              <span>· by {entry.createdByDisplayName}</span>
+                            )}
+                            {entry.cancelReason && (
+                              <span>· {entry.cancelReason}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-gray-600">{agoLabel}</span>
+                            <button
+                              type="button"
+                              onClick={() => openRestoreConfirm(entry.shortId)}
+                              disabled={activeDraft === entry.shortId}
+                              className="rounded border border-gray-700 px-2 py-1 text-[11px] text-gray-300 hover:border-gray-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Restore
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <p className="mt-1 px-2 text-[11px] text-gray-600">
+                      Archive keeps cancelled drafts for 90 days.
+                    </p>
+                  </div>
+                )}
+              </section>
+            )}
           </div>
         )}
+
+        <Dialog
+          open={!!confirmAction}
+          onOpenChange={(open) => {
+            if (!open) {
+              setConfirmAction(null);
+              setConfirmText("");
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{confirmAction?.title}</DialogTitle>
+              <DialogDescription>{confirmAction?.description}</DialogDescription>
+            </DialogHeader>
+            <div className="mt-3 space-y-2">
+              <p className="text-xs text-gray-400">
+                Type <span className="font-mono text-gray-200">{confirmAction?.shortId}</span> to continue.
+              </p>
+              <Input
+                value={confirmText}
+                onChange={(event) => setConfirmText(event.target.value)}
+                placeholder={confirmAction?.shortId ?? ""}
+              />
+            </div>
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmAction(null);
+                  setConfirmText("");
+                }}
+                className="rounded-md border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-gray-500"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAction}
+                className="rounded-md border border-gray-700 px-3 py-1.5 text-xs text-gray-200 hover:border-gray-500"
+              >
+                {confirmAction?.confirmLabel ?? "Confirm"}
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
+    </div>
+  );
+}
+
+const DRAFT_STAGES = [
+  { key: "setup", label: "Setup" },
+  { key: "coin_flip", label: "Coin flip" },
+  { key: "realm_pick", label: "Realm pick" },
+  { key: "banning", label: "Banning" },
+  { key: "drafting", label: "Drafting" },
+] as const;
+
+function DraftFlowIndicator({ status }: { status: string }) {
+  const currentIndex = DRAFT_STAGES.findIndex((s) => s.key === status);
+  if (currentIndex === -1) return null;
+
+  return (
+    <div className="flex items-center gap-0.5 flex-wrap">
+      {DRAFT_STAGES.map((stage, i) => {
+        const isReached = i <= currentIndex;
+        const isCurrent = i === currentIndex;
+        return (
+          <div key={stage.key} className="flex items-center gap-0.5">
+            {i > 0 && (
+              <span
+                className={`mx-0.5 text-[10px] ${isReached ? "text-gray-500" : "text-gray-700"}`}
+              >
+                &rarr;
+              </span>
+            )}
+            <span
+              className={`rounded px-1.5 py-0.5 text-[10px] ${
+                isCurrent
+                  ? "bg-indigo-900/30 border border-indigo-700/40 text-indigo-300 font-medium"
+                  : isReached
+                    ? "text-gray-400"
+                    : "text-gray-700"
+              }`}
+            >
+              {stage.label}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
