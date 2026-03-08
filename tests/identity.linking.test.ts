@@ -679,9 +679,11 @@ test("admin drafts rejects unauthenticated requests", async () => {
   const handler = createAdminDraftsHandler({
     getAuthUserId: () => null,
     isAdminUserId: () => true,
+    purgeExpiredCancelledDrafts: async () => ({ deletedDrafts: 0, retentionDays: 90 }),
     listPendingDrafts: async () => [],
     listReviewedDrafts: async () => [],
     listCancelableDrafts: async () => [],
+    listCancelledDrafts: async () => [],
   });
 
   const req = createMockRequest({ method: "GET" });
@@ -696,9 +698,11 @@ test("admin drafts rejects non-admin requests", async () => {
   const handler = createAdminDraftsHandler({
     getAuthUserId: () => "user_1",
     isAdminUserId: () => false,
+    purgeExpiredCancelledDrafts: async () => ({ deletedDrafts: 0, retentionDays: 90 }),
     listPendingDrafts: async () => [],
     listReviewedDrafts: async () => [],
     listCancelableDrafts: async () => [],
+    listCancelledDrafts: async () => [],
   });
 
   const req = createMockRequest({ method: "GET" });
@@ -757,12 +761,20 @@ test("admin drafts returns pending, reviewed, and cancelable draft lists for adm
       ageMinutes: 90,
     },
   ];
+  const cancelledDrafts = [
+    {
+      shortId: "archive123",
+      cancelledAt: Date.now(),
+    },
+  ];
   const handler = createAdminDraftsHandler({
     getAuthUserId: () => "admin_1",
     isAdminUserId: () => true,
+    purgeExpiredCancelledDrafts: async () => ({ deletedDrafts: 0, retentionDays: 90 }),
     listPendingDrafts: async () => pendingDrafts,
     listReviewedDrafts: async () => reviewedDrafts,
     listCancelableDrafts: async () => cancelableDrafts,
+    listCancelledDrafts: async () => cancelledDrafts,
   });
 
   const req = createMockRequest({ method: "GET" });
@@ -770,7 +782,12 @@ test("admin drafts returns pending, reviewed, and cancelable draft lists for adm
   await handler(req, res);
 
   assert.equal(res.statusCode, 200);
-  assert.deepEqual(res.body, { pendingDrafts, reviewedDrafts, cancelableDrafts });
+  assert.deepEqual(res.body, {
+    pendingDrafts,
+    reviewedDrafts,
+    cancelableDrafts,
+    cancelledDrafts,
+  });
 });
 
 test("moderate draft rejects non-admin requests", async () => {
