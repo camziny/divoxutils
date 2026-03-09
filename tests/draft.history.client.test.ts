@@ -2,9 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   filterDraftRowsByDiscordServer,
+  getDraftHistoryUrl,
   getDraftHistoryFilterUrl,
   getDiscordServerFilterOptions,
   getNormalizedFightIndex,
+  parseDraftHistoryPage,
 } from "../src/app/draft-history/DraftHistoryClient";
 
 test("getNormalizedFightIndex defaults to first fight when no selected index", () => {
@@ -80,10 +82,38 @@ test("getDraftHistoryFilterUrl sets and clears server query param", () => {
   );
   assert.equal(
     getDraftHistoryFilterUrl("/draft-history", "page=2", "g2"),
-    "/draft-history?page=2&server=g2"
+    "/draft-history?server=g2"
   );
   assert.equal(
     getDraftHistoryFilterUrl("/draft-history", "page=2&server=g2", "all"),
-    "/draft-history?page=2"
+    "/draft-history"
+  );
+});
+
+test("parseDraftHistoryPage normalizes invalid values", () => {
+  assert.equal(parseDraftHistoryPage(null), 1);
+  assert.equal(parseDraftHistoryPage(""), 1);
+  assert.equal(parseDraftHistoryPage("abc"), 1);
+  assert.equal(parseDraftHistoryPage("0"), 1);
+  assert.equal(parseDraftHistoryPage("-2"), 1);
+  assert.equal(parseDraftHistoryPage("3"), 3);
+});
+
+test("getDraftHistoryUrl includes page only when greater than 1", () => {
+  assert.equal(
+    getDraftHistoryUrl("/draft-history", "", "all", 1),
+    "/draft-history"
+  );
+  assert.equal(
+    getDraftHistoryUrl("/draft-history", "", "g1", 1),
+    "/draft-history?server=g1"
+  );
+  assert.equal(
+    getDraftHistoryUrl("/draft-history", "", "all", 3),
+    "/draft-history?page=3"
+  );
+  assert.equal(
+    getDraftHistoryUrl("/draft-history", "foo=bar", "g2", 4),
+    "/draft-history?foo=bar&server=g2&page=4"
   );
 });

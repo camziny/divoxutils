@@ -51,10 +51,18 @@ export function filterDraftRowsByDiscordServer(
     : rows.filter((row) => row.discordGuildId === selectedGuildId);
 }
 
-export function getDraftHistoryFilterUrl(
+export function parseDraftHistoryPage(pageParam: string | null): number {
+  if (!pageParam) return 1;
+  const parsed = Number(pageParam);
+  if (!Number.isInteger(parsed) || parsed < 1) return 1;
+  return parsed;
+}
+
+export function getDraftHistoryUrl(
   pathname: string,
   searchParamsString: string,
-  selectedGuildId: string
+  selectedGuildId: string,
+  page: number
 ) {
   const nextParams = new URLSearchParams(searchParamsString);
   if (selectedGuildId === "all") {
@@ -62,8 +70,21 @@ export function getDraftHistoryFilterUrl(
   } else {
     nextParams.set("server", selectedGuildId);
   }
+  if (page <= 1) {
+    nextParams.delete("page");
+  } else {
+    nextParams.set("page", String(page));
+  }
   const query = nextParams.toString();
   return query ? `${pathname}?${query}` : pathname;
+}
+
+export function getDraftHistoryFilterUrl(
+  pathname: string,
+  searchParamsString: string,
+  selectedGuildId: string
+) {
+  return getDraftHistoryUrl(pathname, searchParamsString, selectedGuildId, 1);
 }
 
 function formatDate(ms: number) {
@@ -84,7 +105,8 @@ export default function DraftHistoryClient({
   const safePathname = pathname ?? "/draft-history";
   const searchParams = useSearchParams();
   const searchParamsString = searchParams?.toString() ?? "";
-  const [currentPage, setCurrentPage] = useState(1);
+  const pageFromUrl = parseDraftHistoryPage(searchParams?.get("page") ?? null);
+  const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const [expandedShortIds, setExpandedShortIds] = useState<Set<string>>(
     new Set()
   );
@@ -134,6 +156,10 @@ export default function DraftHistoryClient({
   }, [initialRows]);
 
   useEffect(() => {
+    setCurrentPage(pageFromUrl);
+  }, [pageFromUrl]);
+
+  useEffect(() => {
     if (totalPages === 0) {
       if (currentPage !== 1) setCurrentPage(1);
       return;
@@ -142,14 +168,19 @@ export default function DraftHistoryClient({
   }, [currentPage, totalPages]);
 
   useEffect(() => {
-    if (selectedGuildIdFromUrl === selectedGuildId) return;
-    const nextUrl = getDraftHistoryFilterUrl(
+    const nextUrl = getDraftHistoryUrl(
       safePathname,
       searchParamsString,
-      selectedGuildId
+      selectedGuildId,
+      currentPage
     );
-    router.replace(nextUrl, { scroll: false });
-  }, [router, safePathname, searchParamsString, selectedGuildId, selectedGuildIdFromUrl]);
+    const currentUrl = searchParamsString
+      ? `${safePathname}?${searchParamsString}`
+      : safePathname;
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [currentPage, router, safePathname, searchParamsString, selectedGuildId]);
 
   const toggle = (id: string, row: DraftLogRow) => {
     const fights = row.fights ?? [];
