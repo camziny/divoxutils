@@ -71,11 +71,12 @@ export function createLinkedProfilesHandler(deps: LinkedProfilesHandlerDeps) {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const discordUserIds = Array.isArray(req.body?.discordUserIds)
-      ? req.body.discordUserIds.filter((value: unknown): value is string => {
-          return typeof value === "string" && value.trim().length > 0;
-        })
+    const rawDiscordUserIds: unknown[] = Array.isArray(req.body?.discordUserIds)
+      ? (req.body.discordUserIds as unknown[])
       : [];
+    const discordUserIds: string[] = rawDiscordUserIds.filter(
+      (value): value is string => typeof value === "string" && value.trim().length > 0
+    );
 
     if (discordUserIds.length === 0) {
       return res.status(200).json({ links: {} });
@@ -125,21 +126,21 @@ export function createLinkedProfilesHandler(deps: LinkedProfilesHandlerDeps) {
           }
         }
         const highestRankByClass: Record<string, HighestRankEntry> = {};
-        for (const [className, points] of highestPointsByClass.entries()) {
+        highestPointsByClass.forEach((points, className) => {
           const rank = getRealmRankForPoints(points);
           highestRankByClass[className] = {
             rank,
             formattedRank: formatRealmRankWithLevel(rank),
           };
-        }
+        });
         const highestRankByClassRealm: Record<string, HighestRankEntry> = {};
-        for (const [realmClassKey, points] of highestPointsByClassRealm.entries()) {
+        highestPointsByClassRealm.forEach((points, realmClassKey) => {
           const rank = getRealmRankForPoints(points);
           highestRankByClassRealm[realmClassKey] = {
             rank,
             formattedRank: formatRealmRankWithLevel(rank),
           };
-        }
+        });
         byDiscordUserId[link.providerUserId] = {
           profileName,
           characterListUrl: `/user/${encodeURIComponent(profileName)}/characters`,
