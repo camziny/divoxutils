@@ -1798,6 +1798,7 @@ export const getCompletedDraftResults = query({
         bans: bans.map((b) => ({
           team: b.team,
           className: b.className,
+          source: b.source,
         })),
       });
     }
@@ -2399,9 +2400,11 @@ export const seedVerifiedDraft = mutation({
         v.object({
           team: v.union(v.literal(1), v.literal(2)),
           className: v.string(),
+          source: v.optional(v.union(v.literal("captain"), v.literal("auto"))),
         })
       )
     ),
+    fightCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const draftType = args.type ?? "traditional";
@@ -2432,8 +2435,13 @@ export const seedVerifiedDraft = mutation({
     if (args.team2Realm) draftData.team2Realm = args.team2Realm;
     const draftId = await ctx.db.insert("drafts", draftData);
 
+    const insertedPlayers: Array<{
+      _id: Id<"draftPlayers">;
+      discordUserId: string;
+      team: 1 | 2;
+    }> = [];
     for (const player of args.players) {
-      await ctx.db.insert("draftPlayers", {
+      const playerId = await ctx.db.insert("draftPlayers", {
         draftId,
         discordUserId: player.discordUserId,
         displayName: player.displayName,
@@ -2441,6 +2449,11 @@ export const seedVerifiedDraft = mutation({
         team: player.team,
         isCaptain: player.isCaptain,
         token: `seed-${args.shortId}-${player.discordUserId}`,
+      });
+      insertedPlayers.push({
+        _id: playerId,
+        discordUserId: player.discordUserId,
+        team: player.team,
       });
     }
 
@@ -2450,9 +2463,89 @@ export const seedVerifiedDraft = mutation({
           draftId,
           team: ban.team,
           className: ban.className,
+          source: ban.source,
         });
       }
     }
+
+    const draftBans = await ctx.db
+      .query("draftBans")
+      .withIndex("by_draft", (q) => q.eq("draftId", draftId))
+      .collect();
+    const bannedClassNames = new Set(
+      draftBans.map((ban) => ban.className.replace(/\s*\((?:Alb|Mid|Hib)\)$/, ""))
+    );
+
+    const fightCount = Math.max(1, Math.min(5, Math.floor(args.fightCount ?? 3)));
+    const otherTeam: 1 | 2 = args.winnerTeam === 1 ? 2 : 1;
+    const winnerPatternByCount: Record<number, (1 | 2)[]> = {
+      1: [args.winnerTeam],
+      2: [args.winnerTeam, args.winnerTeam],
+      3: [args.winnerTeam, args.winnerTeam, args.winnerTeam],
+      4: [args.winnerTeam, otherTeam, args.winnerTeam, args.winnerTeam],
+      5: [args.winnerTeam, otherTeam, args.winnerTeam, otherTeam, args.winnerTeam],
+    };
+    const winnerPattern = winnerPatternByCount[fightCount];
+
+    function randomFrom<T>(items: T[]) {
+      return items[Math.floor(Math.random() * items.length)];
+    }
+
+    function classPoolForPlayer(player: { team: 1 | 2 }) {
+      if (draftType === "pvp") {
+        return allClasses;
+      }
+      const playerRealm = player.team === 1 ? draftData.team1Realm : draftData.team2Realm;
+      return classesByRealm[playerRealm] ?? allClasses;
+    }
+
+    let team1FightWins = 0;
+    let team2FightWins = 0;
+    let lastFightClassesByPlayer: Array<{
+      playerId: Id<"draftPlayers">;
+      discordUserId: string;
+      className: string;
+    }> = [];
+    for (let i = 0; i < fightCount; i += 1) {
+      const winnerTeam = winnerPattern[i];
+      if (winnerTeam === 1) {
+        team1FightWins += 1;
+      } else {
+        team2FightWins += 1;
+      }
+
+      const classesByPlayer = insertedPlayers.map((player) => {
+        const classPool = classPoolForPlayer(player).filter(
+          (className) => !bannedClassNames.has(className)
+        );
+        const fallbackPool = classPool.length > 0 ? classPool : classPoolForPlayer(player);
+        const className = randomFrom(fallbackPool);
+        return {
+          playerId: player._id,
+          discordUserId: player.discordUserId,
+          className,
+        };
+      });
+      lastFightClassesByPlayer = classesByPlayer;
+
+      await ctx.db.insert("draftFights", {
+        draftId,
+        fightNumber: i + 1,
+        winnerTeam,
+        classesByPlayer,
+        submittedBy: args.createdBy,
+      });
+    }
+
+    for (const classEntry of lastFightClassesByPlayer) {
+      await ctx.db.patch(classEntry.playerId, { selectedClass: classEntry.className });
+    }
+
+    await ctx.db.patch(draftId, {
+      team1FightWins,
+      team2FightWins,
+      setScore: buildSetScore(team1FightWins, team2FightWins),
+    });
 
     return { draftId, shortId: args.shortId };
   },

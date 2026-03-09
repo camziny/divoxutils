@@ -115,6 +115,7 @@ export type DraftLogRow = {
   team2Realm?: string;
   players: Array<{
     discordUserId: string;
+    clerkUserId?: string;
     displayName: string;
     avatarUrl?: string;
     team?: 1 | 2;
@@ -123,6 +124,7 @@ export type DraftLogRow = {
   bans: Array<{
     team: 1 | 2;
     className: string;
+    source?: "captain" | "auto";
   }>;
   fights: Array<{
     fightNumber: number;
@@ -130,9 +132,11 @@ export type DraftLogRow = {
     classesByPlayer: Array<{
       playerId: string;
       discordUserId: string;
+      clerkUserId?: string;
       className: string;
       substituteMode?: "known" | "manual";
       substituteDiscordUserId?: string;
+      substituteClerkUserId?: string;
       substituteDisplayName?: string;
       substituteAvatarUrl?: string;
     }>;
@@ -1101,8 +1105,43 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
     bans?: Array<{
       team: 1 | 2;
       className: string;
+      source?: "captain" | "auto";
     }>;
   }>;
+  const relevantDiscordUserIds = new Set<string>();
+  for (const draft of completedDrafts) {
+    for (const player of draft.players) {
+      relevantDiscordUserIds.add(player.discordUserId);
+    }
+    for (const fight of draft.fights ?? []) {
+      for (const classEntry of fight.classesByPlayer) {
+        if (classEntry.substituteDiscordUserId) {
+          relevantDiscordUserIds.add(classEntry.substituteDiscordUserId);
+        }
+      }
+    }
+  }
+
+  const identityLinks =
+    relevantDiscordUserIds.size === 0
+      ? []
+      : await prisma.userIdentityLink.findMany({
+          where: {
+            provider: "discord",
+            status: "linked",
+            providerUserId: {
+              in: Array.from(relevantDiscordUserIds),
+            },
+          },
+          select: {
+            providerUserId: true,
+            clerkUserId: true,
+          },
+        });
+  const clerkByDiscordUserId = new Map<string, string>();
+  for (const link of identityLinks) {
+    clerkByDiscordUserId.set(link.providerUserId, link.clerkUserId);
+  }
 
   return completedDrafts
     .filter(
@@ -1137,9 +1176,21 @@ export async function getDraftLogRows(): Promise<DraftLogRow[]> {
         createdAtMs: draft._creationTime ?? 0,
         team1Realm: draft.team1Realm,
         team2Realm: draft.team2Realm,
-        players: draft.players,
+        players: draft.players.map((player) => ({
+          ...player,
+          clerkUserId: clerkByDiscordUserId.get(player.discordUserId),
+        })),
         bans: draft.bans ?? [],
-        fights: draft.fights ?? [],
+        fights: (draft.fights ?? []).map((fight) => ({
+          ...fight,
+          classesByPlayer: fight.classesByPlayer.map((entry) => ({
+            ...entry,
+            clerkUserId: clerkByDiscordUserId.get(entry.discordUserId),
+            substituteClerkUserId: entry.substituteDiscordUserId
+              ? clerkByDiscordUserId.get(entry.substituteDiscordUserId)
+              : undefined,
+          })),
+        })),
       };
     });
 }

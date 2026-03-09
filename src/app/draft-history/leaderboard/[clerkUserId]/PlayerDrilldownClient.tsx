@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import Image from "next/image";
 import {
   ResponsiveContainer,
@@ -493,9 +494,10 @@ export default function PlayerDrilldownClient({
                                 />
                                 {row.isVerified ? (
                                   <Link
-                                    href={`/draft-history/leaderboard/${encodeURIComponent(
-                                      row.clerkUserId
-                                    )}`}
+                                    href={getLeaderboardProfileHref(
+                                      row.clerkUserId,
+                                      row.userName
+                                    )}
                                     className="truncate text-[11px] text-gray-300 hover:text-white"
                                   >
                                     {row.userName}
@@ -622,9 +624,10 @@ export default function PlayerDrilldownClient({
                       />
                       {row.opponentIsVerified ? (
                         <Link
-                          href={`/draft-history/leaderboard/${encodeURIComponent(
-                            row.opponentClerkUserId
-                          )}`}
+                          href={getLeaderboardProfileHref(
+                            row.opponentClerkUserId,
+                            row.opponentName
+                          )}
                           className="truncate text-xs text-gray-300 hover:text-white"
                         >
                           {row.opponentName}
@@ -715,7 +718,10 @@ export default function PlayerDrilldownClient({
                 return (
                   <Link
                     key={row.opponentClerkUserId}
-                    href={`/draft-history/leaderboard/${row.opponentClerkUserId}`}
+                    href={getLeaderboardProfileHref(
+                      row.opponentClerkUserId,
+                      row.opponentName
+                    )}
                     className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
                   >
                     {rowContent}
@@ -788,9 +794,10 @@ export default function PlayerDrilldownClient({
                           />
                           {row.teammateIsVerified ? (
                             <Link
-                              href={`/draft-history/leaderboard/${encodeURIComponent(
-                                row.teammateClerkUserId
-                              )}`}
+                              href={getLeaderboardProfileHref(
+                                row.teammateClerkUserId,
+                                row.teammateName
+                              )}
                               className="truncate text-xs text-gray-300 hover:text-white"
                             >
                               {row.teammateName}
@@ -878,7 +885,10 @@ export default function PlayerDrilldownClient({
                   return (
                     <Link
                       key={row.teammateClerkUserId}
-                      href={`/draft-history/leaderboard/${row.teammateClerkUserId}`}
+                      href={getLeaderboardProfileHref(
+                        row.teammateClerkUserId,
+                        row.teammateName
+                      )}
                       className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
                     >
                       {rowContent}

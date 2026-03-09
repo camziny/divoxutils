@@ -1,22 +1,15 @@
 import { getPlayerDraftDrilldownStats } from "@/server/draftStats";
+import { getClerkUserIdFromLeaderboardParam } from "@/lib/draftHistoryLeaderboardPath";
 import PlayerDrilldownClient from "./PlayerDrilldownClient";
 
 export const revalidate = 60;
-
-function decodePlayerId(value: string) {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
 
 export default async function PlayerDrilldownPage({
   params,
 }: {
   params: { clerkUserId: string };
 }) {
-  const playerId = decodePlayerId(params.clerkUserId);
+  const playerId = getClerkUserIdFromLeaderboardParam(params.clerkUserId);
   const drilldown = await getPlayerDraftDrilldownStats(playerId, {});
 
   return (

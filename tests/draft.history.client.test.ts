@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   filterDraftRowsByDiscordServer,
+  formatAutoBanSummary,
+  getDraftHistoryBanSections,
   getDraftHistoryUrl,
   getDraftHistoryFilterUrl,
   getDiscordServerFilterOptions,
@@ -115,5 +117,57 @@ test("getDraftHistoryUrl includes page only when greater than 1", () => {
   assert.equal(
     getDraftHistoryUrl("/draft-history", "foo=bar", "g2", 4),
     "/draft-history?foo=bar&server=g2&page=4"
+  );
+});
+
+test("getDraftHistoryBanSections separates auto-bans from team bans", () => {
+  const bans = [
+    { team: 1, className: "Cleric", source: "captain" },
+    { team: 2, className: "Bard", source: "captain" },
+    { team: 1, className: "Paladin", source: "auto" },
+  ] as any;
+
+  const sections = getDraftHistoryBanSections(bans);
+  assert.deepEqual(
+    sections.team1.map((ban: any) => ban.className),
+    ["Cleric"]
+  );
+  assert.deepEqual(
+    sections.team2.map((ban: any) => ban.className),
+    ["Bard"]
+  );
+  assert.deepEqual(
+    sections.auto.map((ban: any) => ban.className),
+    ["Paladin"]
+  );
+});
+
+test("getDraftHistoryBanSections treats legacy source-less bans as team bans", () => {
+  const bans = [
+    { team: 1, className: "Cleric" },
+    { team: 2, className: "Bard" },
+  ] as any;
+
+  const sections = getDraftHistoryBanSections(bans);
+  assert.deepEqual(
+    sections.team1.map((ban: any) => ban.className),
+    ["Cleric"]
+  );
+  assert.deepEqual(
+    sections.team2.map((ban: any) => ban.className),
+    ["Bard"]
+  );
+  assert.deepEqual(sections.auto, []);
+});
+
+test("formatAutoBanSummary stays concise for many auto bans", () => {
+  assert.equal(formatAutoBanSummary([]), null);
+  assert.equal(
+    formatAutoBanSummary(["Cleric", "Bard", "Paladin"]),
+    "Cleric, Bard, Paladin"
+  );
+  assert.equal(
+    formatAutoBanSummary(["Cleric", "Bard", "Paladin", "Skald", "Druid"]),
+    "Cleric, Bard, Paladin +2"
   );
 });
