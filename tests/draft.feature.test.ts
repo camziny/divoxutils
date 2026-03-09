@@ -281,6 +281,7 @@ test("final ban enters drafting with one-time double pick for second team (first
         type: "pvp",
         teamSize: 4,
         firstPickTeam: 1,
+        pickOrderMode: "snake",
         team1CaptainId: "cap1",
         team2CaptainId: "cap2",
         banSequence: [1],
@@ -350,6 +351,7 @@ test("final ban enters drafting with one-time double pick for second team (first
         type: "pvp",
         teamSize: 4,
         firstPickTeam: 2,
+        pickOrderMode: "snake",
         team1CaptainId: "cap1",
         team2CaptainId: "cap2",
         banSequence: [1],
@@ -407,7 +409,7 @@ test("updateSettings applies pvp with valid adjusted team size", async () => {
   const updated = await ctx.db.get("d1");
   assert.equal(updated.type, "pvp");
   assert.equal(updated.teamSize, 3);
-  assert.equal(updated.pickOrderMode, "snake");
+  assert.equal(updated.pickOrderMode, "alternating");
 });
 
 test("updateSettings persists selected pick order mode", async () => {
@@ -1017,6 +1019,130 @@ test("finalizeSetResult finalizes pending winner and blocks further edits", asyn
       token: "creator-token",
     }),
     /Set is already finalized/
+  );
+});
+
+test("setPlayerClass updates recorded fight class for captain team", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-fight-class",
+        shortId: "fight-class",
+        status: "complete",
+        gameStarted: true,
+        createdBy: "creator",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-cap1",
+        draftId: "d-fight-class",
+        token: "cap1-token",
+        discordUserId: "cap1",
+        displayName: "Cap 1",
+        team: 1,
+        isCaptain: true,
+      },
+      {
+        _id: "p-cap2",
+        draftId: "d-fight-class",
+        token: "cap2-token",
+        discordUserId: "cap2",
+        displayName: "Cap 2",
+        team: 2,
+        isCaptain: true,
+      },
+    ],
+    draftFights: [
+      {
+        _id: "fc-1",
+        draftId: "d-fight-class",
+        fightNumber: 1,
+        winnerTeam: 1,
+        classesByPlayer: [
+          { playerId: "p-cap1", discordUserId: "cap1", className: "Armsman" },
+          { playerId: "p-cap2", discordUserId: "cap2", className: "Bard" },
+        ],
+        submittedBy: "creator",
+      },
+    ],
+  });
+
+  await (draftFns.setPlayerClass as any)._handler(ctx, {
+    draftId: "d-fight-class",
+    fightNumber: 1,
+    playerId: "p-cap1",
+    className: "Paladin",
+    token: "cap1-token",
+  });
+
+  const fights = await ctx.db.query("draftFights").collect();
+  const updatedFight = fights.find((fight: any) => fight._id === "fc-1");
+  const playerClass = updatedFight.classesByPlayer.find(
+    (entry: any) => entry.playerId === "p-cap1"
+  );
+  assert.equal(playerClass.className, "Paladin");
+});
+
+test("setPlayerClass rejects recorded fight class edit on opposing team", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-fight-class-2",
+        shortId: "fight-class-2",
+        status: "complete",
+        gameStarted: true,
+        createdBy: "creator",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-cap1",
+        draftId: "d-fight-class-2",
+        token: "cap1-token",
+        discordUserId: "cap1",
+        displayName: "Cap 1",
+        team: 1,
+        isCaptain: true,
+      },
+      {
+        _id: "p-cap2",
+        draftId: "d-fight-class-2",
+        token: "cap2-token",
+        discordUserId: "cap2",
+        displayName: "Cap 2",
+        team: 2,
+        isCaptain: true,
+      },
+    ],
+    draftFights: [
+      {
+        _id: "fc-2",
+        draftId: "d-fight-class-2",
+        fightNumber: 1,
+        winnerTeam: 1,
+        classesByPlayer: [
+          { playerId: "p-cap1", discordUserId: "cap1", className: "Armsman" },
+          { playerId: "p-cap2", discordUserId: "cap2", className: "Bard" },
+        ],
+        submittedBy: "creator",
+      },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.setPlayerClass as any)._handler(ctx, {
+      draftId: "d-fight-class-2",
+      fightNumber: 1,
+      playerId: "p-cap2",
+      className: "Skald",
+      token: "cap1-token",
+    }),
+    /Captains can only set classes for their own team/
   );
 });
 

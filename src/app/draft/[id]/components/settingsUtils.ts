@@ -19,14 +19,17 @@ export function toUserSettingsError(error: unknown): string {
 }
 
 export function getFightSetupMaxViewFightIndex({
+  allowCurrentFightView,
   canRecordFight,
   canEditClasses,
   fightsLength,
 }: {
+  allowCurrentFightView: boolean;
   canRecordFight: boolean;
   canEditClasses: boolean;
   fightsLength: number;
 }): number {
+  if (allowCurrentFightView) return fightsLength;
   if (canRecordFight || canEditClasses) return fightsLength;
   return Math.max(0, fightsLength - 1);
 }

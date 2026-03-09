@@ -35,6 +35,7 @@ test("toUserSettingsError keeps plain errors and fallback", () => {
 test("getFightSetupMaxViewFightIndex keeps captains on upcoming fight setup", () => {
   assert.equal(
     getFightSetupMaxViewFightIndex({
+      allowCurrentFightView: true,
       canRecordFight: false,
       canEditClasses: true,
       fightsLength: 1,
@@ -43,6 +44,7 @@ test("getFightSetupMaxViewFightIndex keeps captains on upcoming fight setup", ()
   );
   assert.equal(
     getFightSetupMaxViewFightIndex({
+      allowCurrentFightView: true,
       canRecordFight: true,
       canEditClasses: false,
       fightsLength: 2,
@@ -51,6 +53,7 @@ test("getFightSetupMaxViewFightIndex keeps captains on upcoming fight setup", ()
   );
   assert.equal(
     getFightSetupMaxViewFightIndex({
+      allowCurrentFightView: false,
       canRecordFight: false,
       canEditClasses: false,
       fightsLength: 3,
@@ -59,10 +62,20 @@ test("getFightSetupMaxViewFightIndex keeps captains on upcoming fight setup", ()
   );
   assert.equal(
     getFightSetupMaxViewFightIndex({
+      allowCurrentFightView: true,
       canRecordFight: false,
       canEditClasses: false,
       fightsLength: 0,
     }),
     0
+  );
+  assert.equal(
+    getFightSetupMaxViewFightIndex({
+      allowCurrentFightView: true,
+      canRecordFight: false,
+      canEditClasses: false,
+      fightsLength: 3,
+    }),
+    3
   );
 });

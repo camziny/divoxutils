@@ -2,8 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CheckCircle2, ChevronRight, Trophy, User } from "lucide-react";
 import { FaDiscord } from "react-icons/fa";
 import DiscordIdentityLinkCard from "./DiscordIdentityLinkCard";
@@ -20,6 +28,44 @@ export function getNormalizedFightIndex(
   return Math.min(Math.max(selectedIndex, 0), fightsLength - 1);
 }
 
+export function getDiscordServerFilterOptions(rows: DraftLogRow[]) {
+  const byGuild = new Map<string, string>();
+  for (const row of rows) {
+    if (!row.discordGuildId) continue;
+    const displayName = row.discordGuildName?.trim() || row.discordGuildId;
+    if (!byGuild.has(row.discordGuildId)) {
+      byGuild.set(row.discordGuildId, displayName);
+    }
+  }
+  return Array.from(byGuild.entries())
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function filterDraftRowsByDiscordServer(
+  rows: DraftLogRow[],
+  selectedGuildId: string
+) {
+  return selectedGuildId === "all"
+    ? rows
+    : rows.filter((row) => row.discordGuildId === selectedGuildId);
+}
+
+export function getDraftHistoryFilterUrl(
+  pathname: string,
+  searchParamsString: string,
+  selectedGuildId: string
+) {
+  const nextParams = new URLSearchParams(searchParamsString);
+  if (selectedGuildId === "all") {
+    nextParams.delete("server");
+  } else {
+    nextParams.set("server", selectedGuildId);
+  }
+  const query = nextParams.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
 function formatDate(ms: number) {
   return new Date(ms).toLocaleDateString("en-US", {
     month: "short",
@@ -33,6 +79,11 @@ export default function DraftHistoryClient({
 }: {
   initialRows: DraftLogRow[];
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const safePathname = pathname ?? "/draft-history";
+  const searchParams = useSearchParams();
+  const searchParamsString = searchParams?.toString() ?? "";
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedShortIds, setExpandedShortIds] = useState<Set<string>>(
     new Set()
@@ -41,15 +92,34 @@ export default function DraftHistoryClient({
     Record<string, number>
   >({});
 
+  const guildOptions = useMemo(
+    () => getDiscordServerFilterOptions(initialRows),
+    [initialRows]
+  );
+  const validGuildIds = useMemo(
+    () => new Set(guildOptions.map((guild) => guild.id)),
+    [guildOptions]
+  );
+  const selectedGuildIdFromUrl = searchParams?.get("server") ?? "all";
+  const selectedGuildId =
+    selectedGuildIdFromUrl === "all" || validGuildIds.has(selectedGuildIdFromUrl)
+      ? selectedGuildIdFromUrl
+      : "all";
+
+  const filteredRows = useMemo(
+    () => filterDraftRowsByDiscordServer(initialRows, selectedGuildId),
+    [initialRows, selectedGuildId]
+  );
+
   const totalPages = useMemo(
-    () => Math.ceil(initialRows.length / ITEMS_PER_PAGE),
-    [initialRows.length]
+    () => Math.ceil(filteredRows.length / ITEMS_PER_PAGE),
+    [filteredRows.length]
   );
 
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return initialRows.slice(start, start + ITEMS_PER_PAGE);
-  }, [initialRows, currentPage]);
+    return filteredRows.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredRows, currentPage]);
 
   const avatarByDiscordUserId = useMemo(() => {
     const map = new Map<string, string>();
@@ -70,6 +140,16 @@ export default function DraftHistoryClient({
     }
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    if (selectedGuildIdFromUrl === selectedGuildId) return;
+    const nextUrl = getDraftHistoryFilterUrl(
+      safePathname,
+      searchParamsString,
+      selectedGuildId
+    );
+    router.replace(nextUrl, { scroll: false });
+  }, [router, safePathname, searchParamsString, selectedGuildId, selectedGuildIdFromUrl]);
 
   const toggle = (id: string, row: DraftLogRow) => {
     const fights = row.fights ?? [];
@@ -107,15 +187,47 @@ export default function DraftHistoryClient({
           Draft History
         </h1>
         <p className="mt-1 text-[13px] text-gray-500">
-          {initialRows.length > 0
-            ? `${initialRows.length} completed draft${initialRows.length !== 1 ? "s" : ""}`
+          {filteredRows.length > 0
+            ? `${filteredRows.length} completed draft${filteredRows.length !== 1 ? "s" : ""}`
             : "All completed drafts"}
         </p>
       </div>
 
-      {initialRows.length === 0 ? (
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <label className="text-xs text-gray-500">
+          Discord server
+        </label>
+        <Select
+          value={selectedGuildId}
+          onValueChange={(value) => {
+            const nextUrl = getDraftHistoryFilterUrl(
+              safePathname,
+              searchParamsString,
+              value
+            );
+            router.replace(nextUrl, { scroll: false });
+            setCurrentPage(1);
+            setExpandedShortIds(new Set());
+            setSelectedFightByShortId({});
+          }}
+        >
+          <SelectTrigger className="h-8 w-auto max-w-[200px] text-xs border-gray-700 bg-gray-800/60">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {guildOptions.map((guild) => (
+              <SelectItem key={guild.id} value={guild.id}>
+                {guild.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {filteredRows.length === 0 ? (
         <div className="rounded-lg border border-gray-800 px-4 py-8 text-center text-sm text-gray-500">
-          No completed drafts yet.
+          No completed drafts for this guild.
         </div>
       ) : (
         <>
