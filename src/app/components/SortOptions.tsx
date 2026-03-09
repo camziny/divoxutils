@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const sortOptions = {
   realm: "Realm",
@@ -8,16 +9,15 @@ const sortOptions = {
   "rank-low-to-high": "Rank (asc)",
 };
 
-type SortOptionKeys = keyof typeof sortOptions;
-
 const SortOptions: React.FC<{
   sortOption: string;
   onSortChange: (option: string) => void;
-}> = ({ sortOption, onSortChange }) => {
+  className?: string;
+}> = ({ sortOption, onSortChange, className }) => {
   const entries = Object.entries(sortOptions);
 
   return (
-    <div className="flex items-center justify-center mb-4">
+    <div className={cn("flex items-center justify-center mb-4", className)}>
       <div className="inline-flex">
         {entries.map(([key, label], index) => (
           <Button

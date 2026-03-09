@@ -13,7 +13,8 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, User } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, User, Share, Check } from "lucide-react";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -59,6 +60,15 @@ export default function PlayerDrilldownClient({
   const [teammateView, setTeammateView] = useState<TeammateView>("winning");
   const [progressAnimate, setProgressAnimate] = useState(false);
   const [teammatesOpen, setTeammatesOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+      toast.success("Draft profile link copied to clipboard");
+    });
+  };
   const [classPopulationRows, setClassPopulationRows] = useState<DraftClassLeaderboardRow[]>([]);
   const [classPopulationLoading, setClassPopulationLoading] = useState(false);
   const classRows = useMemo(
@@ -262,6 +272,25 @@ export default function PlayerDrilldownClient({
             {drilldown.overall.games} verified draft
             {drilldown.overall.games !== 1 ? "s" : ""}
           </p>
+        </div>
+        <div className="ml-auto">
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleShare}
+                  className="flex items-center justify-center text-gray-500 hover:text-gray-300 p-2 rounded-md border border-gray-800 hover:border-gray-700 bg-transparent hover:bg-gray-800/50 transition-colors duration-150"
+                >
+                  {shareCopied
+                    ? <Check size={14} strokeWidth={2} />
+                    : <Share size={14} strokeWidth={2} />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {shareCopied ? "Copied!" : "Copy draft profile link"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 

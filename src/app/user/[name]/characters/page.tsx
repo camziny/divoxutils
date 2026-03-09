@@ -4,10 +4,12 @@ import { PageReload } from "@/app/components/PageReload";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
 import type { Metadata, ResolvingMetadata } from "next";
-import ShareProfileButton from "@/app/components/ShareProfileButton";
 import SupporterBadge from "@/app/components/SupporterBadge";
+import ShareProfileButton from "@/app/components/ShareProfileButton";
+import DraftProfileButton from "@/app/components/DraftProfileButton";
 import { headers } from "next/headers";
 import prisma from "../../../../../prisma/prismaClient";
+import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 
 const CharacterListOptimized = dynamic(
   () => import("@/app/components/CharacterListOptimized"),
@@ -111,37 +113,47 @@ const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => 
 
   const clerkUserId = user.clerkUserId;
 
-  let characters = [];
-  try {
-    characters = await fetchCharactersForUser(clerkUserId);
-  } catch (error) {
-    console.error("Error fetching characters:", error);
-  }
+  const [characters, identityLink] = await Promise.all([
+    fetchCharactersForUser(clerkUserId).catch((error) => {
+      console.error("Error fetching characters:", error);
+      return [];
+    }),
+    prisma.userIdentityLink.findFirst({
+      where: {
+        clerkUserId,
+        provider: "discord",
+        status: "linked",
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  const draftProfileHref = identityLink
+    ? getLeaderboardProfileHref(clerkUserId, user.name ?? undefined)
+    : undefined;
 
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
-      <div className="relative">
-        <div className="absolute top-4 right-4 z-10">
-          <ShareProfileButton username={user?.name ?? ''} />
-        </div>
-        
-        <div className="p-4 md:p-8 lg:p-12">
-          <div className="max-w-screen-lg mx-auto">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl sm:text-3xl font-semibold text-white inline-flex items-center justify-center gap-2">
-                {user.name}
-                {user.supporterTier > 0 && <SupporterBadge tier={user.supporterTier} size="md" />}
-              </h1>
+      <div className="p-4 md:p-8 lg:p-12">
+        <div className="max-w-screen-lg mx-auto">
+          <div className="relative flex items-center justify-center mb-6">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-white inline-flex items-center gap-2">
+              {user.name}
+              {user.supporterTier > 0 && <SupporterBadge tier={user.supporterTier} size="md" />}
+            </h1>
+            <div className="absolute right-0 flex items-center gap-1.5">
+              {draftProfileHref && <DraftProfileButton href={draftProfileHref} />}
+              <ShareProfileButton username={user.name ?? ''} />
             </div>
-            <PageReload />
-            <Suspense fallback={<Loading />}>
-              <CharacterListOptimized
-                characters={characters}
-                searchParams={resolvedSearchParams}
-                showDelete={false}
-              />
-            </Suspense>
           </div>
+          <PageReload />
+          <Suspense fallback={<Loading />}>
+            <CharacterListOptimized
+              characters={characters}
+              searchParams={resolvedSearchParams}
+              showDelete={false}
+            />
+          </Suspense>
         </div>
       </div>
     </div>
