@@ -145,15 +145,16 @@ export default function DraftTestPage() {
           (p) => p.discordUserId === "player_0"
         )?.token;
 
-        if (modePreset === "pvp" && creatorToken) {
+        if (creatorToken) {
           const adjustedTeamSize = Math.max(
             2,
             Math.min(8, Math.floor(players.length / 2))
           );
           await updateSettings({
             draftId: result.draftId,
-            type: "pvp",
+            type: modePreset === "pvp" ? "pvp" : "traditional",
             teamSize: adjustedTeamSize,
+            pickOrderMode: "alternating",
             token: creatorToken,
           });
         }

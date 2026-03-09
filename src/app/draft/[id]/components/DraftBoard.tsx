@@ -323,7 +323,7 @@ export default function DraftBoard({
     void applySettings(
       draft.type,
       targetTeamSize,
-      draft.pickOrderMode ?? "snake"
+      draft.pickOrderMode ?? "alternating"
     );
   }, [
     applySettings,
@@ -484,13 +484,13 @@ export default function DraftBoard({
               return applySettings(
                 type,
                 adjustedTeamSize,
-                draft.pickOrderMode ?? "snake"
+                draft.pickOrderMode ?? "alternating"
               );
             }
             return applySettings(
               type,
               draft.teamSize,
-              draft.pickOrderMode ?? "snake"
+              draft.pickOrderMode ?? "alternating"
             );
           }}
           onUpdateSize={(teamSize) => {
@@ -498,7 +498,7 @@ export default function DraftBoard({
             return applySettings(
               draft.type,
               teamSize,
-              draft.pickOrderMode ?? "snake"
+              draft.pickOrderMode ?? "alternating"
             );
           }}
           onUpdatePickOrderMode={(pickOrderMode) => {
@@ -729,8 +729,19 @@ export default function DraftBoard({
             busy={busy}
             onSetPlayerClass={(playerId, className) =>
               act(() =>
-                setPlayerClass({
+                (setPlayerClass as any)({
                   draftId: draft._id,
+                  playerId,
+                  className,
+                  token: token!,
+                })
+              )
+            }
+            onSetFightPlayerClass={(fightNumber, playerId, className) =>
+              act(() =>
+                (setPlayerClass as any)({
+                  draftId: draft._id,
+                  fightNumber,
                   playerId,
                   className,
                   token: token!,
@@ -987,13 +998,13 @@ function SettingsBar({
         </Select>
         <div className="flex flex-col gap-1">
           <Select
-            value={draft.pickOrderMode ?? "snake"}
+            value={draft.pickOrderMode ?? "alternating"}
             onValueChange={(v) => onUpdatePickOrderMode(v as PickOrderMode)}
             disabled={busy}
           >
             <SelectTrigger className="h-8 w-[170px] text-xs border-gray-700 bg-gray-800/60">
               <span className="truncate">
-                {(draft.pickOrderMode ?? "snake") === "alternating"
+                {(draft.pickOrderMode ?? "alternating") === "alternating"
                   ? "Alternating"
                   : "Snake"}
               </span>
@@ -1909,6 +1920,7 @@ function FightClassSetup({
   canRecordWinner,
   busy,
   onSetPlayerClass,
+  onSetFightPlayerClass,
   canRecordFight,
   isClassSnapshotReady,
   onRecordWinner,
@@ -1931,6 +1943,11 @@ function FightClassSetup({
   canRecordWinner: boolean;
   busy: boolean;
   onSetPlayerClass: (playerId: Id<"draftPlayers">, className: string) => void;
+  onSetFightPlayerClass?: (
+    fightNumber: number,
+    playerId: Id<"draftPlayers">,
+    className: string
+  ) => void;
   canRecordFight: boolean;
   isClassSnapshotReady: boolean;
   onRecordWinner: (winnerTeam: 1 | 2) => void;
@@ -1958,6 +1975,7 @@ function FightClassSetup({
   );
 
   const maxViewFightIndex = getFightSetupMaxViewFightIndex({
+    allowCurrentFightView: true,
     canRecordFight,
     canEditClasses,
     fightsLength: fights.length,
@@ -2025,6 +2043,9 @@ function FightClassSetup({
     },
     [viewedFight]
   );
+  const activePlayerDisplayedClass = activePlayer
+    ? displayClassForPlayer(activePlayer)
+    : undefined;
 
   const setClassAndAdvance = useCallback(
     (playerId: Id<"draftPlayers">, className: string) => {
@@ -2036,12 +2057,24 @@ function FightClassSetup({
         currentIndex >= 0 && currentIndex < activeTeamPlayers.length - 1
           ? activeTeamPlayers[currentIndex + 1]
           : null;
-      onSetPlayerClass(playerId, className);
+      if (viewingRecordedFight && viewedFight && onSetFightPlayerClass) {
+        onSetFightPlayerClass(viewedFight.fightNumber, playerId, className);
+      } else {
+        onSetPlayerClass(playerId, className);
+      }
       if (nextPlayer) {
         setActivePlayerId(nextPlayer._id);
       }
     },
-    [activePlayerTeam, onSetPlayerClass, team1.players, team2.players]
+    [
+      activePlayerTeam,
+      onSetFightPlayerClass,
+      onSetPlayerClass,
+      team1.players,
+      team2.players,
+      viewedFight,
+      viewingRecordedFight,
+    ]
   );
 
   return (
@@ -2193,7 +2226,7 @@ function FightClassSetup({
         ))}
       </div>
 
-      {canEditClasses && !viewingRecordedFight && (
+      {canEditClasses && (
       <div className="rounded border border-gray-700/50 p-3 space-y-3">
         <div className="flex items-center gap-2">
           <span className="text-[10px] uppercase tracking-wider text-gray-600 shrink-0">
@@ -2263,7 +2296,7 @@ function FightClassSetup({
                         >
                           {realmClasses.map((className) => {
                             const isBanned = bannedSet.has(className);
-                            const isSelected = activePlayer?.selectedClass === className;
+                            const isSelected = activePlayerDisplayedClass === className;
                             const classAppearsInMultipleRealms = realmsForClass(className).length > 1;
                             const realmAwareMeta =
                               activePlayerOwnedClassesByRealm[`${realm}:${className}`];

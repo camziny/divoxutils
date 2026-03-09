@@ -17,7 +17,7 @@ function generateToken(): string {
 function generatePickSequence(
   teamSize: number,
   firstPickTeam: 1 | 2,
-  mode: "snake" | "alternating" = "snake"
+  mode: "snake" | "alternating" = "alternating"
 ): (1 | 2)[] {
   const totalPicks = (teamSize - 1) * 2;
   const secondPickTeam: 1 | 2 = firstPickTeam === 1 ? 2 : 1;
@@ -221,7 +221,7 @@ export const createDraft = mutation({
       type: "traditional",
       status: "setup",
       teamSize: defaultTeamSize,
-      pickOrderMode: "snake",
+      pickOrderMode: "alternating",
       discordGuildId: args.discordGuildId,
       discordGuildName: args.discordGuildName,
       discordChannelId: args.discordChannelId,
@@ -364,7 +364,7 @@ export const updateSettings = mutation({
     await ctx.db.patch(args.draftId, {
       type: args.type,
       teamSize: args.teamSize,
-      pickOrderMode: args.pickOrderMode ?? draft.pickOrderMode ?? "snake",
+      pickOrderMode: args.pickOrderMode ?? draft.pickOrderMode ?? "alternating",
     });
   },
 });
@@ -654,7 +654,7 @@ export const banClass = mutation({
       const pickSequence = generatePickSequence(
         draft.teamSize,
         draft.firstPickTeam!,
-        draft.pickOrderMode ?? "snake"
+        draft.pickOrderMode ?? "alternating"
       );
       await ctx.db.patch(args.draftId, {
         status: "drafting",
@@ -728,6 +728,7 @@ export const pickPlayer = mutation({
 export const setPlayerClass = mutation({
   args: {
     draftId: v.id("drafts"),
+    fightNumber: v.optional(v.number()),
     playerId: v.id("draftPlayers"),
     className: v.string(),
     token: v.string(),
@@ -759,17 +760,53 @@ export const setPlayerClass = mutation({
       throw new Error("Player is not on a team");
     }
 
+    const callerIsCreator = callerPlayer.discordUserId === draft.createdBy;
     const callerTeam =
       callerPlayer.discordUserId === draft.team1CaptainId
         ? 1
         : callerPlayer.discordUserId === draft.team2CaptainId
           ? 2
           : undefined;
-    if (!callerTeam) {
-      throw new Error("Only captains can set classes");
+    if (!callerTeam && !callerIsCreator) {
+      throw new Error("Only captains or creator can set classes");
     }
-    if (targetPlayer.team !== callerTeam) {
+    if (!callerIsCreator && targetPlayer.team !== callerTeam) {
       throw new Error("Captains can only set classes for their own team");
+    }
+
+    if (args.fightNumber !== undefined) {
+      if (draft.status !== "complete" || !draft.gameStarted) {
+        throw new Error("Fight classes can only be edited during live fights");
+      }
+      if (isSetFinalized(draft)) {
+        throw new Error("Set is already finalized");
+      }
+
+      const fight = await ctx.db
+        .query("draftFights")
+        .withIndex("by_draft_fight", (q) =>
+          q.eq("draftId", args.draftId).eq("fightNumber", args.fightNumber!)
+        )
+        .unique();
+      if (!fight) {
+        throw new Error("Fight not found");
+      }
+
+      const updatedClassesByPlayer = fight.classesByPlayer.map((entry) =>
+        String(entry.playerId) === String(args.playerId)
+          ? { ...entry, className: args.className }
+          : entry
+      );
+      if (
+        !updatedClassesByPlayer.some(
+          (entry) => String(entry.playerId) === String(args.playerId)
+        )
+      ) {
+        throw new Error("Player class entry not found for fight");
+      }
+
+      await ctx.db.patch(fight._id, { classesByPlayer: updatedClassesByPlayer });
+      return;
     }
 
     await ctx.db.patch(args.playerId, { selectedClass: args.className });
