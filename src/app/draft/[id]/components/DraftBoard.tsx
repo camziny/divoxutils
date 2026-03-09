@@ -71,6 +71,17 @@ interface DraftBoardProps {
 }
 
 type PickOrderMode = "snake" | "alternating";
+type HighestRankByClassEntry = {
+  rank: number;
+  formattedRank: string;
+};
+
+type LinkedProfileSummary = {
+  profileName: string;
+  characterListUrl: string;
+  highestRankByClass: Record<string, HighestRankByClassEntry>;
+  highestRankByClassRealm: Record<string, HighestRankByClassEntry>;
+};
 
 const REALM_CLASS_COLORS: Record<
   string,
@@ -135,9 +146,9 @@ export default function DraftBoard({
   } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [autoAdjustedSettingsKey, setAutoAdjustedSettingsKey] = useState<string | null>(null);
-  const [linkedProfiles, setLinkedProfiles] = useState<
-    Record<string, { profileName: string; characterListUrl: string }>
-  >({});
+  const [linkedProfiles, setLinkedProfiles] = useState<Record<string, LinkedProfileSummary>>(
+    {}
+  );
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
   const team1Captain = draft.players.find(
@@ -344,9 +355,7 @@ export default function DraftBoard({
       .then((res) => res.json())
       .then((payload) => {
         if (payload?.links && typeof payload.links === "object") {
-          setLinkedProfiles(
-            payload.links as Record<string, { profileName: string; characterListUrl: string }>
-          );
+          setLinkedProfiles(payload.links as Record<string, LinkedProfileSummary>);
         }
       })
       .catch(() => {
@@ -1914,7 +1923,7 @@ function FightClassSetup({
   team2: { label: string; players: DraftData["players"] };
   fights: DraftData["fights"];
   allPlayers: DraftData["players"];
-  linkedProfiles: Record<string, { profileName: string; characterListUrl: string }>;
+  linkedProfiles: Record<string, LinkedProfileSummary>;
   classOptions: string[];
   bannedClassNames: string[];
   canEditClasses: boolean;
@@ -1971,6 +1980,14 @@ function FightClassSetup({
     team1.players.find((player) => player._id === activePlayerId) ??
     team2.players.find((player) => player._id === activePlayerId) ??
     null;
+  const activePlayerOwnedClasses = useMemo(() => {
+    if (!activePlayer) return {} as Record<string, HighestRankByClassEntry>;
+    return linkedProfiles[activePlayer.discordUserId]?.highestRankByClass ?? {};
+  }, [activePlayer, linkedProfiles]);
+  const activePlayerOwnedClassesByRealm = useMemo(() => {
+    if (!activePlayer) return {} as Record<string, HighestRankByClassEntry>;
+    return linkedProfiles[activePlayer.discordUserId]?.highestRankByClassRealm ?? {};
+  }, [activePlayer, linkedProfiles]);
   const activePlayerTeam = activePlayer
     ? team1.players.some((player) => player._id === activePlayer._id)
       ? 1
@@ -2247,7 +2264,13 @@ function FightClassSetup({
                           {realmClasses.map((className) => {
                             const isBanned = bannedSet.has(className);
                             const isSelected = activePlayer?.selectedClass === className;
-                            return (
+                            const classAppearsInMultipleRealms = realmsForClass(className).length > 1;
+                            const realmAwareMeta =
+                              activePlayerOwnedClassesByRealm[`${realm}:${className}`];
+                            const ownedClassMeta = classAppearsInMultipleRealms
+                              ? realmAwareMeta
+                              : realmAwareMeta ?? activePlayerOwnedClasses[className];
+                            const classButton = (
                               <button
                                 key={className}
                                 type="button"
@@ -2269,12 +2292,35 @@ function FightClassSetup({
                                   !isBanned &&
                                     !isSelected &&
                                     !canPickClass &&
-                                    "text-gray-600"
+                                    "text-gray-600",
+                                  ownedClassMeta &&
+                                    !isBanned &&
+                                    "border-b border-indigo-400/60"
                                 )}
                               >
                                 {className}
                               </button>
                             );
+                            if (ownedClassMeta && !isBanned) {
+                              return (
+                                <TooltipProvider key={className} delayDuration={100}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      {classButton}
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                      side="top"
+                                      className="px-2 py-1 text-[10px]"
+                                    >
+                                      <span className="text-indigo-200">
+                                        {ownedClassMeta.formattedRank}
+                                      </span>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              );
+                            }
+                            return classButton;
                           })}
                         </div>
                       );
