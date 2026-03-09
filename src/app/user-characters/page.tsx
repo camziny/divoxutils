@@ -5,10 +5,12 @@ import { currentUser } from "@clerk/nextjs";
 import { Suspense } from "react";
 import Loading from "../loading";
 import ShareProfileButton from "../components/ShareProfileButton";
+import DraftProfileButton from "../components/DraftProfileButton";
 import SupporterBadge from "../components/SupporterBadge";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import prisma from "../../../prisma/prismaClient";
+import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 
 const CharacterListOptimized = dynamic(
   () => import("../components/CharacterListOptimized"),
@@ -77,13 +79,23 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
     redirect("/sign-in");
   }
 
-  const characters = await fetchCharactersForUser(userId);
+  const [characters, dbUser, identityLink] = await Promise.all([
+    fetchCharactersForUser(userId),
+    prisma.user.findUnique({
+      where: { clerkUserId: userId },
+      select: { supporterTier: true, name: true },
+    }),
+    prisma.userIdentityLink.findFirst({
+      where: { clerkUserId: userId, provider: "discord", status: "linked" },
+      select: { id: true },
+    }),
+  ]);
 
-  const dbUser = await prisma.user.findUnique({
-    where: { clerkUserId: userId },
-    select: { supporterTier: true },
-  });
   const supporterTier = dbUser?.supporterTier ?? 0;
+  const shareUsername = dbUser?.name ?? user?.username ?? "";
+  const draftProfileHref = identityLink
+    ? getLeaderboardProfileHref(userId, dbUser?.name ?? undefined)
+    : undefined;
 
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
@@ -94,7 +106,10 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
               My Characters
               {supporterTier > 0 && <SupporterBadge tier={supporterTier} size="md" />}
             </h1>
-            <ShareProfileButton username={user?.username ?? ''} />
+            <div className="flex items-center gap-1.5">
+              {draftProfileHref && <DraftProfileButton href={draftProfileHref} />}
+              <ShareProfileButton username={shareUsername} />
+            </div>
           </div>
           <CharacterSearchAndAdd />
           <div className="mt-6">

@@ -143,10 +143,14 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     []
   );
 
+  const toolbar = (
+    <SortOptions sortOption={sortOption} onSortChange={handleSortChange} />
+  );
+
   if (sortedCharacters.length === 0) {
     return (
       <div className="flex flex-col items-center w-full max-w-6xl">
-        <SortOptions sortOption={sortOption} onSortChange={handleSortChange} />
+        {toolbar}
         <EmptyState />
       </div>
     );
@@ -154,7 +158,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
 
   return (
     <div className="flex flex-col items-center w-full max-w-6xl">
-      <SortOptions sortOption={sortOption} onSortChange={handleSortChange} />
+      {toolbar}
 
       <div className="hidden sm:block w-full">
         <TableContainer
