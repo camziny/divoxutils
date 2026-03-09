@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { CheckCircle2, ChevronRight, Trophy, User } from "lucide-react";
 import { FaDiscord } from "react-icons/fa";
 import DiscordIdentityLinkCard from "./DiscordIdentityLinkCard";
 import type { DraftLogRow } from "@/server/draftStats";
+import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -49,6 +51,26 @@ export function filterDraftRowsByDiscordServer(
   return selectedGuildId === "all"
     ? rows
     : rows.filter((row) => row.discordGuildId === selectedGuildId);
+}
+
+export function getDraftHistoryBanSections(
+  bans: DraftLogRow["bans"]
+): {
+  team1: DraftLogRow["bans"];
+  team2: DraftLogRow["bans"];
+  auto: DraftLogRow["bans"];
+} {
+  const team1 = bans.filter((ban) => ban.team === 1 && ban.source !== "auto");
+  const team2 = bans.filter((ban) => ban.team === 2 && ban.source !== "auto");
+  const auto = bans.filter((ban) => ban.source === "auto");
+  return { team1, team2, auto };
+}
+
+export function formatAutoBanSummary(classNames: string[], maxVisible = 3) {
+  if (classNames.length === 0) return null;
+  const visible = classNames.slice(0, maxVisible);
+  const remaining = classNames.length - visible.length;
+  return remaining > 0 ? `${visible.join(", ")} +${remaining}` : visible.join(", ");
 }
 
 export function parseDraftHistoryPage(pageParam: string | null): number {
@@ -110,6 +132,9 @@ export default function DraftHistoryClient({
   const [expandedShortIds, setExpandedShortIds] = useState<Set<string>>(
     new Set()
   );
+  const [expandedAutoBansByShortId, setExpandedAutoBansByShortId] = useState<
+    Set<string>
+  >(new Set());
   const [selectedFightByShortId, setSelectedFightByShortId] = useState<
     Record<string, number>
   >({});
@@ -242,7 +267,7 @@ export default function DraftHistoryClient({
             setSelectedFightByShortId({});
           }}
         >
-          <SelectTrigger className="h-8 w-auto max-w-[200px] text-xs border-gray-700 bg-gray-800/60">
+          <SelectTrigger className="h-8 w-[260px] max-w-[75vw] text-xs border-gray-700 bg-gray-800/60 whitespace-nowrap [&>span]:truncate [&>span]:whitespace-nowrap">
             <SelectValue placeholder="All" />
           </SelectTrigger>
           <SelectContent>
@@ -278,6 +303,8 @@ export default function DraftHistoryClient({
                     ? cap2?.displayName
                     : null;
               const fights = row.fights ?? [];
+              const { team1: team1Bans, team2: team2Bans, auto: autoBans } =
+                getDraftHistoryBanSections(row.bans ?? []);
               const selectedFightIndex = getNormalizedFightIndex(
                 fights.length,
                 selectedFightByShortId[row.shortId] ?? 0
@@ -360,6 +387,30 @@ export default function DraftHistoryClient({
                   };
                   return acc;
                 }, {}) ?? {};
+              const selectedFightOccupantClerkUserIdByPlayerId =
+                (selectedFight?.classesByPlayer ?? []).reduce<Record<string, string>>(
+                  (acc, entry) => {
+                    if (entry.playerId && entry.substituteClerkUserId) {
+                      acc[String(entry.playerId)] = entry.substituteClerkUserId;
+                    } else if (entry.playerId && entry.clerkUserId) {
+                      acc[String(entry.playerId)] = entry.clerkUserId;
+                    }
+                    return acc;
+                  },
+                  {}
+                ) ?? {};
+              const selectedFightOccupantClerkUserIdByDiscordUserId =
+                (selectedFight?.classesByPlayer ?? []).reduce<Record<string, string>>(
+                  (acc, entry) => {
+                    if (entry.substituteDiscordUserId && entry.substituteClerkUserId) {
+                      acc[entry.substituteDiscordUserId] = entry.substituteClerkUserId;
+                    } else if (entry.discordUserId && entry.clerkUserId) {
+                      acc[entry.discordUserId] = entry.clerkUserId;
+                    }
+                    return acc;
+                  },
+                  {}
+                ) ?? {};
 
               return (
                 <div
@@ -458,12 +509,18 @@ export default function DraftHistoryClient({
                               ? selectedFight?.winnerTeam === 1
                               : row.winnerTeam === 1
                           }
-                          bans={row.bans.filter((b) => b.team === 1)}
+                          bans={team1Bans}
                           classByDiscordUserId={selectedFightClassesByDiscordUserId}
                           classByPlayerId={selectedFightClassesByPlayerId}
                           occupantNameByPlayerId={selectedFightOccupantNameByPlayerId}
                           occupantNameByDiscordUserId={
                             selectedFightOccupantNameByDiscordUserId
+                          }
+                          occupantClerkUserIdByPlayerId={
+                            selectedFightOccupantClerkUserIdByPlayerId
+                          }
+                          occupantClerkUserIdByDiscordUserId={
+                            selectedFightOccupantClerkUserIdByDiscordUserId
                           }
                           substituteByPlayerId={selectedFightSubstituteByPlayerId}
                           substituteByDiscordUserId={selectedFightSubstituteByDiscordUserId}
@@ -476,17 +533,41 @@ export default function DraftHistoryClient({
                               ? selectedFight?.winnerTeam === 2
                               : row.winnerTeam === 2
                           }
-                          bans={row.bans.filter((b) => b.team === 2)}
+                          bans={team2Bans}
                           classByDiscordUserId={selectedFightClassesByDiscordUserId}
                           classByPlayerId={selectedFightClassesByPlayerId}
                           occupantNameByPlayerId={selectedFightOccupantNameByPlayerId}
                           occupantNameByDiscordUserId={
                             selectedFightOccupantNameByDiscordUserId
                           }
+                          occupantClerkUserIdByPlayerId={
+                            selectedFightOccupantClerkUserIdByPlayerId
+                          }
+                          occupantClerkUserIdByDiscordUserId={
+                            selectedFightOccupantClerkUserIdByDiscordUserId
+                          }
                           substituteByPlayerId={selectedFightSubstituteByPlayerId}
                           substituteByDiscordUserId={selectedFightSubstituteByDiscordUserId}
                         />
                       </div>
+                      {autoBans.length > 0 &&
+                        expandedAutoBansByShortId.has(row.shortId) && (
+                          <div className="mt-3 pt-3 border-t border-gray-800/40">
+                            <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-gray-600">
+                              Auto-banned
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {autoBans.map((ban) => (
+                                <span
+                                  key={ban.className}
+                                  className="inline-flex items-center rounded bg-gray-800/60 border border-gray-700/50 px-2 py-0.5 text-[11px] text-gray-400"
+                                >
+                                  {ban.className}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       <div className="mt-4 pt-3 border-t border-gray-800/40 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[11px]">
                         {row.type === "pvp" ? (
                           <span className="inline-flex items-center rounded bg-indigo-500/10 border border-indigo-400/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300">
@@ -501,6 +582,36 @@ export default function DraftHistoryClient({
                         <span className="text-gray-400">
                           {row.teamSize}v{row.teamSize}
                         </span>
+                        {autoBans.length > 0 ? (
+                          <>
+                            <span className="text-gray-700 select-none">&middot;</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedAutoBansByShortId((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(row.shortId)) {
+                                    next.delete(row.shortId);
+                                  } else {
+                                    next.add(row.shortId);
+                                  }
+                                  return next;
+                                });
+                              }}
+                              className="inline-flex items-center gap-1 rounded border border-gray-700/60 bg-gray-800/40 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 hover:border-gray-600 hover:text-gray-300 transition-colors duration-100"
+                            >
+                              Auto-banned &middot; {autoBans.length}
+                            </button>
+                          </>
+                        ) : null}
+                        <span className="text-gray-700 select-none">&middot;</span>
+                        <span className="inline-flex min-w-0 items-center gap-1.5 text-gray-500">
+                          <User className="w-3 h-3 flex-shrink-0 text-gray-600" />
+                          <span className="truncate max-w-[100px] sm:max-w-[180px]">
+                            {row.createdByDisplayName || row.createdBy}
+                          </span>
+                        </span>
                         {row.discordGuildName && (
                           <>
                             <span className="text-gray-700 select-none">&middot;</span>
@@ -512,13 +623,6 @@ export default function DraftHistoryClient({
                             </span>
                           </>
                         )}
-                        <span className="text-gray-700 select-none">&middot;</span>
-                        <span className="inline-flex min-w-0 items-center gap-1.5 text-gray-500">
-                          <User className="w-3 h-3 flex-shrink-0 text-gray-600" />
-                          <span className="truncate max-w-[100px] sm:max-w-[180px]">
-                            {row.createdByDisplayName || row.createdBy}
-                          </span>
-                        </span>
                         <span className="ml-auto flex-shrink-0">
                           {row.resultStatus === "verified" ? (
                             <span className="inline-flex items-center gap-1 text-[10px] font-medium text-indigo-400">
@@ -565,6 +669,8 @@ function TeamPanel({
   classByPlayerId,
   occupantNameByPlayerId,
   occupantNameByDiscordUserId,
+  occupantClerkUserIdByPlayerId,
+  occupantClerkUserIdByDiscordUserId,
   substituteByPlayerId,
   substituteByDiscordUserId,
 }: {
@@ -572,6 +678,7 @@ function TeamPanel({
   players: Array<{
     _id?: string;
     discordUserId: string;
+    clerkUserId?: string;
     displayName: string;
     avatarUrl?: string;
     isCaptain: boolean;
@@ -582,6 +689,8 @@ function TeamPanel({
   classByPlayerId: Record<string, string>;
   occupantNameByPlayerId: Record<string, string>;
   occupantNameByDiscordUserId: Record<string, string>;
+  occupantClerkUserIdByPlayerId: Record<string, string>;
+  occupantClerkUserIdByDiscordUserId: Record<string, string>;
   substituteByPlayerId: Record<string, { displayName: string; avatarUrl?: string }>;
   substituteByDiscordUserId: Record<string, { displayName: string; avatarUrl?: string }>;
 }) {
@@ -622,6 +731,12 @@ function TeamPanel({
               occupantNameByDiscordUserId[p.discordUserId] ??
               p.displayName;
             const resolvedAvatarUrl = substitute ? substitute.avatarUrl : p.avatarUrl;
+            const substituteClerkUserId =
+              occupantClerkUserIdByPlayerId[p._id ?? ""] ??
+              occupantClerkUserIdByDiscordUserId[p.discordUserId];
+            const resolvedClerkUserId = substitute
+              ? substituteClerkUserId
+              : substituteClerkUserId ?? p.clerkUserId;
             const showCaptainBadge = p.isCaptain && !substitute;
             return (
               <div
@@ -633,14 +748,28 @@ function TeamPanel({
                   avatarUrl={resolvedAvatarUrl}
                   size={18}
                 />
-                <span className="truncate">
-                  {resolvedName}
-                  {showCaptainBadge ? (
-                    <span className="ml-1 text-[10px] text-gray-600 font-medium uppercase tracking-wider">
-                      C
-                    </span>
-                  ) : null}
-                </span>
+                {resolvedClerkUserId ? (
+                  <Link
+                    href={getLeaderboardProfileHref(resolvedClerkUserId, resolvedName)}
+                    className="truncate hover:text-white transition-colors duration-100"
+                  >
+                    {resolvedName}
+                    {showCaptainBadge ? (
+                      <span className="ml-1 text-[10px] text-gray-600 font-medium uppercase tracking-wider">
+                        C
+                      </span>
+                    ) : null}
+                  </Link>
+                ) : (
+                  <span className="truncate">
+                    {resolvedName}
+                    {showCaptainBadge ? (
+                      <span className="ml-1 text-[10px] text-gray-600 font-medium uppercase tracking-wider">
+                        C
+                      </span>
+                    ) : null}
+                  </span>
+                )}
                 <span className="text-[10px] text-gray-600">
                   {classByPlayerId[p._id ?? ""] ??
                     classByDiscordUserId[p.discordUserId] ??

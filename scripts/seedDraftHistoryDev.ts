@@ -10,9 +10,14 @@ import { PrismaClient } from "@prisma/client";
 /* ─── Config ────────────────────────────────────────── */
 
 const GUILD_ID = "test-guild";
+const GUILD_NAME = "Draft Test Guild";
+const LONG_GUILD_ID = "irc-cheating-trash-live-players";
+const LONG_GUILD_NAME = "IRC Cheating trash live players";
 const DRAFT_COUNT = 60;
 const TEAM_SIZE = 5;
 const BANS_PER_TEAM = 2;
+const EDGE_AUTO_BAN_DRAFTS = 10;
+const EDGE_AUTO_BAN_COUNT = 8;
 
 const CLASSES_BY_REALM: Record<string, string[]> = {
   Albion: [
@@ -232,7 +237,7 @@ async function main() {
     const team2 = shuffled.slice(TEAM_SIZE, TEAM_SIZE * 2);
 
     const winnerTeam: 1 | 2 = Math.random() < 0.55 ? 1 : 2;
-    const isPvp = i % 4 === 0;
+    const isPvp = i % 2 === 0;
 
     const players = [
       ...team1.map((p, idx) => ({
@@ -249,16 +254,21 @@ async function main() {
       })),
     ];
 
+    const useEdgeGuildName = i < EDGE_AUTO_BAN_DRAFTS;
+    const draftGuildId = useEdgeGuildName ? LONG_GUILD_ID : GUILD_ID;
+    const draftGuildName = useEdgeGuildName ? LONG_GUILD_NAME : GUILD_NAME;
     const seedArgs: Record<string, unknown> = {
       shortId,
-      discordGuildId: GUILD_ID,
+      discordGuildId: draftGuildId,
+      discordGuildName: draftGuildName,
       createdBy: players[0].discordUserId,
       winnerTeam,
       players,
       type: isPvp ? "pvp" : "traditional",
+      fightCount: 5,
     };
 
-    const bans: Array<{ team: 1 | 2; className: string }> = [];
+    const bans: Array<{ team: 1 | 2; className: string; source?: "captain" | "auto" }> = [];
 
     if (!isPvp) {
       const [r1, r2] = REALM_PAIRS[realmPairIdx % REALM_PAIRS.length];
@@ -271,14 +281,25 @@ async function main() {
       const t1BanPool = shuffle(CLASSES_BY_REALM[r2] ?? []);
       const t2BanPool = shuffle(CLASSES_BY_REALM[r1] ?? []);
       for (let b = 0; b < BANS_PER_TEAM; b++) {
-        if (t1BanPool[b]) bans.push({ team: 1, className: t1BanPool[b] });
-        if (t2BanPool[b]) bans.push({ team: 2, className: t2BanPool[b] });
+        if (t1BanPool[b]) bans.push({ team: 1, className: t1BanPool[b], source: "captain" });
+        if (t2BanPool[b]) bans.push({ team: 2, className: t2BanPool[b], source: "captain" });
       }
     } else {
       const pvpBanPool = shuffle([...ALL_CLASSES]);
       for (let b = 0; b < BANS_PER_TEAM; b++) {
-        if (pvpBanPool[b * 2]) bans.push({ team: 1, className: pvpBanPool[b * 2] });
-        if (pvpBanPool[b * 2 + 1]) bans.push({ team: 2, className: pvpBanPool[b * 2 + 1] });
+        if (pvpBanPool[b * 2]) {
+          bans.push({ team: 1, className: pvpBanPool[b * 2], source: "captain" });
+        }
+        if (pvpBanPool[b * 2 + 1]) {
+          bans.push({ team: 2, className: pvpBanPool[b * 2 + 1], source: "captain" });
+        }
+      }
+    }
+
+    if (useEdgeGuildName) {
+      const autoBanPool = shuffle([...ALL_CLASSES]).slice(0, EDGE_AUTO_BAN_COUNT);
+      for (const className of autoBanPool) {
+        bans.push({ team: 1, className, source: "auto" });
       }
     }
 

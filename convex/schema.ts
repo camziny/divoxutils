@@ -37,6 +37,7 @@ export default defineSchema({
     pickOrderMode: v.optional(
       v.union(v.literal("snake"), v.literal("alternating"))
     ),
+    bansPerCaptain: v.optional(v.number()),
     pickSequence: v.optional(v.array(teamNumber)),
     currentPickIndex: v.optional(v.number()),
     banSequence: v.optional(v.array(teamNumber)),
@@ -106,6 +107,7 @@ export default defineSchema({
     draftId: v.id("drafts"),
     team: teamNumber,
     className: v.string(),
+    source: v.optional(v.union(v.literal("captain"), v.literal("auto"))),
   }).index("by_draft", ["draftId"]),
 
   draftFights: defineTable({

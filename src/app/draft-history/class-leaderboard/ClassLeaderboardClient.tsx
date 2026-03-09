@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import { Pagination } from "@/components/ui/pagination";
 import { CheckCircle2, User } from "lucide-react";
 import {
@@ -144,7 +145,7 @@ export default function ClassLeaderboardClient({
               return (
                 <Link
                   key={`${row.className}-${row.clerkUserId}`}
-                  href={`/draft-history/leaderboard/${row.clerkUserId}`}
+                  href={getLeaderboardProfileHref(row.clerkUserId, row.userName)}
                   className="group flex items-center gap-3 px-4 py-2.5 hover:bg-gray-800/20"
                 >
                   <span className="w-6 text-right text-xs tabular-nums text-gray-600 font-medium">

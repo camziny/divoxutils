@@ -38,6 +38,7 @@ import {
   isTeamSizeSelectable,
   toUserSettingsError,
 } from "./settingsUtils";
+import { splitBansForLiveSummary } from "./banSummary";
 import { Check, ChevronLeft, ChevronRight, ExternalLink, User } from "lucide-react";
 
 function PlayerAvatar({ url, name, size = 20 }: { url?: string; name?: string; size?: number }) {
@@ -131,6 +132,7 @@ export default function DraftBoard({
   const setCoinFlipChoice = useMutation(api.drafts.setCoinFlipChoice);
   const pickRealm = useMutation(api.drafts.pickRealm);
   const banClass = useMutation(api.drafts.banClass);
+  const toggleAutoBanClass = useMutation(api.drafts.toggleAutoBanClass);
   const pickPlayer = useMutation(api.drafts.pickPlayer);
   const setPlayerClass = useMutation(api.drafts.setPlayerClass);
   const recordFightResult = useMutation(api.drafts.recordFightResult);
@@ -150,6 +152,7 @@ export default function DraftBoard({
     {}
   );
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [showAutoBanBoard, setShowAutoBanBoard] = useState(false);
 
   const team1Captain = draft.players.find(
     (p) => p.discordUserId === draft.team1CaptainId
@@ -183,11 +186,15 @@ export default function DraftBoard({
     [draft._id, draftedDiscordUserIdsCsv]
   );
 
-  const team1Bans = draft.bans.filter((b) => b.team === 1);
-  const team2Bans = draft.bans.filter((b) => b.team === 2);
+  const setupPhase = draft.status === "setup";
+  const { team1: team1Bans, team2: team2Bans, auto: sourceTaggedAutoBans } = useMemo(
+    () => splitBansForLiveSummary(draft.bans),
+    [draft.bans]
+  );
+  const creatorAutoBans = setupPhase ? draft.bans : sourceTaggedAutoBans;
   const bannedClassNames = draft.bans.map((b) => b.className);
 
-  const isSetup = draft.status === "setup";
+  const isSetup = setupPhase;
   const isCoinFlip = draft.status === "coin_flip";
   const isRealmPick = draft.status === "realm_pick";
   const isBanning = draft.status === "banning";
@@ -284,7 +291,8 @@ export default function DraftBoard({
     async (
       type: "traditional" | "pvp",
       teamSize: number,
-      pickOrderMode: PickOrderMode
+      pickOrderMode: PickOrderMode,
+      bansPerCaptain: number
     ) => {
       if (busy) return;
       setBusy(true);
@@ -294,6 +302,7 @@ export default function DraftBoard({
           type,
           teamSize,
           pickOrderMode,
+          bansPerCaptain,
           token: token!,
         });
       } catch (e) {
@@ -323,7 +332,8 @@ export default function DraftBoard({
     void applySettings(
       draft.type,
       targetTeamSize,
-      draft.pickOrderMode ?? "alternating"
+      draft.pickOrderMode ?? "alternating",
+      draft.bansPerCaptain ?? 2
     );
   }, [
     applySettings,
@@ -334,6 +344,7 @@ export default function DraftBoard({
     draft.teamSize,
     draft.type,
     draft.pickOrderMode,
+    draft.bansPerCaptain,
     isCreator,
     isSetup,
     token,
@@ -484,13 +495,15 @@ export default function DraftBoard({
               return applySettings(
                 type,
                 adjustedTeamSize,
-                draft.pickOrderMode ?? "alternating"
+                draft.pickOrderMode ?? "alternating",
+                draft.bansPerCaptain ?? 2
               );
             }
             return applySettings(
               type,
               draft.teamSize,
-              draft.pickOrderMode ?? "alternating"
+              draft.pickOrderMode ?? "alternating",
+              draft.bansPerCaptain ?? 2
             );
           }}
           onUpdateSize={(teamSize) => {
@@ -498,12 +511,27 @@ export default function DraftBoard({
             return applySettings(
               draft.type,
               teamSize,
-              draft.pickOrderMode ?? "alternating"
+              draft.pickOrderMode ?? "alternating",
+              draft.bansPerCaptain ?? 2
             );
           }}
           onUpdatePickOrderMode={(pickOrderMode) => {
             setSettingsFeedback(null);
-            return applySettings(draft.type, draft.teamSize, pickOrderMode);
+            return applySettings(
+              draft.type,
+              draft.teamSize,
+              pickOrderMode,
+              draft.bansPerCaptain ?? 2
+            );
+          }}
+          onUpdateBansPerCaptain={(bansPerCaptain) => {
+            setSettingsFeedback(null);
+            return applySettings(
+              draft.type,
+              draft.teamSize,
+              draft.pickOrderMode ?? "alternating",
+              bansPerCaptain
+            );
           }}
           onStart={() =>
             act(() => startDraft({ draftId: draft._id, token: token! }))
@@ -532,6 +560,61 @@ export default function DraftBoard({
             {settingsFeedback.text}
           </p>
         </div>
+      )}
+
+      {isSetup && isCreator && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={() => setShowAutoBanBoard((current) => !current)}
+          >
+            {showAutoBanBoard ? "Hide" : "Auto-ban classes"}
+          </Button>
+          <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-gray-500">
+            <span className="uppercase tracking-wider">Creator bans:</span>
+            {creatorAutoBans.length > 0 ? (
+              creatorAutoBans.map((ban) => (
+                <Badge
+                  key={ban._id}
+                  variant="secondary"
+                  className="text-[10px] line-through opacity-70"
+                >
+                  {ban.className}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-gray-600">--</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isSetup && isCreator && showAutoBanBoard && (
+        <BanSection
+          draft={draft}
+          bannedClassNames={bannedClassNames}
+          team1Bans={draft.bans}
+          team2Bans={[]}
+          isBanning={false}
+          isMyBanTurn={true}
+          busy={busy}
+          title="Auto-banned classes"
+          turnLabel="Select classes to auto-ban before the draft starts."
+          showBoardWhenNotBanning={true}
+          showCreatorSummary={true}
+          creatorBans={creatorAutoBans}
+          onBan={(className) =>
+            act(() =>
+              toggleAutoBanClass({
+                draftId: draft._id,
+                className,
+                token: token!,
+              })
+            )
+          }
+        />
       )}
 
       {isSetup && !isCreator && (
@@ -595,6 +678,7 @@ export default function DraftBoard({
           bannedClassNames={bannedClassNames}
           team1Bans={team1Bans}
           team2Bans={team2Bans}
+          autoBans={creatorAutoBans}
           isBanning={isBanning}
           isMyBanTurn={isMyBanTurn}
           currentBanTeam={currentBanTeam}
@@ -939,6 +1023,7 @@ function SettingsBar({
   onUpdateType,
   onUpdateSize,
   onUpdatePickOrderMode,
+  onUpdateBansPerCaptain,
   onStart,
   canStart,
 }: {
@@ -949,6 +1034,7 @@ function SettingsBar({
   onUpdateType: (type: "traditional" | "pvp") => void;
   onUpdateSize: (size: number) => void;
   onUpdatePickOrderMode: (mode: PickOrderMode) => void;
+  onUpdateBansPerCaptain: (value: number) => void;
   onStart: () => void;
   canStart: boolean;
 }) {
@@ -962,7 +1048,7 @@ function SettingsBar({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-3">
-      <div className="flex items-center gap-3">
+      <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:items-center lg:gap-3">
         <Select
           value={draft.type}
           onValueChange={(v) => onUpdateType(v as "traditional" | "pvp")}
@@ -1029,6 +1115,22 @@ function SettingsBar({
             </SelectContent>
           </Select>
         </div>
+        <Select
+          value={String(draft.bansPerCaptain ?? 2)}
+          onValueChange={(v) => onUpdateBansPerCaptain(Number(v))}
+          disabled={busy}
+        >
+          <SelectTrigger className="h-8 w-full min-w-[120px] text-xs border-gray-700 bg-gray-800/60 whitespace-nowrap lg:w-[120px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[0, 1, 2, 3, 4, 5].map((count) => (
+              <SelectItem key={count} value={String(count)}>
+                {count} bans
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <Button
         variant={needsCaptains ? "secondary" : "outline"}
@@ -1352,6 +1454,12 @@ function BanSection({
   currentBanTeam,
   busy,
   onBan,
+  title = "Bans",
+  turnLabel,
+  showBoardWhenNotBanning = false,
+  showCreatorSummary = false,
+  creatorBans = [],
+  autoBans = [],
 }: {
   draft: DraftData;
   bannedClassNames: string[];
@@ -1362,12 +1470,20 @@ function BanSection({
   currentBanTeam?: number;
   busy: boolean;
   onBan: (className: string) => void;
+  title?: string;
+  turnLabel?: string;
+  showBoardWhenNotBanning?: boolean;
+  showCreatorSummary?: boolean;
+  creatorBans?: { _id: string; className: string }[];
+  autoBans?: { _id: string; className: string }[];
 }) {
   let classesForBan: string[];
   if (draft.type === "traditional" && isBanning && currentBanTeam) {
     const opponentRealm =
       currentBanTeam === 1 ? draft.team2Realm! : draft.team1Realm!;
     classesForBan = classesByRealm[opponentRealm] || [];
+  } else if (draft.type === "traditional" && showBoardWhenNotBanning) {
+    classesForBan = allClasses;
   } else if (draft.type === "pvp") {
     classesForBan = allClasses;
   } else {
@@ -1395,7 +1511,7 @@ function BanSection({
     <div className="rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-gray-400">Bans</span>
+          <span className="text-xs font-medium text-gray-400">{title}</span>
           {isBanning && (
             <span className="text-[10px] text-gray-600">
               {isMyBanTurn
@@ -1403,44 +1519,86 @@ function BanSection({
                 : `${banCurrentCaptain?.displayName}'s ban`}
             </span>
           )}
+          {!isBanning && turnLabel ? (
+            <span className="text-[10px] text-gray-600">{turnLabel}</span>
+          ) : null}
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-gray-500">T1:</span>
-            {team1Bans.length > 0 ? (
-              team1Bans.map((b) => (
-                <Badge
-                  key={b._id}
-                  variant="secondary"
-                  className="text-[10px] line-through opacity-70"
-                >
-                  {b.className}
-                </Badge>
-              ))
-            ) : (
-              <span className="text-[10px] text-gray-600">--</span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-indigo-400/60">T2:</span>
-            {team2Bans.length > 0 ? (
-              team2Bans.map((b) => (
-                <Badge
-                  key={b._id}
-                  variant="secondary"
-                  className="text-[10px] line-through opacity-70"
-                >
-                  {b.className}
-                </Badge>
-              ))
-            ) : (
-              <span className="text-[10px] text-gray-600">--</span>
-            )}
-          </div>
+          {showCreatorSummary ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-500">Creator:</span>
+              {creatorBans.length > 0 ? (
+                creatorBans.map((b) => (
+                  <Badge
+                    key={b._id}
+                    variant="secondary"
+                    className="text-[10px] line-through opacity-70"
+                  >
+                    {b.className}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-[10px] text-gray-600">--</span>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-500">T1:</span>
+              {team1Bans.length > 0 ? (
+                team1Bans.map((b) => (
+                  <Badge
+                    key={b._id}
+                    variant="secondary"
+                    className="text-[10px] line-through opacity-70"
+                  >
+                    {b.className}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-[10px] text-gray-600">--</span>
+              )}
+            </div>
+          )}
+          {!showCreatorSummary ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-indigo-400/60">T2:</span>
+              {team2Bans.length > 0 ? (
+                team2Bans.map((b) => (
+                  <Badge
+                    key={b._id}
+                    variant="secondary"
+                    className="text-[10px] line-through opacity-70"
+                  >
+                    {b.className}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-[10px] text-gray-600">--</span>
+              )}
+            </div>
+          ) : null}
+          {!showCreatorSummary ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-400">Auto:</span>
+              {autoBans.length > 0 ? (
+                autoBans.map((b) => (
+                  <Badge
+                    key={b._id}
+                    variant="secondary"
+                    className="text-[10px] line-through opacity-70"
+                  >
+                    {b.className}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-[10px] text-gray-600">--</span>
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
 
-      {isBanning && draft.type === "pvp" && (
+      {(isBanning || showBoardWhenNotBanning) && draft.type === "pvp" && (
         <div className="space-y-2">
           {(
             Object.entries(CLASS_CATEGORIES) as [ClassCategory, string[]][]
@@ -1518,7 +1676,7 @@ function BanSection({
         </div>
       )}
 
-      {isBanning && draft.type !== "pvp" && (
+      {(isBanning || showBoardWhenNotBanning) && draft.type !== "pvp" && (
         <div className="space-y-2">
           {(Object.entries(CLASS_CATEGORIES) as [ClassCategory, string[]][]).map(
             ([category, classes]) => {

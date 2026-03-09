@@ -47,8 +47,28 @@ function generatePickSequence(
 
 const MAX_FIGHTS = 5;
 const REQUIRED_WINS = 3;
+const DEFAULT_BANS_PER_CAPTAIN = 2;
+const MIN_BANS_PER_CAPTAIN = 0;
+const MAX_BANS_PER_CAPTAIN = 5;
 const STALE_DRAFT_NO_PROGRESS_MS = 30 * 60 * 1000;
 const STALE_DRAFT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
+function getBansPerCaptain(draft: { bansPerCaptain?: number }) {
+  return draft.bansPerCaptain ?? DEFAULT_BANS_PER_CAPTAIN;
+}
+
+function generateBanSequence(
+  firstPickTeam: 1 | 2,
+  bansPerCaptain: number
+): (1 | 2)[] {
+  const banFirstTeam: 1 | 2 = firstPickTeam === 1 ? 2 : 1;
+  const banSecondTeam: 1 | 2 = firstPickTeam;
+  const sequence: (1 | 2)[] = [];
+  for (let i = 0; i < bansPerCaptain; i += 1) {
+    sequence.push(banFirstTeam, banSecondTeam);
+  }
+  return sequence;
+}
 
 function buildSetScore(team1Wins: number, team2Wins: number): string {
   return `${team1Wins}-${team2Wins}`;
@@ -222,6 +242,7 @@ export const createDraft = mutation({
       status: "setup",
       teamSize: defaultTeamSize,
       pickOrderMode: "alternating",
+      bansPerCaptain: DEFAULT_BANS_PER_CAPTAIN,
       discordGuildId: args.discordGuildId,
       discordGuildName: args.discordGuildName,
       discordChannelId: args.discordChannelId,
@@ -328,6 +349,7 @@ export const updateSettings = mutation({
     pickOrderMode: v.optional(
       v.union(v.literal("snake"), v.literal("alternating"))
     ),
+    bansPerCaptain: v.optional(v.number()),
     token: v.string(),
   },
   handler: async (ctx, args) => {
@@ -349,6 +371,13 @@ export const updateSettings = mutation({
 
     if (args.teamSize < 2 || args.teamSize > 8)
       throw new Error("Team size must be between 2 and 8");
+    if (
+      args.bansPerCaptain !== undefined &&
+      (args.bansPerCaptain < MIN_BANS_PER_CAPTAIN ||
+        args.bansPerCaptain > MAX_BANS_PER_CAPTAIN)
+    ) {
+      throw new Error("Bans per captain must be between 0 and 5");
+    }
 
     const players = await ctx.db
       .query("draftPlayers")
@@ -365,6 +394,7 @@ export const updateSettings = mutation({
       type: args.type,
       teamSize: args.teamSize,
       pickOrderMode: args.pickOrderMode ?? draft.pickOrderMode ?? "alternating",
+      bansPerCaptain: args.bansPerCaptain ?? getBansPerCaptain(draft),
     });
   },
 });
@@ -468,7 +498,7 @@ export const setCoinFlipChoice = mutation({
 
     let firstPickTeam: 1 | 2;
     let firstRealmPickTeam: 1 | 2 | undefined;
-    let nextStatus: "realm_pick" | "banning";
+    let nextStatus: "realm_pick" | "banning" | "drafting";
 
     if (draft.type === "traditional") {
       if (args.choice !== "realm_first" && args.choice !== "player_first") {
@@ -490,22 +520,29 @@ export const setCoinFlipChoice = mutation({
       nextStatus = "banning";
     }
 
-    const banFirstTeam: 1 | 2 = firstPickTeam === 1 ? 2 : 1;
-    const banSecondTeam: 1 | 2 = firstPickTeam;
-    const banSequence: (1 | 2)[] = [
-      banFirstTeam,
-      banSecondTeam,
-      banFirstTeam,
-      banSecondTeam,
-    ];
+    const bansPerCaptain = getBansPerCaptain(draft);
+    const banSequence = generateBanSequence(firstPickTeam, bansPerCaptain);
+    const shouldSkipBans = draft.type === "pvp" && banSequence.length === 0;
+    const pickSequence = shouldSkipBans
+      ? generatePickSequence(
+          draft.teamSize,
+          firstPickTeam,
+          draft.pickOrderMode ?? "alternating"
+        )
+      : undefined;
+    if (shouldSkipBans) {
+      nextStatus = "drafting";
+    }
 
     await ctx.db.patch(args.draftId, {
       status: nextStatus,
       coinFlipChoice: args.choice,
       firstPickTeam,
       firstRealmPickTeam,
-      banSequence,
-      currentBanIndex: 0,
+      banSequence: banSequence.length > 0 ? banSequence : undefined,
+      currentBanIndex: banSequence.length > 0 ? 0 : undefined,
+      pickSequence,
+      currentPickIndex: shouldSkipBans ? 0 : undefined,
     });
   },
 });
@@ -573,10 +610,82 @@ export const pickRealm = mutation({
       currentRealmPickTeam === 2 ? args.realm : draft.team2Realm;
 
     if (updatedTeam1Realm && updatedTeam2Realm) {
-      await ctx.db.patch(args.draftId, { ...updates, status: "banning" });
+      const shouldSkipBans = (draft.banSequence?.length ?? 0) === 0;
+      if (shouldSkipBans) {
+        const pickSequence = generatePickSequence(
+          draft.teamSize,
+          draft.firstPickTeam!,
+          draft.pickOrderMode ?? "alternating"
+        );
+        await ctx.db.patch(args.draftId, {
+          ...updates,
+          status: "drafting",
+          pickSequence,
+          currentPickIndex: 0,
+          currentBanIndex: undefined,
+        });
+      } else {
+        await ctx.db.patch(args.draftId, { ...updates, status: "banning" });
+      }
     } else {
       await ctx.db.patch(args.draftId, updates);
     }
+  },
+});
+
+export const toggleAutoBanClass = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    className: v.string(),
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found");
+    if (draft.status !== "setup") throw new Error("Auto-bans can only be set in setup");
+
+    const callerPlayer = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
+      throw new Error("Only the draft creator can edit auto-bans");
+    }
+
+    if (draft.type === "traditional") {
+      if (!allClasses.includes(args.className)) {
+        throw new Error(`${args.className} is not a valid class`);
+      }
+    } else {
+      const baseName = args.className.replace(/\s*\((?:Alb|Mid|Hib)\)$/, "");
+      if (!allClasses.includes(baseName)) {
+        throw new Error(`${args.className} is not a valid class`);
+      }
+    }
+
+    const existingBans = await ctx.db
+      .query("draftBans")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .collect();
+    const matching = existingBans.filter((ban) => ban.className === args.className);
+
+    if (matching.length > 0) {
+      for (const ban of matching) {
+        await ctx.db.delete(ban._id);
+      }
+      return;
+    }
+
+    await ctx.db.insert("draftBans", {
+      draftId: args.draftId,
+      team: 1,
+      className: args.className,
+      source: "auto",
+    });
   },
 });
 
@@ -628,24 +737,29 @@ export const banClass = mutation({
       .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
       .collect();
 
+    const alreadyAutoBanned = existingBans.some(
+      (ban) => ban.className === args.className && ban.source === "auto"
+    );
+    if (alreadyAutoBanned) {
+      throw new Error("Class is already banned");
+    }
+
     if (draft.type === "traditional") {
-      if (
-        existingBans.some(
-          (b) => b.team === currentBanTeam && b.className === args.className
-        )
-      ) {
+      const alreadyBannedByTeam = existingBans.some(
+        (ban) => ban.team === currentBanTeam && ban.className === args.className
+      );
+      if (alreadyBannedByTeam) {
         throw new Error("You already banned this class");
       }
-    } else {
-      if (existingBans.some((b) => b.className === args.className)) {
-        throw new Error("Class is already banned");
-      }
+    } else if (existingBans.some((ban) => ban.className === args.className)) {
+      throw new Error("Class is already banned");
     }
 
     await ctx.db.insert("draftBans", {
       draftId: args.draftId,
       team: currentBanTeam,
       className: args.className,
+      source: "captain",
     });
 
     const nextBanIndex = draft.currentBanIndex! + 1;
@@ -750,6 +864,13 @@ export const setPlayerClass = mutation({
 
     if (!allClasses.includes(args.className)) {
       throw new Error("Invalid class");
+    }
+    const existingBans = await ctx.db
+      .query("draftBans")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .collect();
+    if (existingBans.some((ban) => ban.className === args.className)) {
+      throw new Error("Class is banned");
     }
 
     const targetPlayer = await ctx.db.get(args.playerId);
@@ -870,6 +991,11 @@ export const recordFightResult = mutation({
       discordUserId: string;
       className: string;
     }[] = [];
+    const existingBans = await ctx.db
+      .query("draftBans")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .collect();
+    const bannedClasses = new Set(existingBans.map((ban) => ban.className));
 
     for (const player of draftedPlayers) {
       const className = classByPlayerId.get(player._id);
@@ -878,6 +1004,9 @@ export const recordFightResult = mutation({
       }
       if (!allClasses.includes(className)) {
         throw new Error(`Invalid class: ${className}`);
+      }
+      if (bannedClasses.has(className)) {
+        throw new Error(`Class is banned: ${className}`);
       }
       normalizedClassesByPlayer.push({
         playerId: player._id,
@@ -1669,6 +1798,7 @@ export const getCompletedDraftResults = query({
         bans: bans.map((b) => ({
           team: b.team,
           className: b.className,
+          source: b.source,
         })),
       });
     }
@@ -2270,9 +2400,11 @@ export const seedVerifiedDraft = mutation({
         v.object({
           team: v.union(v.literal(1), v.literal(2)),
           className: v.string(),
+          source: v.optional(v.union(v.literal("captain"), v.literal("auto"))),
         })
       )
     ),
+    fightCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const draftType = args.type ?? "traditional";
@@ -2303,8 +2435,13 @@ export const seedVerifiedDraft = mutation({
     if (args.team2Realm) draftData.team2Realm = args.team2Realm;
     const draftId = await ctx.db.insert("drafts", draftData);
 
+    const insertedPlayers: Array<{
+      _id: Id<"draftPlayers">;
+      discordUserId: string;
+      team: 1 | 2;
+    }> = [];
     for (const player of args.players) {
-      await ctx.db.insert("draftPlayers", {
+      const playerId = await ctx.db.insert("draftPlayers", {
         draftId,
         discordUserId: player.discordUserId,
         displayName: player.displayName,
@@ -2312,6 +2449,11 @@ export const seedVerifiedDraft = mutation({
         team: player.team,
         isCaptain: player.isCaptain,
         token: `seed-${args.shortId}-${player.discordUserId}`,
+      });
+      insertedPlayers.push({
+        _id: playerId,
+        discordUserId: player.discordUserId,
+        team: player.team,
       });
     }
 
@@ -2321,9 +2463,89 @@ export const seedVerifiedDraft = mutation({
           draftId,
           team: ban.team,
           className: ban.className,
+          source: ban.source,
         });
       }
     }
+
+    const draftBans = await ctx.db
+      .query("draftBans")
+      .withIndex("by_draft", (q) => q.eq("draftId", draftId))
+      .collect();
+    const bannedClassNames = new Set(
+      draftBans.map((ban) => ban.className.replace(/\s*\((?:Alb|Mid|Hib)\)$/, ""))
+    );
+
+    const fightCount = Math.max(1, Math.min(5, Math.floor(args.fightCount ?? 3)));
+    const otherTeam: 1 | 2 = args.winnerTeam === 1 ? 2 : 1;
+    const winnerPatternByCount: Record<number, (1 | 2)[]> = {
+      1: [args.winnerTeam],
+      2: [args.winnerTeam, args.winnerTeam],
+      3: [args.winnerTeam, args.winnerTeam, args.winnerTeam],
+      4: [args.winnerTeam, otherTeam, args.winnerTeam, args.winnerTeam],
+      5: [args.winnerTeam, otherTeam, args.winnerTeam, otherTeam, args.winnerTeam],
+    };
+    const winnerPattern = winnerPatternByCount[fightCount];
+
+    function randomFrom<T>(items: T[]) {
+      return items[Math.floor(Math.random() * items.length)];
+    }
+
+    function classPoolForPlayer(player: { team: 1 | 2 }) {
+      if (draftType === "pvp") {
+        return allClasses;
+      }
+      const playerRealm = player.team === 1 ? draftData.team1Realm : draftData.team2Realm;
+      return classesByRealm[playerRealm] ?? allClasses;
+    }
+
+    let team1FightWins = 0;
+    let team2FightWins = 0;
+    let lastFightClassesByPlayer: Array<{
+      playerId: Id<"draftPlayers">;
+      discordUserId: string;
+      className: string;
+    }> = [];
+    for (let i = 0; i < fightCount; i += 1) {
+      const winnerTeam = winnerPattern[i];
+      if (winnerTeam === 1) {
+        team1FightWins += 1;
+      } else {
+        team2FightWins += 1;
+      }
+
+      const classesByPlayer = insertedPlayers.map((player) => {
+        const classPool = classPoolForPlayer(player).filter(
+          (className) => !bannedClassNames.has(className)
+        );
+        const fallbackPool = classPool.length > 0 ? classPool : classPoolForPlayer(player);
+        const className = randomFrom(fallbackPool);
+        return {
+          playerId: player._id,
+          discordUserId: player.discordUserId,
+          className,
+        };
+      });
+      lastFightClassesByPlayer = classesByPlayer;
+
+      await ctx.db.insert("draftFights", {
+        draftId,
+        fightNumber: i + 1,
+        winnerTeam,
+        classesByPlayer,
+        submittedBy: args.createdBy,
+      });
+    }
+
+    for (const classEntry of lastFightClassesByPlayer) {
+      await ctx.db.patch(classEntry.playerId, { selectedClass: classEntry.className });
+    }
+
+    await ctx.db.patch(draftId, {
+      team1FightWins,
+      team2FightWins,
+      setScore: buildSetScore(team1FightWins, team2FightWins),
+    });
 
     return { draftId, shortId: args.shortId };
   },

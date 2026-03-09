@@ -448,6 +448,80 @@ test("updateSettings persists selected pick order mode", async () => {
   assert.equal(updated.pickOrderMode, "alternating");
 });
 
+test("updateSettings persists bansPerCaptain value", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "setup",
+        teamSize: 4,
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "x1", discordUserId: "u1" },
+      { _id: "p3", draftId: "d1", token: "x2", discordUserId: "u2" },
+      { _id: "p4", draftId: "d1", token: "x3", discordUserId: "u3" },
+      { _id: "p5", draftId: "d1", token: "x4", discordUserId: "u4" },
+      { _id: "p6", draftId: "d1", token: "x5", discordUserId: "u5" },
+      { _id: "p7", draftId: "d1", token: "x6", discordUserId: "u6" },
+      { _id: "p8", draftId: "d1", token: "x7", discordUserId: "u7" },
+    ],
+  });
+
+  await (draftFns.updateSettings as any)._handler(ctx, {
+    draftId: "d1",
+    type: "traditional",
+    teamSize: 4,
+    pickOrderMode: "alternating",
+    bansPerCaptain: 5,
+    token: "creator-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.bansPerCaptain, 5);
+});
+
+test("updateSettings rejects bansPerCaptain outside 0..5", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "setup",
+        teamSize: 4,
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "x1", discordUserId: "u1" },
+      { _id: "p3", draftId: "d1", token: "x2", discordUserId: "u2" },
+      { _id: "p4", draftId: "d1", token: "x3", discordUserId: "u3" },
+      { _id: "p5", draftId: "d1", token: "x4", discordUserId: "u4" },
+      { _id: "p6", draftId: "d1", token: "x5", discordUserId: "u5" },
+      { _id: "p7", draftId: "d1", token: "x6", discordUserId: "u6" },
+      { _id: "p8", draftId: "d1", token: "x7", discordUserId: "u7" },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.updateSettings as any)._handler(ctx, {
+      draftId: "d1",
+      type: "traditional",
+      teamSize: 4,
+      pickOrderMode: "alternating",
+      bansPerCaptain: 6,
+      token: "creator-token",
+    }),
+    /Bans per captain must be between 0 and 5/
+  );
+});
+
 test("updateSettings rejects team size that exceeds available players", async () => {
   const ctx = makeCtx({
     drafts: [
@@ -480,6 +554,371 @@ test("updateSettings rejects team size that exceeds available players", async ()
     }),
     /Need at least 8 players for 4v4/
   );
+});
+
+test("setCoinFlipChoice with zero bans enters drafting immediately in pvp", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "pvpzero",
+        status: "coin_flip",
+        type: "pvp",
+        teamSize: 4,
+        coinFlipWinnerId: "cap1",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        createdBy: "creator",
+        pickOrderMode: "alternating",
+        bansPerCaptain: 0,
+      },
+    ],
+    draftPlayers: [
+      { _id: "cap1-player", draftId: "d1", token: "cap1-token", discordUserId: "cap1" },
+      { _id: "cap2-player", draftId: "d1", token: "cap2-token", discordUserId: "cap2" },
+    ],
+  });
+
+  await (draftFns.setCoinFlipChoice as any)._handler(ctx, {
+    draftId: "d1",
+    choice: "pick_first",
+    token: "cap1-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "drafting");
+  assert.equal(updated.currentBanIndex, undefined);
+  assert.equal(updated.banSequence, undefined);
+  assert.equal(updated.currentPickIndex, 0);
+  assert.deepEqual(updated.pickSequence, [1, 2, 1, 2, 1, 2]);
+});
+
+test("setCoinFlipChoice builds 10-step ban sequence when bansPerCaptain is 5", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "pvpfive",
+        status: "coin_flip",
+        type: "pvp",
+        teamSize: 4,
+        coinFlipWinnerId: "cap1",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        createdBy: "creator",
+        bansPerCaptain: 5,
+      },
+    ],
+    draftPlayers: [
+      { _id: "cap1-player", draftId: "d1", token: "cap1-token", discordUserId: "cap1" },
+      { _id: "cap2-player", draftId: "d1", token: "cap2-token", discordUserId: "cap2" },
+    ],
+  });
+
+  await (draftFns.setCoinFlipChoice as any)._handler(ctx, {
+    draftId: "d1",
+    choice: "pick_first",
+    token: "cap1-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "banning");
+  assert.equal(updated.currentBanIndex, 0);
+  assert.deepEqual(updated.banSequence, [2, 1, 2, 1, 2, 1, 2, 1, 2, 1]);
+});
+
+test("setCoinFlipChoice uses default bansPerCaptain when unset", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "pvpdefault",
+        status: "coin_flip",
+        type: "pvp",
+        teamSize: 4,
+        coinFlipWinnerId: "cap1",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      { _id: "cap1-player", draftId: "d1", token: "cap1-token", discordUserId: "cap1" },
+      { _id: "cap2-player", draftId: "d1", token: "cap2-token", discordUserId: "cap2" },
+    ],
+  });
+
+  await (draftFns.setCoinFlipChoice as any)._handler(ctx, {
+    draftId: "d1",
+    choice: "pick_first",
+    token: "cap1-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "banning");
+  assert.deepEqual(updated.banSequence, [2, 1, 2, 1]);
+  assert.equal(updated.currentBanIndex, 0);
+});
+
+test("setCoinFlipChoice respects bansPerCaptain = 1 in pvp", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "pvpone",
+        status: "coin_flip",
+        type: "pvp",
+        teamSize: 4,
+        coinFlipWinnerId: "cap1",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        createdBy: "creator",
+        bansPerCaptain: 1,
+      },
+    ],
+    draftPlayers: [
+      { _id: "cap1-player", draftId: "d1", token: "cap1-token", discordUserId: "cap1" },
+      { _id: "cap2-player", draftId: "d1", token: "cap2-token", discordUserId: "cap2" },
+    ],
+  });
+
+  await (draftFns.setCoinFlipChoice as any)._handler(ctx, {
+    draftId: "d1",
+    choice: "pick_first",
+    token: "cap1-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "banning");
+  assert.deepEqual(updated.banSequence, [2, 1]);
+  assert.equal(updated.currentBanIndex, 0);
+});
+
+test("traditional realm pick skips banning when bansPerCaptain is 0", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "tradzero",
+        status: "realm_pick",
+        type: "traditional",
+        teamSize: 4,
+        firstRealmPickTeam: 1,
+        firstPickTeam: 2,
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        pickOrderMode: "alternating",
+        banSequence: [],
+      },
+    ],
+    draftPlayers: [
+      { _id: "cap1-player", draftId: "d1", token: "cap1-token", discordUserId: "cap1" },
+      { _id: "cap2-player", draftId: "d1", token: "cap2-token", discordUserId: "cap2" },
+    ],
+  });
+
+  await (draftFns.pickRealm as any)._handler(ctx, {
+    draftId: "d1",
+    realm: "Albion",
+    token: "cap1-token",
+  });
+  await (draftFns.pickRealm as any)._handler(ctx, {
+    draftId: "d1",
+    realm: "Midgard",
+    token: "cap2-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "drafting");
+  assert.equal(updated.currentBanIndex, undefined);
+  assert.equal(updated.currentPickIndex, 0);
+  assert.deepEqual(updated.pickSequence, [2, 1, 2, 1, 2, 1]);
+});
+
+test("toggleAutoBanClass toggles creator setup auto-bans", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "autoban",
+        status: "setup",
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [{ _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" }],
+  });
+
+  await (draftFns.toggleAutoBanClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Cleric",
+    token: "creator-token",
+  });
+  let bans = await ctx.db.query("draftBans").collect();
+  assert.equal(bans.length, 1);
+  assert.equal(bans[0].className, "Cleric");
+  assert.equal(bans[0].source, "auto");
+
+  await (draftFns.toggleAutoBanClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Cleric",
+    token: "creator-token",
+  });
+  bans = await ctx.db.query("draftBans").collect();
+  assert.equal(bans.length, 0);
+});
+
+test("toggleAutoBanClass rejects non-creator and non-setup usage", async () => {
+  const nonCreatorCtx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "autoban-auth",
+        status: "setup",
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "other-token", discordUserId: "other" },
+    ],
+  });
+  await assert.rejects(
+    (draftFns.toggleAutoBanClass as any)._handler(nonCreatorCtx, {
+      draftId: "d1",
+      className: "Cleric",
+      token: "other-token",
+    }),
+    /Only the draft creator can edit auto-bans/
+  );
+
+  const nonSetupCtx = makeCtx({
+    drafts: [
+      {
+        _id: "d2",
+        shortId: "autoban-state",
+        status: "banning",
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [{ _id: "p3", draftId: "d2", token: "creator-token", discordUserId: "creator" }],
+  });
+  await assert.rejects(
+    (draftFns.toggleAutoBanClass as any)._handler(nonSetupCtx, {
+      draftId: "d2",
+      className: "Cleric",
+      token: "creator-token",
+    }),
+    /Auto-bans can only be set in setup/
+  );
+});
+
+test("banClass rejects classes already auto-banned and stores captain source", async () => {
+  const rejectCtx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "ban-auto-reject",
+        status: "banning",
+        type: "pvp",
+        teamSize: 3,
+        firstPickTeam: 1,
+        pickOrderMode: "alternating",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        banSequence: [1, 2],
+        currentBanIndex: 0,
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "cap1-token", discordUserId: "cap1", isCaptain: true },
+      { _id: "p2", draftId: "d1", token: "cap2-token", discordUserId: "cap2", isCaptain: true },
+    ],
+    draftBans: [{ _id: "ab1", draftId: "d1", team: 1, className: "Cleric", source: "auto" }],
+  });
+
+  await assert.rejects(
+    (draftFns.banClass as any)._handler(rejectCtx, {
+      draftId: "d1",
+      className: "Cleric",
+      token: "cap1-token",
+    }),
+    /Class is already banned/
+  );
+
+  const sourceCtx = makeCtx({
+    drafts: [
+      {
+        _id: "d2",
+        shortId: "ban-source",
+        status: "banning",
+        type: "pvp",
+        teamSize: 3,
+        firstPickTeam: 1,
+        pickOrderMode: "alternating",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        banSequence: [1],
+        currentBanIndex: 0,
+      },
+    ],
+    draftPlayers: [
+      { _id: "p3", draftId: "d2", token: "cap1-token", discordUserId: "cap1", isCaptain: true },
+      { _id: "p4", draftId: "d2", token: "cap2-token", discordUserId: "cap2", isCaptain: true },
+    ],
+  });
+
+  await (draftFns.banClass as any)._handler(sourceCtx, {
+    draftId: "d2",
+    className: "Cleric",
+    token: "cap1-token",
+  });
+  const bans = await sourceCtx.db.query("draftBans").collect();
+  assert.equal(bans.length, 1);
+  assert.equal(bans[0].source, "captain");
+});
+
+test("traditional captain bans allow same class name across teams when not auto-banned", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "trad-same-class",
+        status: "banning",
+        type: "traditional",
+        teamSize: 4,
+        firstPickTeam: 1,
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        team1Realm: "Albion",
+        team2Realm: "Hibernia",
+        banSequence: [1, 2],
+        currentBanIndex: 0,
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "cap1-token", discordUserId: "cap1", isCaptain: true },
+      { _id: "p2", draftId: "d1", token: "cap2-token", discordUserId: "cap2", isCaptain: true },
+    ],
+  });
+
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Mauler",
+    token: "cap1-token",
+  });
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Mauler",
+    token: "cap2-token",
+  });
+
+  const bans = await ctx.db.query("draftBans").collect();
+  assert.equal(bans.length, 2);
+  assert.equal(bans[0].className, "Mauler");
+  assert.equal(bans[1].className, "Mauler");
 });
 
 test("cancelDraftAsAdmin marks draft as cancelled with audit fields", async () => {
@@ -1143,6 +1582,89 @@ test("setPlayerClass rejects recorded fight class edit on opposing team", async 
       token: "cap1-token",
     }),
     /Captains can only set classes for their own team/
+  );
+});
+
+test("setPlayerClass rejects banned classes", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-banned-class",
+        shortId: "banned-class",
+        status: "drafting",
+        createdBy: "creator",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-cap1",
+        draftId: "d-banned-class",
+        token: "cap1-token",
+        discordUserId: "cap1",
+        displayName: "Cap 1",
+        team: 1,
+        isCaptain: true,
+      },
+    ],
+    draftBans: [{ _id: "ban-1", draftId: "d-banned-class", team: 1, className: "Paladin" }],
+  });
+
+  await assert.rejects(
+    (draftFns.setPlayerClass as any)._handler(ctx, {
+      draftId: "d-banned-class",
+      playerId: "p-cap1",
+      className: "Paladin",
+      token: "cap1-token",
+    }),
+    /Class is banned/
+  );
+});
+
+test("recordFightResult rejects banned classes", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-banned-fight",
+        shortId: "banned-fight",
+        status: "complete",
+        gameStarted: true,
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-creator",
+        draftId: "d-banned-fight",
+        token: "creator-token",
+        discordUserId: "creator",
+        displayName: "Creator",
+        team: 1,
+      },
+      {
+        _id: "p2",
+        draftId: "d-banned-fight",
+        token: "x2",
+        discordUserId: "u2",
+        displayName: "U2",
+        team: 2,
+      },
+    ],
+    draftBans: [{ _id: "ban-1", draftId: "d-banned-fight", team: 1, className: "Bard" }],
+  });
+
+  await assert.rejects(
+    (draftFns.recordFightResult as any)._handler(ctx, {
+      draftId: "d-banned-fight",
+      winnerTeam: 1,
+      classesByPlayer: [
+        { playerId: "p-creator", className: "Armsman" },
+        { playerId: "p2", className: "Bard" },
+      ],
+      token: "creator-token",
+    }),
+    /Class is banned: Bard/
   );
 });
 

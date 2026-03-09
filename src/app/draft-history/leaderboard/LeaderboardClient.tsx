@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import { Pagination } from "@/components/ui/pagination";
 import { CheckCircle2, ChevronRight, User } from "lucide-react";
 import type { DraftLeaderboardRow } from "@/server/draftLeaderboard";
@@ -118,7 +119,7 @@ export default function LeaderboardClient({
               return (
                 <Link
                   key={row.id}
-                  href={`/draft-history/leaderboard/${row.id}`}
+                  href={getLeaderboardProfileHref(row.id, row.userName)}
                   className="group flex items-center gap-3 sm:gap-4 px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
                 >
                   <span className="w-6 text-right text-xs tabular-nums text-gray-600 font-medium flex-shrink-0">
