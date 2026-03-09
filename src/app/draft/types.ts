@@ -19,6 +19,7 @@ export interface DraftBan {
   draftId: Id<"drafts">;
   team: 1 | 2;
   className: string;
+  source?: "captain" | "auto";
 }
 
 export interface DraftData {
@@ -43,6 +44,7 @@ export interface DraftData {
   firstPickTeam?: 1 | 2;
   firstRealmPickTeam?: 1 | 2;
   pickOrderMode?: "snake" | "alternating";
+  bansPerCaptain?: number;
   pickSequence?: (1 | 2)[];
   currentPickIndex?: number;
   banSequence?: (1 | 2)[];
