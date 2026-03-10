@@ -408,6 +408,30 @@ export default function DraftHistoryClient({
                   },
                   {}
                 ) ?? {};
+              const selectedFightOccupantDiscordUserIdByPlayerId =
+                (selectedFight?.classesByPlayer ?? []).reduce<Record<string, string>>(
+                  (acc, entry) => {
+                    if (!entry.playerId) return acc;
+                    acc[String(entry.playerId)] =
+                      entry.substituteMode === "known" && entry.substituteDiscordUserId
+                        ? entry.substituteDiscordUserId
+                        : entry.discordUserId;
+                    return acc;
+                  },
+                  {}
+                ) ?? {};
+              const selectedFightOccupantDiscordUserIdByDiscordUserId =
+                (selectedFight?.classesByPlayer ?? []).reduce<Record<string, string>>(
+                  (acc, entry) => {
+                    if (!entry.discordUserId) return acc;
+                    acc[entry.discordUserId] =
+                      entry.substituteMode === "known" && entry.substituteDiscordUserId
+                        ? entry.substituteDiscordUserId
+                        : entry.discordUserId;
+                    return acc;
+                  },
+                  {}
+                ) ?? {};
 
               return (
                 <div
@@ -519,6 +543,12 @@ export default function DraftHistoryClient({
                           occupantClerkUserIdByDiscordUserId={
                             selectedFightOccupantClerkUserIdByDiscordUserId
                           }
+                          occupantDiscordUserIdByPlayerId={
+                            selectedFightOccupantDiscordUserIdByPlayerId
+                          }
+                          occupantDiscordUserIdByDiscordUserId={
+                            selectedFightOccupantDiscordUserIdByDiscordUserId
+                          }
                           substituteByPlayerId={selectedFightSubstituteByPlayerId}
                           substituteByDiscordUserId={selectedFightSubstituteByDiscordUserId}
                         />
@@ -542,6 +572,12 @@ export default function DraftHistoryClient({
                           }
                           occupantClerkUserIdByDiscordUserId={
                             selectedFightOccupantClerkUserIdByDiscordUserId
+                          }
+                          occupantDiscordUserIdByPlayerId={
+                            selectedFightOccupantDiscordUserIdByPlayerId
+                          }
+                          occupantDiscordUserIdByDiscordUserId={
+                            selectedFightOccupantDiscordUserIdByDiscordUserId
                           }
                           substituteByPlayerId={selectedFightSubstituteByPlayerId}
                           substituteByDiscordUserId={selectedFightSubstituteByDiscordUserId}
@@ -652,6 +688,8 @@ function TeamPanel({
   occupantNameByDiscordUserId,
   occupantClerkUserIdByPlayerId,
   occupantClerkUserIdByDiscordUserId,
+  occupantDiscordUserIdByPlayerId,
+  occupantDiscordUserIdByDiscordUserId,
   substituteByPlayerId,
   substituteByDiscordUserId,
 }: {
@@ -672,6 +710,8 @@ function TeamPanel({
   occupantNameByDiscordUserId: Record<string, string>;
   occupantClerkUserIdByPlayerId: Record<string, string>;
   occupantClerkUserIdByDiscordUserId: Record<string, string>;
+  occupantDiscordUserIdByPlayerId: Record<string, string>;
+  occupantDiscordUserIdByDiscordUserId: Record<string, string>;
   substituteByPlayerId: Record<string, { displayName: string; avatarUrl?: string }>;
   substituteByDiscordUserId: Record<string, { displayName: string; avatarUrl?: string }>;
 }) {
@@ -718,8 +758,12 @@ function TeamPanel({
             const resolvedClerkUserId = substitute
               ? substituteClerkUserId
               : substituteClerkUserId ?? p.clerkUserId;
+            const resolvedDiscordUserId =
+              occupantDiscordUserIdByPlayerId[p._id ?? ""] ??
+              occupantDiscordUserIdByDiscordUserId[p.discordUserId] ??
+              p.discordUserId;
             const resolvedProfileUserId =
-              resolvedClerkUserId ?? `discord:${p.discordUserId}`;
+              resolvedClerkUserId ?? `discord:${resolvedDiscordUserId}`;
             const showCaptainBadge = p.isCaptain && !substitute;
             return (
               <div
