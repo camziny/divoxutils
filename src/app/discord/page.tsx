@@ -62,7 +62,7 @@ export default function DiscordPage() {
           <CommandSection
             id="draft"
             title="/draft"
-            description="Start a live draft from your Discord server. The bot pulls players from your configured lobby voice channel and creates a real-time draft page where captains pick teams, ban classes, and choose realms."
+            description="Start a live draft from your Discord server. The bot pulls players from your configured lobby voice channel and creates a real-time draft page where captains pick teams, set bans, and choose realms."
             usage="/draft"
             howSections={[
               {
@@ -70,7 +70,8 @@ export default function DiscordPage() {
                 steps: [
                   "Before /draft, all players must already be in the configured lobby voice channel. Bots are not pulled into drafts.",
                   "The person who runs /draft is the creator and gets the private setup DM.",
-                  "Creator sets mode/team size and assigns captains. Creator can be a captain, but it is usually better if not.",
+                  "Creator sets mode/team size, assigns captains, and chooses bans per captain.",
+                  "Creator can set automatic bans (optional) and can still be a captain if needed.",
                   "After start, a public draft link is posted and each captain gets a private captain link by DM.",
                 ],
               },
@@ -78,6 +79,7 @@ export default function DiscordPage() {
                 title: "During Draft Set",
                 steps: [
                   "Captains must update each player's class every fight if anything changes.",
+                  "Use the class board to check player characters; indigo underlines show extra details and hover reveals realm rank.",
                   "Creator must update the set score after each fight.",
                   "If class or score updates are incomplete, the draft won't be verified and stats won't be recorded.",
                 ],
