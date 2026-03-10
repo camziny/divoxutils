@@ -280,6 +280,9 @@ export default function DraftTestPage() {
           <p className="text-xs text-gray-600 mt-2">
             Default team size for this lobby: {defaultTeamSize}v{defaultTeamSize}
           </p>
+          <p className="text-xs text-gray-600 mt-2">
+            Ban setting is per captain (for example, 3 means each captain gets 3 bans).
+          </p>
         </div>
 
         <div className="space-y-3 text-left">

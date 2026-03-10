@@ -1048,13 +1048,13 @@ function SettingsBar({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-3">
-      <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:items-center lg:gap-3">
+      <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-2 xl:flex xl:w-auto xl:items-center xl:gap-3">
         <Select
           value={draft.type}
           onValueChange={(v) => onUpdateType(v as "traditional" | "pvp")}
           disabled={busy}
         >
-          <SelectTrigger className="h-8 w-[130px] text-xs border-gray-700 bg-gray-800/60">
+          <SelectTrigger className="h-8 w-full text-xs border-gray-700 bg-gray-800/60 sm:w-[130px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1067,7 +1067,7 @@ function SettingsBar({
           onValueChange={(v) => onUpdateSize(Number(v))}
           disabled={busy}
         >
-          <SelectTrigger className="h-8 w-[90px] text-xs border-gray-700 bg-gray-800/60">
+          <SelectTrigger className="h-8 w-full text-xs border-gray-700 bg-gray-800/60 sm:w-[90px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1088,7 +1088,7 @@ function SettingsBar({
             onValueChange={(v) => onUpdatePickOrderMode(v as PickOrderMode)}
             disabled={busy}
           >
-            <SelectTrigger className="h-8 w-[170px] text-xs border-gray-700 bg-gray-800/60">
+            <SelectTrigger className="h-8 w-full text-xs border-gray-700 bg-gray-800/60 sm:w-[170px]">
               <span className="truncate">
                 {(draft.pickOrderMode ?? "alternating") === "alternating"
                   ? "Alternating"
@@ -1120,13 +1120,13 @@ function SettingsBar({
           onValueChange={(v) => onUpdateBansPerCaptain(Number(v))}
           disabled={busy}
         >
-          <SelectTrigger className="h-8 w-full min-w-[120px] text-xs border-gray-700 bg-gray-800/60 whitespace-nowrap lg:w-[120px]">
+          <SelectTrigger className="h-8 w-full min-w-0 text-xs border-gray-700 bg-gray-800/60 whitespace-nowrap sm:min-w-[180px] xl:w-[180px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {[0, 1, 2, 3, 4, 5].map((count) => (
               <SelectItem key={count} value={String(count)}>
-                {count} bans
+                {count} {count === 1 ? "ban" : "bans"} per captain
               </SelectItem>
             ))}
           </SelectContent>
