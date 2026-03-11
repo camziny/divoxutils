@@ -88,7 +88,16 @@ class MockDb {
 }
 
 function makeCtx(seed?: Partial<Record<TableName, any[]>>) {
-  return { db: new MockDb(seed) } as any;
+  const scheduled: Array<{ delayMs: number; fn: unknown; args: unknown }> = [];
+  return {
+    db: new MockDb(seed),
+    scheduler: {
+      runAfter: async (delayMs: number, fn: unknown, args: unknown) => {
+        scheduled.push({ delayMs, fn, args });
+      },
+    },
+    _scheduled: scheduled,
+  } as any;
 }
 
 test("getPlayerByToken is draft-scoped by shortId", async () => {
@@ -1449,6 +1458,9 @@ test("finalizeSetResult finalizes pending winner and blocks further edits", asyn
   assert.equal(finalized.setScore, "1-3");
   assert.equal(finalized.setFinalizedBy, "creator");
   assert.equal(typeof finalized.setFinalizedAt, "number");
+  assert.equal(ctx._scheduled.length, 1);
+  assert.equal(ctx._scheduled[0].delayMs, 0);
+  assert.deepEqual(ctx._scheduled[0].args, { draftId: "d-lock" });
 
   await assert.rejects(
     (draftFns.updateFightWinner as any)._handler(ctx, {
@@ -1459,6 +1471,37 @@ test("finalizeSetResult finalizes pending winner and blocks further edits", asyn
     }),
     /Set is already finalized/
   );
+});
+
+test("setWinner does not queue review notification when already sent", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-sent",
+        shortId: "sent",
+        status: "complete",
+        createdBy: "creator",
+        reviewNotificationSentAt: Date.now(),
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-creator",
+        draftId: "d-sent",
+        token: "creator-token",
+        discordUserId: "creator",
+        displayName: "Creator",
+      },
+    ],
+  });
+
+  await (draftFns.setWinner as any)._handler(ctx, {
+    draftId: "d-sent",
+    winnerTeam: 1,
+    token: "creator-token",
+  });
+
+  assert.equal(ctx._scheduled.length, 0);
 });
 
 test("setPlayerClass updates recorded fight class for captain team", async () => {

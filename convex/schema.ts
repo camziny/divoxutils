@@ -85,6 +85,7 @@ export default defineSchema({
     ),
     botPostedLink: v.optional(v.boolean()),
     botNotifiedCaptains: v.optional(v.boolean()),
+    reviewNotificationSentAt: v.optional(v.number()),
   })
     .index("by_shortId", ["shortId"])
     .index("by_status", ["status"]),
