@@ -2,6 +2,7 @@ import { query, mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { classesByRealm, allClasses, REALMS } from "./constants";
 import { Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 
 function generateShortId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -104,6 +105,27 @@ async function recomputeDraftScoreFromFights(
     setScore: buildSetScore(team1Wins, team2Wins),
     pendingWinnerTeam,
   };
+}
+
+async function queueDraftReviewNotification(
+  ctx: any,
+  draft: {
+    _id: Id<"drafts">;
+    winnerTeam?: 1 | 2;
+    resultStatus?: "unverified" | "verified" | "voided";
+    reviewNotificationSentAt?: number;
+  }
+) {
+  if (
+    draft.winnerTeam === undefined ||
+    draft.resultStatus !== "unverified" ||
+    draft.reviewNotificationSentAt
+  ) {
+    return;
+  }
+  await ctx.scheduler.runAfter(0, internal.reviewNotifications.sendDraftReviewNotification, {
+    draftId: draft._id,
+  });
 }
 
 export const getDraft = query({
@@ -1150,6 +1172,12 @@ export const finalizeSetResult = mutation({
       winnerOverriddenAt: undefined,
       winnerOverrideNote: undefined,
     });
+    await queueDraftReviewNotification(ctx, {
+      _id: args.draftId,
+      winnerTeam: winnerToFinalize,
+      resultStatus: "unverified",
+      reviewNotificationSentAt: draft.reviewNotificationSentAt,
+    });
   },
 });
 
@@ -1354,6 +1382,12 @@ export const setWinner = mutation({
       resultModeratedAt: undefined,
       resultModerationNote: undefined,
     });
+    await queueDraftReviewNotification(ctx, {
+      _id: args.draftId,
+      winnerTeam: args.winnerTeam,
+      resultStatus: "unverified",
+      reviewNotificationSentAt: draft.reviewNotificationSentAt,
+    });
   },
 });
 
@@ -1532,6 +1566,12 @@ export const adminReplaceDraftFights = mutation({
       winnerOverriddenBy: undefined,
       winnerOverriddenAt: undefined,
       winnerOverrideNote: undefined,
+    });
+    await queueDraftReviewNotification(ctx, {
+      _id: draft._id,
+      winnerTeam: finalWinnerTeam,
+      resultStatus: "unverified",
+      reviewNotificationSentAt: draft.reviewNotificationSentAt,
     });
   },
 });
