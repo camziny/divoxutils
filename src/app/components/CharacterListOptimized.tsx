@@ -67,6 +67,16 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   const [message, setMessage] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<{ id: number; name: string } | null>(null);
   const initialSortOption = (searchParams?.sortOption || "realm") as string;
+  const initialColumnSort = (() => {
+    const value = searchParams?.columnSort;
+    const normalized = Array.isArray(value) ? value[0] : value;
+    return normalized || null;
+  })();
+  const initialColumnSortDir = (() => {
+    const value = searchParams?.columnSortDir;
+    const normalized = Array.isArray(value) ? value[0] : value;
+    return normalized === "desc" ? "desc" : "asc";
+  })();
   const initialLayout = (() => {
     const value = searchParams?.layout;
     const normalized = Array.isArray(value) ? value[0] : value;
@@ -79,8 +89,8 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   const [desktopLayout, setDesktopLayout] = useState<DesktopLayout>(initialLayout);
   const initialClassFilter = normalizeClassFilter(searchParams?.classFilter);
   const [classFilter, setClassFilter] = useState<ClassFilter>(initialClassFilter);
-  const [columnSort, setColumnSort] = useState<string | null>(null);
-  const [columnSortDir, setColumnSortDir] = useState<"asc" | "desc">("asc");
+  const [columnSort, setColumnSort] = useState<string | null>(initialColumnSort);
+  const [columnSortDir, setColumnSortDir] = useState<"asc" | "desc">(initialColumnSortDir);
   const [showFilters, setShowFilters] = useState(initialClassFilter !== "all");
 
   const filteredCharacters = useMemo(
@@ -102,7 +112,13 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     if (!option) return;
     setSortOption(option);
     setColumnSort(null);
-  }, []);
+    setColumnSortDir("asc");
+    const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
+    nextParams.set("sortOption", option);
+    nextParams.delete("columnSort");
+    nextParams.delete("columnSortDir");
+    router.replace(`${pathname}?${nextParams.toString()}`);
+  }, [activeSearchParams, pathname, router]);
 
   const handleLayoutChange = useCallback(
     (value: string) => {
@@ -111,6 +127,11 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       setDesktopLayout(nextLayout);
       if (nextLayout === "realm-grid" && sortOption === "realm" && !columnSort) {
         setSortOption("rank-high-to-low");
+        const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
+        nextParams.set("sortOption", "rank-high-to-low");
+        nextParams.set("layout", nextLayout);
+        router.replace(`${pathname}?${nextParams.toString()}`);
+        return;
       }
       const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
       nextParams.set("layout", nextLayout);
@@ -140,8 +161,17 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       const nextState = getNextColumnSortState(columnSort, columnSortDir, column);
       setColumnSort(nextState.columnSort);
       setColumnSortDir(nextState.columnSortDir);
+      const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
+      if (nextState.columnSort) {
+        nextParams.set("columnSort", nextState.columnSort);
+        nextParams.set("columnSortDir", nextState.columnSortDir);
+      } else {
+        nextParams.delete("columnSort");
+        nextParams.delete("columnSortDir");
+      }
+      router.replace(`${pathname}?${nextParams.toString()}`);
     },
-    [columnSort, columnSortDir]
+    [activeSearchParams, columnSort, columnSortDir, pathname, router]
   );
 
   const charactersByRealm = useMemo(() => {
