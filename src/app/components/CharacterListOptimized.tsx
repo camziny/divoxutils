@@ -112,7 +112,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       if (nextLayout === "realm-grid" && sortOption === "realm" && !columnSort) {
         setSortOption("rank-high-to-low");
       }
-      const nextParams = new URLSearchParams(activeSearchParams.toString());
+      const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
       nextParams.set("layout", nextLayout);
       router.replace(`${pathname}?${nextParams.toString()}`);
     },
@@ -124,7 +124,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       if (!value) return;
       const next = value as ClassFilter;
       setClassFilter(next);
-      const nextParams = new URLSearchParams(activeSearchParams.toString());
+      const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
       if (next === "all") {
         nextParams.delete("classFilter");
       } else {
