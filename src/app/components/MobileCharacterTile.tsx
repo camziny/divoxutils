@@ -69,13 +69,13 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   const getRealmColorClass = (realmName: string) => {
     switch (realmName) {
       case "Albion":
-        return "bg-red-900/20";
+        return "bg-red-900/10 hover:bg-red-900/20";
       case "Midgard":
-        return "bg-blue-900/20";
+        return "bg-blue-900/10 hover:bg-blue-900/20";
       case "Hibernia":
-        return "bg-green-900/20";
+        return "bg-green-900/10 hover:bg-green-900/20";
       default:
-        return "bg-gray-800/20";
+        return "bg-gray-800/10 hover:bg-gray-800/20";
     }
   };
 
@@ -96,7 +96,7 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   return (
     <div className="mb-1 mx-3">
       <div
-        className={`relative overflow-hidden rounded-md border border-gray-800 ${getRealmColorClass(realm.name)} cursor-pointer`}
+        className={`relative overflow-hidden rounded-md ${getRealmColorClass(realm.name)} cursor-pointer transition-colors duration-100`}
         onClick={() => setOpen(!open)}
       >
         <div className="flex items-center px-3 py-1.5">
@@ -163,6 +163,7 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
             realmPointsLastWeek={realmPointsLastWeek}
             realmPointsThisWeek={realmPointsThisWeek}
             totalRealmPoints={totalRealmPoints}
+            compact
           />
         </div>
       )}

@@ -13,6 +13,7 @@ interface MobileCharacterDetailsProps {
   realmPointsLastWeek: number;
   realmPointsThisWeek: number;
   totalRealmPoints: number;
+  compact?: boolean;
 }
 
 const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
@@ -21,6 +22,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
   realmPointsLastWeek,
   realmPointsThisWeek,
   totalRealmPoints,
+  compact = false,
 }) => {
   const realmPoints = character.heraldRealmPoints || 0;
   const currentRank = getRealmRankForPoints(realmPoints);
@@ -71,16 +73,30 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
     return "0";
   };
 
+  const label = compact ? "text-[10px] text-gray-400" : "text-xs text-gray-400";
+  const value = compact ? "text-[11px] font-semibold text-white" : "text-base font-semibold text-white";
+  const valueSmall = compact ? "text-[11px] font-semibold text-white" : "text-sm font-semibold text-white";
+  const heading = compact ? "text-[11px] font-medium text-white" : "text-sm font-medium text-white";
+  const badge = compact
+    ? "bg-gray-800 px-1 py-px rounded text-[9px] text-gray-400"
+    : "bg-gray-800 px-2 py-0.5 rounded text-gray-400";
+  const card = compact ? "bg-gray-800/30 rounded p-1.5" : "bg-gray-800/30 rounded-md p-2";
+  const outer = compact
+    ? "bg-gray-900 rounded p-1.5 mx-1"
+    : "bg-gray-900 rounded-md border border-gray-800 p-3 mx-3";
+  const sectionGap = compact ? "mb-1.5" : "mb-3";
+  const barHeight = compact ? "h-1" : "h-2";
+
   return (
-    <div className="bg-gray-900 rounded-md border border-gray-800 p-3 mx-3">
-      <div className="text-center mb-3 pb-2 border-b border-gray-800">
-        <h3 className="text-base font-semibold text-white mb-1">{character.heraldName}</h3>
+    <div className={outer}>
+      <div className={`text-center ${sectionGap} ${compact ? "pb-1" : "pb-2"} border-b border-gray-800`}>
+        <h3 className={`${compact ? "text-[11px]" : "text-base"} font-semibold text-white ${compact ? "mb-0.5" : "mb-1"}`}>{character.heraldName}</h3>
         {character.heraldGuildName && (
-          <div className="text-xs text-indigo-300 mb-1">
+          <div className={`${compact ? "text-[10px]" : "text-xs"} text-indigo-300 ${compact ? "mb-0.5" : "mb-1"}`}>
             &lt;{character.heraldGuildName}&gt;
           </div>
         )}
-        <div className="text-xs text-gray-400 space-x-2">
+        <div className={`${compact ? "text-[10px]" : "text-xs"} text-gray-400 space-x-2`}>
           <span className="text-indigo-300">{character.heraldClassName}</span>
           <span>•</span>
           <span>{character.heraldRace}</span>
@@ -89,83 +105,83 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
         </div>
       </div>
 
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-sm font-medium text-white">{currentRankFormatted}</span>
-          <span className="text-sm font-medium text-indigo-400">
+      <div className={sectionGap}>
+        <div className={`flex items-center justify-between ${compact ? "mb-0.5" : "mb-1"}`}>
+          <span className={heading}>{currentRankFormatted}</span>
+          <span className={`${compact ? "text-[10px]" : "text-sm"} font-medium text-indigo-400`}>
             {animatedPercentage.toFixed(1)}%
           </span>
         </div>
-        <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden mb-1">
+        <div className={`w-full bg-gray-800 rounded-full ${barHeight} overflow-hidden ${compact ? "mb-0.5" : "mb-1"}`}>
           <div 
             className="h-full bg-indigo-500"
             style={{ width: `${animatedProgress}%` }}
           />
         </div>
-        <div className="text-center text-xs text-gray-400">
-          <span className="text-gray-300">{formatNumber(nextRankPoints - realmPoints)} RP</span> to <span className="text-indigo-300 text-sm">{nextRankFormatted}</span>
+        <div className={`text-center ${compact ? "text-[10px]" : "text-xs"} text-gray-400`}>
+          <span className="text-gray-300">{formatNumber(nextRankPoints - realmPoints)} RP</span> to <span className={`text-indigo-300 ${compact ? "text-[10px]" : "text-sm"}`}>{nextRankFormatted}</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="bg-gray-800/30 rounded-md p-2">
-          <div className="text-xs text-gray-400">Total RP</div>
-          <div className="text-base font-semibold text-white">{formatNumber(realmPoints)}</div>
+      <div className={`grid grid-cols-2 ${compact ? "gap-1" : "gap-2"} ${sectionGap}`}>
+        <div className={card}>
+          <div className={label}>Total RP</div>
+          <div className={value}>{formatNumber(realmPoints)}</div>
         </div>
-        <div className="bg-gray-800/30 rounded-md p-2">
-          <div className="text-xs text-gray-400">IRS</div>
-          <div className="text-base font-semibold text-white">{formatNumber(irs)}</div>
+        <div className={card}>
+          <div className={label}>IRS</div>
+          <div className={value}>{formatNumber(irs)}</div>
         </div>
       </div>
 
-      <div className="bg-gray-800/30 rounded-md p-2 mb-3">
-        <div className="text-xs text-gray-400 mb-1.5">Weekly Progress</div>
+      <div className={`${card} ${sectionGap}`}>
+        <div className={`${label} ${compact ? "mb-0.5" : "mb-1.5"}`}>Weekly Progress</div>
         <div className="flex justify-between items-center">
           <div>
-            <div className="text-xs text-gray-300">Last Week</div>
-            <div className="text-sm font-semibold text-white">
+            <div className={`${compact ? "text-[10px]" : "text-xs"} text-gray-300`}>Last Week</div>
+            <div className={valueSmall}>
               {formatNumber(realmPointsLastWeek === totalRealmPoints ? 0 : realmPointsLastWeek)}
             </div>
           </div>
-          <div className="text-gray-600 text-lg">→</div>
+          <div className={`text-gray-600 ${compact ? "text-sm" : "text-lg"}`}>→</div>
           <div className="text-right">
-            <div className="text-xs text-gray-300">This Week</div>
-            <div className="text-sm font-semibold text-white">
+            <div className={`${compact ? "text-[10px]" : "text-xs"} text-gray-300`}>This Week</div>
+            <div className={valueSmall}>
               {formatNumber(realmPointsThisWeek)}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <div className="bg-gray-800/30 rounded-md p-2">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-white">Total</span>
-            <div className="flex gap-2 text-xs">
-              <span className="bg-gray-800 px-2 py-0.5 rounded text-gray-400">
+      <div className={compact ? "space-y-1" : "space-y-1.5"}>
+        <div className={card}>
+          <div className={`flex items-center justify-between ${compact ? "mb-1" : "mb-2"}`}>
+            <span className={heading}>Total</span>
+            <div className={`flex ${compact ? "gap-1" : "gap-2"} ${compact ? "text-[9px]" : "text-xs"}`}>
+              <span className={badge}>
                 DB {dbPerKillRatio}%
               </span>
-              <span className="bg-gray-800 px-2 py-0.5 rounded text-gray-400">
+              <span className={badge}>
                 SK {skPerKillRatio}%
               </span>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <div className="py-1">
-              <div className="text-xs text-gray-400">Kills</div>
-              <div className="text-sm font-semibold text-white">{formatNumber(totalKills)}</div>
+          <div className={`grid grid-cols-4 ${compact ? "gap-1" : "gap-2"} text-center`}>
+            <div className={compact ? "py-0" : "py-1"}>
+              <div className={label}>Kills</div>
+              <div className={valueSmall}>{formatNumber(totalKills)}</div>
             </div>
-            <div className="py-1">
-              <div className="text-xs text-gray-400">Deaths</div>
-              <div className="text-sm font-semibold text-white">{formatNumber(totalDeaths)}</div>
+            <div className={compact ? "py-0" : "py-1"}>
+              <div className={label}>Deaths</div>
+              <div className={valueSmall}>{formatNumber(totalDeaths)}</div>
             </div>
-            <div className="py-1">
-              <div className="text-xs text-gray-400">DBs</div>
-              <div className="text-sm font-semibold text-white">{formatNumber(totalDeathBlows)}</div>
+            <div className={compact ? "py-0" : "py-1"}>
+              <div className={label}>DBs</div>
+              <div className={valueSmall}>{formatNumber(totalDeathBlows)}</div>
             </div>
-            <div className="py-1">
-              <div className="text-xs text-gray-400">SKs</div>
-              <div className="text-sm font-semibold text-white">{formatNumber(totalSoloKills)}</div>
+            <div className={compact ? "py-0" : "py-1"}>
+              <div className={label}>SKs</div>
+              <div className={valueSmall}>{formatNumber(totalSoloKills)}</div>
             </div>
           </div>
         </div>
@@ -189,31 +205,31 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
           };
 
           return (
-            <div key={realm} className={`${realmColorMap[realmLower]} rounded-md p-2`}>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm font-medium text-white">{realm}</span>
-                <div className="flex gap-2 text-xs">
-                  <span className="bg-gray-800 px-2 py-0.5 rounded text-gray-400">
+            <div key={realm} className={`${realmColorMap[realmLower]} ${compact ? "rounded p-1.5" : "rounded-md p-2"}`}>
+              <div className={`flex items-center justify-between ${compact ? "mb-0.5" : "mb-1.5"}`}>
+                <span className={heading}>{realm}</span>
+                <div className={`flex ${compact ? "gap-1" : "gap-2"} ${compact ? "text-[9px]" : "text-xs"}`}>
+                  <span className={badge}>
                     DB {realmDbRatio}%
                   </span>
-                  <span className="bg-gray-800 px-2 py-0.5 rounded text-gray-400">
+                  <span className={badge}>
                     SK {realmSkRatio}%
                   </span>
                 </div>
               </div>
               
-              <div className="grid grid-cols-3 gap-1.5 text-center">
-                <div className="py-1">
-                  <div className="text-xs text-gray-400">Kills</div>
-                  <div className="text-sm font-semibold text-white">{formatNumber(kills)}</div>
+              <div className={`grid grid-cols-3 ${compact ? "gap-1" : "gap-1.5"} text-center`}>
+                <div className={compact ? "py-0" : "py-1"}>
+                  <div className={label}>Kills</div>
+                  <div className={valueSmall}>{formatNumber(kills)}</div>
                 </div>
-                <div className="py-1">
-                  <div className="text-xs text-gray-400">DBs</div>
-                  <div className="text-sm font-semibold text-white">{formatNumber(deathBlows)}</div>
+                <div className={compact ? "py-0" : "py-1"}>
+                  <div className={label}>DBs</div>
+                  <div className={valueSmall}>{formatNumber(deathBlows)}</div>
                 </div>
-                <div className="py-1">
-                  <div className="text-xs text-gray-400">SKs</div>
-                  <div className="text-sm font-semibold text-white">{formatNumber(soloKills)}</div>
+                <div className={compact ? "py-0" : "py-1"}>
+                  <div className={label}>SKs</div>
+                  <div className={valueSmall}>{formatNumber(soloKills)}</div>
                 </div>
               </div>
             </div>

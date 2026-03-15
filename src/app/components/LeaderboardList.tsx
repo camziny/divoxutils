@@ -3,8 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import { ViewportPrefetchLink } from "./ViewportPrefetchLink";
-import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Select,
   SelectContent,
@@ -163,32 +163,11 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
     <section className="max-w-3xl mx-auto px-6">
       <div className="mb-6">
         <div className="mx-auto flex w-fit max-w-full flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-2">
-          <div className="inline-flex">
-            <Button
-              onClick={() => handlePeriodChange("total")}
-              variant={selectedPeriod === "total" ? "default" : "secondary"}
-              size="sm"
-              className="rounded-r-none border-r border-r-gray-700/50 h-auto py-1.5 text-[13px]"
-            >
-              Total
-            </Button>
-            <Button
-              onClick={() => handlePeriodChange("lastWeek")}
-              variant={selectedPeriod === "lastWeek" ? "default" : "secondary"}
-              size="sm"
-              className="rounded-none border-r border-r-gray-700/50 h-auto py-1.5 text-[13px]"
-            >
-              Last Week
-            </Button>
-            <Button
-              onClick={() => handlePeriodChange("thisWeek")}
-              variant={selectedPeriod === "thisWeek" ? "default" : "secondary"}
-              size="sm"
-              className="rounded-l-none h-auto py-1.5 text-[13px]"
-            >
-              This Week
-            </Button>
-          </div>
+          <ToggleGroup value={selectedPeriod} onValueChange={(val) => { if (val) handlePeriodChange(val as Period); }}>
+            <ToggleGroupItem value="total">Total</ToggleGroupItem>
+            <ToggleGroupItem value="lastWeek">Last Week</ToggleGroupItem>
+            <ToggleGroupItem value="thisWeek">This Week</ToggleGroupItem>
+          </ToggleGroup>
           
           <Select
             value={selectedMetric}

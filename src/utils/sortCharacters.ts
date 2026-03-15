@@ -42,6 +42,43 @@ export const sortCharacters = (
       return characters.sort(
         (a, b) => a.heraldRealmPoints - b.heraldRealmPoints
       );
+
+    case "name-asc":
+      return characters.sort((a, b) =>
+        (a.heraldName || "").localeCompare(b.heraldName || "")
+      );
+    case "name-desc":
+      return characters.sort((a, b) =>
+        (b.heraldName || "").localeCompare(a.heraldName || "")
+      );
+
+    case "class-asc":
+      return characters.sort((a, b) =>
+        (a.heraldClassName || "").localeCompare(b.heraldClassName || "")
+      );
+    case "class-desc":
+      return characters.sort((a, b) =>
+        (b.heraldClassName || "").localeCompare(a.heraldClassName || "")
+      );
+
+    case "level-desc":
+      return characters.sort(
+        (a, b) => (b.heraldLevel || 0) - (a.heraldLevel || 0)
+      );
+    case "level-asc":
+      return characters.sort(
+        (a, b) => (a.heraldLevel || 0) - (b.heraldLevel || 0)
+      );
+
+    case "server-asc":
+      return characters.sort((a, b) =>
+        (a.heraldServerName || "").localeCompare(b.heraldServerName || "")
+      );
+    case "server-desc":
+      return characters.sort((a, b) =>
+        (b.heraldServerName || "").localeCompare(a.heraldServerName || "")
+      );
+
     default:
       return characters;
   }

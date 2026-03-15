@@ -6,6 +6,7 @@ import Image from "next/image";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import { Pagination } from "@/components/ui/pagination";
 import { CheckCircle2, ChevronRight, User } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { DraftLeaderboardRow } from "@/server/draftLeaderboard";
 import {
   Tooltip,
@@ -85,26 +86,13 @@ export default function LeaderboardClient({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            <span className="text-[11px] text-gray-600 uppercase tracking-wider mr-1">
-              Sort
-            </span>
-            {SORT_OPTIONS.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => handleSort(opt.key)}
-                className={`px-2 py-1 rounded text-xs font-medium transition-colors duration-100 ${
-                  sortBy === opt.key
-                    ? "bg-gray-800 text-gray-200"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <ToggleGroup value={sortBy} onValueChange={(val) => { if (val) handleSort(val as SortKey); }}>
+          {SORT_OPTIONS.map((opt) => (
+            <ToggleGroupItem key={opt.key} value={opt.key}>
+              {opt.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
 
       {sorted.length === 0 ? (

@@ -150,7 +150,7 @@ const CharacterTile: React.FC<{
         className={`
           cursor-pointer
           ${getRealmGradientClass(realm.name)}
-          border-l-4 ${getRealmBorderColor(realm.name)}
+          transition-colors duration-100
         `}
         sx={{
           padding: 0,
@@ -304,29 +304,16 @@ const CharacterTile: React.FC<{
   );
 };
 
-const getRealmBorderColor = (realm: string) => {
-  switch (realm) {
-    case "Albion":
-      return "border-red-600";
-    case "Midgard":
-      return "border-blue-600";
-    case "Hibernia":
-      return "border-green-600";
-    default:
-      return "border-gray-600";
-  }
-};
-
 const getRealmGradientClass = (realm: string) => {
   switch (realm) {
     case "Albion":
-      return "bg-red-900/20";
+      return "bg-red-900/10 hover:bg-red-900/20";
     case "Midgard":
-      return "bg-blue-900/20";
+      return "bg-blue-900/10 hover:bg-blue-900/20";
     case "Hibernia":
-      return "bg-green-900/20";
+      return "bg-green-900/10 hover:bg-green-900/20";
     default:
-      return "bg-gray-800/20";
+      return "bg-gray-800/10 hover:bg-gray-800/20";
   }
 };
 
