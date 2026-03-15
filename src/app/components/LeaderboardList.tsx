@@ -176,12 +176,12 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
               setCurrentPage(1);
             }}
           >
-            <SelectTrigger className="h-[30px] py-0 w-[132px] text-[13px] leading-none font-medium hover:bg-gray-800/50 hover:text-gray-300 transition-colors duration-150 justify-between whitespace-nowrap [&>span]:truncate">
+            <SelectTrigger className="h-[26px] py-0 w-[148px] text-[11px] leading-none font-medium hover:bg-gray-800/50 hover:text-gray-300 transition-colors duration-150 justify-between whitespace-nowrap">
               <SelectValue placeholder="Select metric" />
             </SelectTrigger>
             <SelectContent>
               {Object.entries(metrics).map(([key, label]) => (
-                <SelectItem key={key} value={key} className="px-3 py-2 text-sm">
+                <SelectItem key={key} value={key} className="px-3 py-1.5 text-xs">
                   {label}
                 </SelectItem>
               ))}
