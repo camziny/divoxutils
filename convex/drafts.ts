@@ -48,14 +48,21 @@ function generatePickSequence(
 
 const MAX_FIGHTS = 5;
 const REQUIRED_WINS = 3;
-const DEFAULT_BANS_PER_CAPTAIN = 2;
+const DEFAULT_BANS_PER_CAPTAIN_TRADITIONAL = 0;
+const DEFAULT_BANS_PER_CAPTAIN_PVP = 2;
 const MIN_BANS_PER_CAPTAIN = 0;
 const MAX_BANS_PER_CAPTAIN = 5;
 const STALE_DRAFT_NO_PROGRESS_MS = 30 * 60 * 1000;
 const STALE_DRAFT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
-function getBansPerCaptain(draft: { bansPerCaptain?: number }) {
-  return draft.bansPerCaptain ?? DEFAULT_BANS_PER_CAPTAIN;
+function getDefaultBansPerCaptain(type: "traditional" | "pvp") {
+  return type === "traditional"
+    ? DEFAULT_BANS_PER_CAPTAIN_TRADITIONAL
+    : DEFAULT_BANS_PER_CAPTAIN_PVP;
+}
+
+function getBansPerCaptain(draft: { type: "traditional" | "pvp"; bansPerCaptain?: number }) {
+  return draft.bansPerCaptain ?? getDefaultBansPerCaptain(draft.type);
 }
 
 function generateBanSequence(
@@ -264,7 +271,7 @@ export const createDraft = mutation({
       status: "setup",
       teamSize: defaultTeamSize,
       pickOrderMode: "alternating",
-      bansPerCaptain: DEFAULT_BANS_PER_CAPTAIN,
+      bansPerCaptain: getDefaultBansPerCaptain("traditional"),
       discordGuildId: args.discordGuildId,
       discordGuildName: args.discordGuildName,
       discordChannelId: args.discordChannelId,
@@ -416,7 +423,11 @@ export const updateSettings = mutation({
       type: args.type,
       teamSize: args.teamSize,
       pickOrderMode: args.pickOrderMode ?? draft.pickOrderMode ?? "alternating",
-      bansPerCaptain: args.bansPerCaptain ?? getBansPerCaptain(draft),
+      bansPerCaptain:
+        args.bansPerCaptain ??
+        (args.type !== draft.type
+          ? getDefaultBansPerCaptain(args.type)
+          : getBansPerCaptain(draft)),
     });
   },
 });
