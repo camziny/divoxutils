@@ -14,6 +14,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, User, Share, Check } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "sonner";
 import {
   Select,
@@ -364,25 +365,10 @@ export default function PlayerDrilldownClient({
                 <CardTitle className="text-xs font-medium text-gray-500">
                   Class
                 </CardTitle>
-                <div className="inline-flex items-center gap-1 rounded border border-gray-800/80 bg-gray-900/40 p-1">
-                  {([
-                    { key: "table" as const, label: "Table" },
-                    { key: "map" as const, label: "Rankings" },
-                  ]).map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      onClick={() => setClassView(option.key)}
-                      className={
-                        classView === option.key
-                          ? "rounded px-2 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
-                          : "rounded px-2 py-1 text-[11px] text-gray-500 hover:text-gray-300"
-                      }
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
+                <ToggleGroup value={classView} onValueChange={(val) => { if (val) setClassView(val as ClassView); }}>
+                  <ToggleGroupItem value="table">Table</ToggleGroupItem>
+                  <ToggleGroupItem value="map">Rankings</ToggleGroupItem>
+                </ToggleGroup>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -396,27 +382,12 @@ export default function PlayerDrilldownClient({
                   />
                 ) : null}
                 {classView === "table" ? (
-                  <div className="inline-flex items-center gap-1 rounded border border-gray-800/80 bg-gray-900/40 p-1">
-                    {([
-                      { key: "winRate" as const, label: "Win %" },
-                      { key: "wins" as const, label: "Wins" },
-                      { key: "games" as const, label: "Fights" },
-                      { key: "losses" as const, label: "Losses" },
-                    ]).map((option) => (
-                      <button
-                        key={option.key}
-                        type="button"
-                        onClick={() => setClassSortBy(option.key)}
-                        className={
-                          classSortBy === option.key
-                            ? "rounded px-2 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
-                            : "rounded px-2 py-1 text-[11px] text-gray-500 hover:text-gray-300"
-                        }
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
+                  <ToggleGroup value={classSortBy} onValueChange={(val) => { if (val) setClassSortBy(val as ClassSortKey); }}>
+                    <ToggleGroupItem value="winRate">Win %</ToggleGroupItem>
+                    <ToggleGroupItem value="wins">Wins</ToggleGroupItem>
+                    <ToggleGroupItem value="games">Fights</ToggleGroupItem>
+                    <ToggleGroupItem value="losses">Losses</ToggleGroupItem>
+                  </ToggleGroup>
                 ) : null}
                 {classView === "map" ? (
                   <Select value={selectedClass} onValueChange={setSelectedClass}>
@@ -606,30 +577,10 @@ export default function PlayerDrilldownClient({
                   </Tooltip>
                 </TooltipProvider>
               </CardTitle>
-              <div className="inline-flex items-center gap-1 rounded border border-gray-800/80 bg-gray-900/40 p-1">
-                <button
-                  type="button"
-                  onClick={() => handleHeadToHeadViewChange("all")}
-                  className={
-                    headToHeadView === "all"
-                      ? "rounded px-2 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
-                      : "rounded px-2 py-1 text-[11px] text-gray-500 hover:text-gray-300"
-                  }
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleHeadToHeadViewChange("captain")}
-                  className={
-                    headToHeadView === "captain"
-                      ? "rounded px-2 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
-                      : "rounded px-2 py-1 text-[11px] text-gray-500 hover:text-gray-300"
-                  }
-                >
-                  Captain
-                </button>
-              </div>
+              <ToggleGroup value={headToHeadView} onValueChange={(val) => { if (val) handleHeadToHeadViewChange(val as HeadToHeadView); }}>
+                <ToggleGroupItem value="all">All</ToggleGroupItem>
+                <ToggleGroupItem value="captain">Captain</ToggleGroupItem>
+              </ToggleGroup>
             </div>
           </CardHeader>
           <CardContent className="pt-2">
@@ -779,30 +730,10 @@ export default function PlayerDrilldownClient({
                     </Tooltip>
                   </TooltipProvider>
                 </CardTitle>
-                <div className="inline-flex items-center gap-1 rounded border border-gray-800/80 bg-gray-900/40 p-1">
-                  <button
-                    type="button"
-                    onClick={() => handleTeammateViewChange("winning")}
-                    className={
-                      teammateView === "winning"
-                        ? "rounded px-2 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
-                        : "rounded px-2 py-1 text-[11px] text-gray-500 hover:text-gray-300"
-                    }
-                  >
-                    Best Results
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTeammateViewChange("losing")}
-                    className={
-                      teammateView === "losing"
-                        ? "rounded px-2 py-1 text-[11px] font-medium text-gray-200 bg-gray-800"
-                        : "rounded px-2 py-1 text-[11px] text-gray-500 hover:text-gray-300"
-                    }
-                  >
-                    Worst Results
-                  </button>
-                </div>
+                <ToggleGroup value={teammateView} onValueChange={(val) => { if (val) handleTeammateViewChange(val as TeammateView); }}>
+                  <ToggleGroupItem value="winning">Best Results</ToggleGroupItem>
+                  <ToggleGroupItem value="losing">Worst Results</ToggleGroupItem>
+                </ToggleGroup>
               </div>
             </CardHeader>
             <CardContent className="pt-2">

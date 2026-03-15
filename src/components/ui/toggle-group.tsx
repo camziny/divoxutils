@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 interface ToggleGroupProps {
   value: string;
@@ -16,7 +17,8 @@ interface ToggleGroupItemProps
 const ToggleGroupContext = React.createContext<{
   value: string;
   onValueChange: (value: string) => void;
-}>({ value: "", onValueChange: () => {} });
+  groupId: string;
+}>({ value: "", onValueChange: () => {}, groupId: "" });
 
 const ToggleGroup: React.FC<ToggleGroupProps> = ({
   value,
@@ -24,16 +26,20 @@ const ToggleGroup: React.FC<ToggleGroupProps> = ({
   children,
   className,
 }) => {
+  const groupId = React.useId();
+
   return (
-    <ToggleGroupContext.Provider value={{ value, onValueChange }}>
-      <div
-        className={cn(
-          "inline-flex rounded-md bg-gray-800 p-0.5",
-          className
-        )}
-      >
-        {children}
-      </div>
+    <ToggleGroupContext.Provider value={{ value, onValueChange, groupId }}>
+      <LayoutGroup id={groupId}>
+        <div
+          className={cn(
+            "inline-flex rounded-md bg-gray-800 p-0.5",
+            className
+          )}
+        >
+          {children}
+        </div>
+      </LayoutGroup>
     </ToggleGroupContext.Provider>
   );
 };
@@ -52,7 +58,7 @@ const ToggleGroupItem: React.FC<ToggleGroupItemProps> = ({
       type="button"
       onClick={() => ctx.onValueChange(value)}
       className={cn(
-        "inline-flex items-center justify-center rounded-[5px] px-2.5 py-0.5 text-[11px] font-medium transition-all duration-150",
+        "relative inline-flex items-center justify-center whitespace-nowrap rounded-[5px] px-2.5 py-0.5 text-[11px] font-medium transition-colors duration-150",
         isActive
           ? "bg-gray-700 text-white shadow-sm"
           : "text-gray-500 hover:text-gray-300",
@@ -60,7 +66,16 @@ const ToggleGroupItem: React.FC<ToggleGroupItemProps> = ({
       )}
       {...props}
     >
-      {children}
+      <AnimatePresence>
+        {isActive && (
+          <motion.span
+            layoutId={`toggle-bg-${ctx.groupId}`}
+            className="absolute inset-0 rounded-[5px] bg-gray-700 shadow-sm"
+            transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
+          />
+        )}
+      </AnimatePresence>
+      <span className="relative z-10 inline-flex items-center gap-[inherit]">{children}</span>
     </button>
   );
 };

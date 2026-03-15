@@ -30,4 +30,6 @@ test("ToggleGroup marks selected item as active", () => {
 
   assert.match(html, /bg-gray-700 text-white shadow-sm/);
   assert.match(html, /text-gray-500 hover:text-gray-300/);
+  assert.match(html, /absolute inset-0 rounded-\[5px\] bg-gray-700 shadow-sm/);
+  assert.match(html, /whitespace-nowrap/);
 });
