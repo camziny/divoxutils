@@ -411,7 +411,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="max-h-[80vh] overflow-y-auto rounded-xl border border-gray-800 bg-gray-900/40 p-2"
+              className="rounded-xl border border-gray-800 bg-gray-900/40 p-2 [@media(max-height:900px)]:max-h-[80vh] [@media(max-height:900px)]:overflow-y-auto"
             >
               <div className="grid grid-cols-3 gap-2">
                 {REALMS.map((realm) => (

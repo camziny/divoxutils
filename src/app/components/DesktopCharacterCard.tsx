@@ -69,16 +69,16 @@ const DesktopCharacterCard: React.FC<DesktopCharacterCardProps> = ({
   return (
     <div>
       <div
-        className={`flex cursor-pointer items-center ${getRealmBg(realm.name)} transition-colors duration-100 rounded px-2 py-[3px] gap-1.5 group`}
+        className={`flex cursor-pointer items-center ${getRealmBg(realm.name)} transition-colors duration-100 rounded px-2 py-[3px] gap-1.5 group [@media(min-height:900px)]:px-2.5 [@media(min-height:900px)]:py-1 [@media(min-height:900px)]:gap-2`}
         onClick={() => setOpen((prev) => !prev)}
       >
-        <span className="truncate text-[11px] font-medium text-white min-w-0 flex-1">
+        <span className="truncate text-[11px] font-medium text-white min-w-0 flex-1 [@media(min-height:900px)]:text-xs">
           {characterDetails.heraldName || "Unknown"}
         </span>
-        <span className="text-[10px] text-gray-400 flex-shrink-0 w-[70px] truncate">
+        <span className="text-[10px] text-gray-400 flex-shrink-0 w-[70px] truncate [@media(min-height:900px)]:text-[11px] [@media(min-height:900px)]:w-[84px]">
           {characterDetails.heraldClassName || "-"}
         </span>
-        <span className="text-[10px] font-semibold text-gray-300 flex-shrink-0 w-[32px] text-right">
+        <span className="text-[10px] font-semibold text-gray-300 flex-shrink-0 w-[32px] text-right [@media(min-height:900px)]:text-[11px] [@media(min-height:900px)]:w-[38px]">
           {formattedRank || "-"}
         </span>
         {showDeleteIcon && (
@@ -89,9 +89,9 @@ const DesktopCharacterCard: React.FC<DesktopCharacterCardProps> = ({
             }}
             disabled={isDeleting}
             data-testid={`delete-character-${character.id}`}
-            className="p-0.5 rounded text-gray-600 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all duration-150 disabled:opacity-40 flex-shrink-0"
+            className="p-0.5 rounded text-gray-600 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all duration-150 disabled:opacity-40 flex-shrink-0 [@media(min-height:900px)]:p-1"
           >
-            {isDeleting ? <Loader2 size={10} className="animate-spin" /> : <X size={10} />}
+            {isDeleting ? <Loader2 size={10} className="animate-spin [@media(min-height:900px)]:w-[11px] [@media(min-height:900px)]:h-[11px]" /> : <X size={10} className="[@media(min-height:900px)]:w-[11px] [@media(min-height:900px)]:h-[11px]" />}
           </button>
         )}
       </div>
