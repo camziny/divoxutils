@@ -1342,7 +1342,7 @@ function CoinFlipSection({
                         size="sm"
                         onClick={() => onChoice("player_first")}
                       >
-                        Pick Players First
+                        Pick Player First
                       </Button>
                     </>
                   ) : (
