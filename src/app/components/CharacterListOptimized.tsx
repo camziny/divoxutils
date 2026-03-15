@@ -50,7 +50,7 @@ type CharacterListProps = {
 
 type DesktopLayout = "table" | "realm-grid";
 const DESKTOP_LAYOUTS: DesktopLayout[] = ["table", "realm-grid"];
-const REALMS: Array<"Albion" | "Midgard" | "Hibernia"> = ["Albion", "Midgard", "Hibernia"];
+const REALMS: Array<"Albion" | "Hibernia" | "Midgard"> = ["Albion", "Hibernia", "Midgard"];
 
 const CharacterListOptimized: React.FC<CharacterListProps> = ({
   characters,
@@ -145,7 +145,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   );
 
   const charactersByRealm = useMemo(() => {
-    const grouped: Record<"Albion" | "Midgard" | "Hibernia", CharacterData[]> = {
+    const grouped: Record<"Albion" | "Hibernia" | "Midgard", CharacterData[]> = {
       Albion: [],
       Midgard: [],
       Hibernia: [],
