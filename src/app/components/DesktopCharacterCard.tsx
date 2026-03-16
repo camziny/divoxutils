@@ -5,6 +5,7 @@ import { CharacterData, formatRealmRankWithLevel, getRealmNameAndColor, getRealm
 import MobileCharacterDetails from "./MobileCharacterDetails";
 import { Loader2, X } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
+import { getRealmSurfaceInteractiveClass } from "./characterTileTheme";
 
 interface DesktopCharacterCardProps {
   character: CharacterData;
@@ -28,15 +29,6 @@ interface DesktopCharacterCardProps {
   showDelete?: boolean;
   isDeleting?: boolean;
 }
-
-const getRealmBg = (realmName: string) => {
-  switch (realmName) {
-    case "Albion": return "bg-red-900/10 hover:bg-red-900/20";
-    case "Midgard": return "bg-blue-900/10 hover:bg-blue-900/20";
-    case "Hibernia": return "bg-green-900/10 hover:bg-green-900/20";
-    default: return "bg-gray-800/10 hover:bg-gray-800/20";
-  }
-};
 
 const getOpponentRealms = (realmName: string) => {
   const realms = ["Albion", "Midgard", "Hibernia"];
@@ -69,7 +61,7 @@ const DesktopCharacterCard: React.FC<DesktopCharacterCardProps> = ({
   return (
     <div>
       <div
-        className={`flex cursor-pointer items-center ${getRealmBg(realm.name)} transition-colors duration-100 rounded px-2 py-[3px] gap-1.5 group [@media(min-height:900px)]:px-2.5 [@media(min-height:900px)]:py-1 [@media(min-height:900px)]:gap-2`}
+        className={`flex cursor-pointer items-center ${getRealmSurfaceInteractiveClass(realm.name)} transition-colors duration-100 rounded px-2 py-[3px] gap-1.5 group [@media(min-height:900px)]:px-2.5 [@media(min-height:900px)]:py-1 [@media(min-height:900px)]:gap-2`}
         onClick={() => setOpen((prev) => !prev)}
       >
         <span className="truncate text-[11px] font-medium text-white min-w-0 flex-1 [@media(min-height:900px)]:text-xs">

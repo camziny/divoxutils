@@ -6,6 +6,7 @@ import {
   calculateProgressPercentage,
   getRealmRanks
 } from "@/utils/character";
+import { getRealmSurfaceClass } from "./characterTileTheme";
 
 interface MobileCharacterDetailsProps {
   character: CharacterData;
@@ -82,8 +83,8 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
     : "bg-gray-800 px-2 py-0.5 rounded text-gray-400";
   const card = compact ? "bg-gray-800/30 rounded p-1.5" : "bg-gray-800/30 rounded-md p-2";
   const outer = compact
-    ? "bg-gray-900 rounded p-1.5 mx-1"
-    : "bg-gray-900 rounded-md border border-gray-800 p-3 mx-3";
+    ? "rounded p-1.5 mx-1 bg-gray-900/20"
+    : "rounded-md border border-gray-800 p-3 mx-3 bg-gray-900/20";
   const sectionGap = compact ? "mb-1.5" : "mb-3";
   const barHeight = compact ? "h-1" : "h-2";
 
@@ -198,14 +199,8 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
           const realmDbRatio = kills === 0 ? 0 : ((deathBlows / kills) * 100).toFixed(1);
           const realmSkRatio = kills === 0 ? 0 : ((soloKills / kills) * 100).toFixed(1);
 
-          const realmColorMap: { [key: string]: string } = {
-            albion: "bg-red-900/20",
-            midgard: "bg-blue-900/20", 
-            hibernia: "bg-green-900/20"
-          };
-
           return (
-            <div key={realm} className={`${realmColorMap[realmLower]} ${compact ? "rounded p-1.5" : "rounded-md p-2"}`}>
+            <div key={realm} className={`${getRealmSurfaceClass(realm)} ${compact ? "rounded p-1.5" : "rounded-md p-2"}`}>
               <div className={`flex items-center justify-between ${compact ? "mb-0.5" : "mb-1.5"}`}>
                 <span className={heading}>{realm}</span>
                 <div className={`flex ${compact ? "gap-1" : "gap-2"} ${compact ? "text-[9px]" : "text-xs"}`}>

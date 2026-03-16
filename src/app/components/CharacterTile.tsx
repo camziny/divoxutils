@@ -13,6 +13,7 @@ import { CharacterData, getRealmRankForPoints, formatRealmRankWithLevel } from "
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipProps } from "@mui/material";
 import { styled } from "@mui/material/styles";
+import { getRealmSurfaceClass, getRealmSurfaceInteractiveClass } from "./characterTileTheme";
 
 type KillStats = {
   kills: number;
@@ -149,7 +150,7 @@ const CharacterTile: React.FC<{
         onClick={() => setOpen(!open)}
         className={`
           cursor-pointer
-          ${getRealmGradientClass(realm.name)}
+          ${getRealmSurfaceInteractiveClass(realm.name)}
           transition-colors duration-100
         `}
         sx={{
@@ -271,7 +272,7 @@ const CharacterTile: React.FC<{
       </TableRow>
       <AnimatePresence initial={false}>
         {open && (
-          <TableRow className="bg-gray-900">
+          <TableRow className={getRealmSurfaceClass(realm.name)}>
             <TableCell colSpan={10} className="p-0">
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
@@ -302,19 +303,6 @@ const CharacterTile: React.FC<{
       />
     </>
   );
-};
-
-const getRealmGradientClass = (realm: string) => {
-  switch (realm) {
-    case "Albion":
-      return "bg-red-900/10 hover:bg-red-900/20";
-    case "Midgard":
-      return "bg-blue-900/10 hover:bg-blue-900/20";
-    case "Hibernia":
-      return "bg-green-900/10 hover:bg-green-900/20";
-    default:
-      return "bg-gray-800/10 hover:bg-gray-800/20";
-  }
 };
 
 export default CharacterTile;

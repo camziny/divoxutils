@@ -111,10 +111,10 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   }, [progressPercentage]);
 
   return (
-    <TableCell className="bg-gray-900 w-full px-2 py-1" colSpan={9}>
+    <TableCell className="bg-gray-900/20 w-full px-2 py-1" colSpan={9}>
       <div className="flex justify-center">
         <div className="sm:hidden w-full">
-          <div className="bg-gray-900 rounded-lg mx-auto p-1 max-w-[260px]">
+          <div className="bg-gray-900/20 rounded-lg mx-auto p-1 max-w-[260px]">
             <div className="space-y-1.5">
               <CharacterInfoCard character={character} />
               <InfoStatsCard
