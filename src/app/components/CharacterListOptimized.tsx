@@ -99,8 +99,11 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   );
 
   const effectiveSortKey = useMemo(
-    () => getEffectiveCharacterSortKey(sortOption, columnSort, columnSortDir),
-    [columnSort, columnSortDir, sortOption]
+    () =>
+      desktopLayout === "realm-grid" && sortOption === "realm" && !columnSort
+        ? "rank-high-to-low"
+        : getEffectiveCharacterSortKey(sortOption, columnSort, columnSortDir),
+    [desktopLayout, sortOption, columnSort, columnSortDir]
   );
 
   const sortedCharacters = useMemo(
@@ -125,19 +128,11 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       if (!DESKTOP_LAYOUTS.includes(value as DesktopLayout)) return;
       const nextLayout = value as DesktopLayout;
       setDesktopLayout(nextLayout);
-      if (nextLayout === "realm-grid" && sortOption === "realm" && !columnSort) {
-        setSortOption("rank-high-to-low");
-        const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
-        nextParams.set("sortOption", "rank-high-to-low");
-        nextParams.set("layout", nextLayout);
-        router.replace(`${pathname}?${nextParams.toString()}`);
-        return;
-      }
       const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
       nextParams.set("layout", nextLayout);
       router.replace(`${pathname}?${nextParams.toString()}`);
     },
-    [activeSearchParams, pathname, router, sortOption, columnSort]
+    [activeSearchParams, pathname, router]
   );
 
   const handleClassFilterChange = useCallback(
