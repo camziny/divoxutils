@@ -12,6 +12,7 @@ import {
 } from "@/utils/character";
 import MobileCharacterTileSkeleton from "./MobileCharacterTileSkeleton";
 import { CharacterData } from "@/utils/character";
+import { getRealmSurfaceInteractiveClass } from "./characterTileTheme";
 
 interface MobileCharacterTileProps {
   character: CharacterData;
@@ -65,20 +66,6 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   const realm = getRealmNameAndColor(characterDetails.realm);
   const opponentRealms = getOpponentRealms(characterDetails.realm);
 
-  // Match CharacterTile colors exactly
-  const getRealmColorClass = (realmName: string) => {
-    switch (realmName) {
-      case "Albion":
-        return "bg-red-900/10 hover:bg-red-900/20";
-      case "Midgard":
-        return "bg-blue-900/10 hover:bg-blue-900/20";
-      case "Hibernia":
-        return "bg-green-900/10 hover:bg-green-900/20";
-      default:
-        return "bg-gray-800/10 hover:bg-gray-800/20";
-    }
-  };
-
   const truncateText = (text: string, maxLength: number) => {
     if (!text) return "N/A";
     return text.length > maxLength
@@ -96,7 +83,7 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   return (
     <div className="mb-1 mx-3">
       <div
-        className={`relative overflow-hidden rounded-md ${getRealmColorClass(realm.name)} cursor-pointer transition-colors duration-100`}
+        className={`relative overflow-hidden rounded-md ${getRealmSurfaceInteractiveClass(realm.name)} cursor-pointer transition-colors duration-100`}
         onClick={() => setOpen(!open)}
       >
         <div className="flex items-center px-3 py-1.5">

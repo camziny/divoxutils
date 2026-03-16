@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { CircularProgress, Card, CardBody, CardHeader } from "@nextui-org/react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { getRealmSurfaceClass } from "./characterTileTheme";
 
 interface RealmCardProps {
   realm: string;
@@ -38,8 +39,8 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
   };
 
   return (
-    <Card className="bg-gray-900 border border-gray-800 text-gray-100 shadow-none">
-      <CardHeader className={`${realm.toLowerCase()} py-1 px-3`}>
+    <Card className={`${getRealmSurfaceClass(realm)} border border-gray-800 text-gray-100 shadow-none`}>
+      <CardHeader className={`${getRealmSurfaceClass(realm)} py-1 px-3`}>
         <h3 className="text-xs font-medium m-0">{capitalizeRealm(realm)}</h3>
       </CardHeader>
       <CardBody className="flex flex-col items-center px-3 py-2 text-sm flex-grow justify-between">

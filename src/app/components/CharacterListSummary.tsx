@@ -1,4 +1,5 @@
 import React from "react";
+import { getRealmSurfaceClass } from "./characterTileTheme";
 
 interface PlayerKillStats {
   kills: number;
@@ -99,13 +100,6 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
       : "N/A";
   };
 
-  const realmColors: Record<string, string> = {
-    Albion: "bg-red-900/20",
-    Midgard: "bg-blue-900/20",
-    Hibernia: "bg-green-900/20",
-    Total: "bg-gray-800",
-  };
-
   const capitalizeRealm = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
@@ -134,7 +128,7 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
             key={realm}
             className="bg-gray-900 border border-gray-800 rounded-md text-white min-w-0"
           >
-            <div className={`${realmColors[realm]} py-1 px-3 sm:px-4 rounded-t-md`}>
+            <div className={`${getRealmSurfaceClass(realm)} py-1 px-3 sm:px-4 rounded-t-md`}>
               <span className="text-xs font-medium">{realm}</span>
             </div>
             <div className="divide-y divide-gray-800 px-3 sm:px-4 py-1">
