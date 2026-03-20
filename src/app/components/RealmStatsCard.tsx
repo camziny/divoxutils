@@ -39,8 +39,8 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
   };
 
   return (
-    <Card className={`${getRealmSurfaceClass(realm)} border border-gray-800 text-gray-100 shadow-none`}>
-      <CardHeader className={`${getRealmSurfaceClass(realm)} py-1 px-3`}>
+    <Card className="bg-gray-900 border border-gray-800 text-gray-100 shadow-none">
+      <CardHeader className={`${getRealmSurfaceClass(realm)} py-1 px-3 border-b border-gray-800`}>
         <h3 className="text-xs font-medium m-0">{capitalizeRealm(realm)}</h3>
       </CardHeader>
       <CardBody className="flex flex-col items-center px-3 py-2 text-sm flex-grow justify-between">

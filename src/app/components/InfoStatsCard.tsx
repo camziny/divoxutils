@@ -3,6 +3,7 @@ import { Card, CardBody, CardHeader, Progress } from "@nextui-org/react";
 
 interface InfoStatsCardProps {
   totalRP: string;
+  totalBountyPoints: string;
   irs: string | undefined;
   rpsToNextRank: string;
   currentRank: string;
@@ -15,6 +16,7 @@ interface InfoStatsCardProps {
 
 const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
   totalRP,
+  totalBountyPoints,
   irs,
   rpsToNextRank,
   nextRank,
@@ -47,6 +49,10 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
           <div className="flex items-center justify-between py-1.5">
             <span className="text-xs text-gray-400">Total RP</span>
             <span className="text-xs font-semibold text-white tabular-nums">{totalRP}</span>
+          </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-xs text-gray-400">Total BPs</span>
+            <span className="text-xs font-semibold text-white tabular-nums">{totalBountyPoints}</span>
           </div>
           <div className="flex items-center justify-between py-1.5">
             <span className="text-xs text-gray-400">IRS</span>
