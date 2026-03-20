@@ -131,12 +131,12 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
           <div className={value}>{formatNumber(realmPoints)}</div>
         </div>
         <div className={card}>
-          <div className={label}>IRS</div>
-          <div className={value}>{formatNumber(irs)}</div>
-        </div>
-        <div className={card}>
           <div className={label}>Total BPs</div>
           <div className={value}>{formatNumber(totalBountyPoints)}</div>
+        </div>
+        <div className={card}>
+          <div className={label}>IRS</div>
+          <div className={value}>{formatNumber(irs)}</div>
         </div>
       </div>
 
