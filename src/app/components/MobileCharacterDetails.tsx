@@ -64,6 +64,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
   const totalDeaths = character.player_kills?.total?.deaths || 0;
   const totalDeathBlows = character.player_kills?.total?.death_blows || 0;
   const totalSoloKills = character.player_kills?.total?.solo_kills || 0;
+  const totalBountyPoints = character.heraldBountyPoints || 0;
   
   const irs = totalDeaths === 0 ? 0 : Math.round(realmPoints / totalDeaths);
   const dbPerKillRatio = totalKills === 0 ? 0 : ((totalDeathBlows / totalKills) * 100).toFixed(1);
@@ -124,10 +125,14 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
         </div>
       </div>
 
-      <div className={`grid grid-cols-2 ${compact ? "gap-1" : "gap-2"} ${sectionGap}`}>
+      <div className={`grid grid-cols-3 ${compact ? "gap-1" : "gap-2"} ${sectionGap}`}>
         <div className={card}>
           <div className={label}>Total RP</div>
           <div className={value}>{formatNumber(realmPoints)}</div>
+        </div>
+        <div className={card}>
+          <div className={label}>Total BPs</div>
+          <div className={value}>{formatNumber(totalBountyPoints)}</div>
         </div>
         <div className={card}>
           <div className={label}>IRS</div>

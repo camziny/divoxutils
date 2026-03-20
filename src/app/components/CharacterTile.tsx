@@ -13,7 +13,7 @@ import { CharacterData, getRealmRankForPoints, formatRealmRankWithLevel } from "
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip, TooltipProps } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { getRealmSurfaceClass, getRealmSurfaceInteractiveClass } from "./characterTileTheme";
+import { getRealmSurfaceInteractiveClass } from "./characterTileTheme";
 
 type KillStats = {
   kills: number;
@@ -272,7 +272,7 @@ const CharacterTile: React.FC<{
       </TableRow>
       <AnimatePresence initial={false}>
         {open && (
-          <TableRow className={getRealmSurfaceClass(realm.name)}>
+          <TableRow className="bg-transparent">
             <TableCell colSpan={10} className="p-0">
               <motion.div
                 initial={{ height: 0, opacity: 0 }}

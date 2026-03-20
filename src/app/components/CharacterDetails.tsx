@@ -119,6 +119,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
               <CharacterInfoCard character={character} />
               <InfoStatsCard
                 totalRP={formatNumber(realmPoints)}
+                totalBountyPoints={formatNumber(character.heraldBountyPoints || 0)}
                 irs={formatNumber(
                   irs !== undefined ? Math.round(irs) : undefined
                 )}
@@ -232,6 +233,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
                 <InfoStatsCard
                   key={index}
                   totalRP={formatNumber(realmPoints)}
+                  totalBountyPoints={formatNumber(character.heraldBountyPoints || 0)}
                   irs={formatNumber(
                     irs !== undefined ? Math.round(irs) : undefined
                   )}
