@@ -75,14 +75,14 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
     return "0";
   };
 
-  const label = compact ? "text-[10px] text-gray-400" : "text-xs text-gray-400";
-  const value = compact ? "text-[11px] font-semibold text-white" : "text-base font-semibold text-white";
+  const label = compact ? "text-[10px] max-[360px]:text-[9px] text-gray-400 leading-tight" : "text-xs text-gray-400";
+  const value = compact ? "text-[11px] max-[360px]:text-[10px] font-semibold text-white leading-tight" : "text-base font-semibold text-white";
   const valueSmall = compact ? "text-[11px] font-semibold text-white" : "text-sm font-semibold text-white";
   const heading = compact ? "text-[11px] font-medium text-white" : "text-sm font-medium text-white";
   const badge = compact
     ? "bg-gray-800 px-1 py-px rounded text-[9px] text-gray-400"
     : "bg-gray-800 px-2 py-0.5 rounded text-gray-400";
-  const card = compact ? "bg-gray-800/30 rounded p-1.5" : "bg-gray-800/30 rounded-md p-2";
+  const card = compact ? "bg-gray-800/30 rounded p-1.5 max-[360px]:p-1" : "bg-gray-800/30 rounded-md p-2";
   const outer = compact
     ? "rounded p-1.5 mx-1 bg-gray-900/20"
     : "rounded-md border border-gray-800 p-3 mx-3 bg-gray-900/20";
@@ -104,6 +104,8 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
           <span>{character.heraldRace}</span>
           <span>•</span>
           <span>{character.heraldLevel || "50"}</span>
+          <span>•</span>
+          <span className="text-gray-200">{character.heraldServerName || "-"}</span>
         </div>
       </div>
 
@@ -125,7 +127,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
         </div>
       </div>
 
-      <div className={`grid grid-cols-3 ${compact ? "gap-1" : "gap-2"} ${sectionGap}`}>
+      <div className={`grid grid-cols-3 ${compact ? "gap-1 max-[360px]:gap-0.5" : "gap-2"} ${sectionGap}`}>
         <div className={card}>
           <div className={label}>Total RP</div>
           <div className={value}>{formatNumber(realmPoints)}</div>

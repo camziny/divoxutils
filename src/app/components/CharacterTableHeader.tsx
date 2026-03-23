@@ -8,7 +8,7 @@ interface CharacterTableHeaderProps {
   onColumnSort?: (column: string) => void;
 }
 
-const baseCellClass = "!bg-gray-800/50 !text-gray-400 font-medium text-xs tracking-wider";
+const baseCellClass = "!bg-gray-800/50 !text-gray-400 font-medium text-xs tracking-wider whitespace-nowrap";
 const clickableClass = `${baseCellClass} cursor-pointer select-none hover:!text-gray-200 transition-colors duration-150 group/header`;
 
 const SortIndicator: React.FC<{ column: string; active: string | null | undefined; dir: "asc" | "desc" | undefined }> = ({ column, active, dir }) => {
@@ -31,7 +31,15 @@ const CharacterTableHeader: React.FC<CharacterTableHeaderProps> = ({
 }) => {
   const handleClick = (col: string) => () => onColumnSort?.(col);
   const cellSx = (width: string, extra?: object) => ({
-    width, padding: "4px 6px", borderBottom: "none", height: "24px", ...extra,
+    width,
+    padding: "4px 6px",
+    borderBottom: "none",
+    height: "24px",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    lineHeight: 1.15,
+    ...extra,
   });
 
   return (
@@ -59,7 +67,9 @@ const CharacterTableHeader: React.FC<CharacterTableHeaderProps> = ({
         className={clickableClass}
         onClick={handleClick("rank")}
       >
-        Realm Rank<SortIndicator column="rank" active={columnSort} dir={columnSortDir} />
+        <span className="inline md:hidden">RR</span>
+        <span className="hidden md:inline">Realm Rank</span>
+        <SortIndicator column="rank" active={columnSort} dir={columnSortDir} />
       </TableCell>
       <TableCell
         sx={cellSx("18%", { minWidth: "100px" })}
