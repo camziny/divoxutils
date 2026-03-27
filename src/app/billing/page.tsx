@@ -1,5 +1,6 @@
 import React from "react";
 import { auth } from "@clerk/nextjs/server";
+import type Stripe from "stripe";
 import prisma from "../../../prisma/prismaClient";
 import {
   getStripeClient,
@@ -26,7 +27,7 @@ const TIER_LABELS: Record<number, string> = {
 };
 
 const resolveRemotePeriodSeconds = (
-  subscription: Awaited<ReturnType<ReturnType<typeof getStripeClient>["subscriptions"]["retrieve"]>>
+  subscription: Stripe.Subscription
 ): number | null => {
   const typedSubscription = subscription as unknown as { current_period_end?: number | null };
   const subscriptionLevel = typedSubscription.current_period_end;
@@ -78,9 +79,7 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
         let resolvedPriceId = user.subscriptionPriceId ?? null;
         let resolvedCancelAtPeriodEnd = user.subscriptionCancelAtPeriodEnd;
         let resolvedPeriodEnd = user.subscriptionCurrentPeriodEnd;
-        let remoteSubscription:
-          | Awaited<ReturnType<ReturnType<typeof getStripeClient>["subscriptions"]["retrieve"]>>
-          | null = null;
+        let remoteSubscription: Stripe.Subscription | null = null;
         if (user.stripeSubscriptionId) {
           try {
             remoteSubscription = await getStripeClient().subscriptions.retrieve(
