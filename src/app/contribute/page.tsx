@@ -69,6 +69,11 @@ const ContributePage = async () => {
             Supporter tiers add a visual icon next to your name. The goal is
             simple: keep the app online and cover recurring costs.
           </p>
+          <p className="text-sm leading-relaxed text-gray-400">
+            If support ever goes beyond monthly infrastructure costs, any
+            additional amount helps offset the time spent maintaining and
+            improving divoxutils.
+          </p>
         </header>
 
         <section className="rounded-lg border border-gray-800 bg-gray-800/20 p-4 space-y-3">
