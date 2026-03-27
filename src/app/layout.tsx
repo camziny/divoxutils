@@ -9,6 +9,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "./providers";
 import { Toaster } from "sonner";
+import SupportPromptModal from "./components/SupportPromptModal";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -58,6 +59,7 @@ export default function RootLayout({
           <div className="flex flex-col min-h-screen">
             <Providers>
               <Navbar />
+              <SupportPromptModal />
               {children}
               <SpeedInsights />
               <Analytics />
