@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import Loading from "../loading";
 import GroupBuilderToolTip from "../components/GroupBuilderToolTip";
 import GroupBuilderForm from "../components/GroupBuilderForm";
-import { currentUser } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import { GroupUser } from "@/utils/group";
 import CreateGroupButton from "../components/CreateGroupButton";
 import { FaWrench } from "react-icons/fa";
@@ -79,7 +79,12 @@ async function fetchGroupUsersWithCharacters(clerkUserId: string) {
 }
 
 export default async function GroupBuilder() {
-  const user = await currentUser();
+  let user = null;
+  try {
+    user = await currentUser();
+  } catch {
+    user = null;
+  }
   if (user === null || user.username === null) {
     return <p>User is not logged in.</p>;
   }

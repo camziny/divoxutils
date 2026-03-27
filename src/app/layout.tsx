@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Navbar from "./navbar";
 import { ClerkProvider } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
 import Footer from "./footer";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -42,20 +41,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider
-      appearance={{
-        baseTheme: dark,
-        variables: {
-          colorBackground: "#111827",
-          colorInputBackground: "#1f2937",
-          colorText: "#e5e7eb",
-          colorTextSecondary: "#9ca3af",
-          colorPrimary: "#6366f1",
-        },
-      }}
-    >
-      <html lang="en">
-        <body className={`${inter.className} antialiased`}>
+    <html lang="en">
+      <body className={`${inter.className} antialiased`}>
+        <ClerkProvider
+          appearance={{
+            variables: {
+              colorBackground: "#111827",
+              colorInput: "#1f2937",
+              colorForeground: "#e5e7eb",
+              colorMutedForeground: "#9ca3af",
+              colorPrimary: "#6366f1",
+              colorNeutral: "#6b7280",
+            },
+          }}
+        >
           <div className="flex flex-col min-h-screen">
             <Providers>
               <Navbar />
@@ -76,8 +75,8 @@ export default function RootLayout({
               />
             </Providers>
           </div>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

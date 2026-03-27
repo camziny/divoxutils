@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as userController from "../../../src/controllers/userController";
 import { getUserByClerkUserId } from "../../../src/controllers/userController";
-import { clerkClient } from "@clerk/nextjs";
+import { clerkClient } from "@clerk/nextjs/server";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { clerkUserId, id } = req.query;
@@ -13,7 +13,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           clerkUserId as string
         );
         if (user) {
-          const clerkUser = await clerkClient.users.getUser(
+          const client = await clerkClient();
+          const clerkUser = await client.users.getUser(
             clerkUserId as string
           );
           const combinedUserData = {

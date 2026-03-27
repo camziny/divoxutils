@@ -113,7 +113,6 @@ export const getUserCharactersByUserId = async (clerkUserId: string) => {
         clerkUserId: clerkUserId,
       },
       include: {
-        user: true,
         character: true,
       },
     });

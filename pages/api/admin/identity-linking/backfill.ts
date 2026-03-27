@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { clerkClient } from "@clerk/nextjs";
+import { clerkClient } from "@clerk/nextjs/server";
 import { isAdminClerkUserId } from "@/server/adminAuth";
 import { getDiscordExternalAccountId } from "../../identity/link-discord";
 
@@ -155,7 +155,8 @@ const handler = createAdminIdentityBackfillHandler({
     });
   },
   getDiscordUserIdFromClerk: async (clerkUserId) => {
-    const clerkUser = await clerkClient.users.getUser(clerkUserId);
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(clerkUserId);
     return getDiscordExternalAccountId(clerkUser);
   },
   findLinkByProviderUserId: async (provider, providerUserId) => {

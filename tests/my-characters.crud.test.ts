@@ -298,6 +298,77 @@ test("userCharactersByUserId handler maps character payload", async () => {
   });
 });
 
+test("userCharactersByUserId handler falls back to query userId when user is missing", async () => {
+  const handler = createUserCharactersByUserIdHandler({
+    getUserCharactersByUserId: async () => [
+      {
+        user: null,
+        character: {
+          id: 55,
+          webId: "xyz",
+          characterName: "NoUser",
+          className: "Ranger",
+          realm: "Hibernia",
+          previousCharacterName: null,
+          totalRealmPoints: 200,
+          realmPointsLastWeek: 20,
+          totalSoloKills: 2,
+          soloKillsLastWeek: 0,
+          totalDeaths: 1,
+          deathsLastWeek: 0,
+          lastUpdated: null,
+          nameLastUpdated: null,
+          heraldCharacterWebId: "xyz",
+          heraldName: "NoUser",
+          heraldServerName: "Ywain",
+          heraldRealm: 3,
+          heraldRace: "Elf",
+          heraldClassName: "Ranger",
+          heraldLevel: 50,
+          heraldGuildName: "Guild",
+          heraldRealmPoints: 200,
+          heraldBountyPoints: 300,
+          heraldMasterLevel: "10",
+          heraldTotalKills: 1,
+          heraldTotalDeaths: 2,
+          heraldTotalDeathBlows: 3,
+          heraldTotalSoloKills: 4,
+          heraldAlbionKills: 0,
+          heraldAlbionDeaths: 0,
+          heraldAlbionDeathBlows: 0,
+          heraldAlbionSoloKills: 0,
+          heraldMidgardKills: 0,
+          heraldMidgardDeaths: 0,
+          heraldMidgardDeathBlows: 0,
+          heraldMidgardSoloKills: 0,
+          heraldHiberniaKills: 1,
+          heraldHiberniaDeaths: 1,
+          heraldHiberniaDeathBlows: 1,
+          heraldHiberniaSoloKills: 1,
+        },
+      },
+    ],
+  });
+
+  const req = createMockRequest({
+    method: "GET",
+    query: { userId: "user_fallback" },
+  });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  const body = res.body as Array<Record<string, unknown>>;
+  assert.equal(body.length, 1);
+  assert.equal(body[0].clerkUserId, "user_fallback");
+  assert.deepEqual(body[0].initialCharacter, {
+    id: 55,
+    userId: "user_fallback",
+    webId: "xyz",
+  });
+});
+
 test("userCharactersByUserId handler rejects unsupported methods", async () => {
   const handler = createUserCharactersByUserIdHandler({
     getUserCharactersByUserId: async () => [],

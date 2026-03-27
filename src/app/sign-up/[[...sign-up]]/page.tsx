@@ -8,6 +8,9 @@ const SignUpPage = () => {
       style={{ minHeight: "calc(100vh - 64px)" }}
     >
       <SignUp
+        routing="path"
+        path="/sign-up"
+        signInUrl="/sign-in"
         appearance={{
           elements: {
             formButtonPrimary:

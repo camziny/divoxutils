@@ -36,7 +36,12 @@ export const createUserCharactersByUserIdHandler =
                 return null;
               }
 
-              const { character, user } = userCharacter;
+              const { character } = userCharacter;
+              const resolvedClerkUserId =
+                userCharacter?.clerkUserId &&
+                typeof userCharacter.clerkUserId === "string"
+                  ? userCharacter.clerkUserId
+                  : userId;
               const heraldRealmPoints = character.heraldRealmPoints ?? 0;
               const formattedHeraldRealmPoints = formatRealmRankWithLevel(
                 getRealmRankForPoints(heraldRealmPoints)
@@ -84,11 +89,11 @@ export const createUserCharactersByUserIdHandler =
                 heraldHiberniaDeaths: character.heraldHiberniaDeaths,
                 heraldHiberniaDeathBlows: character.heraldHiberniaDeathBlows,
                 heraldHiberniaSoloKills: character.heraldHiberniaSoloKills,
-                clerkUserId: user.clerkUserId,
+                clerkUserId: resolvedClerkUserId,
                 formattedHeraldRealmPoints,
                 initialCharacter: {
                   id: character.id,
-                  userId: user.clerkUserId,
+                  userId: resolvedClerkUserId,
                   webId: character.webId,
                 },
                 player_kills: {
