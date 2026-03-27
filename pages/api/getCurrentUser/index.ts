@@ -1,5 +1,4 @@
-import { clerkClient } from "@clerk/nextjs";
-import { getAuth } from "@clerk/nextjs/server";
+import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
@@ -13,7 +12,8 @@ export default async function handler(
   }
 
   try {
-    const user = await clerkClient.users.getUser(userId);
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }

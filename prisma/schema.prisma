@@ -31,11 +31,22 @@ model User {
   accountId      Int?            @unique
   supporterTier    Int             @default(0)
   supporterAmount  Float           @default(0)
+  stripeCustomerId String?         @unique
+  stripeSubscriptionId String?     @unique
+  subscriptionStatus String?
+  subscriptionPriceId String?
+  subscriptionCurrentPeriodEnd DateTime?
+  subscriptionCancelAtPeriodEnd Boolean @default(false)
   account        Account?
   characters     UserCharacter[]
   groupUsers     GroupUser[]
   identityLinks  UserIdentityLink[]
   identityClaims UserIdentityClaim[]
+}
+
+model StripeWebhookEvent {
+  id          String   @id
+  processedAt DateTime @default(now())
 }
 
 model Character {

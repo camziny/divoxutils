@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getAuth } from "@clerk/nextjs/server";
+import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { getAdminClerkUserIds } from "@/server/adminAuth";
 
 type DeleteAccountsDeps = {
@@ -77,7 +77,6 @@ export function createAdminAccountDeleteHandler(deps: DeleteAccountsDeps) {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const prisma = require("../../../../prisma/prismaClient").default;
-  const { clerkClient } = require("@clerk/nextjs");
   return createAdminAccountDeleteHandler({
     getAuthUserId: (request) => getAuth(request).userId,
     isAdminUserId: (userId) => getAdminClerkUserIds().includes(userId),
@@ -95,6 +94,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           prisma.user.deleteMany({ where: { clerkUserId } }),
         ])
         .then(() => undefined),
-    deleteClerkUser: (clerkUserId) => clerkClient.users.deleteUser(clerkUserId),
+    deleteClerkUser: async (clerkUserId) => {
+      const client = await clerkClient();
+      await client.users.deleteUser(clerkUserId);
+    },
   })(req, res);
 }

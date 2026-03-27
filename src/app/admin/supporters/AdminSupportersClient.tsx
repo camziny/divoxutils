@@ -154,7 +154,7 @@ export default function AdminSupportersClient() {
             <h1 className="text-2xl font-semibold tracking-tight">Supporters</h1>
           </div>
           <p className="mt-1 text-sm text-gray-500">
-            Log Ko-fi donations to track cumulative contributions. Tiers are assigned automatically.
+            Legacy manual adjustments. Active Stripe subscriptions now assign tiers automatically.
           </p>
         </div>
 
@@ -243,7 +243,7 @@ export default function AdminSupportersClient() {
               <div key={tier} className="flex items-center gap-2.5">
                 <SupporterBadge tier={tier} size="md" />
                 <span className="text-sm text-gray-300">{label}</span>
-                <span className="text-xs text-gray-500">{threshold} cumulative</span>
+                <span className="text-xs text-gray-500">{threshold} active subscription</span>
               </div>
             ))}
           </div>

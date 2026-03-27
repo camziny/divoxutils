@@ -7,7 +7,7 @@ export const metadata = {
 };
 
 export default async function AdminDraftModerationPage() {
-  const { userId } = auth();
+  const { userId } = await auth();
   const isAdmin = isAdminClerkUserId(userId);
 
   if (!isAdmin) {

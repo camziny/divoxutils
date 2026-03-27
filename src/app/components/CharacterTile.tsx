@@ -6,7 +6,7 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import CharacterDetails from "./CharacterDetails";
 import { X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { currentUser, useAuth } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { Snackbar } from "@mui/material";
 import CharacterTileSkeleton from "./CharacterTileSkeleton";
 import { CharacterData, getRealmRankForPoints, formatRealmRankWithLevel } from "@/utils/character";

@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { clerkClient } from "@clerk/nextjs";
+import { clerkClient } from "@clerk/nextjs/server";
 
 type LinkIdentityDeps = {
   getAuthUserId: (req: NextApiRequest) => string | null;
@@ -97,7 +97,8 @@ export const createLinkDiscordIdentityHandler =
 const handler = createLinkDiscordIdentityHandler({
   getAuthUserId: (req) => getAuth(req).userId,
   resolveDiscordUserIdFromClerk: async (clerkUserId) => {
-    const clerkUser = await clerkClient.users.getUser(clerkUserId);
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(clerkUserId);
     return getDiscordExternalAccountId(clerkUser);
   },
   findLocalUserByClerkId: async (clerkUserId) => {

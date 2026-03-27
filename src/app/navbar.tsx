@@ -4,7 +4,13 @@ import { auth } from "@clerk/nextjs/server";
 import { isAdminClerkUserId } from "@/server/adminAuth";
 
 const Navbar = async () => {
-  const { userId } = auth();
+  let userId: string | null = null;
+  try {
+    const authData = await auth();
+    userId = authData.userId;
+  } catch {
+    userId = null;
+  }
   const isAdmin = isAdminClerkUserId(userId);
 
   return (

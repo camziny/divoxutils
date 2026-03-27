@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import { FaCoffee } from "react-icons/fa";
+import { FiCreditCard } from "react-icons/fi";
 
 const NAV_LINKS = [
   { href: "/leaderboards", label: "Leaderboards" },
@@ -97,6 +98,13 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
   }, [menuOpen]);
 
   const userButtonAppearance = {
+    variables: {
+      colorBackground: "#111827",
+      colorForeground: "#e5e7eb",
+      colorMutedForeground: "#9ca3af",
+      colorNeutral: "#6b7280",
+      colorPrimary: "#6366f1",
+    },
     elements: {
       userButtonTrigger:
         "rounded-md border border-gray-700 bg-gray-800/70 hover:bg-gray-700/80 transition-colors",
@@ -186,6 +194,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
             <>
               <Link
                 href="/user-characters"
+                prefetch={false}
                 className={`rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
                   pathname === "/user-characters"
                     ? "text-white bg-gray-800/60"
@@ -194,7 +203,15 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
               >
                 My Characters
               </Link>
-              <UserButton afterSignOutUrl="/" appearance={userButtonAppearance} />
+              <UserButton afterSignOutUrl="/" appearance={userButtonAppearance}>
+                <UserButton.MenuItems>
+                  <UserButton.Link
+                    label="Manage subscription"
+                    href="/billing"
+                    labelIcon={<FiCreditCard className="h-4 w-4" />}
+                  />
+                </UserButton.MenuItems>
+              </UserButton>
             </>
           ) : (
             <>
@@ -274,6 +291,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
               <>
                 <Link
                   href="/user-characters"
+                  prefetch={false}
                   className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
                     pathname === "/user-characters"
                       ? "text-white bg-gray-800/60"
@@ -283,7 +301,15 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
                   My Characters
                 </Link>
                 <div className="px-3 py-2.5">
-                  <UserButton afterSignOutUrl="/" appearance={userButtonAppearance} />
+                  <UserButton afterSignOutUrl="/" appearance={userButtonAppearance}>
+                    <UserButton.MenuItems>
+                      <UserButton.Link
+                        label="Manage subscription"
+                        href="/billing"
+                        labelIcon={<FiCreditCard className="h-4 w-4" />}
+                      />
+                    </UserButton.MenuItems>
+                  </UserButton>
                 </div>
               </>
             ) : (

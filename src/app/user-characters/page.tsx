@@ -1,7 +1,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import CharacterSearchAndAdd from "../components/CharacterSearchAndAdd";
-import { currentUser } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import { Suspense } from "react";
 import Loading from "../loading";
 import ShareProfileButton from "../components/ShareProfileButton";
@@ -59,9 +59,7 @@ async function fetchCharactersForUser(userId: string) {
     console.error(
       `Error fetching characters: ${response.status} ${response.statusText}`
     );
-    throw new Error(
-      `Fetch response error: ${response.status} ${response.statusText}`
-    );
+    return [];
   }
   return await response.json();
 }
@@ -72,11 +70,16 @@ interface UserCharactersPageProps {
 
 const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => {
   const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as Record<string, string | string[]>;
-  const user = await currentUser();
-  const userId = user?.id;
+  let userId: string | null = null;
+  try {
+    const user = await currentUser();
+    userId = user?.id ?? null;
+  } catch {
+    userId = null;
+  }
 
   if (!userId) {
-    redirect("/sign-in");
+    redirect("/sign-in?redirect_url=/user-characters");
   }
 
   const [characters, dbUser, identityLink] = await Promise.all([
@@ -92,7 +95,7 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
   ]);
 
   const supporterTier = dbUser?.supporterTier ?? 0;
-  const shareUsername = dbUser?.name ?? user?.username ?? "";
+  const shareUsername = dbUser?.name ?? "";
   const draftProfileHref = identityLink
     ? getLeaderboardProfileHref(userId, dbUser?.name ?? undefined)
     : undefined;

@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getAuth } from "@clerk/nextjs/server";
+import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { getAdminClerkUserIds } from "@/server/adminAuth";
 
 type SearchAccountsDeps = {
@@ -74,7 +74,6 @@ export function createAdminAccountSearchHandler(deps: SearchAccountsDeps) {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const prisma = require("../../../../prisma/prismaClient").default;
-  const { clerkClient } = require("@clerk/nextjs");
   return createAdminAccountSearchHandler({
     getAuthUserId: (request) => getAuth(request).userId,
     isAdminUserId: (userId) => getAdminClerkUserIds().includes(userId),
@@ -89,8 +88,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     findClerkUserIdsByDiscordName: async (query) => {
       const normalized = query.toLowerCase();
       try {
-        const clerkUsers = await clerkClient.users.getUserList({ limit: 100, query });
-        return clerkUsers
+        const client = await clerkClient();
+        const clerkUsers = await client.users.getUserList({ limit: 100, query });
+        return clerkUsers.data
           .filter((user: any) => {
             const accounts = Array.isArray(user?.externalAccounts) ? user.externalAccounts : [];
             return accounts.some((account: any) => {

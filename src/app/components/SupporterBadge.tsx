@@ -504,9 +504,9 @@ const SupporterBadge: React.FC<SupporterBadgeProps> = ({ tier, size = "sm", show
 export { TierIcon };
 
 export const SUPPORTER_TIERS = [
-  { tier: 1, label: "Tier 1", threshold: "$20+", description: "Star icon next to your name" },
-  { tier: 2, label: "Tier 2", threshold: "$50+", description: "Animated shield icon next to your name" },
-  { tier: 3, label: "Tier 3", threshold: "$100+", description: "Animated diamond icon with highlighted name" },
+  { tier: 1, label: "Tier 1", threshold: "$1/mo", description: "Star icon next to your name" },
+  { tier: 2, label: "Tier 2", threshold: "$3/mo", description: "Animated shield icon next to your name" },
+  { tier: 3, label: "Tier 3", threshold: "$5/mo", description: "Animated diamond icon with highlighted name" },
 ] as const;
 
 export default SupporterBadge;
