@@ -46,22 +46,31 @@ function getApiBaseUrl() {
 
 async function fetchCharactersForUser(userId: string) {
   const apiUrl = `${getApiBaseUrl()}/api/userCharactersByUserId/${userId}`;
-  const response = await fetch(apiUrl, {
-    next: {
-      revalidate: 0, 
-      tags: [`user-characters-${userId}`],
-    },
-  });
-  if (response.status === 404) {
-    return [];
+  try {
+    const response = await fetch(apiUrl, {
+      next: {
+        revalidate: 0,
+        tags: [`user-characters-${userId}`],
+      },
+    });
+    if (response.status === 404) {
+      return { characters: [], error: null as string | null };
+    }
+    if (!response.ok) {
+      const message = `Error fetching characters: ${response.status} ${response.statusText}`;
+      console.error(message);
+      return { characters: [], error: message };
+    }
+    const characters = await response.json();
+    return { characters, error: null as string | null };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? `Error fetching characters: ${error.message}`
+        : "Error fetching characters: unknown error";
+    console.error(message);
+    return { characters: [], error: message };
   }
-  if (!response.ok) {
-    console.error(
-      `Error fetching characters: ${response.status} ${response.statusText}`
-    );
-    return [];
-  }
-  return await response.json();
 }
 
 interface UserCharactersPageProps {
@@ -82,7 +91,7 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
     redirect("/sign-in?redirect_url=/user-characters");
   }
 
-  const [characters, dbUser, identityLink] = await Promise.all([
+  const [charactersResult, dbUser, identityLink] = await Promise.all([
     fetchCharactersForUser(userId),
     prisma.user.findUnique({
       where: { clerkUserId: userId },
@@ -96,6 +105,8 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
 
   const supporterTier = dbUser?.supporterTier ?? 0;
   const shareUsername = dbUser?.name ?? "";
+  const characters = charactersResult.characters;
+  const charactersError = charactersResult.error;
   const draftProfileHref = identityLink
     ? getLeaderboardProfileHref(userId, dbUser?.name ?? undefined)
     : undefined;
@@ -115,6 +126,11 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
             </div>
           </div>
           <CharacterSearchAndAdd />
+          {charactersError && (
+            <div className="mt-4 rounded-md border border-yellow-900/60 bg-yellow-900/20 px-4 py-2 text-sm text-yellow-300">
+              We could not load your character list right now. Please refresh and try again.
+            </div>
+          )}
           <div className="mt-6">
             <Suspense fallback={<Loading />}>
               <CharacterListOptimized
