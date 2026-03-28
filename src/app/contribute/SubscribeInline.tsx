@@ -14,19 +14,19 @@ const PLANS = [
     tier: 1,
     price: "$1",
     label: "$1 / month",
-    description: "Helps cover baseline hosting and keeps the project sustainable.",
+    description: "Covers basic monthly infrastructure costs.",
   },
   {
     tier: 2,
     price: "$3",
     label: "$3 / month",
-    description: "Meaningful support that helps absorb compute usage fluctuations.",
+    description: "Helps absorb variable compute and service usage.",
   },
   {
     tier: 3,
     price: "$5",
     label: "$5 / month",
-    description: "High-impact support that helps cover growth and future features.",
+    description: "Provides extra buffer for maintenance and ongoing improvements.",
   },
 ] as const;
 
