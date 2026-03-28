@@ -1,8 +1,29 @@
 import { FaDiscord } from "react-icons/fa";
 import Image from "next/image";
+import type { Metadata } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Discord Bot - divoxutils",
+  description:
+    "Explore divoxutils Discord bot commands for character lookups, stat comparisons, and draft tools in your server.",
+  alternates: {
+    canonical: "https://divoxutils.com/discord",
+  },
+  openGraph: {
+    title: "Discord Bot - divoxutils",
+    description:
+      "Use the divoxutils Discord bot for character lookups, comparisons, and draft workflows.",
+    url: "https://divoxutils.com/discord",
+    type: "website",
+    images: ["/wh-big.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Discord Bot - divoxutils",
+    description:
+      "Use the divoxutils Discord bot for character lookups, comparisons, and draft workflows.",
+    images: ["/wh-big.png"],
+  },
 };
 
 const COMMANDS = [

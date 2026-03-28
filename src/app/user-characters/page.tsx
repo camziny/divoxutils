@@ -11,6 +11,31 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import prisma from "../../../prisma/prismaClient";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "My Characters - divoxutils",
+  description:
+    "Manage your Dark Age of Camelot characters on divoxutils.",
+  alternates: {
+    canonical: "https://divoxutils.com/user-characters",
+  },
+  openGraph: {
+    title: "My Characters - divoxutils",
+    description:
+      "Manage your Dark Age of Camelot characters on divoxutils.",
+    url: "https://divoxutils.com/user-characters",
+    type: "website",
+    images: ["/wh-big.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "My Characters - divoxutils",
+    description:
+      "Manage your Dark Age of Camelot characters on divoxutils.",
+    images: ["/wh-big.png"],
+  },
+};
 
 const CharacterListOptimized = dynamic(
   () => import("../components/CharacterListOptimized"),
@@ -21,10 +46,6 @@ const CharacterListOptimized = dynamic(
     },
   }
 );
-
-export const metadata = {
-  title: "My Characters - divoxutils",
-};
 
 function getApiBaseUrl() {
   const configuredBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");

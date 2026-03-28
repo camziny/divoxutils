@@ -1,9 +1,30 @@
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import HomeCarousel from "./components/HomeCarousel";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Home - divoxutils",
+  description:
+    "divoxutils helps Dark Age of Camelot players track characters, compare stats, and stay connected to progress and milestones.",
+  alternates: {
+    canonical: "https://divoxutils.com",
+  },
+  openGraph: {
+    title: "divoxutils",
+    description:
+      "Track characters, compare progress, and follow Dark Age of Camelot leaderboards on divoxutils.",
+    url: "https://divoxutils.com",
+    type: "website",
+    images: ["/wh-big.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "divoxutils",
+    description:
+      "Track characters, compare progress, and follow Dark Age of Camelot leaderboards on divoxutils.",
+    images: ["/wh-big.png"],
+  },
 };
 
 export default function HomePage() {

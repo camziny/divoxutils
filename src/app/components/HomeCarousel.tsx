@@ -10,19 +10,22 @@ export default function HomeCarousel() {
       text: "Support this project",
       description: "Help keep divoxutils running",
       icon: <FaCoffee className="mx-auto text-indigo-400 h-12 w-12 drop-shadow-lg" />,
-      link: "https://ko-fi.com/divox#checkoutModal",
+      link: "/contribute",
+      openInNewTab: false,
     },
     {
       text: "Follow me on Twitch",
       description: "Join the community",
       icon: <FaTwitch className="mx-auto text-indigo-400 h-12 w-12 drop-shadow-lg" />,
       link: "https://www.twitch.tv/divoxzy",
+      openInNewTab: true,
     },
     {
       text: "Suggestions and feedback",
       description: "Share your ideas",
       icon: <FaDiscord className="mx-auto text-indigo-400 h-12 w-12 drop-shadow-lg" />,
       link: "https://discord.com/users/310750671576236033",
+      openInNewTab: true,
     },
   ];
 
@@ -55,8 +58,8 @@ export default function HomeCarousel() {
             >
               <a
                 href={slide.link}
-                target="_blank"
-                rel="noopener noreferrer"
+                target={slide.openInNewTab ? "_blank" : undefined}
+                rel={slide.openInNewTab ? "noopener noreferrer" : undefined}
                 className="block p-12 sm:p-16 h-full w-full flex flex-col items-center justify-center text-center group transition-all duration-300 hover:bg-white/5"
               >
                 <div className="mb-6 transform transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">

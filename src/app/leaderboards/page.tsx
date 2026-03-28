@@ -1,10 +1,30 @@
 import React from "react";
+import type { Metadata } from "next";
 import LeaderboardWrapper from "@/app/components/LeaderboardWrapper";
 import LeaderboardTooltip from "@/app/components/LeaderboardTooltip";
 import { getLeaderboardData, type LeaderboardItem } from "@/server/leaderboard";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Leaderboards - divoxutils",
+  description:
+    "Browse divoxutils leaderboards to see top players, rankings, and progress across the DAoC community.",
+  alternates: {
+    canonical: "https://divoxutils.com/leaderboards",
+  },
+  openGraph: {
+    title: "Leaderboards - divoxutils",
+    description:
+      "See top players and rankings on the divoxutils leaderboards.",
+    url: "https://divoxutils.com/leaderboards",
+    type: "website",
+    images: ["/wh-big.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Leaderboards - divoxutils",
+    description: "See top players and rankings on the divoxutils leaderboards.",
+    images: ["/wh-big.png"],
+  },
 };
 
 export const revalidate = 60;

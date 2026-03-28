@@ -2,6 +2,24 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Support - divoxutils",
+  description:
+    "Get help with divoxutils account, billing, and support questions.",
+  alternates: {
+    canonical: "https://divoxutils.com/support",
+  },
+  openGraph: {
+    title: "Support - divoxutils",
+    description: "Get help with divoxutils account, billing, and support questions.",
+    url: "https://divoxutils.com/support",
+    type: "website",
+    images: ["/wh-big.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Support - divoxutils",
+    description: "Get help with divoxutils account, billing, and support questions.",
+    images: ["/wh-big.png"],
+  },
 };
 
 export default function SupportPage() {
