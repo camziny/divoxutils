@@ -17,6 +17,8 @@ type PromptHistory = {
 type SupportPromptModalProps = {
   debug?: boolean;
   ignorePathRules?: boolean;
+  isSupporter?: boolean;
+  isAdmin?: boolean;
 };
 
 function defaultHistory(): PromptHistory {
@@ -75,6 +77,8 @@ function isExcludedPath(pathname: string | null) {
 export default function SupportPromptModal({
   debug = false,
   ignorePathRules = false,
+  isSupporter = false,
+  isAdmin = false,
 }: SupportPromptModalProps) {
   const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
@@ -97,7 +101,8 @@ export default function SupportPromptModal({
     windowedImpressions.length >= cadence.maxImpressions
       ? new Date(windowedImpressions[0] + cadence.windowMs).toLocaleString()
       : "Now";
-  const isPathEligible = isLoaded && (ignorePathRules || !isExcludedPath(pathname));
+  const isPathEligible =
+    isLoaded && !isSupporter && !isAdmin && (ignorePathRules || !isExcludedPath(pathname));
 
   const openPrompt = useCallback(
     (force = false) => {

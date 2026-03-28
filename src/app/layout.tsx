@@ -4,12 +4,15 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Navbar from "./navbar";
 import { ClerkProvider } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import Footer from "./footer";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "./providers";
 import { Toaster } from "sonner";
 import SupportPromptModal from "./components/SupportPromptModal";
+import prisma from "../../prisma/prismaClient";
+import { isAdminClerkUserId } from "@/server/adminAuth";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -36,11 +39,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let isSupporter = false;
+  let isAdmin = false;
+  try {
+    const { userId } = await auth();
+    isAdmin = isAdminClerkUserId(userId);
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { clerkUserId: userId },
+        select: { supporterTier: true },
+      });
+      isSupporter = (user?.supporterTier ?? 0) > 0;
+    }
+  } catch {
+    isSupporter = false;
+    isAdmin = false;
+  }
+
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
@@ -59,7 +79,7 @@ export default function RootLayout({
           <div className="flex flex-col min-h-screen">
             <Providers>
               <Navbar />
-              <SupportPromptModal />
+              <SupportPromptModal isSupporter={isSupporter} isAdmin={isAdmin} />
               {children}
               <SpeedInsights />
               <Analytics />
