@@ -13,6 +13,7 @@ import { Toaster } from "sonner";
 import SupportPromptModal from "./components/SupportPromptModal";
 import prisma from "../../prisma/prismaClient";
 import { isAdminClerkUserId } from "@/server/adminAuth";
+import { isEffectivelySupporter } from "@/server/supporterStatus";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -52,9 +53,14 @@ export default async function RootLayout({
     if (userId) {
       const user = await prisma.user.findUnique({
         where: { clerkUserId: userId },
-        select: { supporterTier: true },
+        select: {
+          supporterTier: true,
+          subscriptionStatus: true,
+          subscriptionCancelAtPeriodEnd: true,
+          subscriptionCurrentPeriodEnd: true,
+        },
       });
-      isSupporter = (user?.supporterTier ?? 0) > 0;
+      isSupporter = isEffectivelySupporter(user);
     }
   } catch {
     isSupporter = false;

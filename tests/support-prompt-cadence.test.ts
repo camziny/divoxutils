@@ -8,13 +8,13 @@ import {
 test("resolveCadence returns signed-in cadence config", () => {
   const cadence = resolveCadence(true);
   assert.equal(cadence.windowDays, 14);
-  assert.equal(cadence.maxImpressions, 4);
+  assert.equal(cadence.maxImpressions, 3);
   assert.equal(cadence.storageKey, "divoxutils_support_prompt_v1_signed_in");
 });
 
 test("resolveCadence returns signed-out cadence config", () => {
   const cadence = resolveCadence(false);
-  assert.equal(cadence.windowDays, 1);
+  assert.equal(cadence.windowDays, 14);
   assert.equal(cadence.maxImpressions, 1);
   assert.equal(cadence.storageKey, "divoxutils_support_prompt_v1_signed_out");
 });
@@ -28,4 +28,16 @@ test("getWindowedImpressions keeps only impressions inside window", () => {
     oneDayMs * 2
   );
   assert.deepEqual(windowed, [now - oneDayMs, now - 1000, now]);
+});
+
+test("getWindowedImpressions includes boundary timestamp", () => {
+  const now = Date.UTC(2026, 2, 27, 12, 0, 0);
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const threshold = now - oneDayMs * 2;
+  const windowed = getWindowedImpressions(
+    [threshold - 1, threshold, threshold + 1],
+    now,
+    oneDayMs * 2
+  );
+  assert.deepEqual(windowed, [threshold, threshold + 1]);
 });

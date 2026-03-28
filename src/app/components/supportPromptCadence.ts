@@ -1,7 +1,7 @@
 const STORAGE_KEY_BASE = "divoxutils_support_prompt_v1";
 const SIGNED_IN_WINDOW_DAYS = 14;
-const SIGNED_OUT_WINDOW_DAYS = 1;
-const SIGNED_IN_MAX_IMPRESSIONS = 4;
+const SIGNED_OUT_WINDOW_DAYS = 14;
+const SIGNED_IN_MAX_IMPRESSIONS = 3;
 const SIGNED_OUT_MAX_IMPRESSIONS = 1;
 
 export function resolveCadence(isSignedIn: boolean) {

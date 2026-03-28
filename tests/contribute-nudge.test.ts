@@ -14,7 +14,9 @@ test("getLocalDayKey formats date as YYYY-MM-DD", () => {
 test("isContributePath matches contribute route and subroutes", () => {
   assert.equal(isContributePath("/contribute"), true);
   assert.equal(isContributePath("/contribute/thanks"), true);
+  assert.equal(isContributePath("/contributex"), false);
   assert.equal(isContributePath("/about"), false);
+  assert.equal(isContributePath(undefined), false);
   assert.equal(isContributePath(null), false);
 });
 
@@ -53,6 +55,16 @@ test("shouldShowContributeNudge shows for non-subscribed unacknowledged user", (
     pathname: "/leaderboards",
     isSubscribed: false,
     lastAcknowledgedDay: "2026-03-26",
+    today: "2026-03-27",
+  });
+  assert.equal(show, true);
+});
+
+test("shouldShowContributeNudge shows when no prior acknowledgement exists", () => {
+  const show = shouldShowContributeNudge({
+    pathname: "/characters",
+    isSubscribed: false,
+    lastAcknowledgedDay: null,
     today: "2026-03-27",
   });
   assert.equal(show, true);
