@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { getWindowedImpressions, resolveCadence } from "./supportPromptCadence";
 
-const STORAGE_KEY_BASE = "divoxutils_support_prompt_v1";
-const SIGNED_IN_WINDOW_DAYS = 14;
-const SIGNED_OUT_WINDOW_DAYS = 1;
-const SIGNED_IN_MAX_IMPRESSIONS = 2;
-const SIGNED_OUT_MAX_IMPRESSIONS = 1;
 const CLOSE_DELAY_SECONDS = 10;
 
 type PromptHistory = {
@@ -22,17 +18,6 @@ type SupportPromptModalProps = {
   debug?: boolean;
   ignorePathRules?: boolean;
 };
-
-function resolveCadence(isSignedIn: boolean) {
-  const windowDays = isSignedIn ? SIGNED_IN_WINDOW_DAYS : SIGNED_OUT_WINDOW_DAYS;
-  const maxImpressions = isSignedIn ? SIGNED_IN_MAX_IMPRESSIONS : SIGNED_OUT_MAX_IMPRESSIONS;
-  return {
-    windowDays,
-    windowMs: windowDays * 24 * 60 * 60 * 1000,
-    maxImpressions,
-    storageKey: `${STORAGE_KEY_BASE}_${isSignedIn ? "signed_in" : "signed_out"}`,
-  };
-}
 
 function defaultHistory(): PromptHistory {
   return {
@@ -71,11 +56,6 @@ function writeHistory(storageKey: string, history: PromptHistory) {
   window.localStorage.setItem(storageKey, JSON.stringify(history));
 }
 
-function getWindowedImpressions(history: PromptHistory, now: number, windowMs: number) {
-  const threshold = now - windowMs;
-  return history.impressions.filter((timestamp) => timestamp >= threshold);
-}
-
 function formatTimestamp(timestamp: number | null) {
   if (!timestamp) return "Never";
   return new Date(timestamp).toLocaleString();
@@ -99,17 +79,17 @@ export default function SupportPromptModal({
   const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const didInitialize = useRef(false);
+  const initializedStorageKey = useRef<string | null>(null);
   const lastPathname = useRef<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [canClose, setCanClose] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(CLOSE_DELAY_SECONDS);
   const [history, setHistory] = useState<PromptHistory>(defaultHistory());
-
   const cadence = useMemo(() => resolveCadence(Boolean(isSignedIn)), [isSignedIn]);
+
   const now = Date.now();
   const windowedImpressions = useMemo(
-    () => getWindowedImpressions(history, now, cadence.windowMs),
+    () => getWindowedImpressions(history.impressions, now, cadence.windowMs),
     [history, now, cadence.windowMs]
   );
   const remainingInWindow = Math.max(0, cadence.maxImpressions - windowedImpressions.length);
@@ -117,40 +97,42 @@ export default function SupportPromptModal({
     windowedImpressions.length >= cadence.maxImpressions
       ? new Date(windowedImpressions[0] + cadence.windowMs).toLocaleString()
       : "Now";
-  const isPathEligible = ignorePathRules || !isExcludedPath(pathname);
+  const isPathEligible = isLoaded && (ignorePathRules || !isExcludedPath(pathname));
 
-  const openPrompt = (force = false) => {
-    if (!isLoaded) return false;
-    const timestamp = Date.now();
-    const current = readHistory(cadence.storageKey);
-    const cleaned = getWindowedImpressions(current, timestamp, cadence.windowMs);
-    if (!force && cleaned.length >= cadence.maxImpressions) {
-      setHistory({ ...current, impressions: cleaned });
-      return false;
-    }
-    const lastSeen = cleaned[cleaned.length - 1];
-    const deduped = lastSeen && timestamp - lastSeen < 4000 ? cleaned : [...cleaned, timestamp];
-    const updated: PromptHistory = {
-      ...current,
-      impressions: deduped,
-    };
-    writeHistory(cadence.storageKey, updated);
-    setHistory(updated);
-    setIsOpen(true);
-    setCanClose(false);
-    setSecondsLeft(CLOSE_DELAY_SECONDS);
-    return true;
-  };
+  const openPrompt = useCallback(
+    (force = false) => {
+      const timestamp = Date.now();
+      const current = readHistory(cadence.storageKey);
+      const cleaned = getWindowedImpressions(current.impressions, timestamp, cadence.windowMs);
+      if (!force && cleaned.length >= cadence.maxImpressions) {
+        setHistory({ ...current, impressions: cleaned });
+        return false;
+      }
+      const lastSeen = cleaned[cleaned.length - 1];
+      const deduped = lastSeen && timestamp - lastSeen < 4000 ? cleaned : [...cleaned, timestamp];
+      const updated: PromptHistory = {
+        ...current,
+        impressions: deduped,
+      };
+      writeHistory(cadence.storageKey, updated);
+      setHistory(updated);
+      setIsOpen(true);
+      setCanClose(false);
+      setSecondsLeft(CLOSE_DELAY_SECONDS);
+      return true;
+    },
+    [cadence.maxImpressions, cadence.storageKey, cadence.windowMs]
+  );
 
   useEffect(() => {
     if (!isLoaded) return;
-    if (!didInitialize.current) {
-      didInitialize.current = true;
-    }
+    if (initializedStorageKey.current === cadence.storageKey) return;
+    initializedStorageKey.current = cadence.storageKey;
+    lastPathname.current = null;
     const current = readHistory(cadence.storageKey);
     const normalized: PromptHistory = {
       ...current,
-      impressions: getWindowedImpressions(current, Date.now(), cadence.windowMs),
+      impressions: getWindowedImpressions(current.impressions, Date.now(), cadence.windowMs),
     };
     writeHistory(cadence.storageKey, normalized);
     setHistory(normalized);
@@ -158,13 +140,13 @@ export default function SupportPromptModal({
 
   useEffect(() => {
     if (!isLoaded) return;
-    if (!didInitialize.current) return;
+    if (initializedStorageKey.current !== cadence.storageKey) return;
     if (!pathname) return;
     if (lastPathname.current === pathname) return;
     lastPathname.current = pathname;
     if (!isPathEligible) return;
     openPrompt(false);
-  }, [isLoaded, pathname, isPathEligible]);
+  }, [isLoaded, pathname, isPathEligible, cadence.storageKey, openPrompt]);
 
   useEffect(() => {
     if (isPathEligible) return;
@@ -194,7 +176,7 @@ export default function SupportPromptModal({
     const current = readHistory(cadence.storageKey);
     const updated: PromptHistory = {
       ...current,
-      impressions: getWindowedImpressions(current, Date.now(), cadence.windowMs),
+      impressions: getWindowedImpressions(current.impressions, Date.now(), cadence.windowMs),
       lastDismissedAt: Date.now(),
     };
     writeHistory(cadence.storageKey, updated);
@@ -206,7 +188,7 @@ export default function SupportPromptModal({
     const current = readHistory(cadence.storageKey);
     const updated: PromptHistory = {
       ...current,
-      impressions: getWindowedImpressions(current, Date.now(), cadence.windowMs),
+      impressions: getWindowedImpressions(current.impressions, Date.now(), cadence.windowMs),
       lastCtaAt: Date.now(),
     };
     writeHistory(cadence.storageKey, updated);

@@ -28,7 +28,7 @@ interface CharactersPageProps {
 
 export async function generateMetadata(
   { params }: { params: Promise<any> },
-  parent: ResolvingMetadata
+  _parent: ResolvingMetadata
 ): Promise<Metadata> {
   const resolvedParams = await params;
   const userData = await prisma.user.findMany({
@@ -38,15 +38,38 @@ export async function generateMetadata(
   });
 
   const user = userData[0];
-  
+
   if (!user) {
     return {
       title: "User Not Found - divoxutils",
+      description: "This profile could not be found on divoxutils.",
     };
   }
 
+  const displayName = user.name?.trim() || "Player";
+  const pathSegment =
+    typeof resolvedParams.name === "string" ? resolvedParams.name : displayName;
+  const profileUrl = `https://divoxutils.com/user/${encodeURIComponent(pathSegment)}/characters`;
+
   return {
-    title: `${user.name} - divoxutils`,
+    title: `${displayName}'s characters - divoxutils`,
+    description: `See ${displayName}'s characters on divoxutils.`,
+    alternates: {
+      canonical: profileUrl,
+    },
+    openGraph: {
+      title: `${displayName}'s characters`,
+      description: `See ${displayName}'s characters on divoxutils.`,
+      url: profileUrl,
+      type: "website",
+      images: ["/wh-big.png"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${displayName}'s characters`,
+      description: `See ${displayName}'s characters on divoxutils.`,
+      images: ["/wh-big.png"],
+    },
   };
 }
 

@@ -1,10 +1,29 @@
 import React from "react";
 import { auth } from "@clerk/nextjs/server";
+import type { Metadata } from "next";
 import prisma from "../../../prisma/prismaClient";
 import SubscribeInline from "./SubscribeInline";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Contribute - divoxutils",
+  description:
+    "Support the project and help keep divoxutils online.",
+  alternates: {
+    canonical: "https://divoxutils.com/contribute",
+  },
+  openGraph: {
+    title: "Contribute to divoxutils",
+    description: "Support the project and help keep divoxutils online.",
+    url: "https://divoxutils.com/contribute",
+    type: "website",
+    images: ["/wh-big.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contribute to divoxutils",
+    description: "Support the project and help keep divoxutils online.",
+    images: ["/wh-big.png"],
+  },
 };
 
 const MONTHLY_COSTS = {

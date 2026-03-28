@@ -1,9 +1,30 @@
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { FaTwitch, FaDiscord, FaCoffee } from "react-icons/fa";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "About - divoxutils",
+  description:
+    "Learn the story behind divoxutils, why it was built for the DAoC community, and where to follow or support the project.",
+  alternates: {
+    canonical: "https://divoxutils.com/about",
+  },
+  openGraph: {
+    title: "About divoxutils",
+    description:
+      "Learn the story behind divoxutils and how to follow, support, and help shape the project.",
+    url: "https://divoxutils.com/about",
+    type: "website",
+    images: ["/wh-big.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About divoxutils",
+    description:
+      "Learn the story behind divoxutils and how to follow, support, and help shape the project.",
+    images: ["/wh-big.png"],
+  },
 };
 
 const socialAndSupportData = [
@@ -18,9 +39,10 @@ const socialAndSupportData = [
     link: "https://discord.com/users/310750671576236033",
   },
   {
-    name: "Ko-fi",
+    name: "Contribute",
     icon: <FaCoffee className="mx-auto text-indigo-400 h-16 w-16 drop-shadow-lg" />,
-    link: "https://ko-fi.com/divox#checkoutModal",
+    link: "/contribute",
+    external: false,
   },
 ];
 
@@ -63,7 +85,7 @@ const AboutPage = () => {
             comes with real costs&mdash;server hosting, database maintenance, and 
             infrastructure to keep the service running smoothly for all users.
             If you&apos;ve found this tool helpful, please consider contributing 
-            through the Ko-fi link below to help cover these operational costs 
+            through the contribution link below to help cover these operational costs 
             and support future development. Check out the{" "}
             <Link href="/contribute" className="text-indigo-400 hover:text-indigo-300 transition-colors">
               contribute page
@@ -84,8 +106,8 @@ const AboutPage = () => {
               <a
                 key={index}
                 href={item.link}
-                target="_blank"
-                rel="noopener noreferrer"
+                target={item.external === false ? undefined : "_blank"}
+                rel={item.external === false ? undefined : "noopener noreferrer"}
                 className="group transition-all duration-300 hover:scale-110 hover:-translate-y-1"
               >
                 <div className="transition-all duration-300 group-hover:drop-shadow-2xl">

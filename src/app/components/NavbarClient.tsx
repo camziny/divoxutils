@@ -5,6 +5,12 @@ import { usePathname } from "next/navigation";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import { FaCoffee } from "react-icons/fa";
 import { FiCreditCard } from "react-icons/fi";
+import {
+  CONTRIBUTE_NUDGE_STORAGE_KEY,
+  getLocalDayKey,
+  isContributePath,
+  shouldShowContributeNudge,
+} from "./contributeNudge";
 
 const NAV_LINKS = [
   { href: "/leaderboards", label: "Leaderboards" },
@@ -17,9 +23,10 @@ const NAV_LINKS = [
 
 type NavbarClientProps = {
   isAdmin: boolean;
+  isSubscribed: boolean;
 };
 
-const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
+const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isSignedIn } = useAuth();
   const pathname = usePathname();
@@ -29,6 +36,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
   const [indicator, setIndicator] = useState({ left: 0, width: 0, opacity: 0 });
   const [hoverIndicator, setHoverIndicator] = useState({ left: 0, width: 0, opacity: 0 });
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [showContributeNudge, setShowContributeNudge] = useState(false);
   const links = useMemo(
     () => (isAdmin ? [...NAV_LINKS, { href: "/admin", label: "Admin" }] : NAV_LINKS),
     [isAdmin]
@@ -87,6 +95,30 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
   }, [pathname]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const today = getLocalDayKey();
+    const onContributePage = isContributePath(pathname);
+    try {
+      const lastAcknowledged = window.localStorage.getItem(CONTRIBUTE_NUDGE_STORAGE_KEY);
+      if (onContributePage) {
+        window.localStorage.setItem(CONTRIBUTE_NUDGE_STORAGE_KEY, today);
+        setShowContributeNudge(false);
+        return;
+      }
+      setShowContributeNudge(
+        shouldShowContributeNudge({
+          pathname,
+          isSubscribed,
+          lastAcknowledgedDay: lastAcknowledged,
+          today,
+        })
+      );
+    } catch {
+      setShowContributeNudge(!isSubscribed && !onContributePage);
+    }
+  }, [pathname, isSubscribed]);
+
+  useEffect(() => {
     if (menuOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -96,6 +128,16 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
       document.body.style.overflow = "";
     };
   }, [menuOpen]);
+
+  const acknowledgeContributeNudge = useCallback(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(CONTRIBUTE_NUDGE_STORAGE_KEY, getLocalDayKey());
+    } catch {
+      return;
+    }
+    setShowContributeNudge(false);
+  }, []);
 
   const userButtonAppearance = {
     variables: {
@@ -181,7 +223,13 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
         <div className="hidden lg:flex items-center gap-3 lg:justify-self-end">
           <Link
             href="/contribute"
-            className={`rounded-md p-1.5 transition-colors ${
+            onMouseDown={acknowledgeContributeNudge}
+            onTouchStart={acknowledgeContributeNudge}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") acknowledgeContributeNudge();
+            }}
+            onClick={acknowledgeContributeNudge}
+            className={`relative rounded-md p-1.5 transition-colors ${
               isActive("/contribute")
                 ? "text-indigo-400"
                 : "text-gray-500 hover:text-indigo-400"
@@ -189,6 +237,9 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
             aria-label="Contribute"
           >
             <FaCoffee className="w-4 h-4" />
+            {showContributeNudge ? (
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-indigo-500" />
+            ) : null}
           </Link>
           {isSignedIn ? (
             <>
@@ -275,13 +326,24 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin }) => {
 
             <Link
               href="/contribute"
+              onMouseDown={acknowledgeContributeNudge}
+              onTouchStart={acknowledgeContributeNudge}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") acknowledgeContributeNudge();
+              }}
+              onClick={acknowledgeContributeNudge}
               className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors inline-flex items-center gap-2 ${
                 isActive("/contribute")
                   ? "text-indigo-400 bg-gray-800/60"
                   : "text-gray-400 hover:text-white hover:bg-gray-800/40"
               }`}
             >
-              <FaCoffee className="w-4 h-4" />
+              <span className="relative">
+                <FaCoffee className="w-4 h-4" />
+                {showContributeNudge ? (
+                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-indigo-500" />
+                ) : null}
+              </span>
               Contribute
             </Link>
 
