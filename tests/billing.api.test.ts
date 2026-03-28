@@ -249,7 +249,6 @@ test("stripe webhook validates signature and method", async () => {
     findUserByClerkUserId: async () => null,
     findUserByStripeCustomerId: async () => null,
     updateUserSubscription: async () => {},
-    sendSupporterThankYouEmail: async () => {},
   });
 
   const wrongMethodReq = createMockRequest({ method: "GET" });
@@ -276,7 +275,6 @@ test("stripe webhook handles invalid signature", async () => {
     findUserByClerkUserId: async () => null,
     findUserByStripeCustomerId: async () => null,
     updateUserSubscription: async () => {},
-    sendSupporterThankYouEmail: async () => {},
   });
 
   const req = createMockRequest({
@@ -302,7 +300,6 @@ test("stripe webhook short-circuits duplicate events", async () => {
     updateUserSubscription: async () => {
       updateCalls += 1;
     },
-    sendSupporterThankYouEmail: async () => {},
   });
 
   const req = createMockRequest({
@@ -319,7 +316,6 @@ test("stripe webhook short-circuits duplicate events", async () => {
 
 test("stripe webhook syncs active subscription tier and period", async () => {
   let updated: any = null;
-  let emailCalls = 0;
   const handler = createStripeWebhookHandler({
     readRequestBody: async () => Buffer.from("{}"),
     getWebhookSecret: () => "whsec_test",
@@ -336,9 +332,6 @@ test("stripe webhook syncs active subscription tier and period", async () => {
     updateUserSubscription: async (_clerkUserId, data) => {
       updated = data;
     },
-    sendSupporterThankYouEmail: async () => {
-      emailCalls += 1;
-    },
   });
 
   const req = createMockRequest({
@@ -354,7 +347,6 @@ test("stripe webhook syncs active subscription tier and period", async () => {
   assert.equal(updated.subscriptionCancelAtPeriodEnd, true);
   assert.equal(updated.subscriptionPriceId, "price_3");
   assert.ok(updated.subscriptionCurrentPeriodEnd instanceof Date);
-  assert.equal(emailCalls, 0);
 });
 
 test("stripe webhook clears badge for inactive status", async () => {
@@ -374,7 +366,6 @@ test("stripe webhook clears badge for inactive status", async () => {
     updateUserSubscription: async (_clerkUserId, data) => {
       updatedTier = data.supporterTier ?? -1;
     },
-    sendSupporterThankYouEmail: async () => {},
   });
 
   const req = createMockRequest({
@@ -390,8 +381,6 @@ test("stripe webhook clears badge for inactive status", async () => {
 
 test("stripe webhook links checkout completion by clerk metadata", async () => {
   let updatedData: any = null;
-  let sentEmail: any = null;
-  let emailCalls = 0;
   const event = {
     id: "evt_checkout",
     type: "checkout.session.completed",
@@ -418,10 +407,6 @@ test("stripe webhook links checkout completion by clerk metadata", async () => {
     updateUserSubscription: async (_clerkUserId, data) => {
       updatedData = data;
     },
-    sendSupporterThankYouEmail: async (params) => {
-      emailCalls += 1;
-      sentEmail = params;
-    },
   });
 
   const req = createMockRequest({
@@ -434,14 +419,10 @@ test("stripe webhook links checkout completion by clerk metadata", async () => {
   assert.equal(res.statusCode, 200);
   assert.equal(updatedData.stripeCustomerId, "cus_2");
   assert.equal(updatedData.stripeSubscriptionId, "sub_2");
-  assert.equal(emailCalls, 1);
-  assert.equal(sentEmail.email, undefined);
-  assert.equal(sentEmail.tier, 0);
 });
 
-test("stripe webhook sends thank-you email with tier from checkout metadata", async () => {
-  let emailCalls = 0;
-  let sentEmail: any = null;
+test("stripe webhook links checkout completion with tier metadata present", async () => {
+  let updatedData: any = null;
   const event = {
     id: "evt_checkout_tier",
     type: "checkout.session.completed",
@@ -465,14 +446,10 @@ test("stripe webhook sends thank-you email with tier from checkout metadata", as
     unmarkEventProcessed: async () => {},
     findUserByClerkUserId: async () => ({
       clerkUserId: "user_3",
-      email: "user3@example.com",
-      name: "User Three",
     }),
     findUserByStripeCustomerId: async () => null,
-    updateUserSubscription: async () => {},
-    sendSupporterThankYouEmail: async (params) => {
-      emailCalls += 1;
-      sentEmail = params;
+    updateUserSubscription: async (_clerkUserId, data) => {
+      updatedData = data;
     },
   });
 
@@ -484,10 +461,8 @@ test("stripe webhook sends thank-you email with tier from checkout metadata", as
   await handler(req, res);
 
   assert.equal(res.statusCode, 200);
-  assert.equal(emailCalls, 1);
-  assert.equal(sentEmail.email, "user3@example.com");
-  assert.equal(sentEmail.name, "User Three");
-  assert.equal(sentEmail.tier, 2);
+  assert.equal(updatedData.stripeCustomerId, "cus_3");
+  assert.equal(updatedData.stripeSubscriptionId, "sub_3");
 });
 
 test("stripe webhook unmarks event when processing fails", async () => {
@@ -506,7 +481,6 @@ test("stripe webhook unmarks event when processing fails", async () => {
     updateUserSubscription: async () => {
       throw new Error("write failed");
     },
-    sendSupporterThankYouEmail: async () => {},
   });
 
   const req = createMockRequest({
