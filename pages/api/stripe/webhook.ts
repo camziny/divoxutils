@@ -20,8 +20,6 @@ export const config = {
 
 type StripeUser = {
   clerkUserId: string;
-  email?: string | null;
-  name?: string | null;
 };
 
 type StripeWebhookDeps = {
@@ -45,11 +43,6 @@ type StripeWebhookDeps = {
       supporterTier?: number;
     }
   ) => Promise<void>;
-  sendSupporterThankYouEmail: (params: {
-    email: string | null | undefined;
-    name?: string | null;
-    tier?: number | null;
-  }) => Promise<void>;
 };
 
 const asString = (value: unknown): string | null =>
@@ -141,8 +134,6 @@ const syncFromCheckoutSessionCompleted = async (
     asString(session.client_reference_id);
   const customerId = resolveCustomerId(session.customer);
   const subscriptionId = resolveSubscriptionId(session.subscription);
-  const tierFromSession = Number(session.metadata?.tier ?? 0);
-  const tier = Number.isInteger(tierFromSession) && tierFromSession > 0 ? tierFromSession : 0;
 
   if (!clerkUserId || !customerId) return;
   const user = await deps.findUserByClerkUserId(clerkUserId);
@@ -151,11 +142,6 @@ const syncFromCheckoutSessionCompleted = async (
   await deps.updateUserSubscription(clerkUserId, {
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscriptionId,
-  });
-  await deps.sendSupporterThankYouEmail({
-    email: user.email,
-    name: user.name,
-    tier,
   });
 };
 
@@ -234,7 +220,7 @@ const handler = createStripeWebhookHandler({
   findUserByClerkUserId: (clerkUserId) =>
     prisma.user.findUnique({
       where: { clerkUserId },
-      select: { clerkUserId: true, email: true, name: true },
+      select: { clerkUserId: true },
     }),
   findUserByStripeCustomerId: (stripeCustomerId) =>
     prisma.user.findFirst({
@@ -246,60 +232,6 @@ const handler = createStripeWebhookHandler({
       where: { clerkUserId },
       data,
     });
-  },
-  sendSupporterThankYouEmail: async ({ email, name, tier }) => {
-    const apiKey = process.env.RESEND_API_KEY?.trim();
-    const from = process.env.RESEND_FROM_EMAIL?.trim();
-    if (!apiKey || !from || !email) {
-      return;
-    }
-    const tierText = tier === 1 ? "$1/mo" : tier === 2 ? "$3/mo" : tier === 3 ? "$5/mo" : "monthly";
-    const greetingName = name?.trim() || "there";
-    const subject = "Thank you for supporting divoxutils";
-    const text = [
-      `Hi ${greetingName},`,
-      "",
-      `Thank you for subscribing to support divoxutils at ${tierText}.`,
-      "Your support helps cover hosting, database, and ongoing app costs.",
-      "",
-      "You can manage your subscription any time from your Billing page.",
-      "",
-      "- divoxutils",
-    ].join("\n");
-    const html = `
-      <div style="font-family: Inter, Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #1f2937;">
-        <h2 style="margin: 0 0 12px 0; color: #111827;">Thank you for supporting divoxutils</h2>
-        <p style="margin: 0 0 10px 0;">Hi ${greetingName},</p>
-        <p style="margin: 0 0 10px 0;">
-          Thank you for subscribing to support divoxutils at <strong>${tierText}</strong>.
-        </p>
-        <p style="margin: 0 0 10px 0;">
-          Your support helps cover hosting, database, and ongoing app costs.
-        </p>
-        <p style="margin: 0 0 10px 0;">
-          You can manage your subscription any time from your Billing page.
-        </p>
-        <p style="margin: 16px 0 0 0;">- divoxutils</p>
-      </div>
-    `;
-    try {
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from,
-          to: [email],
-          subject,
-          text,
-          html,
-        }),
-      });
-    } catch (error) {
-      console.error("Failed to send supporter thank-you email:", error);
-    }
   },
 });
 
