@@ -99,27 +99,30 @@ export default function SupportPromptModal({
       : "Now";
   const isPathEligible = isLoaded && (ignorePathRules || !isExcludedPath(pathname));
 
-  const openPrompt = useCallback((force = false) => {
-    const timestamp = Date.now();
-    const current = readHistory(cadence.storageKey);
-    const cleaned = getWindowedImpressions(current.impressions, timestamp, cadence.windowMs);
-    if (!force && cleaned.length >= cadence.maxImpressions) {
-      setHistory({ ...current, impressions: cleaned });
-      return false;
-    }
-    const lastSeen = cleaned[cleaned.length - 1];
-    const deduped = lastSeen && timestamp - lastSeen < 4000 ? cleaned : [...cleaned, timestamp];
-    const updated: PromptHistory = {
-      ...current,
-      impressions: deduped,
-    };
-    writeHistory(cadence.storageKey, updated);
-    setHistory(updated);
-    setIsOpen(true);
-    setCanClose(false);
-    setSecondsLeft(CLOSE_DELAY_SECONDS);
-    return true;
-  }, [cadence.maxImpressions, cadence.storageKey, cadence.windowMs]);
+  const openPrompt = useCallback(
+    (force = false) => {
+      const timestamp = Date.now();
+      const current = readHistory(cadence.storageKey);
+      const cleaned = getWindowedImpressions(current.impressions, timestamp, cadence.windowMs);
+      if (!force && cleaned.length >= cadence.maxImpressions) {
+        setHistory({ ...current, impressions: cleaned });
+        return false;
+      }
+      const lastSeen = cleaned[cleaned.length - 1];
+      const deduped = lastSeen && timestamp - lastSeen < 4000 ? cleaned : [...cleaned, timestamp];
+      const updated: PromptHistory = {
+        ...current,
+        impressions: deduped,
+      };
+      writeHistory(cadence.storageKey, updated);
+      setHistory(updated);
+      setIsOpen(true);
+      setCanClose(false);
+      setSecondsLeft(CLOSE_DELAY_SECONDS);
+      return true;
+    },
+    [cadence.maxImpressions, cadence.storageKey, cadence.windowMs]
+  );
 
   useEffect(() => {
     if (!isLoaded) return;
