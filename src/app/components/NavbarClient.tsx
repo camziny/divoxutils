@@ -149,7 +149,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
     },
     elements: {
       userButtonTrigger:
-        "rounded-md border border-gray-700 bg-gray-800/70 hover:bg-gray-700/80 transition-colors",
+        "rounded-md hover:bg-gray-700/80 transition-colors",
       userButtonAvatarBox: "h-8 w-8",
       userButtonPopoverCard: "bg-gray-900 border border-gray-700",
       userButtonPopoverActionButton:

@@ -99,41 +99,25 @@ const ContributePage = async () => {
           <h2 className="text-sm font-semibold text-white tracking-wide uppercase">
             Cost Transparency
           </h2>
-          <div className="space-y-2 text-sm text-gray-300">
-            <div className="flex items-center justify-between gap-3">
-              <span>Cloud hosting and runtime infrastructure</span>
-              <span className="text-gray-200">${MONTHLY_COSTS.vercelPro} / mo</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span>Discord bot hosting</span>
-              <span className="text-gray-200">${MONTHLY_COSTS.discordBotHost} / mo</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span>Database and storage</span>
-              <span className="text-gray-200">${MONTHLY_COSTS.managedDatabaseBudget} / mo</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span>Domain name registration</span>
-              <span className="text-gray-200">${domainMonthly.toFixed(2)} / mo</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span>Cloud compute and usage overages (variable)</span>
-              <span className="text-gray-200">
-                ${MONTHLY_COSTS.computeLow} - ${MONTHLY_COSTS.computeHigh} / mo
-              </span>
-            </div>
+          <div className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 text-sm">
+            <span className="text-gray-300">Cloud hosting and runtime infrastructure</span>
+            <span className="text-gray-200 tabular-nums text-right">${MONTHLY_COSTS.vercelPro} / mo</span>
+            <span className="text-gray-300">Discord bot hosting</span>
+            <span className="text-gray-200 tabular-nums text-right">${MONTHLY_COSTS.discordBotHost} / mo</span>
+            <span className="text-gray-300">Database and storage</span>
+            <span className="text-gray-200 tabular-nums text-right">${MONTHLY_COSTS.managedDatabaseBudget} / mo</span>
+            <span className="text-gray-300">Domain name registration</span>
+            <span className="text-gray-200 tabular-nums text-right">${domainMonthly.toFixed(2)} / mo</span>
+            <span className="text-gray-300">Cloud compute and usage overages (variable)</span>
+            <span className="text-gray-200 tabular-nums text-right">${MONTHLY_COSTS.computeLow} – ${MONTHLY_COSTS.computeHigh} / mo</span>
           </div>
           <div className="h-px bg-gray-800" />
-          <div className="space-y-2 text-sm">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total costs</p>
-            <div className="flex items-center justify-between text-gray-300">
-              <span>Monthly</span>
-              <span className="text-white font-medium">~${displayMonthlyLow} – ${displayMonthlyHigh}</span>
-            </div>
-            <div className="flex items-center justify-between text-gray-300">
-              <span>Annual</span>
-              <span className="text-white font-medium">~${displayAnnualLow} – ${displayAnnualHigh}</span>
-            </div>
+          <div className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 text-sm">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider col-span-2">Total costs</p>
+            <span className="text-gray-300">Monthly</span>
+            <span className="text-white font-medium tabular-nums text-right">~${displayMonthlyLow} – ${displayMonthlyHigh}</span>
+            <span className="text-gray-300">Annual</span>
+            <span className="text-white font-medium tabular-nums text-right">~${displayAnnualLow} – ${displayAnnualHigh}</span>
           </div>
         </section>
 

@@ -3,6 +3,7 @@ import NavbarClient from "./components/NavbarClient";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminClerkUserId } from "@/server/adminAuth";
 import prisma from "../../prisma/prismaClient";
+import { isEffectivelySupporter } from "@/server/supporterStatus";
 
 const Navbar = async () => {
   let userId: string | null = null;
@@ -18,9 +19,14 @@ const Navbar = async () => {
     try {
       const user = await prisma.user.findUnique({
         where: { clerkUserId: userId },
-        select: { supporterTier: true },
+        select: {
+          supporterTier: true,
+          subscriptionStatus: true,
+          subscriptionCancelAtPeriodEnd: true,
+          subscriptionCurrentPeriodEnd: true,
+        },
       });
-      isSubscribed = (user?.supporterTier ?? 0) > 0;
+      isSubscribed = isEffectivelySupporter(user);
     } catch {
       isSubscribed = false;
     }

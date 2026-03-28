@@ -5,8 +5,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { getWindowedImpressions, resolveCadence } from "./supportPromptCadence";
+import {
+  isKnownExemptActive,
+  shouldClearKnownExempt,
+  isSupportPromptEligible,
+} from "./supportPromptRules";
 
 const CLOSE_DELAY_SECONDS = 10;
+const KNOWN_EXEMPT_UNTIL_KEY = "divoxutils_support_prompt_known_exempt_until_v1";
+const KNOWN_EXEMPT_TTL_MS = 45 * 24 * 60 * 60 * 1000;
 
 type PromptHistory = {
   impressions: number[];
@@ -58,20 +65,35 @@ function writeHistory(storageKey: string, history: PromptHistory) {
   window.localStorage.setItem(storageKey, JSON.stringify(history));
 }
 
+function readKnownExemptUntil() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(KNOWN_EXEMPT_UNTIL_KEY);
+    if (!raw) return null;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeKnownExemptUntil(timestamp: number | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (!timestamp) {
+      window.localStorage.removeItem(KNOWN_EXEMPT_UNTIL_KEY);
+      return;
+    }
+    window.localStorage.setItem(KNOWN_EXEMPT_UNTIL_KEY, String(timestamp));
+  } catch {
+    return;
+  }
+}
+
 function formatTimestamp(timestamp: number | null) {
   if (!timestamp) return "Never";
   return new Date(timestamp).toLocaleString();
-}
-
-function isExcludedPath(pathname: string | null) {
-  if (!pathname) return true;
-  if (pathname === "/") return true;
-  if (pathname === "/contribute") return true;
-  if (pathname === "/billing") return true;
-  if (pathname === "/support-modal-test") return true;
-  if (pathname.startsWith("/sign-in")) return true;
-  if (pathname.startsWith("/sign-up")) return true;
-  return false;
 }
 
 export default function SupportPromptModal({
@@ -89,6 +111,7 @@ export default function SupportPromptModal({
   const [canClose, setCanClose] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(CLOSE_DELAY_SECONDS);
   const [history, setHistory] = useState<PromptHistory>(defaultHistory());
+  const [isKnownExempt, setIsKnownExempt] = useState(false);
   const cadence = useMemo(() => resolveCadence(Boolean(isSignedIn)), [isSignedIn]);
 
   const now = Date.now();
@@ -101,8 +124,14 @@ export default function SupportPromptModal({
     windowedImpressions.length >= cadence.maxImpressions
       ? new Date(windowedImpressions[0] + cadence.windowMs).toLocaleString()
       : "Now";
-  const isPathEligible =
-    isLoaded && !isSupporter && !isAdmin && (ignorePathRules || !isExcludedPath(pathname));
+  const isPathEligible = isSupportPromptEligible({
+    isLoaded,
+    isSupporter,
+    isAdmin,
+    isKnownExempt,
+    ignorePathRules,
+    pathname,
+  });
 
   const openPrompt = useCallback(
     (force = false) => {
@@ -128,6 +157,44 @@ export default function SupportPromptModal({
     },
     [cadence.maxImpressions, cadence.storageKey, cadence.windowMs]
   );
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const nowTimestamp = Date.now();
+    const knownExemptUntil = readKnownExemptUntil();
+    if (isKnownExemptActive(knownExemptUntil, nowTimestamp)) {
+      setIsKnownExempt(true);
+      return;
+    }
+    writeKnownExemptUntil(null);
+    setIsKnownExempt(false);
+  }, [isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (isSupporter || isAdmin) {
+      const until = Date.now() + KNOWN_EXEMPT_TTL_MS;
+      writeKnownExemptUntil(until);
+      setIsKnownExempt(true);
+      return;
+    }
+    if (
+      shouldClearKnownExempt({
+        isSignedIn: Boolean(isSignedIn),
+        isSupporter,
+        isAdmin,
+      })
+    ) {
+      writeKnownExemptUntil(null);
+      setIsKnownExempt(false);
+      return;
+    }
+    const knownExemptUntil = readKnownExemptUntil();
+    if (!isKnownExemptActive(knownExemptUntil, Date.now())) {
+      writeKnownExemptUntil(null);
+      setIsKnownExempt(false);
+    }
+  }, [isLoaded, isSignedIn, isSupporter, isAdmin]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -283,27 +350,17 @@ export default function SupportPromptModal({
 
           <div className="mx-5 rounded-lg border border-gray-800 bg-gray-800/20 p-4 space-y-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cost Breakdown</h3>
-            <div className="space-y-2 text-sm text-gray-300">
-              <div className="flex items-center justify-between gap-3">
-                <span>Cloud hosting and runtime infrastructure</span>
-                <span className="text-gray-200 shrink-0">$20 / mo</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Database and storage</span>
-                <span className="text-gray-200 shrink-0">$30 / mo</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Discord bot hosting</span>
-                <span className="text-gray-200 shrink-0">$5 / mo</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Domain name registration</span>
-                <span className="text-gray-200 shrink-0">$1.25 / mo</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Cloud compute and usage overages (variable)</span>
-                <span className="text-gray-200 shrink-0">$0 – $5 / mo</span>
-              </div>
+            <div className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 text-sm">
+              <span className="text-gray-300">Cloud hosting and runtime infrastructure</span>
+              <span className="text-gray-200 tabular-nums text-right shrink-0">$20 / mo</span>
+              <span className="text-gray-300">Database and storage</span>
+              <span className="text-gray-200 tabular-nums text-right shrink-0">$30 / mo</span>
+              <span className="text-gray-300">Discord bot hosting</span>
+              <span className="text-gray-200 tabular-nums text-right shrink-0">$5 / mo</span>
+              <span className="text-gray-300">Domain name registration</span>
+              <span className="text-gray-200 tabular-nums text-right shrink-0">$1.25 / mo</span>
+              <span className="text-gray-300">Cloud compute and usage overages (variable)</span>
+              <span className="text-gray-200 tabular-nums text-right shrink-0">$0 – $5 / mo</span>
             </div>
             <div className="h-px bg-gray-800" />
             <div className="space-y-2 text-sm">
