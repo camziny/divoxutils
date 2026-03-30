@@ -53,12 +53,14 @@ test("normalizeClassFilter accepts valid values and falls back to all", () => {
   assert.equal(normalizeClassFilter(undefined), "all");
 });
 
-test("filterCharactersByClass includes Mauler for tank and caster filters", () => {
+test("filterCharactersByClass includes dual-category classes for tank and caster filters", () => {
   const chars = [
     makeCharacter("Mauler", { id: 1 }),
     makeCharacter("Wizard", { id: 2 }),
     makeCharacter("Armsman", { id: 3 }),
     makeCharacter("Bard", { id: 4 }),
+    makeCharacter("Thane", { id: 5 }),
+    makeCharacter("Necromancer", { id: 6 }),
   ];
 
   const tank = filterCharactersByClass(chars, "tank").map((c) => c.id);
@@ -66,10 +68,25 @@ test("filterCharactersByClass includes Mauler for tank and caster filters", () =
   const support = filterCharactersByClass(chars, "support").map((c) => c.id);
   const all = filterCharactersByClass(chars, "all").map((c) => c.id);
 
-  assert.deepEqual(tank.sort((a, b) => a - b), [1, 3]);
-  assert.deepEqual(caster.sort((a, b) => a - b), [1, 2]);
+  assert.deepEqual(tank.sort((a, b) => a - b), [1, 3, 5, 6]);
+  assert.deepEqual(caster.sort((a, b) => a - b), [1, 2, 5, 6]);
   assert.deepEqual(support, [4]);
-  assert.deepEqual(all, [1, 2, 3, 4]);
+  assert.deepEqual(all, [1, 2, 3, 4, 5, 6]);
+});
+
+test("filterCharactersByClass matches female class variants to male canonical classes", () => {
+  const chars = [
+    makeCharacter("Armswoman", { id: 1 }),
+    makeCharacter("Heroine", { id: 2 }),
+    makeCharacter("Sorceress", { id: 3 }),
+    makeCharacter("Enchantress", { id: 4 }),
+  ];
+
+  const tank = filterCharactersByClass(chars, "tank").map((c) => c.id);
+  const caster = filterCharactersByClass(chars, "caster").map((c) => c.id);
+
+  assert.deepEqual(tank.sort((a, b) => a - b), [1, 2]);
+  assert.deepEqual(caster.sort((a, b) => a - b), [3, 4]);
 });
 
 test("getEffectiveCharacterSortKey prioritizes column sort when present", () => {

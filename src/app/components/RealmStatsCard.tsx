@@ -49,15 +49,13 @@ const RealmStatsCard: React.FC<RealmCardProps> = ({
             <span className="text-xs text-gray-400">Kills</span>
             <span className="text-xs font-semibold text-white tabular-nums">{kills}</span>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 py-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-gray-400">DBs</span>
-              <span className="text-[11px] font-semibold text-white tabular-nums">{deathBlows}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-gray-400">SKs</span>
-              <span className="text-[11px] font-semibold text-white tabular-nums">{soloKills}</span>
-            </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-xs text-gray-400">Death Blows</span>
+            <span className="text-xs font-semibold text-white tabular-nums">{deathBlows}</span>
+          </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-xs text-gray-400">Solo Kills</span>
+            <span className="text-xs font-semibold text-white tabular-nums">{soloKills}</span>
           </div>
         </div>
         <div className="w-full flex flex-col items-center mt-2 pt-2 border-t border-gray-800">
