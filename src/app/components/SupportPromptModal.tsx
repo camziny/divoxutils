@@ -13,7 +13,7 @@ import {
 
 const CLOSE_DELAY_SECONDS = 10;
 const KNOWN_EXEMPT_UNTIL_KEY = "divoxutils_support_prompt_known_exempt_until_v1";
-const KNOWN_EXEMPT_TTL_MS = 45 * 24 * 60 * 60 * 1000;
+const KNOWN_EXEMPT_PERSIST_UNTIL = Number.MAX_SAFE_INTEGER;
 
 type PromptHistory = {
   impressions: number[];
@@ -173,8 +173,7 @@ export default function SupportPromptModal({
   useEffect(() => {
     if (!isLoaded) return;
     if (isSupporter || isAdmin) {
-      const until = Date.now() + KNOWN_EXEMPT_TTL_MS;
-      writeKnownExemptUntil(until);
+      writeKnownExemptUntil(KNOWN_EXEMPT_PERSIST_UNTIL);
       setIsKnownExempt(true);
       return;
     }
@@ -379,8 +378,10 @@ export default function SupportPromptModal({
           <div className="px-5 pt-4 pb-5 space-y-4">
             <p className="text-sm text-gray-400">
               Monthly support tiers are <span className="text-gray-200">$1</span>,{" "}
-              <span className="text-gray-200">$3</span>, and <span className="text-gray-200">$5</span>. Every bit
-              helps.
+              <span className="text-gray-200">$3</span>, and <span className="text-gray-200">$5</span>.
+            </p>
+            <p className="text-sm text-gray-400">
+              Any active support tier removes this reminder.
             </p>
             <div className="flex items-center justify-between gap-3">
               <button

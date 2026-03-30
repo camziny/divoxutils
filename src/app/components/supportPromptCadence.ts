@@ -1,17 +1,15 @@
-const STORAGE_KEY_BASE = "divoxutils_support_prompt_v1";
-const SIGNED_IN_WINDOW_DAYS = 14;
-const SIGNED_OUT_WINDOW_DAYS = 14;
-const SIGNED_IN_MAX_IMPRESSIONS = 3;
-const SIGNED_OUT_MAX_IMPRESSIONS = 1;
+const STORAGE_KEY = "divoxutils_support_prompt_v2_non_supporter_device";
+const WINDOW_DAYS = 7;
+const MAX_IMPRESSIONS = 5;
 
-export function resolveCadence(isSignedIn: boolean) {
-  const windowDays = isSignedIn ? SIGNED_IN_WINDOW_DAYS : SIGNED_OUT_WINDOW_DAYS;
-  const maxImpressions = isSignedIn ? SIGNED_IN_MAX_IMPRESSIONS : SIGNED_OUT_MAX_IMPRESSIONS;
+export function resolveCadence(_isSignedIn: boolean) {
+  const windowDays = WINDOW_DAYS;
+  const maxImpressions = MAX_IMPRESSIONS;
   return {
     windowDays,
     windowMs: windowDays * 24 * 60 * 60 * 1000,
     maxImpressions,
-    storageKey: `${STORAGE_KEY_BASE}_${isSignedIn ? "signed_in" : "signed_out"}`,
+    storageKey: STORAGE_KEY,
   };
 }
 

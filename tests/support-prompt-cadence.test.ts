@@ -5,18 +5,18 @@ import {
   resolveCadence,
 } from "../src/app/components/supportPromptCadence";
 
-test("resolveCadence returns signed-in cadence config", () => {
+test("resolveCadence returns unified cadence config for signed-in users", () => {
   const cadence = resolveCadence(true);
-  assert.equal(cadence.windowDays, 14);
-  assert.equal(cadence.maxImpressions, 3);
-  assert.equal(cadence.storageKey, "divoxutils_support_prompt_v1_signed_in");
+  assert.equal(cadence.windowDays, 7);
+  assert.equal(cadence.maxImpressions, 5);
+  assert.equal(cadence.storageKey, "divoxutils_support_prompt_v2_non_supporter_device");
 });
 
-test("resolveCadence returns signed-out cadence config", () => {
+test("resolveCadence returns unified cadence config for signed-out users", () => {
   const cadence = resolveCadence(false);
-  assert.equal(cadence.windowDays, 14);
-  assert.equal(cadence.maxImpressions, 1);
-  assert.equal(cadence.storageKey, "divoxutils_support_prompt_v1_signed_out");
+  assert.equal(cadence.windowDays, 7);
+  assert.equal(cadence.maxImpressions, 5);
+  assert.equal(cadence.storageKey, "divoxutils_support_prompt_v2_non_supporter_device");
 });
 
 test("getWindowedImpressions keeps only impressions inside window", () => {

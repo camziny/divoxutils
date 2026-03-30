@@ -4,31 +4,11 @@ import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import SupporterBadge from "@/app/components/SupporterBadge";
+import { SUPPORTER_TIER_PLANS } from "./supporterTierPlans";
 
 type Props = {
   activeTier: number | null;
 };
-
-const PLANS = [
-  {
-    tier: 1,
-    price: "$1",
-    label: "$1 / month",
-    description: "Covers basic monthly infrastructure costs.",
-  },
-  {
-    tier: 2,
-    price: "$3",
-    label: "$3 / month",
-    description: "Helps absorb variable compute and service usage.",
-  },
-  {
-    tier: 3,
-    price: "$5",
-    label: "$5 / month",
-    description: "Provides extra buffer for maintenance and ongoing improvements.",
-  },
-] as const;
 
 export default function SubscribeInline({ activeTier }: Props) {
   const { isSignedIn } = useAuth();
@@ -70,7 +50,7 @@ export default function SubscribeInline({ activeTier }: Props) {
       )}
 
       <div className="space-y-3">
-        {PLANS.map((plan) => {
+        {SUPPORTER_TIER_PLANS.map((plan) => {
           const isCurrent = plan.tier === activeTier;
           return (
             <div
