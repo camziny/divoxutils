@@ -31,6 +31,7 @@ model User {
   accountId      Int?            @unique
   supporterTier    Int             @default(0)
   supporterAmount  Float           @default(0)
+  preferredCharacterListLayout String @default("table")
   stripeCustomerId String?         @unique
   stripeSubscriptionId String?     @unique
   subscriptionStatus String?

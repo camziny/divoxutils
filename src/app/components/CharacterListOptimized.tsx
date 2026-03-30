@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo, useCallback, memo, useTransition } from "react";
+import React, { useState, useMemo, useCallback, memo, useTransition, useEffect } from "react";
 import dynamic from "next/dynamic";
 import CharacterTableHeader from "./CharacterTableHeader";
 import CharacterListSkeleton from "./CharacterListSkeleton";
@@ -7,7 +7,8 @@ import { CharacterData } from "@/utils/character";
 import { sortCharacters } from "@/utils/sortCharacters";
 import { useUser } from "@clerk/nextjs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Loader2, AlertTriangle, LayoutGrid, List, ArrowDownWideNarrow, ArrowUpNarrowWide, Layers, SlidersHorizontal } from "lucide-react";
+import { Loader2, AlertTriangle, LayoutGrid, List, ArrowDownWideNarrow, ArrowUpNarrowWide, Layers, SlidersHorizontal, Pin } from "lucide-react";
+import { toast } from "sonner";
 import {
   TableContainer,
   Paper,
@@ -24,6 +25,15 @@ import {
   getNextColumnSortState,
   normalizeClassFilter,
 } from "@/utils/characterListControls";
+import {
+  resolveInitialDesktopLayout,
+  type DesktopLayout,
+} from "@/utils/characterListLayout";
+import {
+  getDesktopLayoutLabel,
+  shouldApplyRealmGridRankSort,
+  shouldShowSaveLayoutHint,
+} from "@/utils/characterListLayoutUi";
 
 const CharacterTile = dynamic(() => import("./CharacterTile"), {
   loading: () => <div className="h-16 animate-pulse bg-gray-800" />,
@@ -46,9 +56,9 @@ type CharacterListProps = {
   searchParams: { [key: string]: string | string[] };
   showDelete?: boolean;
   userId?: string;
+  preferredDesktopLayout?: DesktopLayout | null;
 };
 
-type DesktopLayout = "table" | "realm-grid";
 const DESKTOP_LAYOUTS: DesktopLayout[] = ["table", "realm-grid"];
 const REALMS: Array<"Albion" | "Hibernia" | "Midgard"> = ["Albion", "Hibernia", "Midgard"];
 
@@ -57,6 +67,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   searchParams,
   showDelete = true,
   userId,
+  preferredDesktopLayout = null,
 }) => {
   const { user } = useUser();
   const router = useRouter();
@@ -78,20 +89,32 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     return normalized === "desc" ? "desc" : "asc";
   })();
   const initialLayout = (() => {
-    const value = searchParams?.layout;
-    const normalized = Array.isArray(value) ? value[0] : value;
-    if (normalized && DESKTOP_LAYOUTS.includes(normalized as DesktopLayout)) {
-      return normalized as DesktopLayout;
-    }
-    return "table" as DesktopLayout;
+    return resolveInitialDesktopLayout({
+      searchParams,
+      preferredDesktopLayout,
+    });
   })();
   const [sortOption, setSortOption] = useState(initialSortOption);
   const [desktopLayout, setDesktopLayout] = useState<DesktopLayout>(initialLayout);
+  const [savedPreference, setSavedPreference] = useState<DesktopLayout>(
+    preferredDesktopLayout && DESKTOP_LAYOUTS.includes(preferredDesktopLayout)
+      ? preferredDesktopLayout
+      : "table"
+  );
   const initialClassFilter = normalizeClassFilter(searchParams?.classFilter);
   const [classFilter, setClassFilter] = useState<ClassFilter>(initialClassFilter);
   const [columnSort, setColumnSort] = useState<string | null>(initialColumnSort);
   const [columnSortDir, setColumnSortDir] = useState<"asc" | "desc">(initialColumnSortDir);
   const [showFilters, setShowFilters] = useState(initialClassFilter !== "all");
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 640px)");
+    const updateViewportState = () => setIsDesktopViewport(mediaQuery.matches);
+    updateViewportState();
+    mediaQuery.addEventListener("change", updateViewportState);
+    return () => mediaQuery.removeEventListener("change", updateViewportState);
+  }, []);
 
   const filteredCharacters = useMemo(
     () => filterCharactersByClass(characters, classFilter),
@@ -100,10 +123,15 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
 
   const effectiveSortKey = useMemo(
     () =>
-      desktopLayout === "realm-grid" && sortOption === "realm" && !columnSort
+      shouldApplyRealmGridRankSort({
+        isDesktopViewport,
+        desktopLayout,
+        sortOption,
+        columnSort,
+      })
         ? "rank-high-to-low"
         : getEffectiveCharacterSortKey(sortOption, columnSort, columnSortDir),
-    [desktopLayout, sortOption, columnSort, columnSortDir]
+    [isDesktopViewport, desktopLayout, sortOption, columnSort, columnSortDir]
   );
 
   const sortedCharacters = useMemo(
@@ -134,6 +162,26 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     },
     [activeSearchParams, pathname, router]
   );
+
+  const handleSaveLayoutPreference = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const response = await fetch("/api/user/preferences/layout", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ layout: desktopLayout }),
+      });
+      if (!response.ok) {
+        throw new Error("Could not save layout preference");
+      }
+      setSavedPreference(desktopLayout);
+      toast.success(
+        `${getDesktopLayoutLabel(desktopLayout)} is now your preferred layout`
+      );
+    } catch {
+      toast.error("Could not save layout preference");
+    }
+  }, [desktopLayout, user?.id]);
 
   const handleClassFilterChange = useCallback(
     (value: string) => {
@@ -314,7 +362,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
           <ToggleGroup value={desktopLayout} onValueChange={handleLayoutChange}>
             <ToggleGroupItem value="table" className="gap-1">
               <List size={11} />
-              Default
+              Classic
             </ToggleGroupItem>
             <ToggleGroupItem value="realm-grid" className="gap-1">
               <LayoutGrid size={11} />
@@ -358,6 +406,28 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
                 <ToggleGroupItem value="stealth">Stealth</ToggleGroupItem>
               </ToggleGroup>
             </div>
+          </motion.div>
+        )}
+        {shouldShowSaveLayoutHint({
+          isSignedIn: Boolean(user?.id),
+          desktopLayout,
+          savedPreference,
+        }) && (
+          <motion.div
+            key="save-layout-hint"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="hidden sm:block overflow-hidden"
+          >
+            <button
+              onClick={handleSaveLayoutPreference}
+              className="inline-flex items-center gap-1.5 rounded-md border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-[11px] font-medium text-indigo-300 hover:bg-indigo-500/20 hover:border-indigo-500/30 transition-colors duration-150"
+            >
+              <Pin size={10} className="rotate-45" />
+              Set {getDesktopLayoutLabel(desktopLayout)} as your preferred layout
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

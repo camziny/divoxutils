@@ -12,6 +12,7 @@ import { headers } from "next/headers";
 import prisma from "../../../prisma/prismaClient";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import type { Metadata } from "next";
+import { isCharacterListLayout } from "@/server/characterListLayoutPreference";
 
 export const metadata: Metadata = {
   title: "My Characters - divoxutils",
@@ -116,7 +117,7 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
     fetchCharactersForUser(userId),
     prisma.user.findUnique({
       where: { clerkUserId: userId },
-      select: { supporterTier: true, name: true },
+      select: { supporterTier: true, name: true, preferredCharacterListLayout: true },
     }),
     prisma.userIdentityLink.findFirst({
       where: { clerkUserId: userId, provider: "discord", status: "linked" },
@@ -126,6 +127,9 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
 
   const supporterTier = dbUser?.supporterTier ?? 0;
   const shareUsername = dbUser?.name ?? "";
+  const preferredDesktopLayout = isCharacterListLayout(dbUser?.preferredCharacterListLayout)
+    ? dbUser.preferredCharacterListLayout
+    : null;
   const characters = charactersResult.characters;
   const charactersError = charactersResult.error;
   const draftProfileHref = identityLink
@@ -158,6 +162,7 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
                 characters={characters}
                 searchParams={resolvedSearchParams}
                 showDelete={true}
+                preferredDesktopLayout={preferredDesktopLayout}
               />
             </Suspense>
           </div>

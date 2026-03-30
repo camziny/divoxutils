@@ -6,6 +6,7 @@ import Loading from "@/app/loading";
 import prisma from "../../../../../prisma/prismaClient";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import DraftProfileButton from "@/app/components/DraftProfileButton";
+import { getCurrentUserCharacterListLayoutPreference } from "@/server/characterListLayoutPreference";
 
 const CharacterListOptimized = dynamic(
   () => import("@/app/components/CharacterListOptimized"),
@@ -46,7 +47,7 @@ export default async function CharactersPage({
   const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as Record<string, string | string[]>;
   const userId = resolvedParams.userId as string;
 
-  const [userData, identityLink] = await Promise.all([
+  const [userData, identityLink, preferredDesktopLayout] = await Promise.all([
     prisma.user.findUnique({
       where: { clerkUserId: userId },
       select: { name: true },
@@ -59,6 +60,7 @@ export default async function CharactersPage({
       },
       select: { id: true },
     }),
+    getCurrentUserCharacterListLayoutPreference(),
   ]);
 
   if (!userData) {
@@ -91,6 +93,7 @@ export default async function CharactersPage({
               characters={characters}
               searchParams={resolvedSearchParams}
               showDelete={false}
+              preferredDesktopLayout={preferredDesktopLayout}
             />
           </Suspense>
         </div>
