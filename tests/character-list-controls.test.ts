@@ -80,13 +80,16 @@ test("filterCharactersByClass matches female class variants to male canonical cl
     makeCharacter("Heroine", { id: 2 }),
     makeCharacter("Sorceress", { id: 3 }),
     makeCharacter("Enchantress", { id: 4 }),
+    makeCharacter("Huntress", { id: 5 }),
   ];
 
   const tank = filterCharactersByClass(chars, "tank").map((c) => c.id);
   const caster = filterCharactersByClass(chars, "caster").map((c) => c.id);
+  const stealth = filterCharactersByClass(chars, "stealth").map((c) => c.id);
 
   assert.deepEqual(tank.sort((a, b) => a - b), [1, 2]);
   assert.deepEqual(caster.sort((a, b) => a - b), [3, 4]);
+  assert.deepEqual(stealth.sort((a, b) => a - b), [5]);
 });
 
 test("getEffectiveCharacterSortKey prioritizes column sort when present", () => {
