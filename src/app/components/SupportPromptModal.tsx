@@ -119,11 +119,14 @@ export default function SupportPromptModal({
     () => getWindowedImpressions(history.impressions, now, cadence.windowMs),
     [history, now, cadence.windowMs]
   );
+  const lastSeenInWindow = windowedImpressions[windowedImpressions.length - 1] ?? null;
   const remainingInWindow = Math.max(0, cadence.maxImpressions - windowedImpressions.length);
+  const nextEligibleByWindow =
+    windowedImpressions.length >= cadence.maxImpressions ? windowedImpressions[0] + cadence.windowMs : now;
+  const nextEligibleByInterval = lastSeenInWindow ? lastSeenInWindow + cadence.minIntervalMs : now;
+  const nextEligibleTimestamp = Math.max(nextEligibleByWindow, nextEligibleByInterval);
   const nextEligibleAt =
-    windowedImpressions.length >= cadence.maxImpressions
-      ? new Date(windowedImpressions[0] + cadence.windowMs).toLocaleString()
-      : "Now";
+    nextEligibleTimestamp <= now ? "Now" : new Date(nextEligibleTimestamp).toLocaleString();
   const isPathEligible = isSupportPromptEligible({
     isLoaded,
     isSupporter,
@@ -138,11 +141,15 @@ export default function SupportPromptModal({
       const timestamp = Date.now();
       const current = readHistory(cadence.storageKey);
       const cleaned = getWindowedImpressions(current.impressions, timestamp, cadence.windowMs);
+      const lastSeen = cleaned[cleaned.length - 1];
+      if (!force && lastSeen && timestamp - lastSeen < cadence.minIntervalMs) {
+        setHistory({ ...current, impressions: cleaned });
+        return false;
+      }
       if (!force && cleaned.length >= cadence.maxImpressions) {
         setHistory({ ...current, impressions: cleaned });
         return false;
       }
-      const lastSeen = cleaned[cleaned.length - 1];
       const deduped = lastSeen && timestamp - lastSeen < 4000 ? cleaned : [...cleaned, timestamp];
       const updated: PromptHistory = {
         ...current,
@@ -155,7 +162,7 @@ export default function SupportPromptModal({
       setSecondsLeft(CLOSE_DELAY_SECONDS);
       return true;
     },
-    [cadence.maxImpressions, cadence.storageKey, cadence.windowMs]
+    [cadence.maxImpressions, cadence.minIntervalMs, cadence.storageKey, cadence.windowMs]
   );
 
   useEffect(() => {
