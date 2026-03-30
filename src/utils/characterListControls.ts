@@ -11,6 +11,7 @@ const CLASS_NAME_ALIASES: Record<string, string> = {
   heroine: "hero",
   sorceress: "sorcerer",
   enchantress: "enchanter",
+  huntress: "hunter",
 };
 
 const normalizeClassName = (className: string | undefined): string => {
