@@ -10,6 +10,7 @@ import DraftProfileButton from "@/app/components/DraftProfileButton";
 import { headers } from "next/headers";
 import prisma from "../../../../../prisma/prismaClient";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
+import { getCurrentUserCharacterListLayoutPreference } from "@/server/characterListLayoutPreference";
 
 const CharacterListOptimized = dynamic(
   () => import("@/app/components/CharacterListOptimized"),
@@ -136,7 +137,7 @@ const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => 
 
   const clerkUserId = user.clerkUserId;
 
-  const [characters, identityLink] = await Promise.all([
+  const [characters, identityLink, preferredDesktopLayout] = await Promise.all([
     fetchCharactersForUser(clerkUserId).catch((error) => {
       console.error("Error fetching characters:", error);
       return [];
@@ -149,6 +150,7 @@ const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => 
       },
       select: { id: true },
     }),
+    getCurrentUserCharacterListLayoutPreference(),
   ]);
 
   const draftProfileHref = identityLink
@@ -175,6 +177,7 @@ const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => 
               characters={characters}
               searchParams={resolvedSearchParams}
               showDelete={false}
+              preferredDesktopLayout={preferredDesktopLayout}
             />
           </Suspense>
         </div>
