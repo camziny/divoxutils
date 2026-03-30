@@ -11,6 +11,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "./providers";
 import { Toaster } from "sonner";
 import SupportPromptModal from "./components/SupportPromptModal";
+import SignedOutNudge from "./components/SignedOutNudge";
 import prisma from "../../prisma/prismaClient";
 import { isAdminClerkUserId } from "@/server/adminAuth";
 import { isEffectivelySupporter } from "@/server/supporterStatus";
@@ -86,6 +87,7 @@ export default async function RootLayout({
             <Providers>
               <Navbar />
               <SupportPromptModal isSupporter={isSupporter} isAdmin={isAdmin} />
+              <SignedOutNudge />
               {children}
               <SpeedInsights />
               <Analytics />

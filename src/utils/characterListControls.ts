@@ -6,11 +6,31 @@ export type ColumnSortDir = "asc" | "desc";
 
 const CLASS_FILTERS: ClassFilter[] = ["all", "tank", "caster", "support", "stealth"];
 
+const CLASS_NAME_ALIASES: Record<string, string> = {
+  armswoman: "armsman",
+  heroine: "hero",
+  sorceress: "sorcerer",
+  enchantress: "enchanter",
+};
+
+const normalizeClassName = (className: string | undefined): string => {
+  const normalized = (className ?? "").trim().toLowerCase();
+  return CLASS_NAME_ALIASES[normalized] ?? normalized;
+};
+
 const CLASS_FILTER_MAP: Record<Exclude<ClassFilter, "all">, Set<string>> = {
-  tank: new Set([...CLASS_CATEGORIES.Tank, "Mauler"]),
-  caster: new Set([...CLASS_CATEGORIES.Caster, "Mauler"]),
-  support: new Set(CLASS_CATEGORIES.Support),
-  stealth: new Set(CLASS_CATEGORIES.Stealth),
+  tank: new Set(
+    [...CLASS_CATEGORIES.Tank, "Mauler", "Necromancer"].map((className) =>
+      normalizeClassName(className)
+    )
+  ),
+  caster: new Set(
+    [...CLASS_CATEGORIES.Caster, "Mauler", "Thane"].map((className) =>
+      normalizeClassName(className)
+    )
+  ),
+  support: new Set(CLASS_CATEGORIES.Support.map((className) => normalizeClassName(className))),
+  stealth: new Set(CLASS_CATEGORIES.Stealth.map((className) => normalizeClassName(className))),
 };
 
 const NUMERIC_COLUMNS = new Set(["level", "rank"]);
@@ -29,7 +49,7 @@ export const filterCharactersByClass = (
 ): CharacterData[] => {
   if (classFilter === "all") return characters;
   const allowed = CLASS_FILTER_MAP[classFilter];
-  return characters.filter((c) => allowed.has(c.heraldClassName || ""));
+  return characters.filter((c) => allowed.has(normalizeClassName(c.heraldClassName)));
 };
 
 export const getEffectiveCharacterSortKey = (
