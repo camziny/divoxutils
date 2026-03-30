@@ -11,9 +11,13 @@ import { Snackbar } from "@mui/material";
 import CharacterTileSkeleton from "./CharacterTileSkeleton";
 import { CharacterData, getRealmRankForPoints, formatRealmRankWithLevel } from "@/utils/character";
 import { motion, AnimatePresence } from "framer-motion";
-import { Tooltip, TooltipProps } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import { getRealmSurfaceInteractiveClass } from "./characterTileTheme";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type KillStats = {
   kills: number;
@@ -132,18 +136,6 @@ const CharacterTile: React.FC<{
     getRealmRankForPoints(characterDetails.heraldRealmPoints || 0)
   );
 
-  const CustomTooltip = styled(({ className, ...props }: TooltipProps) => (
-    <Tooltip {...props} classes={{ popper: className }} />
-  ))({
-    [`& .MuiTooltip-tooltip`]: {
-      backgroundColor: "#1a1a1a",
-      color: "#ffffff",
-      fontSize: "0.875rem",
-      borderRadius: "4px",
-      padding: "8px",
-    },
-  });
-
   return (
     <>
       <TableRow
@@ -199,9 +191,14 @@ const CharacterTile: React.FC<{
           }}
           className="!text-white text-xs font-semibold truncate"
         >
-          <CustomTooltip title={characterDetails.heraldName} arrow>
-            <span>{characterDetails.heraldName}</span>
-          </CustomTooltip>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>{characterDetails.heraldName}</span>
+              </TooltipTrigger>
+              <TooltipContent>{characterDetails.heraldName}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </TableCell>
         <TableCell
           sx={{ width: "12%", padding: "2px", height: "20px" }}
