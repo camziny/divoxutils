@@ -17,6 +17,7 @@ export const metadata = {
 type BillingPageProps = {
   searchParams?: {
     checkout?: "success" | "cancel";
+    session_id?: string;
   };
 };
 
@@ -45,6 +46,10 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
   const checkoutStatus =
     searchParams?.checkout === "success" || searchParams?.checkout === "cancel"
       ? searchParams.checkout
+      : null;
+  const checkoutSessionId =
+    typeof searchParams?.session_id === "string" && searchParams.session_id.length > 0
+      ? searchParams.session_id
       : null;
 
   let subscription: {
@@ -159,6 +164,7 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
     <div className="min-h-screen bg-gray-900 text-gray-300">
       <BillingClient
         checkoutStatus={checkoutStatus}
+        checkoutSessionId={checkoutSessionId}
         subscription={subscription}
         isSignedIn={isSignedIn}
       />

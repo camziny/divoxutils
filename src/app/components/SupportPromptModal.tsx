@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { track } from "@vercel/analytics/react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { getWindowedImpressions, resolveCadence } from "./supportPromptCadence";
 import {
@@ -113,6 +114,18 @@ export default function SupportPromptModal({
   const [history, setHistory] = useState<PromptHistory>(defaultHistory());
   const [isKnownExempt, setIsKnownExempt] = useState(false);
   const cadence = useMemo(() => resolveCadence(Boolean(isSignedIn)), [isSignedIn]);
+  const authState = isSignedIn ? "signed_in" : "signed_out";
+
+  const trackSupportPromptEvent = useCallback(
+    (name: string, properties?: Record<string, string | number | boolean | null>) => {
+      track(name, {
+        path: pathname ?? "unknown",
+        auth_state: authState,
+        ...properties,
+      });
+    },
+    [pathname, authState]
+  );
 
   const now = Date.now();
   const windowedImpressions = useMemo(
@@ -160,9 +173,18 @@ export default function SupportPromptModal({
       setIsOpen(true);
       setCanClose(false);
       setSecondsLeft(CLOSE_DELAY_SECONDS);
+      trackSupportPromptEvent("support_modal_seen", {
+        trigger: force ? "forced" : "cadence",
+      });
       return true;
     },
-    [cadence.maxImpressions, cadence.minIntervalMs, cadence.storageKey, cadence.windowMs]
+    [
+      cadence.maxImpressions,
+      cadence.minIntervalMs,
+      cadence.storageKey,
+      cadence.windowMs,
+      trackSupportPromptEvent,
+    ]
   );
 
   useEffect(() => {
@@ -260,6 +282,7 @@ export default function SupportPromptModal({
     writeHistory(cadence.storageKey, updated);
     setHistory(updated);
     setIsOpen(false);
+    trackSupportPromptEvent("support_modal_dismissed");
   };
 
   const viewSupportOptions = () => {
@@ -272,6 +295,7 @@ export default function SupportPromptModal({
     writeHistory(cadence.storageKey, updated);
     setHistory(updated);
     setIsOpen(false);
+    trackSupportPromptEvent("support_modal_clicked_subscribe");
     router.push("/contribute");
   };
 
