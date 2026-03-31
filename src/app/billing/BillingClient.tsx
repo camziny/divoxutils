@@ -4,6 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { track } from "@vercel/analytics/react";
 import SupporterBadge from "@/app/components/SupporterBadge";
+import {
+  appendTrackedCheckoutSessionId,
+  hasTrackedCheckoutSessionId,
+  isActiveSupportSubscriptionStatus,
+  shouldTrackSupportSubscribeSuccess,
+  TRACKED_CHECKOUT_SESSION_IDS_KEY,
+} from "./supportSubscribeAnalytics";
 
 type SubscriptionInfo = {
   tier: number;
@@ -41,8 +48,6 @@ function formatDate(iso: string | null): string {
   });
 }
 
-const TRACKED_CHECKOUT_SESSION_IDS_KEY = "divoxutils_tracked_checkout_session_ids_v1";
-
 function readTrackedCheckoutSessionIds(): string[] {
   if (typeof window === "undefined") return [];
   try {
@@ -75,9 +80,7 @@ export default function BillingClient({
   const [error, setError] = useState<string | null>(null);
   const hasTrackedSubscribeSuccess = useRef(false);
 
-  const isActive = subscription?.status === "active" ||
-    subscription?.status === "trialing" ||
-    subscription?.status === "past_due";
+  const isActive = isActiveSupportSubscriptionStatus(subscription?.status);
 
   const statusInfo = STATUS_DISPLAY[subscription?.status ?? "none"] ?? STATUS_DISPLAY.none;
 
@@ -93,18 +96,21 @@ export default function BillingClient({
 
   useEffect(() => {
     if (hasTrackedSubscribeSuccess.current) return;
-    const isActiveStatus =
-      subscription?.status === "active" ||
-      subscription?.status === "trialing" ||
-      subscription?.status === "past_due";
-    if (checkoutStatus !== "success" || !isActiveStatus) return;
+    if (
+      !shouldTrackSupportSubscribeSuccess({
+        checkoutStatus,
+        subscriptionStatus: subscription?.status,
+      })
+    ) {
+      return;
+    }
     if (checkoutSessionId) {
       const trackedSessionIds = readTrackedCheckoutSessionIds();
-      if (trackedSessionIds.includes(checkoutSessionId)) {
+      if (hasTrackedCheckoutSessionId(checkoutSessionId, trackedSessionIds)) {
         hasTrackedSubscribeSuccess.current = true;
         return;
       }
-      writeTrackedCheckoutSessionIds([...trackedSessionIds, checkoutSessionId]);
+      writeTrackedCheckoutSessionIds(appendTrackedCheckoutSessionId(trackedSessionIds, checkoutSessionId));
     }
     hasTrackedSubscribeSuccess.current = true;
     track("support_subscribe_success", {
