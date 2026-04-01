@@ -134,7 +134,7 @@ const handler = createCheckoutSessionHandler({
           clerkUserId,
         },
       },
-      success_url: `${origin}/billing?checkout=success`,
+      success_url: `${origin}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/billing?checkout=cancel`,
     }),
 });

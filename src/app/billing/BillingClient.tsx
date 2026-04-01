@@ -1,8 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { track } from "@vercel/analytics/react";
 import SupporterBadge from "@/app/components/SupporterBadge";
+import {
+  appendTrackedCheckoutSessionId,
+  hasTrackedCheckoutSessionId,
+  isActiveSupportSubscriptionStatus,
+  shouldTrackSupportSubscribeSuccess,
+  TRACKED_CHECKOUT_SESSION_IDS_KEY,
+} from "./supportSubscribeAnalytics";
 
 type SubscriptionInfo = {
   tier: number;
@@ -15,6 +23,7 @@ type SubscriptionInfo = {
 
 type BillingClientProps = {
   checkoutStatus: "success" | "cancel" | null;
+  checkoutSessionId: string | null;
   subscription: SubscriptionInfo | null;
   isSignedIn: boolean;
 };
@@ -39,13 +48,39 @@ function formatDate(iso: string | null): string {
   });
 }
 
-export default function BillingClient({ checkoutStatus, subscription, isSignedIn }: BillingClientProps) {
+function readTrackedCheckoutSessionIds(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(TRACKED_CHECKOUT_SESSION_IDS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((value) => typeof value === "string");
+  } catch {
+    return [];
+  }
+}
+
+function writeTrackedCheckoutSessionIds(sessionIds: string[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(TRACKED_CHECKOUT_SESSION_IDS_KEY, JSON.stringify(sessionIds.slice(-50)));
+  } catch {
+    return;
+  }
+}
+
+export default function BillingClient({
+  checkoutStatus,
+  checkoutSessionId,
+  subscription,
+  isSignedIn,
+}: BillingClientProps) {
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasTrackedSubscribeSuccess = useRef(false);
 
-  const isActive = subscription?.status === "active" ||
-    subscription?.status === "trialing" ||
-    subscription?.status === "past_due";
+  const isActive = isActiveSupportSubscriptionStatus(subscription?.status);
 
   const statusInfo = STATUS_DISPLAY[subscription?.status ?? "none"] ?? STATUS_DISPLAY.none;
 
@@ -58,6 +93,32 @@ export default function BillingClient({ checkoutStatus, subscription, isSignedIn
     }
     return null;
   }, [checkoutStatus]);
+
+  useEffect(() => {
+    if (hasTrackedSubscribeSuccess.current) return;
+    if (
+      !shouldTrackSupportSubscribeSuccess({
+        checkoutStatus,
+        subscriptionStatus: subscription?.status,
+      })
+    ) {
+      return;
+    }
+    if (checkoutSessionId) {
+      const trackedSessionIds = readTrackedCheckoutSessionIds();
+      if (hasTrackedCheckoutSessionId(checkoutSessionId, trackedSessionIds)) {
+        hasTrackedSubscribeSuccess.current = true;
+        return;
+      }
+      writeTrackedCheckoutSessionIds(appendTrackedCheckoutSessionId(trackedSessionIds, checkoutSessionId));
+    }
+    hasTrackedSubscribeSuccess.current = true;
+    track("support_subscribe_success", {
+      tier: subscription?.tier ?? null,
+      subscription_status: subscription?.status ?? null,
+      source: "billing_return",
+    });
+  }, [checkoutStatus, checkoutSessionId, subscription?.status, subscription?.tier]);
 
   const openBillingPortal = async () => {
     setError(null);
