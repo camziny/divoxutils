@@ -28,6 +28,8 @@ export const metadata: Metadata = {
 
 const MONTHLY_COSTS = {
   vercelPro: 20,
+  qaSafetyLow: 5,
+  qaSafetyHigh: 60,
   discordBotHost: 5,
   managedDatabaseBudget: 30,
   domainAnnual: 15,
@@ -41,8 +43,8 @@ const fixedMonthly =
   MONTHLY_COSTS.discordBotHost +
   MONTHLY_COSTS.managedDatabaseBudget +
   domainMonthly;
-const estimatedMonthlyLow = fixedMonthly + MONTHLY_COSTS.computeLow;
-const estimatedMonthlyHigh = fixedMonthly + MONTHLY_COSTS.computeHigh;
+const estimatedMonthlyLow = fixedMonthly + MONTHLY_COSTS.qaSafetyLow + MONTHLY_COSTS.computeLow;
+const estimatedMonthlyHigh = fixedMonthly + MONTHLY_COSTS.qaSafetyHigh + MONTHLY_COSTS.computeHigh;
 const estimatedAnnualLow = estimatedMonthlyLow * 12;
 const estimatedAnnualHigh = estimatedMonthlyHigh * 12;
 const displayMonthlyLow = Math.round(estimatedMonthlyLow);
@@ -102,22 +104,28 @@ const ContributePage = async () => {
           <div className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 text-sm">
             <span className="text-gray-300">Cloud hosting and runtime infrastructure</span>
             <span className="text-gray-200 tabular-nums text-right">${MONTHLY_COSTS.vercelPro} / mo</span>
-            <span className="text-gray-300">Discord bot hosting</span>
-            <span className="text-gray-200 tabular-nums text-right">${MONTHLY_COSTS.discordBotHost} / mo</span>
             <span className="text-gray-300">Database and storage</span>
             <span className="text-gray-200 tabular-nums text-right">${MONTHLY_COSTS.managedDatabaseBudget} / mo</span>
+            <span className="text-gray-300">Automated QA and deployment safety</span>
+            <span className="text-gray-200 tabular-nums text-right">
+              ${MONTHLY_COSTS.qaSafetyLow} - ${MONTHLY_COSTS.qaSafetyHigh}+ / mo
+            </span>
+            <span className="text-gray-300">Discord bot hosting</span>
+            <span className="text-gray-200 tabular-nums text-right">${MONTHLY_COSTS.discordBotHost} / mo</span>
             <span className="text-gray-300">Domain name registration</span>
             <span className="text-gray-200 tabular-nums text-right">${domainMonthly.toFixed(2)} / mo</span>
             <span className="text-gray-300">Cloud compute and usage overages (variable)</span>
-            <span className="text-gray-200 tabular-nums text-right">${MONTHLY_COSTS.computeLow} – ${MONTHLY_COSTS.computeHigh} / mo</span>
+            <span className="text-gray-200 tabular-nums text-right">
+              ${MONTHLY_COSTS.computeLow} - ${MONTHLY_COSTS.computeHigh} / mo
+            </span>
           </div>
           <div className="h-px bg-gray-800" />
           <div className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 text-sm">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider col-span-2">Total costs</p>
-            <span className="text-gray-300">Monthly</span>
-            <span className="text-white font-medium tabular-nums text-right">~${displayMonthlyLow} – ${displayMonthlyHigh}</span>
-            <span className="text-gray-300">Annual</span>
-            <span className="text-white font-medium tabular-nums text-right">~${displayAnnualLow} – ${displayAnnualHigh}</span>
+            <span className="text-gray-300">Monthly estimate</span>
+            <span className="text-white font-medium tabular-nums text-right">~${displayMonthlyLow} - ${displayMonthlyHigh}+</span>
+            <span className="text-gray-300">Annual estimate</span>
+            <span className="text-white font-medium tabular-nums text-right">~${displayAnnualLow} - ${displayAnnualHigh}+</span>
           </div>
         </section>
 
