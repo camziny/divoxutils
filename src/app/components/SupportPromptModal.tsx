@@ -5,7 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { track } from "@vercel/analytics/react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import SupporterBadge from "./SupporterBadge";
 import { getWindowedImpressions, resolveCadence } from "./supportPromptCadence";
+import { SUPPORT_PROMPT_TIER_PLANS } from "./supportPromptTierPlans";
 import {
   isKnownExemptActive,
   shouldClearKnownExempt,
@@ -15,6 +17,9 @@ import {
 const CLOSE_DELAY_SECONDS = 10;
 const KNOWN_EXEMPT_UNTIL_KEY = "divoxutils_support_prompt_known_exempt_until_v1";
 const KNOWN_EXEMPT_PERSIST_UNTIL = Number.MAX_SAFE_INTEGER;
+const CLOSE_LOCK_SUFFIX = "_close_lock_until_v1";
+const PENDING_TIER_KEY = "divoxutils_support_prompt_pending_tier_v1";
+const LOCK_ALLOWED_PATH_PREFIXES = ["/contribute", "/billing", "/sign-in", "/sign-up"];
 
 type PromptHistory = {
   impressions: number[];
@@ -97,6 +102,68 @@ function formatTimestamp(timestamp: number | null) {
   return new Date(timestamp).toLocaleString();
 }
 
+function isLockAllowedPath(pathname: string | null) {
+  if (!pathname) return false;
+  return LOCK_ALLOWED_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function getCloseLockStorageKey(storageKey: string) {
+  return `${storageKey}${CLOSE_LOCK_SUFFIX}`;
+}
+
+function readCloseLockUntil(storageKey: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(getCloseLockStorageKey(storageKey));
+    if (!raw) return null;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCloseLockUntil(storageKey: string, timestamp: number | null) {
+  if (typeof window === "undefined") return;
+  try {
+    const key = getCloseLockStorageKey(storageKey);
+    if (!timestamp) {
+      window.localStorage.removeItem(key);
+      return;
+    }
+    window.localStorage.setItem(key, String(timestamp));
+  } catch {
+    return;
+  }
+}
+
+function readPendingTier() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PENDING_TIER_KEY);
+    if (!raw) return null;
+    const parsed = Number(raw);
+    if (parsed !== 1 && parsed !== 2 && parsed !== 3) return null;
+    return parsed as 1 | 2 | 3;
+  } catch {
+    return null;
+  }
+}
+
+function writePendingTier(tier: 1 | 2 | 3 | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (!tier) {
+      window.localStorage.removeItem(PENDING_TIER_KEY);
+      return;
+    }
+    window.localStorage.setItem(PENDING_TIER_KEY, String(tier));
+  } catch {
+    return;
+  }
+}
+
 export default function SupportPromptModal({
   debug = false,
   ignorePathRules = false,
@@ -111,6 +178,9 @@ export default function SupportPromptModal({
   const [isOpen, setIsOpen] = useState(false);
   const [canClose, setCanClose] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(CLOSE_DELAY_SECONDS);
+  const [closeLockUntil, setCloseLockUntil] = useState<number | null>(null);
+  const [loadingTier, setLoadingTier] = useState<number | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [history, setHistory] = useState<PromptHistory>(defaultHistory());
   const [isKnownExempt, setIsKnownExempt] = useState(false);
   const cadence = useMemo(() => resolveCadence(Boolean(isSignedIn)), [isSignedIn]);
@@ -140,6 +210,8 @@ export default function SupportPromptModal({
   const nextEligibleTimestamp = Math.max(nextEligibleByWindow, nextEligibleByInterval);
   const nextEligibleAt =
     nextEligibleTimestamp <= now ? "Now" : new Date(nextEligibleTimestamp).toLocaleString();
+  const isLockActive = typeof closeLockUntil === "number" && closeLockUntil > now;
+  const isCurrentPathLockAllowed = isLockAllowedPath(pathname);
   const isPathEligible = isSupportPromptEligible({
     isLoaded,
     isSupporter,
@@ -148,6 +220,40 @@ export default function SupportPromptModal({
     ignorePathRules,
     pathname,
   });
+
+  const startCheckout = useCallback(
+    async (tier: 1 | 2 | 3, source: "modal" | "sign_in_return") => {
+      setCheckoutError(null);
+      setLoadingTier(tier);
+      const current = readHistory(cadence.storageKey);
+      const updated: PromptHistory = {
+        ...current,
+        impressions: getWindowedImpressions(current.impressions, Date.now(), cadence.windowMs),
+        lastCtaAt: Date.now(),
+      };
+      writeHistory(cadence.storageKey, updated);
+      setHistory(updated);
+      trackSupportPromptEvent("support_modal_clicked_subscribe", { source, tier });
+      try {
+        const response = await fetch("/api/billing/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tier }),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload?.url) {
+          throw new Error(payload?.error ?? "Unable to start checkout.");
+        }
+        window.location.assign(payload.url);
+        return true;
+      } catch (err) {
+        setLoadingTier(null);
+        setCheckoutError(err instanceof Error ? err.message : "Unable to start checkout.");
+        return false;
+      }
+    },
+    [cadence.storageKey, cadence.windowMs, trackSupportPromptEvent]
+  );
 
   const openPrompt = useCallback(
     (force = false) => {
@@ -170,9 +276,12 @@ export default function SupportPromptModal({
       };
       writeHistory(cadence.storageKey, updated);
       setHistory(updated);
+      const lockUntil = timestamp + CLOSE_DELAY_SECONDS * 1000;
+      writeCloseLockUntil(cadence.storageKey, lockUntil);
+      setCloseLockUntil(lockUntil);
       setIsOpen(true);
       setCanClose(false);
-      setSecondsLeft(CLOSE_DELAY_SECONDS);
+      setSecondsLeft(Math.max(1, Math.ceil((lockUntil - timestamp) / 1000)));
       trackSupportPromptEvent("support_modal_seen", {
         trigger: force ? "forced" : "cadence",
       });
@@ -236,6 +345,8 @@ export default function SupportPromptModal({
     };
     writeHistory(cadence.storageKey, normalized);
     setHistory(normalized);
+    const persistedCloseLockUntil = readCloseLockUntil(cadence.storageKey);
+    setCloseLockUntil(persistedCloseLockUntil);
   }, [isLoaded, cadence.storageKey, cadence.windowMs]);
 
   useEffect(() => {
@@ -244,33 +355,82 @@ export default function SupportPromptModal({
     if (!pathname) return;
     if (lastPathname.current === pathname) return;
     lastPathname.current = pathname;
+    const nowTimestamp = Date.now();
+    const persistedCloseLockUntil = readCloseLockUntil(cadence.storageKey);
+    const isCloseLocked =
+      typeof persistedCloseLockUntil === "number" && Number.isFinite(persistedCloseLockUntil)
+        ? persistedCloseLockUntil > nowTimestamp
+        : false;
+    if (isCloseLocked) {
+      const lockedUntil = persistedCloseLockUntil as number;
+      if (isLockAllowedPath(pathname)) {
+        setIsOpen(false);
+        setCanClose(false);
+        setSecondsLeft(Math.max(1, Math.ceil((lockedUntil - nowTimestamp) / 1000)));
+        setCloseLockUntil(lockedUntil);
+        return;
+      }
+      setCloseLockUntil(lockedUntil);
+      setIsOpen(true);
+      setCanClose(false);
+      setSecondsLeft(Math.max(1, Math.ceil((lockedUntil - nowTimestamp) / 1000)));
+      return;
+    }
     if (!isPathEligible) return;
     openPrompt(false);
   }, [isLoaded, pathname, isPathEligible, cadence.storageKey, openPrompt]);
 
   useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    if (isSupporter || isAdmin) {
+      writePendingTier(null);
+      return;
+    }
+    if (loadingTier !== null) return;
+    const pendingTier = readPendingTier();
+    if (!pendingTier) return;
+    writePendingTier(null);
+    void startCheckout(pendingTier, "sign_in_return");
+  }, [isLoaded, isSignedIn, isSupporter, isAdmin, loadingTier, startCheckout]);
+
+  useEffect(() => {
     if (isPathEligible) return;
+    if (isLockActive && !isCurrentPathLockAllowed) return;
     if (isOpen) {
       setIsOpen(false);
       setCanClose(false);
       setSecondsLeft(CLOSE_DELAY_SECONDS);
     }
-  }, [isPathEligible, isOpen]);
+  }, [isPathEligible, isOpen, isLockActive, isCurrentPathLockAllowed]);
 
   useEffect(() => {
-    if (!isOpen || canClose) return;
+    if (!isOpen) return;
+    if (!closeLockUntil) {
+      setCanClose(true);
+      setSecondsLeft(0);
+      return;
+    }
+    const tick = () => {
+      const remainingMs = closeLockUntil - Date.now();
+      if (remainingMs <= 0) {
+        setCanClose(true);
+        setSecondsLeft(0);
+        writeCloseLockUntil(cadence.storageKey, null);
+        setCloseLockUntil(null);
+        return true;
+      }
+      setCanClose(false);
+      setSecondsLeft(Math.max(1, Math.ceil(remainingMs / 1000)));
+      return false;
+    };
+    if (tick()) return;
     const interval = window.setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          window.clearInterval(interval);
-          setCanClose(true);
-          return 0;
-        }
-        return prev - 1;
-      });
+      if (tick()) {
+        window.clearInterval(interval);
+      }
     }, 1000);
     return () => window.clearInterval(interval);
-  }, [isOpen, canClose]);
+  }, [isOpen, closeLockUntil, cadence.storageKey]);
 
   const dismiss = () => {
     const current = readHistory(cadence.storageKey);
@@ -281,31 +441,33 @@ export default function SupportPromptModal({
     };
     writeHistory(cadence.storageKey, updated);
     setHistory(updated);
+    writeCloseLockUntil(cadence.storageKey, null);
+    setCloseLockUntil(null);
     setIsOpen(false);
     trackSupportPromptEvent("support_modal_dismissed");
   };
 
-  const viewSupportOptions = () => {
-    const current = readHistory(cadence.storageKey);
-    const updated: PromptHistory = {
-      ...current,
-      impressions: getWindowedImpressions(current.impressions, Date.now(), cadence.windowMs),
-      lastCtaAt: Date.now(),
-    };
-    writeHistory(cadence.storageKey, updated);
-    setHistory(updated);
-    setIsOpen(false);
-    trackSupportPromptEvent("support_modal_clicked_subscribe");
-    router.push("/contribute");
+  const subscribeNow = async (tier: 1 | 2 | 3) => {
+    setCheckoutError(null);
+    if (!isSignedIn) {
+      writePendingTier(tier);
+      const redirectPath = pathname || "/";
+      router.push(`/sign-in?redirect_url=${encodeURIComponent(redirectPath)}`);
+      return;
+    }
+    await startCheckout(tier, "modal");
   };
 
   const resetHistory = () => {
     const fresh = defaultHistory();
     writeHistory(cadence.storageKey, fresh);
+    writeCloseLockUntil(cadence.storageKey, null);
+    writePendingTier(null);
     setHistory(fresh);
     setIsOpen(false);
     setCanClose(false);
     setSecondsLeft(CLOSE_DELAY_SECONDS);
+    setCloseLockUntil(null);
   };
 
   return (
@@ -362,13 +524,14 @@ export default function SupportPromptModal({
         onOpenChange={(open) => {
           if (!open) {
             if (canClose) dismiss();
+            else setIsOpen(true);
             return;
           }
           setIsOpen(true);
         }}
       >
-        <DialogContent className="max-w-md border-gray-800 bg-gray-900 p-0 gap-0 overflow-hidden">
-          <div className="px-5 pt-5 pb-4">
+        <DialogContent className="max-w-md border-gray-800 bg-gray-900 p-0 gap-0 overflow-hidden max-h-[90dvh] overflow-y-auto">
+          <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4">
             <DialogTitle className="text-base font-semibold text-white">
               Help keep divoxutils running
             </DialogTitle>
@@ -378,59 +541,81 @@ export default function SupportPromptModal({
             </DialogDescription>
           </div>
 
-          <div className="mx-5 rounded-lg border border-gray-800 bg-gray-800/20 p-4 space-y-3">
+          <div className="mx-4 sm:mx-5 rounded-lg border border-gray-800 bg-gray-800/20 p-3 sm:p-4 space-y-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cost Breakdown</h3>
-            <div className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 text-sm">
+            <div className="grid grid-cols-[1fr_auto] gap-x-3 sm:gap-x-6 gap-y-1.5 sm:gap-y-2 text-sm">
               <span className="text-gray-300">Cloud hosting and runtime infrastructure</span>
               <span className="text-gray-200 tabular-nums text-right shrink-0">$20 / mo</span>
               <span className="text-gray-300">Database and storage</span>
               <span className="text-gray-200 tabular-nums text-right shrink-0">$30 / mo</span>
+              <span className="text-gray-300">Automated QA and deployment safety</span>
+              <span className="text-gray-200 tabular-nums text-right shrink-0">$5 - $60+ / mo</span>
               <span className="text-gray-300">Discord bot hosting</span>
               <span className="text-gray-200 tabular-nums text-right shrink-0">$5 / mo</span>
               <span className="text-gray-300">Domain name registration</span>
               <span className="text-gray-200 tabular-nums text-right shrink-0">$1.25 / mo</span>
               <span className="text-gray-300">Cloud compute and usage overages (variable)</span>
-              <span className="text-gray-200 tabular-nums text-right shrink-0">$0 – $5 / mo</span>
+              <span className="text-gray-200 tabular-nums text-right shrink-0">$0 - $5 / mo</span>
             </div>
             <div className="h-px bg-gray-800" />
             <div className="space-y-2 text-sm">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total costs</p>
               <div className="flex items-center justify-between text-gray-300">
-                <span>Monthly</span>
-                <span className="text-white font-medium">~$57 – $62</span>
+                <span>Monthly estimate</span>
+                <span className="text-white font-medium">~$61 - $121+</span>
               </div>
               <div className="flex items-center justify-between text-gray-300">
-                <span>Annual</span>
-                <span className="text-white font-medium">~$675 – $735</span>
+                <span>Annual estimate</span>
+                <span className="text-white font-medium">~$730 - $1,450+</span>
               </div>
             </div>
           </div>
 
-          <div className="px-5 pt-4 pb-5 space-y-4">
-            <p className="text-sm text-gray-400">
-              Monthly support tiers are <span className="text-gray-200">$1</span>,{" "}
-              <span className="text-gray-200">$3</span>, and <span className="text-gray-200">$5</span>.
-            </p>
-            <p className="text-sm text-gray-400">
-              Any active support tier removes this reminder.
-            </p>
-            <div className="flex items-center justify-between gap-3">
+          <div className="mx-4 sm:mx-5 mt-3 space-y-2">
+            {SUPPORT_PROMPT_TIER_PLANS.map((plan) => (
               <button
+                key={plan.tier}
                 type="button"
-                disabled={!canClose}
-                onClick={dismiss}
-                className="rounded-md border border-gray-700 px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={loadingTier !== null}
+                onClick={() => subscribeNow(plan.tier)}
+                className={`w-full flex items-center gap-2.5 sm:gap-3 rounded-md border px-3 sm:px-4 py-2.5 sm:py-3 text-left transition-colors disabled:opacity-50 ${
+                  plan.tier === 3
+                    ? "border-indigo-500/20 bg-indigo-500/[0.06] hover:bg-indigo-500/[0.12]"
+                    : "border-gray-800 bg-gray-800/20 hover:bg-gray-800/40"
+                }`}
               >
-                {canClose ? "Not now" : `Not now (${secondsLeft}s)`}
+                <SupporterBadge tier={plan.tier} size="md" showTooltip={false} />
+                <div className="min-w-0 flex-1">
+                  <span className="text-sm font-semibold text-white">{plan.label}</span>
+                  <p className="text-xs text-gray-400 mt-0.5">{plan.description}</p>
+                </div>
+                <span className="shrink-0 rounded-md bg-indigo-500/20 px-3 py-1.5 text-xs font-medium text-indigo-300">
+                  {loadingTier === plan.tier ? "..." : "Subscribe"}
+                </span>
               </button>
-              <button
-                type="button"
-                onClick={viewSupportOptions}
-                className="rounded-md bg-indigo-500/20 px-4 py-2 text-sm font-medium text-indigo-300 hover:bg-indigo-500/30 transition-colors"
-              >
-                View support options
-              </button>
+            ))}
+          </div>
+
+          {checkoutError && (
+            <div className="mx-4 sm:mx-5 mt-2">
+              <p className="rounded-md border border-red-900/60 bg-red-900/20 px-3 py-2 text-xs text-red-300">
+                {checkoutError}
+              </p>
             </div>
+          )}
+
+          <div className="px-4 sm:px-5 pt-3 pb-4 sm:pb-5 flex items-center justify-between gap-3">
+            <p className="text-xs text-gray-500">
+              Any active tier removes this reminder.
+            </p>
+            <button
+              type="button"
+              disabled={!canClose || loadingTier !== null}
+              onClick={dismiss}
+              className="rounded-md border border-gray-700 px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {canClose ? "Not now" : `Not now (${secondsLeft}s)`}
+            </button>
           </div>
         </DialogContent>
       </Dialog>

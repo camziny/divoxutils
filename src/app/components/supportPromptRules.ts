@@ -4,8 +4,7 @@ export function isSupportPromptExcludedPath(pathname: string | null) {
   if (pathname === "/support-modal-test") return true;
   if (pathname.startsWith("/contribute")) return true;
   if (pathname.startsWith("/billing")) return true;
-  if (pathname === "/draft") return true;
-  if (pathname.startsWith("/draft/")) return true;
+  if (/^\/draft\/[^/]+$/.test(pathname)) return true;
   if (pathname.startsWith("/sign-in")) return true;
   if (pathname.startsWith("/sign-up")) return true;
   return false;
