@@ -604,6 +604,22 @@ export default function SupportPromptModal({
             </div>
           )}
 
+          {(!isSignedIn || debug) && (
+            <div className="mx-4 sm:mx-5 mt-2">
+              <button
+                type="button"
+                disabled={loadingTier !== null}
+                onClick={() => {
+                  const redirectPath = pathname || "/";
+                  router.push(`/sign-in?redirect_url=${encodeURIComponent(redirectPath)}`);
+                }}
+                className="text-xs text-indigo-300 hover:text-indigo-200 transition-colors disabled:opacity-50"
+              >
+                Already supporting? Sign in
+              </button>
+            </div>
+          )}
+
           <div className="px-4 sm:px-5 pt-3 pb-4 sm:pb-5 flex items-center justify-between gap-3">
             <p className="text-xs text-gray-500">
               Any active tier removes this reminder.
