@@ -6,6 +6,7 @@ import useDebounce from "./UseDebounce";
 import { Plus, X, Loader2, Search } from "lucide-react";
 import CharacterSearchAndAddTooltip from "./CharacterSearchAndAddTooltip";
 import { getRealmRankForPoints, formatRealmRankWithLevel } from "@/utils/character";
+import { toast } from "sonner";
 
 type CharacterType = {
   character_web_id: string;
@@ -128,7 +129,7 @@ function CharacterSearchAndAdd() {
     try {
       const webIds = Array.from(selectedCharacters);
 
-      const response = await fetch("/api/characters/add", {
+      const response = await fetch("/api/my-characters/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -143,7 +144,7 @@ function CharacterSearchAndAdd() {
       }
 
       const count = selectedCharacters.size;
-      setMessage(`Successfully added ${count} character${count !== 1 ? "s" : ""}`);
+      toast.success(`Successfully added ${count} character${count !== 1 ? "s" : ""}`);
 
       setSelectedCharacters(new Set());
       setSearchResults([]);
@@ -153,8 +154,6 @@ function CharacterSearchAndAdd() {
       startTransition(() => {
         router.refresh();
       });
-
-      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       console.error("Error adding characters:", error);
       setMessage(error instanceof Error ? error.message : "Failed to add characters");
