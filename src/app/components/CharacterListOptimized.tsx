@@ -254,7 +254,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
 
     try {
       const response = await fetch(
-        `/api/userCharacters/${user.id}/${characterId}`,
+        `/api/my-characters/${characterId}`,
         {
           method: "DELETE",
           cache: "no-store",

@@ -55,7 +55,7 @@ async function run() {
     });
   });
 
-  await page.route("**/api/characters/add", async (route) => {
+  await page.route("**/api/my-characters/add", async (route) => {
     await route.fulfill({
       status: 201,
       contentType: "application/json",
@@ -63,7 +63,7 @@ async function run() {
     });
   });
 
-  await page.route("**/api/userCharacters/**", async (route) => {
+  await page.route("**/api/my-characters/**", async (route) => {
     if (route.request().method() === "DELETE") {
       await route.fulfill({
         status: 200,

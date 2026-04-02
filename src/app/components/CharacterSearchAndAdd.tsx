@@ -129,7 +129,7 @@ function CharacterSearchAndAdd() {
     try {
       const webIds = Array.from(selectedCharacters);
 
-      const response = await fetch("/api/characters/add", {
+      const response = await fetch("/api/my-characters/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
