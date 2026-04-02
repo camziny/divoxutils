@@ -16,7 +16,8 @@
     "seed:draft-history:dev": "tsx scripts/seedDraftHistoryDev.ts",
     "test:draft": "tsx --test tests/draft.feature.test.ts",
     "test:feature": "tsx --test $(find tests -type f -name '*.test.ts' | sort)",
-    "test:my-characters:api": "node --import tsx --test tests/my-characters.crud.test.ts"
+    "test:my-characters:api": "node --import tsx --test tests/my-characters.crud.test.ts",
+    "test:my-characters:toast:e2e": "node --import tsx tests/my-characters.toast.e2e.ts"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",

@@ -265,13 +265,11 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         throw new Error("Failed to delete the character.");
       }
 
-      setMessage(`Successfully deleted ${characterName}`);
+      toast.success(`Successfully deleted ${characterName}`);
 
       startTransition(() => {
         router.refresh();
       });
-
-      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       console.error("Error deleting character:", error);
       setMessage(error instanceof Error ? error.message : "Failed to delete character");

@@ -7,10 +7,13 @@ import type { Metadata, ResolvingMetadata } from "next";
 import SupporterBadge from "@/app/components/SupporterBadge";
 import ShareProfileButton from "@/app/components/ShareProfileButton";
 import DraftProfileButton from "@/app/components/DraftProfileButton";
-import { headers } from "next/headers";
 import prisma from "../../../../../prisma/prismaClient";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import { getCurrentUserCharacterListLayoutPreference } from "@/server/characterListLayoutPreference";
+import {
+  getPublicCharactersForUser,
+  getPublicUserProfileByName,
+} from "@/server/publicUserCharacters";
 
 const CharacterListOptimized = dynamic(
   () => import("@/app/components/CharacterListOptimized"),
@@ -32,13 +35,7 @@ export async function generateMetadata(
   _parent: ResolvingMetadata
 ): Promise<Metadata> {
   const resolvedParams = await params;
-  const userData = await prisma.user.findMany({
-    where: {
-      name: resolvedParams.name,
-    },
-  });
-
-  const user = userData[0];
+  const user = await getPublicUserProfileByName(resolvedParams.name);
 
   if (!user) {
     return {
@@ -74,57 +71,10 @@ export async function generateMetadata(
   };
 }
 
-async function fetchCharactersForUser(userId: string) {
-  const apiUrl = `${getApiBaseUrl()}/api/userCharactersByUserId/${userId}`;
-
-  const response = await fetch(apiUrl, {
-    next: {
-      revalidate: 60,
-      tags: [`other-characters-${userId}`],
-    },
-  });
-
-  if (!response.ok) {
-    console.error(
-      `Fetch response error: ${response.status} ${response.statusText}`
-    );
-    throw new Error(
-      `Fetch response error: ${response.status} ${response.statusText}`
-    );
-  }
-  const data = await response.json();
-
-  return data;
-}
-
-function getApiBaseUrl() {
-  const configuredBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-  if (configuredBaseUrl && process.env.NODE_ENV === "production") {
-    return configuredBaseUrl;
-  }
-
-  const requestHeaders = headers();
-  const host =
-    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
-
-  if (!host) {
-    return "http://localhost:3000";
-  }
-
-  return `${protocol}://${host}`;
-}
-
 const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => {
   const resolvedParams = (await (params ?? Promise.resolve({}))) as { name?: string };
   const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as Record<string, string | string[]>;
-  const userData = await prisma.user.findMany({
-    where: {
-      name: resolvedParams.name as string,
-    },
-  });
-
-  const user = userData[0];
+  const user = await getPublicUserProfileByName(resolvedParams.name as string);
 
   if (!user) {
     return (
@@ -138,10 +88,7 @@ const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => 
   const clerkUserId = user.clerkUserId;
 
   const [characters, identityLink, preferredDesktopLayout] = await Promise.all([
-    fetchCharactersForUser(clerkUserId).catch((error) => {
-      console.error("Error fetching characters:", error);
-      return [];
-    }),
+    getPublicCharactersForUser(clerkUserId),
     prisma.userIdentityLink.findFirst({
       where: {
         clerkUserId,
