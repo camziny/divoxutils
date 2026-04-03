@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createAdminDraftsHandler } from "../pages/api/admin/drafts/index";
-import { createCancelDraftHandler } from "../pages/api/admin/drafts/cancel";
+import {
+  createAdminDraftsHandler,
+  createCancelDraftHandler,
+} from "../src/server/adminDraftsRouteHandlers";
 
 function createMockResponse() {
   const res: any = {
