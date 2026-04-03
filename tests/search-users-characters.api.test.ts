@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createSearchUsersAndCharactersHandler } from "../pages/api/searchUsersAndCharacters";
+import { createSearchUsersAndCharactersHandler } from "../src/server/searchUsersAndCharactersPagesHandler";
 
 function createMockResponse() {
   const res: any = {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createLinkedProfilesHandler } from "../pages/api/draft/linked-profiles";
+import { createLinkedProfilesHandler } from "../src/server/draftLinkedProfilesPagesHandler";
 import { formatRealmRankWithLevel, getRealmRankForPoints } from "../src/utils/character";
 
 function createMockResponse() {
