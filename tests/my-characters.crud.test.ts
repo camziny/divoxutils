@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createAddCharactersHandler } from "../pages/api/characters/add";
-import { createUserCharactersByUserIdHandler } from "../pages/api/userCharactersByUserId/[userId]";
-import { createUserCharacterHandler } from "../pages/api/userCharacters/[clerkUserId]/[characterId]";
+import { createUserCharactersByUserIdHandler } from "../src/server/userCharactersByUserIdPagesHandler";
+import { createUserCharacterHandler } from "../src/server/userCharacterPagesHandler";
 
 function createMockResponse() {
   const res: any = {

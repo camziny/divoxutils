@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createLayoutPreferenceHandler } from "../pages/api/user/preferences/layout";
+import { createLayoutPreferenceHandler } from "../src/server/layoutPreferencePagesHandler";
 
 function createMockResponse() {
   const res: any = {
