@@ -33,7 +33,8 @@ export interface DraftData {
     | "realm_pick"
     | "banning"
     | "drafting"
-    | "complete";
+    | "complete"
+    | "cancelled";
   teamSize: number;
   coinFlipWinnerId?: string;
   coinFlipChoice?: string;
@@ -66,6 +67,16 @@ export interface DraftData {
   setScore?: string;
   botPostedLink?: boolean;
   botNotifiedCaptains?: boolean;
+  cancelledBy?: string;
+  cancelledAt?: number;
+  cancelReason?: string;
+  cancelledFromStatus?:
+    | "setup"
+    | "coin_flip"
+    | "realm_pick"
+    | "banning"
+    | "drafting"
+    | "complete";
   players: DraftPlayer[];
   bans: DraftBan[];
   fights: Array<{
