@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createAdminIdentityBackfillHandler } from "../pages/api/admin/identity-linking/backfill";
+import { createAdminIdentityBackfillHandler } from "../src/server/adminIdentityBackfillPagesHandler";
 
 function createMockResponse() {
   const res: any = {
