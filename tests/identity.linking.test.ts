@@ -1,12 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  createLinkDiscordIdentityHandler,
-  getDiscordExternalAccountId,
-} from "../pages/api/identity/link-discord";
-import { createClaimDiscordIdentityHandler } from "../pages/api/identity/claim-discord";
-import { createModerateClaimHandler } from "../pages/api/identity/moderate-claim";
-import { createPendingClaimsHandler } from "../pages/api/identity/pending-claims";
+import { createLinkDiscordIdentityHandler } from "../src/server/linkDiscordIdentityPagesHandler";
+import { getDiscordExternalAccountId } from "../src/server/linkDiscordIdentityApi";
+import { createClaimDiscordIdentityHandler } from "../src/server/claimDiscordIdentityPagesHandler";
+import { createModerateClaimHandler } from "../src/server/moderateClaimPagesHandler";
+import { createPendingClaimsHandler } from "../src/server/pendingClaimsPagesHandler";
 import { createAdminDraftsHandler } from "../pages/api/admin/drafts";
 import { createModerateDraftHandler } from "../pages/api/admin/drafts/moderate";
 

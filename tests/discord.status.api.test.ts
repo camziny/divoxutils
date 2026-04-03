@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createDiscordStatusHandler } from "../pages/api/identity/discord-status";
+import { createDiscordStatusHandler } from "../src/server/discordStatusPagesHandler";
 
 function createMockResponse() {
   const res: any = {
