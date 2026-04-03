@@ -2,7 +2,7 @@ type Character = {
   characterName: string;
   heraldName: string | null;
   className: string;
-  heraldClassName: string;
+  heraldClassName: string | null;
   totalRealmPoints: number;
 };
 
