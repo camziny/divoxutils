@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createAdminAccountSearchHandler } from "../pages/api/admin/accounts/search";
-import { createAdminAccountDeleteHandler } from "../pages/api/admin/accounts/delete";
+import {
+  createAdminAccountDeleteHandler,
+  createAdminAccountSearchHandler,
+} from "../src/server/adminAccountsPagesHandlers";
 
 function createMockResponse() {
   const res: any = {
