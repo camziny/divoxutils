@@ -32,14 +32,15 @@ import {
 } from "@/components/ui/tooltip";
 import type { DraftClassLeaderboardRow } from "@/server/draftStats";
 import { allClasses } from "@/app/draft/constants";
-
 const PIE_COLORS = ["#818cf8", "#374151"];
 
-const REALM_BAR_COLOR: Record<string, string> = {
-  Albion: "bg-red-500/30",
-  Hibernia: "bg-green-500/30",
-  Midgard: "bg-blue-500/30",
-  PvP: "bg-indigo-500/30",
+const getBreakdownBarClass = (label: string): string => {
+  const normalized = label.trim().toLowerCase();
+  if (normalized === "pvp") return "bg-indigo-400/60";
+  if (normalized === "albion" || normalized === "alb") return "bg-red-400/60";
+  if (normalized === "midgard" || normalized === "mid") return "bg-blue-400/60";
+  if (normalized === "hibernia" || normalized === "hib") return "bg-green-400/60";
+  return "bg-gray-400/60";
 };
 
 type ClassSortKey = "games" | "winRate" | "wins" | "losses";
@@ -334,7 +335,7 @@ export default function PlayerDrilldownClient({
             {drilldown.pvp.games > 0 && (
               <BreakdownRow
                 label="PvP"
-                barClass={REALM_BAR_COLOR["PvP"]}
+                barClass={getBreakdownBarClass("PvP")}
                 stats={drilldown.pvp}
                 animate={progressAnimate}
               />
@@ -345,7 +346,7 @@ export default function PlayerDrilldownClient({
                 <BreakdownRow
                   key={realm}
                   label={realm}
-                  barClass={REALM_BAR_COLOR[realm] ?? "bg-gray-500/30"}
+                  barClass={getBreakdownBarClass(realm)}
                   stats={stats}
                   animate={progressAnimate}
                 />
