@@ -5,8 +5,10 @@ import { getDiscordExternalAccountId } from "../src/server/linkDiscordIdentityAp
 import { createClaimDiscordIdentityHandler } from "../src/server/claimDiscordIdentityPagesHandler";
 import { createModerateClaimHandler } from "../src/server/moderateClaimPagesHandler";
 import { createPendingClaimsHandler } from "../src/server/pendingClaimsPagesHandler";
-import { createAdminDraftsHandler } from "../pages/api/admin/drafts";
-import { createModerateDraftHandler } from "../pages/api/admin/drafts/moderate";
+import {
+  createAdminDraftsHandler,
+  createModerateDraftHandler,
+} from "../src/server/adminDraftsRouteHandlers";
 
 function createMockResponse() {
   const res: any = {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createRestoreDraftHandler } from "../pages/api/admin/drafts/restore";
+import { createRestoreDraftHandler } from "../src/server/adminDraftsRouteHandlers";
 
 function createMockResponse() {
   const res: any = {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createAdminDraftFightsHandler } from "../pages/api/admin/drafts/fights";
+import { createAdminDraftFightsHandler } from "../src/server/adminDraftsRouteHandlers";
 
 function createMockResponse() {
   const res: any = {
