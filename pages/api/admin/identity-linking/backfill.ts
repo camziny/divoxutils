@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { isAdminClerkUserId } from "@/server/adminAuth";
-import { getDiscordExternalAccountId } from "../../identity/link-discord";
+import { getDiscordExternalAccountId } from "@/server/linkDiscordIdentityApi";
 
 type BackfillSummary = {
   scannedUsers: number;
