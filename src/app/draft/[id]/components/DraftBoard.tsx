@@ -140,6 +140,7 @@ export default function DraftBoard({
   const finalizeSetResult = useMutation(api.drafts.finalizeSetResult);
   const beginGame = useMutation(api.drafts.beginGame);
   const undoLastAction = useMutation(api.drafts.undoLastAction);
+  const cancelDraftByCreator = useMutation(api.drafts.cancelDraftByCreator);
 
   const [busy, setBusy] = useState(false);
   const [settingsFeedback, setSettingsFeedback] = useState<{
@@ -152,6 +153,8 @@ export default function DraftBoard({
     {}
   );
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelConfirmationText, setCancelConfirmationText] = useState("");
   const [showAutoBanBoard, setShowAutoBanBoard] = useState(false);
 
   const team1Captain = draft.players.find(
@@ -200,6 +203,7 @@ export default function DraftBoard({
   const isBanning = draft.status === "banning";
   const isDrafting = draft.status === "drafting";
   const isComplete = draft.status === "complete";
+  const isCancelled = draft.status === "cancelled";
 
   const showBans = isBanning || isDrafting || isComplete;
   const team1FightWins = draft.team1FightWins ?? 0;
@@ -391,7 +395,8 @@ export default function DraftBoard({
       : currentPlayer?.discordUserId === draft.team2CaptainId
         ? 2
         : null;
-  const showPrimaryTeamGrid = !(isComplete && draft.gameStarted && !isSetComplete);
+  const showPrimaryTeamGrid =
+    !isCancelled && !(isComplete && draft.gameStarted && !isSetComplete);
 
   const canUndo =
     isCreator &&
@@ -401,6 +406,11 @@ export default function DraftBoard({
       (isDrafting && (draft.currentPickIndex ?? 0) > 0) ||
       (isDrafting && (draft.currentPickIndex ?? 0) === 0 && draft.bans.length > 0) ||
       (isComplete && !draft.gameStarted));
+  const cancelPhrase = "cancel this draft";
+  const canCancelDraft =
+    isCreatorView && !isCancelled && typeof actionToken === "string" && actionToken.length > 0;
+  const isCancelPhraseValid =
+    cancelConfirmationText.trim().toLowerCase() === cancelPhrase;
 
   let activeTeam1Label = "";
   let activeTeam2Label = "";
@@ -458,10 +468,34 @@ export default function DraftBoard({
             </Button>
           ) : null
         }
+        cancelButton={
+          canCancelDraft ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={busy}
+              className="h-6 px-2 text-[10px] text-gray-500 hover:text-gray-300"
+              onClick={() => {
+                setCancelConfirmationText("");
+                setShowCancelConfirm(true);
+              }}
+            >
+              Cancel Draft
+            </Button>
+          ) : null
+        }
       />
       {actionError ? (
         <div className="rounded-md border border-red-700/40 bg-red-900/20 px-3 py-2 text-xs text-red-200">
           {actionError}
+        </div>
+      ) : null}
+      {isCancelled ? (
+        <div className="rounded-lg border border-indigo-500/40 bg-indigo-900/20 px-4 py-3">
+          <p className="text-sm font-medium text-indigo-100">Draft cancelled</p>
+          <p className="mt-1 text-xs text-indigo-200/80">
+            This draft has been cancelled and players will be moved back to the lobby.
+          </p>
         </div>
       ) : null}
 
@@ -939,6 +973,68 @@ export default function DraftBoard({
           </div>
         </div>
       )}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowCancelConfirm(false)}
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-lg border border-gray-800 bg-gray-900 shadow-xl">
+            <div className="px-5 pt-5 pb-4">
+              <p className="text-sm font-medium text-white">Cancel draft</p>
+              <p className="mt-1 text-xs text-gray-400">
+                This ends the draft immediately and returns players to the lobby flow.
+              </p>
+              <p className="mt-3 text-[11px] text-gray-500">
+                Type <span className="font-medium text-gray-300">cancel this draft</span> to
+                confirm.
+              </p>
+              <input
+                value={cancelConfirmationText}
+                onChange={(event) => setCancelConfirmationText(event.target.value)}
+                placeholder="cancel this draft"
+                className="mt-2 w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 outline-none ring-0 placeholder:text-gray-500 focus:border-gray-500"
+              />
+            </div>
+            <div className="flex justify-end gap-2 px-5 pb-4">
+              <button
+                type="button"
+                onClick={() => setShowCancelConfirm(false)}
+                className="rounded-md px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                disabled={busy || !isCancelPhraseValid}
+                onClick={() => {
+                  if (!actionToken) {
+                    setActionError("Missing player token for cancelling draft.");
+                    return;
+                  }
+                  act(async () => {
+                    await cancelDraftByCreator({
+                      draftId: draft._id,
+                      token: actionToken,
+                      confirmationText: cancelConfirmationText,
+                    });
+                    setShowCancelConfirm(false);
+                    setCancelConfirmationText("");
+                  });
+                }}
+                className={cn(
+                  "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
+                  busy || !isCancelPhraseValid
+                    ? "border-gray-700 bg-gray-800 text-gray-600 cursor-not-allowed"
+                    : "border-rose-700/70 bg-rose-900/40 text-rose-100 hover:bg-rose-800/50"
+                )}
+              >
+                Confirm cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -946,9 +1042,11 @@ export default function DraftBoard({
 function StatusBar({
   draft,
   undoButton,
+  cancelButton,
 }: {
   draft: DraftData;
   undoButton?: React.ReactNode;
+  cancelButton?: React.ReactNode;
 }) {
   let subtitle = "";
   if (draft.status === "setup") {
@@ -988,29 +1086,34 @@ function StatusBar({
     } else {
       subtitle = "Draft complete";
     }
+  } else if (draft.status === "cancelled") {
+    subtitle = "Draft cancelled";
   }
 
   const isSetup = draft.status === "setup";
 
   return (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-xl font-bold text-white">Draft</h1>
-        <p className="text-xs text-gray-500">{subtitle}</p>
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-white">Draft</h1>
+          <p className="text-xs text-gray-500">{subtitle}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {undoButton}
+          {!isSetup && (
+            <>
+              <Badge variant="outline" className="capitalize text-[10px]">
+                {draft.type === "pvp" ? "PvP" : draft.type}
+              </Badge>
+              <Badge variant="outline" className="text-[10px]">
+                {draft.teamSize}v{draft.teamSize}
+              </Badge>
+            </>
+          )}
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        {undoButton}
-        {!isSetup && (
-          <>
-            <Badge variant="outline" className="capitalize text-[10px]">
-              {draft.type === "pvp" ? "PvP" : draft.type}
-            </Badge>
-            <Badge variant="outline" className="text-[10px]">
-              {draft.teamSize}v{draft.teamSize}
-            </Badge>
-          </>
-        )}
-      </div>
+      {cancelButton ? <div className="flex justify-end">{cancelButton}</div> : null}
     </div>
   );
 }

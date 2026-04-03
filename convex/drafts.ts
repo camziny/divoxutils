@@ -54,6 +54,7 @@ const MIN_BANS_PER_CAPTAIN = 0;
 const MAX_BANS_PER_CAPTAIN = 5;
 const STALE_DRAFT_NO_PROGRESS_MS = 30 * 60 * 1000;
 const STALE_DRAFT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+const CREATOR_CANCEL_CONFIRMATION_TEXT = "cancel this draft";
 
 function getDefaultBansPerCaptain(type: "traditional" | "pvp") {
   return type === "traditional"
@@ -1921,6 +1922,65 @@ export const moderateDraftResult = mutation({
     });
 
     return { shortId: draft.shortId, resultStatus, winnerTeam: draft.winnerTeam };
+  },
+});
+
+export const cancelDraftByCreator = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    token: v.string(),
+    confirmationText: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) {
+      throw new Error("Draft not found");
+    }
+    if (draft.status === "cancelled") {
+      throw new Error("Draft is already cancelled");
+    }
+    if (
+      draft.status === "complete" &&
+      draft.gameStarted &&
+      draft.resultStatus === "verified"
+    ) {
+      throw new Error("Cannot cancel a draft with a started game");
+    }
+
+    const callerPlayer = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
+      throw new Error("Only the draft creator can cancel the draft");
+    }
+
+    const normalizedConfirmation = args.confirmationText.trim().toLowerCase();
+    if (normalizedConfirmation !== CREATOR_CANCEL_CONFIRMATION_TEXT) {
+      throw new Error('Type "cancel this draft" to confirm');
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(draft._id, {
+      status: "cancelled",
+      cancelledBy: callerPlayer.discordUserId,
+      cancelledAt: now,
+      cancelReason: "Cancelled by draft creator",
+      cancelledFromStatus: draft.status,
+      botPostedLink: false,
+      botNotifiedCaptains: false,
+    });
+
+    return {
+      shortId: draft.shortId,
+      status: "cancelled" as const,
+      cancelledAt: now,
+      cancelledBy: callerPlayer.discordUserId,
+    };
   },
 });
 

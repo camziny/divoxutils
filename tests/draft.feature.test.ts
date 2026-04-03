@@ -930,6 +930,123 @@ test("traditional captain bans allow same class name across teams when not auto-
   assert.equal(bans[1].className, "Mauler");
 });
 
+test("cancelDraftByCreator marks draft as cancelled after typed confirmation", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-cancel",
+        shortId: "creator-cancel",
+        status: "drafting",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-creator",
+        draftId: "d-cancel",
+        token: "creator-token",
+        discordUserId: "creator",
+        displayName: "Creator",
+      },
+    ],
+  });
+
+  const result = await (draftFns.cancelDraftByCreator as any)._handler(ctx, {
+    draftId: "d-cancel",
+    token: "creator-token",
+    confirmationText: "  Cancel This Draft  ",
+  });
+
+  const updated = await ctx.db.get("d-cancel");
+  assert.equal(updated.status, "cancelled");
+  assert.equal(updated.cancelledBy, "creator");
+  assert.equal(updated.cancelReason, "Cancelled by draft creator");
+  assert.equal(updated.cancelledFromStatus, "drafting");
+  assert.equal(updated.botPostedLink, false);
+  assert.equal(updated.botNotifiedCaptains, false);
+  assert.equal(typeof updated.cancelledAt, "number");
+  assert.equal(result.shortId, "creator-cancel");
+  assert.equal(result.status, "cancelled");
+});
+
+test("cancelDraftByCreator requires exact confirmation phrase", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-cancel-phrase",
+        shortId: "creator-cancel-phrase",
+        status: "setup",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-creator",
+        draftId: "d-cancel-phrase",
+        token: "creator-token",
+        discordUserId: "creator",
+        displayName: "Creator",
+      },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.cancelDraftByCreator as any)._handler(ctx, {
+      draftId: "d-cancel-phrase",
+      token: "creator-token",
+      confirmationText: "cancel draft",
+    }),
+    /Type "cancel this draft" to confirm/
+  );
+});
+
+test("cancelDraftByCreator rejects non-creator token", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-cancel-auth",
+        shortId: "creator-cancel-auth",
+        status: "setup",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-creator",
+        draftId: "d-cancel-auth",
+        token: "creator-token",
+        discordUserId: "creator",
+        displayName: "Creator",
+      },
+      {
+        _id: "p-other",
+        draftId: "d-cancel-auth",
+        token: "other-token",
+        discordUserId: "other",
+        displayName: "Other",
+      },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.cancelDraftByCreator as any)._handler(ctx, {
+      draftId: "d-cancel-auth",
+      token: "other-token",
+      confirmationText: "cancel this draft",
+    }),
+    /Only the draft creator can cancel the draft/
+  );
+});
+
 test("cancelDraftAsAdmin marks draft as cancelled with audit fields", async () => {
   const ctx = makeCtx({
     drafts: [

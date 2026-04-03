@@ -91,7 +91,9 @@ export default function DraftTestPage() {
       const team = draft.pickSequence[draft.currentPickIndex];
       return team === 1 ? draft.team1CaptainId : draft.team2CaptainId;
     }
-    if (draft.status === "complete") return draft.createdBy;
+    if (draft.status === "complete" || draft.status === "cancelled") {
+      return draft.createdBy;
+    }
     return undefined;
   }, [draft]);
 
