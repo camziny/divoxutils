@@ -48,8 +48,7 @@ const handlers = createAdminSupportersUpdateRouteHandlers({
         supporterAmount: row.supporterAmount,
         supporterTier,
       };
-    });
-  },
+    }),
 });
 
 export const POST = handlers.POST;
