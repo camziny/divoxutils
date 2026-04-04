@@ -76,7 +76,7 @@ export default function LeaderboardClient({
 
   return (
     <>
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-gray-100">
             Leaderboard
@@ -85,14 +85,15 @@ export default function LeaderboardClient({
             Verified drafts only
           </p>
         </div>
-
-        <ToggleGroup value={sortBy} onValueChange={(val) => { if (val) handleSort(val as SortKey); }}>
-          {SORT_OPTIONS.map((opt) => (
-            <ToggleGroupItem key={opt.key} value={opt.key}>
-              {opt.label}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <ToggleGroup value={sortBy} onValueChange={(val) => { if (val) handleSort(val as SortKey); }}>
+            {SORT_OPTIONS.map((opt) => (
+              <ToggleGroupItem key={opt.key} value={opt.key}>
+                {opt.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
       </div>
 
       {sorted.length === 0 ? (
