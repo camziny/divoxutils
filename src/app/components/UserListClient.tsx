@@ -4,6 +4,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { HoverPrefetchLink } from "./HoverPrefetchLink";
 import SupporterBadge, { supporterRowClass, supporterNameStyle } from "./SupporterBadge";
 import { useSearchActive } from "../search/SearchContext";
+import { useUser } from "@clerk/nextjs";
 
 type User = {
   id: number;
@@ -21,7 +22,9 @@ interface UserListClientProps {
 }
 
 const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
-  const alphabet = useMemo(() => Object.keys(initialData).sort(), [initialData]);
+  const [groupedUsers, setGroupedUsers] = React.useState<GroupedUsers>(initialData);
+  const { user: clerkUser } = useUser();
+  const alphabet = useMemo(() => Object.keys(groupedUsers).sort(), [groupedUsers]);
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -32,6 +35,47 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
   const settleTimerRef = useRef<number | null>(null);
 
   const currentSection = searchParams?.get('section') || (alphabet.length > 0 ? alphabet[0] : '');
+
+  const resolvedClerkDisplayName = useMemo(() => {
+    if (!clerkUser) return null;
+    const username = typeof clerkUser.username === "string" ? clerkUser.username.trim() : "";
+    if (username.length > 0) return username;
+    const first = typeof clerkUser.firstName === "string" ? clerkUser.firstName.trim() : "";
+    const last = typeof clerkUser.lastName === "string" ? clerkUser.lastName.trim() : "";
+    const full = `${first} ${last}`.trim();
+    return full.length > 0 ? full : null;
+  }, [clerkUser]);
+
+  useEffect(() => {
+    if (!clerkUser?.id || !resolvedClerkDisplayName) return;
+
+    setGroupedUsers((prev) => {
+      let targetUser: User | null = null;
+      const flattened: User[] = [];
+      Object.values(prev).forEach((users) => {
+        users.forEach((user) => {
+          if (user.clerkUserId === clerkUser.id) {
+            targetUser = user;
+            flattened.push({ ...user, name: resolvedClerkDisplayName });
+          } else {
+            flattened.push(user);
+          }
+        });
+      });
+
+      if (!targetUser) return prev;
+
+      const sorted = [...flattened].sort((a, b) => a.name.localeCompare(b.name));
+      const next: GroupedUsers = {};
+      sorted.forEach((user) => {
+        const firstLetter = user.name[0]?.toUpperCase();
+        if (!firstLetter) return;
+        if (!next[firstLetter]) next[firstLetter] = [];
+        next[firstLetter].push(user);
+      });
+      return next;
+    });
+  }, [clerkUser?.id, resolvedClerkDisplayName]);
 
   const updateURLSection = useCallback((section: string) => {
     if (isInitialLoad.current) return;
@@ -222,7 +266,7 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
 
       <div className="px-2 sm:px-4 mt-4 sm:mt-6 max-w-3xl mx-auto">
         {alphabet.map((letter) => {
-          const users = initialData[letter];
+          const users = groupedUsers[letter];
           return (
             <UserGroup key={letter} letter={letter} users={users} />
           );
