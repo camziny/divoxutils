@@ -160,14 +160,18 @@ export const createClerkWebhookHandler =
         return { status: 400, body: { error: "Invalid clerk data" } };
       }
 
-      if (event.type !== "user.deleted" && !Array.isArray(event.data.email_addresses)) {
+      const emailAddresses = Array.isArray(event.data.email_addresses)
+        ? event.data.email_addresses
+        : null;
+
+      if (event.type !== "user.deleted" && !emailAddresses) {
         return { status: 400, body: { error: "Invalid clerk data" } };
       }
 
       let primaryEmailObj: EmailObject | undefined;
 
       if (event.type !== "user.deleted") {
-        primaryEmailObj = event.data.email_addresses.find(
+        primaryEmailObj = emailAddresses?.find(
           (emailObj: EmailObject) => emailObj.id === event.data.primary_email_address_id
         );
 
