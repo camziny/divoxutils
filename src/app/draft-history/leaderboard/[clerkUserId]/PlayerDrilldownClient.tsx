@@ -296,13 +296,12 @@ export default function PlayerDrilldownClient({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-6">
         <StatCard
           label="Overall"
           data={overallPie}
           record={`${drilldown.overall.wins}-${drilldown.overall.losses}`}
           winRate={drilldown.overall.winRate}
-          animate={progressAnimate}
         />
         {drilldown.captain.games > 0 ? (
           <StatCard
@@ -310,7 +309,6 @@ export default function PlayerDrilldownClient({
             data={captainPie}
             record={`${drilldown.captain.wins}-${drilldown.captain.losses}`}
             winRate={drilldown.captain.winRate}
-            animate={progressAnimate}
           />
         ) : (
           <Card className="bg-transparent">
@@ -995,38 +993,26 @@ function StatCard({
   data,
   record,
   winRate,
-  animate,
 }: {
   label: string;
   data: Array<{ name: string; value: number }>;
   record: string;
   winRate: number;
-  animate: boolean;
 }) {
   return (
     <Card className="bg-transparent">
-      <CardHeader className="pb-1">
+      <CardHeader className="pb-2">
         <CardTitle className="text-xs font-medium text-gray-500">
           {label}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-4">
-          <MiniDonut data={data} />
-          <div>
-            <p className="text-xl font-semibold text-gray-100 tabular-nums">
-              {record}
-            </p>
-            <p className="text-xs text-gray-500 tabular-nums">
-              {winRate.toFixed(1)}% win rate
-            </p>
-          </div>
+        <div className="flex items-center gap-5">
+          <MiniDonut data={data} winRate={winRate} />
+          <p className="text-xl font-semibold text-gray-100 tabular-nums">
+            {record}
+          </p>
         </div>
-        <Progress
-          value={animate ? winRate : 0}
-          className="mt-3 h-1"
-          indicatorClassName="bg-indigo-400/60"
-        />
       </CardContent>
     </Card>
   );
@@ -1034,19 +1020,21 @@ function StatCard({
 
 function MiniDonut({
   data,
+  winRate,
 }: {
   data: Array<{ name: string; value: number }>;
+  winRate: number;
 }) {
   return (
-    <div className="w-14 h-14 flex-shrink-0">
+    <div className="relative w-[84px] h-[84px] flex-shrink-0">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={16}
-            outerRadius={24}
+            innerRadius={30}
+            outerRadius={38}
             paddingAngle={2}
             dataKey="value"
             stroke="none"
@@ -1057,6 +1045,11 @@ function MiniDonut({
           </Pie>
         </PieChart>
       </ResponsiveContainer>
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span className="text-lg font-semibold tabular-nums text-gray-100 leading-none">
+          {winRate.toFixed(1)}
+        </span>
+      </div>
     </div>
   );
 }
