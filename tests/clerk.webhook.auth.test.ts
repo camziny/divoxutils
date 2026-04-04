@@ -121,6 +121,59 @@ test("clerk webhook accepts valid svix signature and continues payload validatio
   assert.deepEqual(result.body, { error: "Invalid clerk data" });
 });
 
+test("clerk webhook does not mark dedup for validation failures", async () => {
+  const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
+  const webhookSecret = `whsec_${base64Secret}`;
+  let markCalls = 0;
+  const handler = createClerkWebhookHandler({
+    ...createNoopDeps(),
+    markEventProcessed: async () => {
+      markCalls += 1;
+      return true;
+    },
+    unmarkEventProcessed: async () => {},
+  });
+
+  const payload = JSON.stringify({
+    type: "user.updated",
+    data: {
+      id: "user_123",
+      username: "alice",
+    },
+  });
+  const svixId = "msg_invalid_payload_123";
+  const svixTimestamp = String(Math.floor(Date.now() / 1000));
+  const svixSignature = createValidSvixSignature({
+    secret: webhookSecret,
+    svixId,
+    svixTimestamp,
+    payload,
+  });
+
+  const first = await handler({
+    method: "POST",
+    svixId,
+    svixTimestamp,
+    svixSignature,
+    rawBody: payload,
+    webhookSecret,
+  });
+  const second = await handler({
+    method: "POST",
+    svixId,
+    svixTimestamp,
+    svixSignature,
+    rawBody: payload,
+    webhookSecret,
+  });
+
+  assert.equal(first.status, 400);
+  assert.equal(second.status, 400);
+  assert.deepEqual(first.body, { error: "Invalid clerk data" });
+  assert.deepEqual(second.body, { error: "Invalid clerk data" });
+  assert.equal(markCalls, 0);
+});
+
 test("clerk webhook user.deleted deletes local records via dependency", async () => {
   const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
   const webhookSecret = `whsec_${base64Secret}`;

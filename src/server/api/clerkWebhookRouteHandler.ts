@@ -154,24 +154,37 @@ export const createClerkWebhookHandler =
     }
 
     const dedupKey = `clerk:${input.svixId}`;
-    const wasMarked = await deps.markEventProcessed(dedupKey);
-    if (!wasMarked) {
-      return { status: 200, body: { success: true, message: "Duplicate event ignored" } };
-    }
 
     try {
+      if (!event.data || typeof event.data.id !== "string" || event.data.id.length === 0) {
+        return { status: 400, body: { error: "Invalid clerk data" } };
+      }
+
+      if (event.type !== "user.deleted" && !Array.isArray(event.data.email_addresses)) {
+        return { status: 400, body: { error: "Invalid clerk data" } };
+      }
+
+      let primaryEmailObj: EmailObject | undefined;
+
+      if (event.type !== "user.deleted") {
+        primaryEmailObj = event.data.email_addresses.find(
+          (emailObj: EmailObject) => emailObj.id === event.data.primary_email_address_id
+        );
+
+        if (!primaryEmailObj) {
+          return { status: 400, body: { error: "Primary email object not found" } };
+        }
+      }
+
+      const wasMarked = await deps.markEventProcessed(dedupKey);
+      if (!wasMarked) {
+        return { status: 200, body: { success: true, message: "Duplicate event ignored" } };
+      }
+
       if (event.type === "user.deleted") {
         await deps.deleteLocalUserByClerkId(event.data.id);
         return { status: 200, body: { success: true, message: "User deleted successfully" } };
       }
-
-      if (!event.data || !Array.isArray(event.data.email_addresses)) {
-        return { status: 400, body: { error: "Invalid clerk data" } };
-      }
-
-      const primaryEmailObj = event.data.email_addresses.find(
-        (emailObj: EmailObject) => emailObj.id === event.data.primary_email_address_id
-      );
 
       if (!primaryEmailObj) {
         return { status: 400, body: { error: "Primary email object not found" } };
