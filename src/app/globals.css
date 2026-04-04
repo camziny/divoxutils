@@ -206,3 +206,40 @@ body {
   color: #ffffff !important;
   background-color: #1f2937 !important;
 }
+
+.cl-userButtonPopoverCard .cl-formFieldLabel {
+  color: #d1d5db !important;
+}
+
+.cl-userButtonPopoverCard .cl-formFieldInput,
+.cl-userButtonPopoverCard input,
+.cl-userButtonPopoverCard textarea {
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  caret-color: #e5e7eb !important;
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+.cl-formFieldInput,
+.cl-userProfile .cl-formFieldInput,
+.cl-userProfile input,
+.cl-profileSectionPrimaryButton,
+.cl-userPreviewMainIdentifier,
+.cl-userPreviewSecondaryIdentifier {
+  color: #e5e7eb !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+}
+
+.cl-formFieldErrorText,
+.cl-alertText {
+  color: #fca5a5 !important;
+}
+
+.cl-formFieldSuccessText {
+  color: #86efac !important;
+}
+
+.cl-formFieldWarningText {
+  color: #fcd34d !important;
+}

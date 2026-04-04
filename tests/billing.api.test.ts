@@ -1,41 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import type Stripe from "stripe";
-import { createCheckoutSessionHandler } from "../pages/api/billing/create-checkout-session";
-import { createPortalSessionHandler } from "../pages/api/billing/create-portal-session";
-import { createStripeWebhookHandler } from "../pages/api/stripe/webhook";
+import {
+  createCheckoutSessionHandler,
+  createPortalSessionHandler,
+} from "../src/server/api/billingRouteHandlers";
+import { createStripeWebhookHandler } from "../src/server/api/stripeWebhookRouteHandler";
 
-function createMockResponse() {
-  const res: any = {
-    statusCode: 200,
-    body: undefined as unknown,
-    status(code: number) {
-      this.statusCode = code;
-      return this;
-    },
-    json(payload: unknown) {
-      this.body = payload;
-      return this;
-    },
-  };
-  return res;
-}
-
-function createMockRequest(options?: {
-  method?: string;
-  body?: unknown;
-  headers?: Record<string, string>;
-}) {
-  return {
-    method: options?.method ?? "POST",
-    body: options?.body ?? {},
-    headers: options?.headers ?? {},
-  } as any;
+function createHeaders(input?: Record<string, string>) {
+  return new Headers(input ?? {});
 }
 
 test("create checkout session requires POST", async () => {
   const handler = createCheckoutSessionHandler({
-    getAuthUserId: () => "user_1",
+    getAuthUserId: async () => "user_1",
     getPriceMap: () => ({ 1: "p1", 2: "p2", 3: "p3" }),
     findUserByClerkId: async () => ({
       clerkUserId: "user_1",
@@ -45,15 +23,17 @@ test("create checkout session requires POST", async () => {
     createCheckoutSession: async () => ({ url: "https://example.com" }),
   });
 
-  const req = createMockRequest({ method: "GET" });
-  const res = createMockResponse();
-  await handler(req, res);
-  assert.equal(res.statusCode, 405);
+  const result = await handler({
+    method: "GET",
+    body: {},
+    headers: createHeaders(),
+  });
+  assert.equal(result.status, 405);
 });
 
 test("create checkout session requires auth", async () => {
   const handler = createCheckoutSessionHandler({
-    getAuthUserId: () => null,
+    getAuthUserId: async () => null,
     getPriceMap: () => ({ 1: "p1", 2: "p2", 3: "p3" }),
     findUserByClerkId: async () => ({
       clerkUserId: "user_1",
@@ -63,15 +43,17 @@ test("create checkout session requires auth", async () => {
     createCheckoutSession: async () => ({ url: "https://example.com" }),
   });
 
-  const req = createMockRequest({ body: { tier: 1 } });
-  const res = createMockResponse();
-  await handler(req, res);
-  assert.equal(res.statusCode, 401);
+  const result = await handler({
+    method: "POST",
+    body: { tier: 1 },
+    headers: createHeaders(),
+  });
+  assert.equal(result.status, 401);
 });
 
 test("create checkout session validates tier", async () => {
   const handler = createCheckoutSessionHandler({
-    getAuthUserId: () => "user_1",
+    getAuthUserId: async () => "user_1",
     getPriceMap: () => ({ 1: "p1", 2: "p2", 3: "p3" }),
     findUserByClerkId: async () => ({
       clerkUserId: "user_1",
@@ -81,30 +63,34 @@ test("create checkout session validates tier", async () => {
     createCheckoutSession: async () => ({ url: "https://example.com" }),
   });
 
-  const req = createMockRequest({ body: { tier: 10 } });
-  const res = createMockResponse();
-  await handler(req, res);
-  assert.equal(res.statusCode, 400);
+  const result = await handler({
+    method: "POST",
+    body: { tier: 10 },
+    headers: createHeaders(),
+  });
+  assert.equal(result.status, 400);
 });
 
 test("create checkout session returns 404 when local user missing", async () => {
   const handler = createCheckoutSessionHandler({
-    getAuthUserId: () => "user_1",
+    getAuthUserId: async () => "user_1",
     getPriceMap: () => ({ 1: "p1", 2: "p2", 3: "p3" }),
     findUserByClerkId: async () => null,
     createCheckoutSession: async () => ({ url: "https://example.com" }),
   });
 
-  const req = createMockRequest({ body: { tier: 1 } });
-  const res = createMockResponse();
-  await handler(req, res);
-  assert.equal(res.statusCode, 404);
+  const result = await handler({
+    method: "POST",
+    body: { tier: 1 },
+    headers: createHeaders(),
+  });
+  assert.equal(result.status, 404);
 });
 
 test("create checkout session returns URL on success", async () => {
   let captured: any = null;
   const handler = createCheckoutSessionHandler({
-    getAuthUserId: () => "user_1",
+    getAuthUserId: async () => "user_1",
     getPriceMap: () => ({ 1: "price_1", 2: "price_2", 3: "price_3" }),
     findUserByClerkId: async () => ({
       clerkUserId: "user_1",
@@ -117,17 +103,15 @@ test("create checkout session returns URL on success", async () => {
     },
   });
 
-  const req = createMockRequest({
+  const result = await handler({
+    method: "POST",
     body: { tier: 2 },
-    headers: { host: "example.com", "x-forwarded-proto": "https" },
+    headers: createHeaders({ host: "example.com", "x-forwarded-proto": "https" }),
   });
-  const res = createMockResponse();
-  await handler(req, res);
-
   const expectedOrigin =
     process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "https://example.com";
-  assert.equal(res.statusCode, 200);
-  assert.equal((res.body as any).url, "https://stripe.test/session");
+  assert.equal(result.status, 200);
+  assert.equal((result.body as any).url, "https://stripe.test/session");
   assert.equal(captured.priceId, "price_2");
   assert.equal(captured.customerId, "cus_123");
   assert.equal(captured.origin, expectedOrigin);
@@ -136,7 +120,7 @@ test("create checkout session returns URL on success", async () => {
 test("create checkout session blocks duplicate active subscriptions", async () => {
   let createCalls = 0;
   const handler = createCheckoutSessionHandler({
-    getAuthUserId: () => "user_1",
+    getAuthUserId: async () => "user_1",
     getPriceMap: () => ({ 1: "price_1", 2: "price_2", 3: "price_3" }),
     findUserByClerkId: async () => ({
       clerkUserId: "user_1",
@@ -149,43 +133,46 @@ test("create checkout session blocks duplicate active subscriptions", async () =
     },
   });
 
-  const req = createMockRequest({ body: { tier: 1 } });
-  const res = createMockResponse();
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 409);
+  const result = await handler({
+    method: "POST",
+    body: { tier: 1 },
+    headers: createHeaders(),
+  });
+  assert.equal(result.status, 409);
   assert.equal(createCalls, 0);
 });
 
 test("create portal session requires auth and existing customer", async () => {
   const unauthHandler = createPortalSessionHandler({
-    getAuthUserId: () => null,
+    getAuthUserId: async () => null,
     findCustomerIdByClerkUserId: async () => "cus_1",
     createPortalSession: async () => ({ url: "https://stripe.test/portal" }),
   });
 
-  const unauthReq = createMockRequest({ body: {} });
-  const unauthRes = createMockResponse();
-  await unauthHandler(unauthReq, unauthRes);
-  assert.equal(unauthRes.statusCode, 401);
+  const unauthResult = await unauthHandler({
+    method: "POST",
+    body: {},
+    headers: createHeaders(),
+  });
+  assert.equal(unauthResult.status, 401);
 
   const missingCustomerHandler = createPortalSessionHandler({
-    getAuthUserId: () => "user_1",
+    getAuthUserId: async () => "user_1",
     findCustomerIdByClerkUserId: async () => null,
     createPortalSession: async () => ({ url: "https://stripe.test/portal" }),
   });
-  const missingReq = createMockRequest({
-    headers: { host: "example.com", "x-forwarded-proto": "https" },
+  const missingResult = await missingCustomerHandler({
+    method: "POST",
+    body: {},
+    headers: createHeaders({ host: "example.com", "x-forwarded-proto": "https" }),
   });
-  const missingRes = createMockResponse();
-  await missingCustomerHandler(missingReq, missingRes);
-  assert.equal(missingRes.statusCode, 404);
+  assert.equal(missingResult.status, 404);
 });
 
 test("create portal session returns URL on success", async () => {
   let returnUrl = "";
   const handler = createPortalSessionHandler({
-    getAuthUserId: () => "user_1",
+    getAuthUserId: async () => "user_1",
     findCustomerIdByClerkUserId: async () => "cus_1",
     createPortalSession: async (params) => {
       returnUrl = params.returnUrl;
@@ -193,16 +180,15 @@ test("create portal session returns URL on success", async () => {
     },
   });
 
-  const req = createMockRequest({
-    headers: { host: "example.com", "x-forwarded-proto": "https" },
+  const result = await handler({
+    method: "POST",
+    body: {},
+    headers: createHeaders({ host: "example.com", "x-forwarded-proto": "https" }),
   });
-  const res = createMockResponse();
-  await handler(req, res);
-
   const expectedOrigin =
     process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "https://example.com";
-  assert.equal(res.statusCode, 200);
-  assert.equal((res.body as any).url, "https://stripe.test/portal");
+  assert.equal(result.status, 200);
+  assert.equal((result.body as any).url, "https://stripe.test/portal");
   assert.equal(returnUrl, `${expectedOrigin}/billing`);
 });
 
@@ -240,7 +226,6 @@ const subscriptionEvent = (overrides?: Partial<Stripe.Subscription>): Stripe.Eve
 
 test("stripe webhook validates signature and method", async () => {
   const handler = createStripeWebhookHandler({
-    readRequestBody: async () => Buffer.from("{}"),
     getWebhookSecret: () => "whsec_test",
     constructEvent: () => subscriptionEvent(),
     getPriceMap: () => ({ 1: "price_1", 2: "price_2", 3: "price_3" }),
@@ -249,22 +234,28 @@ test("stripe webhook validates signature and method", async () => {
     findUserByClerkUserId: async () => null,
     findUserByStripeCustomerId: async () => null,
     updateUserSubscription: async () => {},
+    extractRecurringPriceId: () => "price_3",
+    getTierFromPriceId: () => 3,
+    shouldGrantSupporterBadge: () => true,
   });
 
-  const wrongMethodReq = createMockRequest({ method: "GET" });
-  const wrongMethodRes = createMockResponse();
-  await handler(wrongMethodReq, wrongMethodRes);
-  assert.equal(wrongMethodRes.statusCode, 405);
+  const wrongMethodResult = await handler({
+    method: "GET",
+    signature: null,
+    rawBody: Buffer.from("{}"),
+  });
+  assert.equal(wrongMethodResult.status, 405);
 
-  const missingSigReq = createMockRequest({ method: "POST" });
-  const missingSigRes = createMockResponse();
-  await handler(missingSigReq, missingSigRes);
-  assert.equal(missingSigRes.statusCode, 400);
+  const missingSigResult = await handler({
+    method: "POST",
+    signature: null,
+    rawBody: Buffer.from("{}"),
+  });
+  assert.equal(missingSigResult.status, 400);
 });
 
 test("stripe webhook handles invalid signature", async () => {
   const handler = createStripeWebhookHandler({
-    readRequestBody: async () => Buffer.from("{}"),
     getWebhookSecret: () => "whsec_test",
     constructEvent: () => {
       throw new Error("bad signature");
@@ -275,21 +266,22 @@ test("stripe webhook handles invalid signature", async () => {
     findUserByClerkUserId: async () => null,
     findUserByStripeCustomerId: async () => null,
     updateUserSubscription: async () => {},
+    extractRecurringPriceId: () => "price_3",
+    getTierFromPriceId: () => 3,
+    shouldGrantSupporterBadge: () => true,
   });
 
-  const req = createMockRequest({
+  const result = await handler({
     method: "POST",
-    headers: { "stripe-signature": "sig" },
+    signature: "sig",
+    rawBody: Buffer.from("{}"),
   });
-  const res = createMockResponse();
-  await handler(req, res);
-  assert.equal(res.statusCode, 401);
+  assert.equal(result.status, 401);
 });
 
 test("stripe webhook short-circuits duplicate events", async () => {
   let updateCalls = 0;
   const handler = createStripeWebhookHandler({
-    readRequestBody: async () => Buffer.from("{}"),
     getWebhookSecret: () => "whsec_test",
     constructEvent: () => subscriptionEvent(),
     getPriceMap: () => ({ 1: "price_1", 2: "price_2", 3: "price_3" }),
@@ -300,24 +292,24 @@ test("stripe webhook short-circuits duplicate events", async () => {
     updateUserSubscription: async () => {
       updateCalls += 1;
     },
+    extractRecurringPriceId: () => "price_3",
+    getTierFromPriceId: () => 3,
+    shouldGrantSupporterBadge: () => true,
   });
 
-  const req = createMockRequest({
+  const result = await handler({
     method: "POST",
-    headers: { "stripe-signature": "sig" },
+    signature: "sig",
+    rawBody: Buffer.from("{}"),
   });
-  const res = createMockResponse();
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 200);
-  assert.deepEqual(res.body, { received: true, duplicate: true });
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body, { received: true, duplicate: true });
   assert.equal(updateCalls, 0);
 });
 
 test("stripe webhook syncs active subscription tier and period", async () => {
   let updated: any = null;
   const handler = createStripeWebhookHandler({
-    readRequestBody: async () => Buffer.from("{}"),
     getWebhookSecret: () => "whsec_test",
     constructEvent: () =>
       subscriptionEvent({
@@ -332,16 +324,17 @@ test("stripe webhook syncs active subscription tier and period", async () => {
     updateUserSubscription: async (_clerkUserId, data) => {
       updated = data;
     },
+    extractRecurringPriceId: () => "price_3",
+    getTierFromPriceId: () => 3,
+    shouldGrantSupporterBadge: () => true,
   });
 
-  const req = createMockRequest({
+  const result = await handler({
     method: "POST",
-    headers: { "stripe-signature": "sig" },
+    signature: "sig",
+    rawBody: Buffer.from("{}"),
   });
-  const res = createMockResponse();
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 200);
+  assert.equal(result.status, 200);
   assert.equal(updated.supporterTier, 3);
   assert.equal(updated.subscriptionStatus, "active");
   assert.equal(updated.subscriptionCancelAtPeriodEnd, true);
@@ -352,7 +345,6 @@ test("stripe webhook syncs active subscription tier and period", async () => {
 test("stripe webhook clears badge for inactive status", async () => {
   let updatedTier = -1;
   const handler = createStripeWebhookHandler({
-    readRequestBody: async () => Buffer.from("{}"),
     getWebhookSecret: () => "whsec_test",
     constructEvent: () =>
       subscriptionEvent({
@@ -366,16 +358,17 @@ test("stripe webhook clears badge for inactive status", async () => {
     updateUserSubscription: async (_clerkUserId, data) => {
       updatedTier = data.supporterTier ?? -1;
     },
+    extractRecurringPriceId: () => "price_3",
+    getTierFromPriceId: () => 3,
+    shouldGrantSupporterBadge: (status) => status === "active",
   });
 
-  const req = createMockRequest({
+  const result = await handler({
     method: "POST",
-    headers: { "stripe-signature": "sig" },
+    signature: "sig",
+    rawBody: Buffer.from("{}"),
   });
-  const res = createMockResponse();
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 200);
+  assert.equal(result.status, 200);
   assert.equal(updatedTier, 0);
 });
 
@@ -396,7 +389,6 @@ test("stripe webhook links checkout completion by clerk metadata", async () => {
   } as unknown as Stripe.Event;
 
   const handler = createStripeWebhookHandler({
-    readRequestBody: async () => Buffer.from("{}"),
     getWebhookSecret: () => "whsec_test",
     constructEvent: () => event,
     getPriceMap: () => ({ 1: "price_1", 2: "price_2", 3: "price_3" }),
@@ -407,16 +399,17 @@ test("stripe webhook links checkout completion by clerk metadata", async () => {
     updateUserSubscription: async (_clerkUserId, data) => {
       updatedData = data;
     },
+    extractRecurringPriceId: () => "price_3",
+    getTierFromPriceId: () => 3,
+    shouldGrantSupporterBadge: () => true,
   });
 
-  const req = createMockRequest({
+  const result = await handler({
     method: "POST",
-    headers: { "stripe-signature": "sig" },
+    signature: "sig",
+    rawBody: Buffer.from("{}"),
   });
-  const res = createMockResponse();
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 200);
+  assert.equal(result.status, 200);
   assert.equal(updatedData.stripeCustomerId, "cus_2");
   assert.equal(updatedData.stripeSubscriptionId, "sub_2");
 });
@@ -438,7 +431,6 @@ test("stripe webhook links checkout completion with tier metadata present", asyn
   } as unknown as Stripe.Event;
 
   const handler = createStripeWebhookHandler({
-    readRequestBody: async () => Buffer.from("{}"),
     getWebhookSecret: () => "whsec_test",
     constructEvent: () => event,
     getPriceMap: () => ({ 1: "price_1", 2: "price_2", 3: "price_3" }),
@@ -451,16 +443,17 @@ test("stripe webhook links checkout completion with tier metadata present", asyn
     updateUserSubscription: async (_clerkUserId, data) => {
       updatedData = data;
     },
+    extractRecurringPriceId: () => "price_2",
+    getTierFromPriceId: () => 2,
+    shouldGrantSupporterBadge: () => true,
   });
 
-  const req = createMockRequest({
+  const result = await handler({
     method: "POST",
-    headers: { "stripe-signature": "sig" },
+    signature: "sig",
+    rawBody: Buffer.from("{}"),
   });
-  const res = createMockResponse();
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 200);
+  assert.equal(result.status, 200);
   assert.equal(updatedData.stripeCustomerId, "cus_3");
   assert.equal(updatedData.stripeSubscriptionId, "sub_3");
 });
@@ -468,7 +461,6 @@ test("stripe webhook links checkout completion with tier metadata present", asyn
 test("stripe webhook unmarks event when processing fails", async () => {
   const unmarked: string[] = [];
   const handler = createStripeWebhookHandler({
-    readRequestBody: async () => Buffer.from("{}"),
     getWebhookSecret: () => "whsec_test",
     constructEvent: () => subscriptionEvent(),
     getPriceMap: () => ({ 1: "price_1", 2: "price_2", 3: "price_3" }),
@@ -481,15 +473,16 @@ test("stripe webhook unmarks event when processing fails", async () => {
     updateUserSubscription: async () => {
       throw new Error("write failed");
     },
+    extractRecurringPriceId: () => "price_3",
+    getTierFromPriceId: () => 3,
+    shouldGrantSupporterBadge: () => true,
   });
 
-  const req = createMockRequest({
+  const result = await handler({
     method: "POST",
-    headers: { "stripe-signature": "sig" },
+    signature: "sig",
+    rawBody: Buffer.from("{}"),
   });
-  const res = createMockResponse();
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 500);
+  assert.equal(result.status, 500);
   assert.deepEqual(unmarked, ["evt_sub"]);
 });

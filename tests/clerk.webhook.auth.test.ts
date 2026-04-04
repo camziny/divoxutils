@@ -1,54 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "crypto";
-import webhookHandler, {
-  createClerkWebhookHandler,
-} from "../pages/api/clerk-webhook";
-
-function createMockResponse() {
-  const res: any = {
-    statusCode: 200,
-    headers: {},
-    body: undefined,
-    setHeader(key: string, value: unknown) {
-      this.headers[key] = value;
-      return this;
-    },
-    status(code: number) {
-      this.statusCode = code;
-      return this;
-    },
-    json(payload: unknown) {
-      this.body = payload;
-      return this;
-    },
-    end(payload?: unknown) {
-      this.body = payload;
-      return this;
-    },
-  };
-  return res;
-}
-
-function createWebhookRequest(options?: {
-  method?: string;
-  headers?: Record<string, string>;
-  body?: string;
-}) {
-  const method = options?.method ?? "POST";
-  const headers = options?.headers ?? {};
-  const body = options?.body ?? "";
-
-  const req: any = {
-    method,
-    headers,
-    async *[Symbol.asyncIterator]() {
-      yield Buffer.from(body, "utf8");
-    },
-  };
-
-  return req;
-}
+import { createClerkWebhookHandler } from "../src/server/api/clerkWebhookRouteHandler";
 
 function createValidSvixSignature(options: {
   secret: string;
@@ -85,55 +38,60 @@ function createNoopDeps() {
 }
 
 test("clerk webhook rejects missing svix headers", async () => {
-  const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
-  process.env.CLERK_WEBHOOK_SECRET = "whsec_test_secret";
+  const handler = createClerkWebhookHandler({
+    ...createNoopDeps(),
+    markEventProcessed: async () => true,
+    unmarkEventProcessed: async () => {},
+  });
 
-  const req = createWebhookRequest({ headers: {} });
-  const res = createMockResponse();
-
-  await webhookHandler(req, res);
-
-  assert.equal(res.statusCode, 400);
-  assert.deepEqual(res.body, {
+  const result = await handler({
+    method: "POST",
+    svixId: null,
+    svixTimestamp: null,
+    svixSignature: null,
+    rawBody: "",
+    webhookSecret: "whsec_test_secret",
+  });
+  assert.equal(result.status, 400);
+  assert.deepEqual(result.body, {
     success: false,
     message: "Missing Svix headers",
   });
-
-  process.env.CLERK_WEBHOOK_SECRET = previousSecret;
 });
 
 test("clerk webhook rejects invalid svix signature", async () => {
-  const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
-  process.env.CLERK_WEBHOOK_SECRET = "whsec_test_secret";
+  const handler = createClerkWebhookHandler({
+    ...createNoopDeps(),
+    markEventProcessed: async () => true,
+    unmarkEventProcessed: async () => {},
+  });
 
-  const req = createWebhookRequest({
-    headers: {
-      "svix-id": "msg_123",
-      "svix-timestamp": String(Math.floor(Date.now() / 1000)),
-      "svix-signature": "v1,invalid",
-    },
-    body: JSON.stringify({
+  const result = await handler({
+    method: "POST",
+    svixId: "msg_123",
+    svixTimestamp: String(Math.floor(Date.now() / 1000)),
+    svixSignature: "v1,invalid",
+    rawBody: JSON.stringify({
       type: "user.created",
       data: { id: "user_123" },
     }),
+    webhookSecret: "whsec_test_secret",
   });
-  const res = createMockResponse();
-
-  await webhookHandler(req, res);
-
-  assert.equal(res.statusCode, 401);
-  assert.deepEqual(res.body, {
+  assert.equal(result.status, 401);
+  assert.deepEqual(result.body, {
     success: false,
     message: "Invalid webhook signature",
   });
-
-  process.env.CLERK_WEBHOOK_SECRET = previousSecret;
 });
 
 test("clerk webhook accepts valid svix signature and continues payload validation", async () => {
-  const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
   const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
-  process.env.CLERK_WEBHOOK_SECRET = `whsec_${base64Secret}`;
+  const webhookSecret = `whsec_${base64Secret}`;
+  const handler = createClerkWebhookHandler({
+    ...createNoopDeps(),
+    markEventProcessed: async () => true,
+    unmarkEventProcessed: async () => {},
+  });
 
   const payload = JSON.stringify({
     type: "user.updated",
@@ -145,34 +103,27 @@ test("clerk webhook accepts valid svix signature and continues payload validatio
   const svixId = "msg_valid_123";
   const svixTimestamp = String(Math.floor(Date.now() / 1000));
   const svixSignature = createValidSvixSignature({
-    secret: process.env.CLERK_WEBHOOK_SECRET,
+    secret: webhookSecret,
     svixId,
     svixTimestamp,
     payload,
   });
 
-  const req = createWebhookRequest({
-    headers: {
-      "svix-id": svixId,
-      "svix-timestamp": svixTimestamp,
-      "svix-signature": svixSignature,
-    },
-    body: payload,
+  const result = await handler({
+    method: "POST",
+    svixId,
+    svixTimestamp,
+    svixSignature,
+    rawBody: payload,
+    webhookSecret,
   });
-  const res = createMockResponse();
-
-  await webhookHandler(req, res);
-
-  assert.equal(res.statusCode, 400);
-  assert.deepEqual(res.body, { error: "Invalid clerk data" });
-
-  process.env.CLERK_WEBHOOK_SECRET = previousSecret;
+  assert.equal(result.status, 400);
+  assert.deepEqual(result.body, { error: "Invalid clerk data" });
 });
 
 test("clerk webhook user.deleted deletes local records via dependency", async () => {
-  const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
   const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
-  process.env.CLERK_WEBHOOK_SECRET = `whsec_${base64Secret}`;
+  const webhookSecret = `whsec_${base64Secret}`;
 
   let deletedClerkUserId = "";
   const handler = createClerkWebhookHandler({
@@ -180,6 +131,8 @@ test("clerk webhook user.deleted deletes local records via dependency", async ()
     deleteLocalUserByClerkId: async (clerkUserId: string) => {
       deletedClerkUserId = clerkUserId;
     },
+    markEventProcessed: async () => true,
+    unmarkEventProcessed: async () => {},
   });
 
   const payload = JSON.stringify({
@@ -191,44 +144,39 @@ test("clerk webhook user.deleted deletes local records via dependency", async ()
   const svixId = "msg_delete_123";
   const svixTimestamp = String(Math.floor(Date.now() / 1000));
   const svixSignature = createValidSvixSignature({
-    secret: process.env.CLERK_WEBHOOK_SECRET,
+    secret: webhookSecret,
     svixId,
     svixTimestamp,
     payload,
   });
 
-  const req = createWebhookRequest({
-    headers: {
-      "svix-id": svixId,
-      "svix-timestamp": svixTimestamp,
-      "svix-signature": svixSignature,
-    },
-    body: payload,
+  const result = await handler({
+    method: "POST",
+    svixId,
+    svixTimestamp,
+    svixSignature,
+    rawBody: payload,
+    webhookSecret,
   });
-  const res = createMockResponse();
-
-  await handler(req, res);
-
   assert.equal(deletedClerkUserId, "user_delete_123");
-  assert.equal(res.statusCode, 200);
-  assert.deepEqual(res.body, {
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body, {
     success: true,
     message: "User deleted successfully",
   });
-
-  process.env.CLERK_WEBHOOK_SECRET = previousSecret;
 });
 
 test("clerk webhook user.deleted returns 500 if local deletion fails", async () => {
-  const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
   const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
-  process.env.CLERK_WEBHOOK_SECRET = `whsec_${base64Secret}`;
+  const webhookSecret = `whsec_${base64Secret}`;
 
   const handler = createClerkWebhookHandler({
     ...createNoopDeps(),
     deleteLocalUserByClerkId: async () => {
       throw new Error("db failure");
     },
+    markEventProcessed: async () => true,
+    unmarkEventProcessed: async () => {},
   });
 
   const payload = JSON.stringify({
@@ -240,37 +188,30 @@ test("clerk webhook user.deleted returns 500 if local deletion fails", async () 
   const svixId = "msg_delete_456";
   const svixTimestamp = String(Math.floor(Date.now() / 1000));
   const svixSignature = createValidSvixSignature({
-    secret: process.env.CLERK_WEBHOOK_SECRET,
+    secret: webhookSecret,
     svixId,
     svixTimestamp,
     payload,
   });
 
-  const req = createWebhookRequest({
-    headers: {
-      "svix-id": svixId,
-      "svix-timestamp": svixTimestamp,
-      "svix-signature": svixSignature,
-    },
-    body: payload,
+  const result = await handler({
+    method: "POST",
+    svixId,
+    svixTimestamp,
+    svixSignature,
+    rawBody: payload,
+    webhookSecret,
   });
-  const res = createMockResponse();
-
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 500);
-  assert.deepEqual(res.body, {
+  assert.equal(result.status, 500);
+  assert.deepEqual(result.body, {
     success: false,
     message: "Error in deleting user",
   });
-
-  process.env.CLERK_WEBHOOK_SECRET = previousSecret;
 });
 
 test("clerk webhook user.deleted clears linked identity ownership state", async () => {
-  const previousSecret = process.env.CLERK_WEBHOOK_SECRET;
   const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
-  process.env.CLERK_WEBHOOK_SECRET = `whsec_${base64Secret}`;
+  const webhookSecret = `whsec_${base64Secret}`;
 
   const ownerByDiscordId = new Map<string, string>([
     ["discord_123", "user_old"],
@@ -286,6 +227,8 @@ test("clerk webhook user.deleted clears linked identity ownership state", async 
         }
       }
     },
+    markEventProcessed: async () => true,
+    unmarkEventProcessed: async () => {},
   });
 
   const payload = JSON.stringify({
@@ -297,27 +240,114 @@ test("clerk webhook user.deleted clears linked identity ownership state", async 
   const svixId = "msg_delete_cleanup_123";
   const svixTimestamp = String(Math.floor(Date.now() / 1000));
   const svixSignature = createValidSvixSignature({
-    secret: process.env.CLERK_WEBHOOK_SECRET,
+    secret: webhookSecret,
     svixId,
     svixTimestamp,
     payload,
   });
 
-  const req = createWebhookRequest({
-    headers: {
-      "svix-id": svixId,
-      "svix-timestamp": svixTimestamp,
-      "svix-signature": svixSignature,
-    },
-    body: payload,
+  const result = await handler({
+    method: "POST",
+    svixId,
+    svixTimestamp,
+    svixSignature,
+    rawBody: payload,
+    webhookSecret,
   });
-  const res = createMockResponse();
-
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 200);
+  assert.equal(result.status, 200);
   assert.equal(ownerByDiscordId.has("discord_123"), false);
   assert.equal(ownerByDiscordId.get("discord_999"), "other_user");
+});
 
-  process.env.CLERK_WEBHOOK_SECRET = previousSecret;
+test("clerk webhook ignores duplicate svix id", async () => {
+  const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
+  const webhookSecret = `whsec_${base64Secret}`;
+  let createCalls = 0;
+  const handler = createClerkWebhookHandler({
+    ...createNoopDeps(),
+    createLocalUserFromClerk: async () => {
+      createCalls += 1;
+      return {};
+    },
+    markEventProcessed: async () => false,
+    unmarkEventProcessed: async () => {},
+  });
+
+  const payload = JSON.stringify({
+    type: "user.created",
+    data: {
+      id: "user_dupe",
+      username: "dupe",
+      email_addresses: [{ id: "e1", email_address: "dupe@example.com" }],
+      primary_email_address_id: "e1",
+    },
+  });
+  const svixId = "msg_dupe_123";
+  const svixTimestamp = String(Math.floor(Date.now() / 1000));
+  const svixSignature = createValidSvixSignature({
+    secret: webhookSecret,
+    svixId,
+    svixTimestamp,
+    payload,
+  });
+
+  const result = await handler({
+    method: "POST",
+    svixId,
+    svixTimestamp,
+    svixSignature,
+    rawBody: payload,
+    webhookSecret,
+  });
+
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body, { success: true, message: "Duplicate event ignored" });
+  assert.equal(createCalls, 0);
+});
+
+test("clerk webhook falls back to first and last name", async () => {
+  const base64Secret = Buffer.from("test_webhook_secret").toString("base64");
+  const webhookSecret = `whsec_${base64Secret}`;
+  let updatedName: string | null = null;
+
+  const handler = createClerkWebhookHandler({
+    ...createNoopDeps(),
+    findLocalUserByClerkId: async () => ({ clerkUserId: "user_abc" }),
+    updateLocalUsername: async (_clerkUserId: string, username: string | null) => {
+      updatedName = username;
+    },
+    markEventProcessed: async () => true,
+    unmarkEventProcessed: async () => {},
+  });
+
+  const payload = JSON.stringify({
+    type: "user.updated",
+    data: {
+      id: "user_abc",
+      first_name: "Ada",
+      last_name: "Lovelace",
+      email_addresses: [{ id: "e1", email_address: "ada@example.com" }],
+      primary_email_address_id: "e1",
+    },
+  });
+  const svixId = "msg_name_fallback";
+  const svixTimestamp = String(Math.floor(Date.now() / 1000));
+  const svixSignature = createValidSvixSignature({
+    secret: webhookSecret,
+    svixId,
+    svixTimestamp,
+    payload,
+  });
+
+  const result = await handler({
+    method: "POST",
+    svixId,
+    svixTimestamp,
+    svixSignature,
+    rawBody: payload,
+    webhookSecret,
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(updatedName, "Ada Lovelace");
 });

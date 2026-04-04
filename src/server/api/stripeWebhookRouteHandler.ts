@@ -1,29 +1,10 @@
-import type { NextApiRequest, NextApiResponse } from "next";
 import type Stripe from "stripe";
-import prisma from "../../../prisma/prismaClient";
-import { Prisma } from "@prisma/client";
-import { readRawBody } from "@/server/http/readRawBody";
-import {
-  extractRecurringPriceId,
-  getStripeClient,
-  getStripePriceMap,
-  getStripeWebhookSecret,
-  getTierFromPriceId,
-  shouldGrantSupporterBadge,
-} from "@/server/billing/stripe";
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 type StripeUser = {
   clerkUserId: string;
 };
 
 type StripeWebhookDeps = {
-  readRequestBody: (req: NextApiRequest) => Promise<Buffer>;
   getWebhookSecret: () => string;
   constructEvent: (rawBody: Buffer, signature: string, secret: string) => Stripe.Event;
   getPriceMap: () => Record<number, string>;
@@ -43,6 +24,20 @@ type StripeWebhookDeps = {
       supporterTier?: number;
     }
   ) => Promise<void>;
+  extractRecurringPriceId: (subscription: Stripe.Subscription) => string | null;
+  getTierFromPriceId: (priceId: string | null, priceMap: Record<number, string>) => number;
+  shouldGrantSupporterBadge: (status: string) => boolean;
+};
+
+export type StripeWebhookInput = {
+  method: string;
+  signature: string | null;
+  rawBody: Buffer;
+};
+
+export type StripeWebhookResponse = {
+  status: number;
+  body: { error: string } | { received: true; duplicate?: true };
 };
 
 const asString = (value: unknown): string | null =>
@@ -97,15 +92,13 @@ const syncFromSubscription = async (
 
   const user =
     (customerId ? await deps.findUserByStripeCustomerId(customerId) : null) ??
-    (metadataClerkUserId
-      ? await deps.findUserByClerkUserId(metadataClerkUserId)
-      : null);
+    (metadataClerkUserId ? await deps.findUserByClerkUserId(metadataClerkUserId) : null);
 
   if (!user) return;
 
-  const priceId = extractRecurringPriceId(subscription);
-  const tier = shouldGrantSupporterBadge(subscription.status)
-    ? getTierFromPriceId(priceId, deps.getPriceMap())
+  const priceId = deps.extractRecurringPriceId(subscription);
+  const tier = deps.shouldGrantSupporterBadge(subscription.status)
+    ? deps.getTierFromPriceId(priceId, deps.getPriceMap())
     : 0;
 
   await deps.updateUserSubscription(user.clerkUserId, {
@@ -130,8 +123,7 @@ const syncFromCheckoutSessionCompleted = async (
   if (session.mode !== "subscription") return;
 
   const clerkUserId =
-    asString(session.metadata?.clerkUserId) ??
-    asString(session.client_reference_id);
+    asString(session.metadata?.clerkUserId) ?? asString(session.client_reference_id);
   const customerId = resolveCustomerId(session.customer);
   const subscriptionId = resolveSubscriptionId(session.subscription);
 
@@ -146,93 +138,43 @@ const syncFromCheckoutSessionCompleted = async (
 };
 
 export const createStripeWebhookHandler =
-  (deps: StripeWebhookDeps) => async (req: NextApiRequest, res: NextApiResponse) => {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method not allowed" });
+  (deps: StripeWebhookDeps) =>
+  async (input: StripeWebhookInput): Promise<StripeWebhookResponse> => {
+    if (input.method !== "POST") {
+      return { status: 405, body: { error: "Method not allowed" } };
     }
 
-    const signature = req.headers["stripe-signature"];
-    if (typeof signature !== "string") {
-      return res.status(400).json({ error: "Missing Stripe signature header." });
+    if (!input.signature) {
+      return { status: 400, body: { error: "Missing Stripe signature header." } };
     }
 
     let event: Stripe.Event;
     try {
-      const rawBody = await deps.readRequestBody(req);
-      event = deps.constructEvent(rawBody, signature, deps.getWebhookSecret());
+      event = deps.constructEvent(input.rawBody, input.signature, deps.getWebhookSecret());
     } catch {
-      return res.status(401).json({ error: "Invalid Stripe webhook signature." });
+      return { status: 401, body: { error: "Invalid Stripe webhook signature." } };
     }
 
     const wasMarked = await deps.markEventProcessed(event.id);
     if (!wasMarked) {
-      return res.status(200).json({ received: true, duplicate: true });
+      return { status: 200, body: { received: true, duplicate: true } };
     }
 
     try {
       if (event.type === "checkout.session.completed") {
-        await syncFromCheckoutSessionCompleted(
-          event.data.object as Stripe.Checkout.Session,
-          deps
-        );
+        await syncFromCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session, deps);
       } else if (
         event.type === "customer.subscription.created" ||
         event.type === "customer.subscription.updated"
       ) {
         await syncFromSubscription(event.data.object as Stripe.Subscription, deps);
       } else if (event.type === "customer.subscription.deleted") {
-        const subscription = event.data.object as Stripe.Subscription;
-        await syncFromSubscription(subscription, deps);
+        await syncFromSubscription(event.data.object as Stripe.Subscription, deps);
       }
     } catch {
       await deps.unmarkEventProcessed(event.id);
-      return res.status(500).json({ error: "Failed to process Stripe webhook event." });
+      return { status: 500, body: { error: "Failed to process Stripe webhook event." } };
     }
 
-    return res.status(200).json({ received: true });
+    return { status: 200, body: { received: true } };
   };
-
-const handler = createStripeWebhookHandler({
-  readRequestBody: readRawBody,
-  getWebhookSecret: getStripeWebhookSecret,
-  constructEvent: (rawBody, signature, secret) =>
-    getStripeClient().webhooks.constructEvent(rawBody, signature, secret),
-  getPriceMap: getStripePriceMap,
-  markEventProcessed: async (eventId) => {
-    try {
-      await prisma.stripeWebhookEvent.create({ data: { id: eventId } });
-      return true;
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
-        return false;
-      }
-      throw error;
-    }
-  },
-  unmarkEventProcessed: async (eventId) => {
-    await prisma.stripeWebhookEvent.deleteMany({
-      where: { id: eventId },
-    });
-  },
-  findUserByClerkUserId: (clerkUserId) =>
-    prisma.user.findUnique({
-      where: { clerkUserId },
-      select: { clerkUserId: true },
-    }),
-  findUserByStripeCustomerId: (stripeCustomerId) =>
-    prisma.user.findFirst({
-      where: { stripeCustomerId },
-      select: { clerkUserId: true },
-    }),
-  updateUserSubscription: async (clerkUserId, data) => {
-    await prisma.user.update({
-      where: { clerkUserId },
-      data,
-    });
-  },
-});
-
-export default handler;

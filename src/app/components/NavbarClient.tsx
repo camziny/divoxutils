@@ -146,16 +146,31 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
       colorMutedForeground: "#9ca3af",
       colorNeutral: "#6b7280",
       colorPrimary: "#6366f1",
+      colorText: "#e5e7eb",
+      colorInputText: "#e5e7eb",
+      colorInputBackground: "#1f2937",
     },
     elements: {
       userButtonTrigger:
         "rounded-md hover:bg-gray-700/80 transition-colors",
       userButtonAvatarBox: "h-8 w-8",
       userButtonPopoverCard: "bg-gray-900 border border-gray-700",
+      userPreviewMainIdentifier: "text-gray-100",
+      userPreviewSecondaryIdentifier: "text-gray-400",
       userButtonPopoverActionButton:
         "text-gray-300 hover:text-white hover:bg-gray-800",
       userButtonPopoverActionButtonText: "text-gray-300",
       userButtonPopoverActionButtonIcon: "text-gray-400",
+      formFieldLabel: "text-gray-300",
+      formFieldInput:
+        "bg-gray-800 border border-gray-700 !text-gray-100 placeholder:text-gray-500 [caret-color:#e5e7eb] [&:-webkit-autofill]:[-webkit-text-fill-color:#e5e7eb]",
+      formFieldInputShowPasswordButton: "text-gray-400 hover:text-gray-200",
+      formFieldInput__username:
+        "bg-gray-800 border border-gray-700 !text-gray-100 placeholder:text-gray-500 [caret-color:#e5e7eb] [&:-webkit-autofill]:[-webkit-text-fill-color:#e5e7eb]",
+      formFieldErrorText: "text-red-300",
+      formFieldWarningText: "text-amber-300",
+      formFieldSuccessText: "text-emerald-300",
+      formButtonPrimary: "bg-indigo-500 hover:bg-indigo-400 text-white",
       userButtonPopoverFooter: "hidden",
     },
   };
