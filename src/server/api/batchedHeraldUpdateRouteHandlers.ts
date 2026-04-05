@@ -1,50 +1,142 @@
-import prisma from "../../../prisma/prismaClient";
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import {
-  getLastProcessedHeraldCharacterId,
-  updateLastProcessedHeraldCharacterId,
-} from "@/controllers/batchStateController";
+  hasValidCronAuthorization,
+  postMethodNotAllowedResponse,
+  unauthorizedCronResponse,
+} from "@/server/api/cronAuth";
 
-export default async function batchedHeraldUpdate(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+type HeraldCharacter = {
+  id: number;
+  webId: string;
+  heraldCharacterWebId: string | null;
+  heraldName: string | null;
+  heraldServerName: string | null;
+  heraldRealm: number | null;
+  heraldRace: string | null;
+  heraldClassName: string | null;
+  heraldLevel: number | null;
+  heraldGuildName: string | null;
+  heraldRealmPoints: number | null;
+  heraldBountyPoints: number | null;
+  heraldTotalKills: number | null;
+  heraldTotalDeaths: number | null;
+  heraldTotalDeathBlows: number | null;
+  heraldTotalSoloKills: number | null;
+  heraldMidgardKills: number | null;
+  heraldMidgardDeaths: number | null;
+  heraldMidgardDeathBlows: number | null;
+  heraldMidgardSoloKills: number | null;
+  heraldAlbionKills: number | null;
+  heraldAlbionDeaths: number | null;
+  heraldAlbionDeathBlows: number | null;
+  heraldAlbionSoloKills: number | null;
+  heraldHiberniaKills: number | null;
+  heraldHiberniaDeaths: number | null;
+  heraldHiberniaDeathBlows: number | null;
+  heraldHiberniaSoloKills: number | null;
+  heraldMasterLevel: string | null;
+};
 
-  if (req.method === "POST") {
+type HeraldUpdateData = Partial<Omit<HeraldCharacter, "id" | "webId">>;
+
+type HeraldApiData = {
+  character_web_id?: string | number;
+  name?: string;
+  server_name?: string;
+  realm?: number;
+  race?: string;
+  class_name?: string;
+  level?: number;
+  guild_info?: { guild_name?: string };
+  master_level?: { level?: number; path?: string };
+  realm_war_stats?: {
+    current?: {
+      realm_points?: number;
+      bounty_points?: number;
+      player_kills?: {
+        total?: {
+          kills?: number;
+          deaths?: number;
+          death_blows?: number;
+          solo_kills?: number;
+        };
+        midgard?: {
+          kills?: number;
+          deaths?: number;
+          death_blows?: number;
+          solo_kills?: number;
+        };
+        albion?: {
+          kills?: number;
+          deaths?: number;
+          death_blows?: number;
+          solo_kills?: number;
+        };
+        hibernia?: {
+          kills?: number;
+          deaths?: number;
+          death_blows?: number;
+          solo_kills?: number;
+        };
+      };
+    };
+  };
+};
+
+type BatchedHeraldUpdateDeps = {
+  cronSecret: string | undefined;
+  getLastProcessedHeraldCharacterId: () => Promise<number>;
+  updateLastProcessedHeraldCharacterId: (lastId: number) => Promise<void>;
+  findCharacters: (args: { lastProcessedId: number; take: number }) => Promise<HeraldCharacter[]>;
+  updateCharacter: (args: { id: number; data: HeraldUpdateData }) => Promise<void>;
+  fetchImpl: typeof fetch;
+};
+
+export function createBatchedHeraldUpdateRouteHandlers(deps: BatchedHeraldUpdateDeps) {
+  async function run(method: string, request: NextRequest) {
+    if (
+      !hasValidCronAuthorization(
+        request.headers.get("authorization"),
+        deps.cronSecret
+      )
+    ) {
+      return unauthorizedCronResponse();
+    }
+
+    if (method !== "POST") {
+      return postMethodNotAllowedResponse(method);
+    }
+
     const batchSize = 100;
     let checkedCount = 0;
     let updatedCount = 0;
     let failedCount = 0;
 
     try {
-      const lastProcessedId = await getLastProcessedHeraldCharacterId(prisma);
-      const characters = await prisma.character.findMany({
-        where: {
-          id: { gt: lastProcessedId },
-        },
+      const lastProcessedId = await deps.getLastProcessedHeraldCharacterId();
+      const characters = await deps.findCharacters({
+        lastProcessedId,
         take: batchSize,
-        orderBy: { id: "asc" },
       });
 
       for (const character of characters) {
         checkedCount++;
         try {
           const apiUrl = `https://api.camelotherald.com/character/info/${character.webId}`;
-          const response = await fetch(apiUrl);
-          const data = await response.json();
+          const response = await deps.fetchImpl(apiUrl);
+          const data = (await response.json()) as HeraldApiData;
 
           if (data && data.realm_war_stats && data.realm_war_stats.current) {
-            const updateData: any = {};
+            const updateData: HeraldUpdateData = {};
 
             if (
               data.character_web_id !== undefined &&
-              character.heraldCharacterWebId !== data.character_web_id
+              data.character_web_id !== null
             ) {
-              updateData.heraldCharacterWebId = data.character_web_id;
+              const heraldCharacterWebId = String(data.character_web_id);
+              if (character.heraldCharacterWebId !== heraldCharacterWebId) {
+                updateData.heraldCharacterWebId = heraldCharacterWebId;
+              }
             }
             if (data.name !== undefined && character.heraldName !== data.name) {
               updateData.heraldName = data.name;
@@ -55,10 +147,7 @@ export default async function batchedHeraldUpdate(
             ) {
               updateData.heraldServerName = data.server_name;
             }
-            if (
-              data.realm !== undefined &&
-              character.heraldRealm !== data.realm
-            ) {
+            if (data.realm !== undefined && character.heraldRealm !== data.realm) {
               updateData.heraldRealm = data.realm;
             }
             if (data.race !== undefined && character.heraldRace !== data.race) {
@@ -70,10 +159,7 @@ export default async function batchedHeraldUpdate(
             ) {
               updateData.heraldClassName = data.class_name;
             }
-            if (
-              data.level !== undefined &&
-              character.heraldLevel !== data.level
-            ) {
+            if (data.level !== undefined && character.heraldLevel !== data.level) {
               updateData.heraldLevel = data.level;
             }
             if (
@@ -84,11 +170,9 @@ export default async function batchedHeraldUpdate(
             }
             if (
               data.realm_war_stats?.current?.realm_points !== undefined &&
-              character.heraldRealmPoints !==
-                data.realm_war_stats?.current?.realm_points
+              character.heraldRealmPoints !== data.realm_war_stats?.current?.realm_points
             ) {
-              updateData.heraldRealmPoints =
-                data.realm_war_stats?.current?.realm_points;
+              updateData.heraldRealmPoints = data.realm_war_stats?.current?.realm_points;
             }
             if (
               data.realm_war_stats?.current?.bounty_points !== undefined &&
@@ -117,8 +201,8 @@ export default async function batchedHeraldUpdate(
                 data.realm_war_stats?.current?.player_kills?.total?.deaths;
             }
             if (
-              data.realm_war_stats?.current?.player_kills?.total
-                ?.death_blows !== undefined &&
+              data.realm_war_stats?.current?.player_kills?.total?.death_blows !==
+                undefined &&
               character.heraldTotalDeathBlows !==
                 data.realm_war_stats?.current?.player_kills?.total?.death_blows
             ) {
@@ -153,18 +237,17 @@ export default async function batchedHeraldUpdate(
                 data.realm_war_stats?.current?.player_kills?.midgard?.deaths;
             }
             if (
-              data.realm_war_stats?.current?.player_kills?.midgard
-                ?.death_blows !== undefined &&
+              data.realm_war_stats?.current?.player_kills?.midgard?.death_blows !==
+                undefined &&
               character.heraldMidgardDeathBlows !==
-                data.realm_war_stats?.current?.player_kills?.midgard
-                  ?.death_blows
+                data.realm_war_stats?.current?.player_kills?.midgard?.death_blows
             ) {
               updateData.heraldMidgardDeathBlows =
                 data.realm_war_stats?.current?.player_kills?.midgard?.death_blows;
             }
             if (
-              data.realm_war_stats?.current?.player_kills?.midgard
-                ?.solo_kills !== undefined &&
+              data.realm_war_stats?.current?.player_kills?.midgard?.solo_kills !==
+                undefined &&
               character.heraldMidgardSoloKills !==
                 data.realm_war_stats?.current?.player_kills?.midgard?.solo_kills
             ) {
@@ -190,8 +273,8 @@ export default async function batchedHeraldUpdate(
                 data.realm_war_stats?.current?.player_kills?.albion?.deaths;
             }
             if (
-              data.realm_war_stats?.current?.player_kills?.albion
-                ?.death_blows !== undefined &&
+              data.realm_war_stats?.current?.player_kills?.albion?.death_blows !==
+                undefined &&
               character.heraldAlbionDeathBlows !==
                 data.realm_war_stats?.current?.player_kills?.albion?.death_blows
             ) {
@@ -199,8 +282,8 @@ export default async function batchedHeraldUpdate(
                 data.realm_war_stats?.current?.player_kills?.albion?.death_blows;
             }
             if (
-              data.realm_war_stats?.current?.player_kills?.albion
-                ?.solo_kills !== undefined &&
+              data.realm_war_stats?.current?.player_kills?.albion?.solo_kills !==
+                undefined &&
               character.heraldAlbionSoloKills !==
                 data.realm_war_stats?.current?.player_kills?.albion?.solo_kills
             ) {
@@ -226,57 +309,50 @@ export default async function batchedHeraldUpdate(
                 data.realm_war_stats?.current?.player_kills?.hibernia?.deaths;
             }
             if (
-              data.realm_war_stats?.current?.player_kills?.hibernia
-                ?.death_blows !== undefined &&
+              data.realm_war_stats?.current?.player_kills?.hibernia?.death_blows !==
+                undefined &&
               character.heraldHiberniaDeathBlows !==
-                data.realm_war_stats?.current?.player_kills?.hibernia
-                  ?.death_blows
+                data.realm_war_stats?.current?.player_kills?.hibernia?.death_blows
             ) {
               updateData.heraldHiberniaDeathBlows =
                 data.realm_war_stats?.current?.player_kills?.hibernia?.death_blows;
             }
             if (
-              data.realm_war_stats?.current?.player_kills?.hibernia
-                ?.solo_kills !== undefined &&
+              data.realm_war_stats?.current?.player_kills?.hibernia?.solo_kills !==
+                undefined &&
               character.heraldHiberniaSoloKills !==
-                data.realm_war_stats?.current?.player_kills?.hibernia
-                  ?.solo_kills
+                data.realm_war_stats?.current?.player_kills?.hibernia?.solo_kills
             ) {
               updateData.heraldHiberniaSoloKills =
                 data.realm_war_stats?.current?.player_kills?.hibernia?.solo_kills;
             }
             if (
-              `${data.master_level?.level} ${data.master_level?.path}` !==
-                undefined &&
-              character.heraldMasterLevel !==
-                `${data.master_level?.level} ${data.master_level?.path}`
+              data.master_level?.level !== undefined &&
+              data.master_level?.path !== undefined
             ) {
-              updateData.heraldMasterLevel = `${data.master_level?.level} ${data.master_level?.path}`;
+              const masterLevelValue = `${data.master_level.level} ${data.master_level.path}`;
+              if (character.heraldMasterLevel !== masterLevelValue) {
+                updateData.heraldMasterLevel = masterLevelValue;
+              }
             }
 
             if (Object.keys(updateData).length > 0) {
-              await prisma.character.update({
-                where: { id: character.id },
-                data: updateData,
-              });
+              await deps.updateCharacter({ id: character.id, data: updateData });
               updatedCount++;
             }
           }
         } catch (error) {
-          console.error(
-            `Failed to update character ${character.webId}:`,
-            error
-          );
+          console.error(`Failed to update character ${character.webId}:`, error);
           failedCount++;
         }
       }
 
       if (characters.length > 0) {
         const newLastProcessedId = characters[characters.length - 1].id;
-        await updateLastProcessedHeraldCharacterId(prisma, newLastProcessedId);
+        await deps.updateLastProcessedHeraldCharacterId(newLastProcessedId);
       }
 
-      res.status(200).json({
+      return NextResponse.json({
         message: "Batch update process completed",
         checkedCharacters: checkedCount,
         updatedCharacters: updatedCount,
@@ -284,10 +360,20 @@ export default async function batchedHeraldUpdate(
       });
     } catch (error) {
       console.error("Error fetching characters:", error);
-      res.status(500).json({ message: "Internal server error" });
+      return NextResponse.json(
+        { message: "Internal server error" },
+        { status: 500 }
+      );
     }
-  } else {
-    res.setHeader("Allow", ["POST"]);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
+
+  return {
+    POST: async (request: NextRequest) => run("POST", request),
+    GET: async (request: NextRequest) => run("GET", request),
+    PUT: async (request: NextRequest) => run("PUT", request),
+    PATCH: async (request: NextRequest) => run("PATCH", request),
+    DELETE: async (request: NextRequest) => run("DELETE", request),
+    OPTIONS: async (request: NextRequest) => run("OPTIONS", request),
+    HEAD: async (request: NextRequest) => run("HEAD", request),
+  };
 }
