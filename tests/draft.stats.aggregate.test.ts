@@ -728,11 +728,11 @@ test("aggregateClassRows is fight-based when player swaps classes mid-set", () =
 
 test("aggregateClassRows credits known substitutes and skips manual substitutes", () => {
   const substituteClerkMap = new Map<string, string>([
-    ...clerkByDiscord.entries(),
+    ...Array.from(clerkByDiscord.entries()),
     ["d5", "clerk_5"],
   ]);
   const substituteNames = new Map<string, string>([
-    ...namesByClerk.entries(),
+    ...Array.from(namesByClerk.entries()),
     ["clerk_5", "SubFive"],
   ]);
 

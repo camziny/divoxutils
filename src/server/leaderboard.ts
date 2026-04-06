@@ -22,7 +22,7 @@ type LeaderboardUserInput = {
   id: number;
   name: string | null;
   clerkUserId: string;
-  supporterTier: number;
+  supporterTier?: number;
   characters: Array<{
     character: LeaderboardCharacter;
   }>;
@@ -146,7 +146,7 @@ export const aggregateLeaderboardData = (
       userId: user.id,
       clerkUserId: user.clerkUserId,
       userName: user.name ?? "Unknown",
-      supporterTier: user.supporterTier,
+      supporterTier: user.supporterTier ?? 0,
       totalRealmPoints: totalPoints,
       totalSoloKills,
       totalDeaths,
