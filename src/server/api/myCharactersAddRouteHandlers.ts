@@ -1,5 +1,4 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { getAuth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const realmMapping: Record<number, string> = {
   1: "Albion",
@@ -7,7 +6,7 @@ const realmMapping: Record<number, string> = {
   3: "Hibernia",
 };
 
-async function fetchCharacterDetails(webId: string) {
+export async function fetchCharacterDetailsFromHerald(webId: string) {
   const url = `https://api.camelotherald.com/character/info/${webId}`;
   const response = await fetch(url);
   if (!response.ok) {
@@ -18,7 +17,7 @@ async function fetchCharacterDetails(webId: string) {
   return response.json();
 }
 
-function mapCharacterData(char: any) {
+export function mapCharacterData(char: any) {
   return {
     webId: char.character_web_id,
     characterName: char.name,
@@ -72,110 +71,84 @@ function mapCharacterData(char: any) {
   };
 }
 
-function createUpsertCharacter(prismaClient: any) {
-  return async (char: any) => {
-    const characterData = {
-      ...mapCharacterData(char),
-    };
-
-    return prismaClient.character.upsert({
-      where: { webId: char.character_web_id },
-      update: characterData,
-      create: characterData,
-    });
-  };
-}
-
-type AddCharactersDeps = {
-  getAuthUserId: (req: NextApiRequest) => string | null;
-  findUserByClerkId: (clerkUserId: string) => Promise<{ id: number } | null>;
+export type MyCharactersAddDeps = {
+  getClerkUserId: () => Promise<string | null>;
+  findUserByClerkId: (
+    clerkUserId: string
+  ) => Promise<{ id: number } | null>;
   fetchCharacterDetailsByWebId: (webId: string) => Promise<any>;
   upsertCharacterFromDetails: (char: any) => Promise<{ id: number }>;
   upsertUserCharacterLink: (
     clerkUserId: string,
     characterId: number
   ) => Promise<unknown>;
+  revalidatePublicUserCharacters?: () => void | Promise<void>;
 };
 
-export const createAddCharactersHandler =
-  (deps: AddCharactersDeps) =>
-  async (req: NextApiRequest, res: NextApiResponse) => {
-    const clerkUserId = deps.getAuthUserId(req);
+export function createMyCharactersAddRouteHandlers(deps: MyCharactersAddDeps) {
+  return {
+    POST: async (request: Request) => {
+      if (request.method !== "POST") {
+        return NextResponse.json(
+          { error: `Method ${request.method} Not Allowed` },
+          { status: 405 }
+        );
+      }
 
-    if (!clerkUserId) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+      const clerkUserId = await deps.getClerkUserId();
 
-    const user = await deps.findUserByClerkId(clerkUserId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found." });
-    }
+      if (!clerkUserId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
 
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
-    }
+      const user = await deps.findUserByClerkId(clerkUserId);
+      if (!user) {
+        return NextResponse.json({ error: "User not found." }, { status: 404 });
+      }
 
-    const { webIds } = req.body;
+      const body = await request.json().catch(() => null);
+      const webIds = body?.webIds;
+      if (!Array.isArray(webIds)) {
+        return NextResponse.json(
+          { error: "Expected an array of webIds." },
+          { status: 400 }
+        );
+      }
 
-    if (!Array.isArray(webIds)) {
-      return res.status(400).json({ error: "Expected an array of webIds." });
-    }
+      try {
+        const characterDetails = await Promise.all(
+          webIds.map(deps.fetchCharacterDetailsByWebId)
+        );
 
-    try {
-      const characterDetails = await Promise.all(
-        webIds.map(deps.fetchCharacterDetailsByWebId)
-      );
+        const characters = await Promise.all(
+          characterDetails.map(deps.upsertCharacterFromDetails)
+        );
 
-      const characters = await Promise.all(
-        characterDetails.map(deps.upsertCharacterFromDetails)
-      );
+        await Promise.all(
+          characters.map((character) =>
+            deps.upsertUserCharacterLink(clerkUserId, character.id)
+          )
+        );
 
-      await Promise.all(
-        characters.map((character) =>
-          deps.upsertUserCharacterLink(clerkUserId, character.id)
-        )
-      );
+        if (deps.revalidatePublicUserCharacters) {
+          await Promise.resolve(deps.revalidatePublicUserCharacters());
+        }
 
-      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      res.status(201).json(characters);
-    } catch (error: any) {
-      console.error(`Failed to process characters: ${error}`);
-      res
-        .status(500)
-        .json({ error: "Internal server error", details: error.message });
-    }
+        const response = NextResponse.json(characters, { status: 201 });
+        response.headers.set(
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate"
+        );
+        return response;
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        console.error(`Failed to process characters: ${error}`);
+        return NextResponse.json(
+          { error: "Internal server error", details: message },
+          { status: 500 }
+        );
+      }
+    },
   };
-
-const handler = createAddCharactersHandler({
-  getAuthUserId: (req) => getAuth(req).userId,
-  findUserByClerkId: (clerkUserId) => {
-    const prismaClient = require("../../../prisma/prismaClient").default;
-    return prismaClient.user.findUnique({
-      where: { clerkUserId },
-      select: { id: true },
-    });
-  },
-  fetchCharacterDetailsByWebId: fetchCharacterDetails,
-  upsertCharacterFromDetails: (char) => {
-    const prismaClient = require("../../../prisma/prismaClient").default;
-    return createUpsertCharacter(prismaClient)(char);
-  },
-  upsertUserCharacterLink: (clerkUserId, characterId) => {
-    const prismaClient = require("../../../prisma/prismaClient").default;
-    return prismaClient.userCharacter.upsert({
-      where: {
-        clerkUserId_characterId: {
-          clerkUserId,
-          characterId,
-        },
-      },
-      update: {},
-      create: {
-        clerkUserId,
-        characterId,
-      },
-    });
-  },
-});
-
-export default handler;
+}
