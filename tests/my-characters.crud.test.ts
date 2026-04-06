@@ -1,8 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createAddCharactersHandler } from "../pages/api/characters/add";
+import { createMyCharactersAddRouteHandlers } from "../src/server/api/myCharactersAddRouteHandlers";
 import { createUserCharactersByUserIdHandler } from "../src/server/userCharactersByUserIdPagesHandler";
 import { createUserCharacterHandler } from "../src/server/userCharacterPagesHandler";
+
+function postAddRequest(body: unknown) {
+  return new Request("http://localhost/api/my-characters/add", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
 
 function createMockResponse() {
   const res: any = {
@@ -43,31 +51,25 @@ function createMockRequest(options?: {
 }
 
 test("add handler rejects unauthenticated requests", async () => {
-  const handler = createAddCharactersHandler({
-    getAuthUserId: () => null,
+  const handlers = createMyCharactersAddRouteHandlers({
+    getClerkUserId: async () => null,
     findUserByClerkId: async () => null,
     fetchCharacterDetailsByWebId: async () => ({}),
     upsertCharacterFromDetails: async () => ({ id: 1 }),
     upsertUserCharacterLink: async () => ({}),
   });
 
-  const req = createMockRequest({
-    method: "POST",
-    body: { webIds: ["abc"] },
-  });
-  const res = createMockResponse();
+  const response = await handlers.POST(postAddRequest({ webIds: ["abc"] }));
 
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 401);
-  assert.deepEqual(res.body, { error: "Unauthorized" });
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: "Unauthorized" });
 });
 
 test("add handler creates links for posted webIds", async () => {
   const requestedWebIds: string[] = [];
   const linkedCharacterIds: number[] = [];
-  const handler = createAddCharactersHandler({
-    getAuthUserId: () => "user_123",
+  const handlers = createMyCharactersAddRouteHandlers({
+    getClerkUserId: async () => "user_123",
     findUserByClerkId: async () => ({ id: 77 }),
     fetchCharacterDetailsByWebId: async (webId) => {
       requestedWebIds.push(webId);
@@ -82,89 +84,75 @@ test("add handler creates links for posted webIds", async () => {
     },
   });
 
-  const req = createMockRequest({
-    method: "POST",
-    body: { webIds: ["w1", "w2"] },
-  });
-  const res = createMockResponse();
+  const response = await handlers.POST(
+    postAddRequest({ webIds: ["w1", "w2"] })
+  );
 
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 201);
+  assert.equal(response.status, 201);
   assert.deepEqual(requestedWebIds, ["w1", "w2"]);
   assert.deepEqual(linkedCharacterIds, [11, 12]);
   assert.equal(
-    res.headers["Cache-Control"],
+    response.headers.get("Cache-Control"),
     "no-cache, no-store, must-revalidate"
   );
 });
 
 test("add handler rejects non-POST requests", async () => {
-  const handler = createAddCharactersHandler({
-    getAuthUserId: () => "user_123",
+  const handlers = createMyCharactersAddRouteHandlers({
+    getClerkUserId: async () => "user_123",
     findUserByClerkId: async () => ({ id: 1 }),
     fetchCharacterDetailsByWebId: async () => ({}),
     upsertCharacterFromDetails: async () => ({ id: 1 }),
     upsertUserCharacterLink: async () => ({}),
   });
 
-  const req = createMockRequest({
-    method: "GET",
-    body: { webIds: ["abc"] },
-  });
-  const res = createMockResponse();
+  const response = await handlers.POST(
+    new Request("http://localhost/api/my-characters/add", { method: "GET" })
+  );
 
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 405);
-  assert.match(String((res.body as { error: string }).error), /not allowed/i);
+  assert.equal(response.status, 405);
+  assert.match(
+    String((await response.json() as { error: string }).error),
+    /not allowed/i
+  );
 });
 
 test("add handler rejects when webIds is not an array", async () => {
-  const handler = createAddCharactersHandler({
-    getAuthUserId: () => "user_123",
+  const handlers = createMyCharactersAddRouteHandlers({
+    getClerkUserId: async () => "user_123",
     findUserByClerkId: async () => ({ id: 1 }),
     fetchCharacterDetailsByWebId: async () => ({}),
     upsertCharacterFromDetails: async () => ({ id: 1 }),
     upsertUserCharacterLink: async () => ({}),
   });
 
-  const req = createMockRequest({
-    method: "POST",
-    body: { webIds: "abc" },
-  });
-  const res = createMockResponse();
+  const response = await handlers.POST(postAddRequest({ webIds: "abc" }));
 
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 400);
-  assert.match(String((res.body as { error: string }).error), /Expected an array/i);
+  assert.equal(response.status, 400);
+  assert.match(
+    String((await response.json() as { error: string }).error),
+    /Expected an array/i
+  );
 });
 
 test("add handler returns 404 when local user is missing", async () => {
-  const handler = createAddCharactersHandler({
-    getAuthUserId: () => "user_123",
+  const handlers = createMyCharactersAddRouteHandlers({
+    getClerkUserId: async () => "user_123",
     findUserByClerkId: async () => null,
     fetchCharacterDetailsByWebId: async () => ({}),
     upsertCharacterFromDetails: async () => ({ id: 1 }),
     upsertUserCharacterLink: async () => ({}),
   });
 
-  const req = createMockRequest({
-    method: "POST",
-    body: { webIds: ["w1"] },
-  });
-  const res = createMockResponse();
+  const response = await handlers.POST(postAddRequest({ webIds: ["w1"] }));
 
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 404);
-  assert.deepEqual(res.body, { error: "User not found." });
+  assert.equal(response.status, 404);
+  assert.deepEqual(await response.json(), { error: "User not found." });
 });
 
 test("add handler returns 500 when upstream fetch fails", async () => {
-  const handler = createAddCharactersHandler({
-    getAuthUserId: () => "user_123",
+  const handlers = createMyCharactersAddRouteHandlers({
+    getClerkUserId: async () => "user_123",
     findUserByClerkId: async () => ({ id: 1 }),
     fetchCharacterDetailsByWebId: async () => {
       throw new Error("upstream boom");
@@ -173,17 +161,11 @@ test("add handler returns 500 when upstream fetch fails", async () => {
     upsertUserCharacterLink: async () => ({}),
   });
 
-  const req = createMockRequest({
-    method: "POST",
-    body: { webIds: ["w1"] },
-  });
-  const res = createMockResponse();
+  const response = await handlers.POST(postAddRequest({ webIds: ["w1"] }));
 
-  await handler(req, res);
-
-  assert.equal(res.statusCode, 500);
+  assert.equal(response.status, 500);
   assert.match(
-    String((res.body as { details: string }).details),
+    String((await response.json() as { details: string }).details),
     /upstream boom/i
   );
 });
