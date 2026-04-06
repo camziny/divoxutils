@@ -81,6 +81,7 @@ test("analyzeFightEditor reports first missing class with player name", () => {
         p3: "Bard",
         p4: "Healer",
       },
+      substitutesByPlayer: {},
     },
   ];
   const analysis = analyzeFightEditor(rows, draftedPlayers);
@@ -97,6 +98,7 @@ test("analyzeFightEditor rejects fights after clinch", () => {
       p3: "Bard",
       p4: "Healer",
     },
+    substitutesByPlayer: {},
   });
   const rows = [
     fullClassRow(1),
@@ -122,6 +124,7 @@ test("analyzeFightEditor marks valid first-to-3 set complete", () => {
         p3: "Bard",
         p4: "Healer",
       },
+      substitutesByPlayer: {},
     },
     {
       winnerTeam: 2 as const,
@@ -131,6 +134,7 @@ test("analyzeFightEditor marks valid first-to-3 set complete", () => {
         p3: "Druid",
         p4: "Shaman",
       },
+      substitutesByPlayer: {},
     },
     {
       winnerTeam: 1 as const,
@@ -140,6 +144,7 @@ test("analyzeFightEditor marks valid first-to-3 set complete", () => {
         p3: "Bard",
         p4: "Healer",
       },
+      substitutesByPlayer: {},
     },
     {
       winnerTeam: 1 as const,
@@ -149,6 +154,7 @@ test("analyzeFightEditor marks valid first-to-3 set complete", () => {
         p3: "Warden",
         p4: "Healer",
       },
+      substitutesByPlayer: {},
     },
   ];
   const analysis = analyzeFightEditor(rows, draftedPlayers);

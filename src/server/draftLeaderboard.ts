@@ -2,7 +2,7 @@ import { ConvexHttpClient } from "convex/browser";
 import prisma from "../../prisma/prismaClient";
 
 export type DraftLeaderboardPlayer = {
-  _id: string;
+  _id?: string;
   discordUserId: string;
   displayName: string;
   avatarUrl?: string;

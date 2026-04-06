@@ -308,13 +308,13 @@ test("batched leaderboard preserves cursor update and success payload", async ()
 });
 
 test("batched leaderboard uses previous Monday window before update hour", async () => {
-  let capturedCutoff: Date | null = null;
+  let capturedCutoffIso: string | null = null;
   const handlers = createBatchedLeaderboardUpdateRouteHandlers({
     cronSecret: "secret",
     getLastProcessedCharacterId: async () => 0,
     updateLastProcessedCharacterId: async () => undefined,
     findCharacters: async ({ lastUpdatedLte }) => {
-      capturedCutoff = lastUpdatedLte;
+      capturedCutoffIso = lastUpdatedLte.toISOString();
       return [];
     },
     updateCharacter: async () => undefined,
@@ -327,7 +327,7 @@ test("batched leaderboard uses previous Monday window before update hour", async
   );
 
   assert.equal(response.status, 200);
-  assert.equal(capturedCutoff?.toISOString(), "2026-03-30T05:30:00.000Z");
+  assert.equal(capturedCutoffIso, "2026-03-30T05:30:00.000Z");
   assert.deepEqual(await response.json(), {
     message: "Batch update process completed",
     checkedCharacters: 0,

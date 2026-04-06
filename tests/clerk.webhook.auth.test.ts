@@ -274,7 +274,7 @@ test("clerk webhook user.deleted clears linked identity ownership state", async 
   const handler = createClerkWebhookHandler({
     ...createNoopDeps(),
     deleteLocalUserByClerkId: async (clerkUserId: string) => {
-      for (const [discordUserId, owner] of ownerByDiscordId.entries()) {
+      for (const [discordUserId, owner] of Array.from(ownerByDiscordId.entries())) {
         if (owner === clerkUserId) {
           ownerByDiscordId.delete(discordUserId);
         }
