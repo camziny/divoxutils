@@ -28,6 +28,26 @@ async function getLastProcessedHeraldCharacterId(
   return state ? state.lastProcessedCharacterId : 0;
 }
 
+async function getLastProcessedRealmCharacterId(
+  prisma: PrismaClient
+): Promise<number> {
+  const state = await prisma.batchState.findUnique({
+    where: { key: "lastProcessedRealmCharacterId" },
+  });
+  return state ? state.value : 0;
+}
+
+async function updateLastProcessedRealmCharacterId(
+  prisma: PrismaClient,
+  lastId: number
+): Promise<void> {
+  await prisma.batchState.upsert({
+    where: { key: "lastProcessedRealmCharacterId" },
+    update: { value: lastId },
+    create: { key: "lastProcessedRealmCharacterId", value: lastId },
+  });
+}
+
 async function updateLastProcessedHeraldCharacterId(
   prisma: PrismaClient,
   lastId: number
@@ -45,6 +65,8 @@ async function updateLastProcessedHeraldCharacterId(
 export {
   getLastProcessedCharacterId,
   updateLastProcessedCharacterId,
+  getLastProcessedRealmCharacterId,
+  updateLastProcessedRealmCharacterId,
   getLastProcessedHeraldCharacterId,
   updateLastProcessedHeraldCharacterId,
 };
