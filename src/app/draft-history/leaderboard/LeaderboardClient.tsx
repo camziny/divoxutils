@@ -155,7 +155,7 @@ export default function LeaderboardClient({
                         <span className="text-[10px] text-gray-600">
                           {sortBy === "winRate"
                             ? showPlacementTooltip
-                              ? <><span className="text-indigo-400/70 bg-indigo-400/10 rounded px-1.5 py-px mr-1.5">min 5 drafts for full win %</span>{row.wins}W {row.losses}L</>
+                              ? <><span className="text-gray-500">min 5 drafts for full win % ·</span> {row.wins}W {row.losses}L</>
                               : `${row.wins}W ${row.losses}L`
                             : sortBy === "wins"
                               ? `${formatWinRate(row.winRate)}%`
