@@ -57,6 +57,17 @@ export type DraftLeaderboardRow = {
   captainWinRate: number;
 };
 
+const MIN_GAMES_FOR_PLACEMENT_WIN_RATE = 5;
+
+function toPlacementWinRatePercent(wins: number, losses: number): number {
+  const games = wins + losses;
+  const denominator = Math.max(games, MIN_GAMES_FOR_PLACEMENT_WIN_RATE);
+  if (denominator <= 0) {
+    return 0;
+  }
+  return Math.round((wins / denominator) * 1000) / 10;
+}
+
 function getConvexClient() {
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
   if (!url) {
@@ -162,7 +173,7 @@ export function aggregateDraftLeaderboardRows(
         wins: value.wins,
         losses: value.losses,
         games,
-        winRate: games > 0 ? Math.round((value.wins / games) * 1000) / 10 : 0,
+        winRate: toPlacementWinRatePercent(value.wins, value.losses),
         captainWins: value.captainWins,
         captainLosses: value.captainLosses,
         captainGames,
