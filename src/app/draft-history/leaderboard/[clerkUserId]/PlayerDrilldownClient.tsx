@@ -203,10 +203,16 @@ export default function PlayerDrilldownClient({
 
   const drilldown = initialData;
 
-  const overallPie = [
-    { name: "Wins", value: drilldown.overall.wins },
-    { name: "Losses", value: drilldown.overall.losses },
-  ];
+  const overallIsAdjusted = drilldown.overall.games < 5;
+  const overallPie = overallIsAdjusted
+    ? [
+        { name: "Wins", value: drilldown.overall.wins },
+        { name: "Remaining", value: 5 - drilldown.overall.wins },
+      ]
+    : [
+        { name: "Wins", value: drilldown.overall.wins },
+        { name: "Losses", value: drilldown.overall.losses },
+      ];
   const captainPie = [
     { name: "Wins", value: drilldown.captain.wins },
     { name: "Losses", value: drilldown.captain.losses },

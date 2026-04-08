@@ -166,7 +166,7 @@ export default function LeaderboardClient({
                     {sortBy === "winRate" && (
                       <div className="h-1 rounded-full bg-gray-800 overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-700 ease-out ${row.games < 5 ? "bg-indigo-400/25" : "bg-indigo-400/60"}`}
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${row.games < 5 ? "bg-gray-600" : "bg-indigo-400/60"}`}
                           style={{
                             width: animate
                               ? `${Math.min(100, Math.max(0, row.winRate))}%`
