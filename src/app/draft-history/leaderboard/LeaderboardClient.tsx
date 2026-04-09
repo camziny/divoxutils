@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import { Pagination } from "@/components/ui/pagination";
-import { CheckCircle2, ChevronRight, User } from "lucide-react";
+import { CheckCircle2, ChevronRight, User, X } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { DraftLeaderboardRow } from "@/server/draftLeaderboard";
 import {
@@ -14,6 +14,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type SortKey = "wins" | "winRate" | "games" | "losses";
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -32,6 +41,10 @@ function sortRows(rows: DraftLeaderboardRow[], key: SortKey): DraftLeaderboardRo
     if (key !== "wins" && b.wins !== a.wins) return b.wins - a.wins;
     return b.games - a.games;
   });
+}
+
+function formatWinRate(rate: number): string {
+  return rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(1);
 }
 
 export default function LeaderboardClient({
@@ -83,6 +96,10 @@ export default function LeaderboardClient({
           </h1>
           <p className="mt-1 text-[13px] text-gray-500">
             Verified drafts only
+            <span className={`inline-block transition-all duration-300 ease-out ${sortBy === "winRate" ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-1 pointer-events-none"}`}>
+              <span className="text-gray-700 mx-1.5">·</span>
+              <WinRateExplainerDialog />
+            </span>
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -105,7 +122,8 @@ export default function LeaderboardClient({
           <div className="rounded-lg border border-gray-800 divide-y divide-gray-800/60">
             {paginatedRows.map((row, index) => {
               const rank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
-              return (
+              const showPlacementTooltip = sortBy === "winRate" && row.games < 5;
+              const linkContent = (
                 <Link
                   key={row.id}
                   href={getLeaderboardProfileHref(row.id, row.userName)}
@@ -125,9 +143,9 @@ export default function LeaderboardClient({
                         {row.isVerified ? <VerifiedCheck /> : null}
                       </span>
                       <div className="flex flex-col items-end flex-shrink-0 tabular-nums">
-                        <span className="text-sm font-semibold text-gray-200">
+                        <span className={`text-sm font-semibold ${showPlacementTooltip ? "text-gray-400" : "text-gray-200"}`}>
                           {sortBy === "winRate"
-                            ? `${row.winRate.toFixed(1)}%`
+                            ? `${formatWinRate(row.winRate)}%`
                             : sortBy === "wins"
                               ? `${row.wins}W`
                               : sortBy === "losses"
@@ -138,9 +156,9 @@ export default function LeaderboardClient({
                           {sortBy === "winRate"
                             ? `${row.wins}W ${row.losses}L`
                             : sortBy === "wins"
-                              ? `${row.winRate.toFixed(1)}%`
+                              ? `${formatWinRate(row.winRate)}%`
                               : sortBy === "losses"
-                                ? `${row.winRate.toFixed(1)}%`
+                                ? `${formatWinRate(row.winRate)}%`
                                 : `${row.wins}W ${row.losses}L`}
                         </span>
                       </div>
@@ -148,7 +166,7 @@ export default function LeaderboardClient({
                     {sortBy === "winRate" && (
                       <div className="h-1 rounded-full bg-gray-800 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-indigo-400/60 transition-all duration-700 ease-out"
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${row.games < 5 ? "bg-gray-600" : "bg-indigo-400/60"}`}
                           style={{
                             width: animate
                               ? `${Math.min(100, Math.max(0, row.winRate))}%`
@@ -162,6 +180,23 @@ export default function LeaderboardClient({
                   <ChevronRight className="w-3.5 h-3.5 text-gray-700 group-hover:text-gray-500 transition-colors duration-100 flex-shrink-0" />
                 </Link>
               );
+
+              if (showPlacementTooltip) {
+                return (
+                  <TooltipProvider key={row.id} delayDuration={400}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {linkContent}
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        Under 5 drafts played — win rate counted as {row.wins} out of 5
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              }
+
+              return linkContent;
             })}
           </div>
 
@@ -175,6 +210,60 @@ export default function LeaderboardClient({
         </>
       )}
     </>
+  );
+}
+
+function WinRateExplainerDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="text-xs font-medium text-indigo-400/80 hover:text-indigo-400 transition-colors shrink-0"
+        >
+          Learn more
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogClose className="absolute right-3 top-3 text-gray-500 hover:text-gray-300 transition-colors">
+          <X className="h-4 w-4" />
+        </DialogClose>
+        <DialogHeader>
+          <DialogTitle>How Win Rate % Works</DialogTitle>
+          <DialogDescription>
+            Players need at least 5 drafts for a full win rate.
+            Until then, wins are divided by 5 instead of total games.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="mt-3 space-y-3 text-sm text-gray-300">
+          <p className="text-[13px] text-gray-400">
+            Win Rate = Wins / (Total Games or 5, whichever is higher)
+          </p>
+          <div className="rounded-md bg-gray-800/50 px-3 py-2.5 space-y-1.5 text-xs tabular-nums">
+            <p className="text-gray-400 text-[11px] mb-1">Under 5 drafts</p>
+            <div className="flex justify-between">
+              <span className="text-gray-400">2-0 record</span>
+              <span>2 / 5 = 40%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">4-1 record</span>
+              <span>4 / 5 = 80%</span>
+            </div>
+          </div>
+          <div className="rounded-md bg-gray-800/50 px-3 py-2.5 space-y-1.5 text-xs tabular-nums">
+            <p className="text-gray-400 text-[11px] mb-1">5+ drafts (normal)</p>
+            <div className="flex justify-between">
+              <span className="text-gray-400">7-3 record</span>
+              <span>7 / 10 = 70%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">12-8 record</span>
+              <span>12 / 20 = 60%</span>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -213,3 +302,4 @@ function VerifiedCheck() {
     </TooltipProvider>
   );
 }
+

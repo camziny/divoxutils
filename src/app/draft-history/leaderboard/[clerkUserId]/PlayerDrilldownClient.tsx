@@ -13,7 +13,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, User, Share, Check } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, User, Share, Check, X } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "sonner";
 import {
@@ -31,8 +31,21 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { DraftClassLeaderboardRow } from "@/server/draftStats";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { allClasses } from "@/app/draft/constants";
 const PIE_COLORS = ["#818cf8", "#374151"];
+
+function formatWinRate(rate: number): string {
+  return rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(1);
+}
 
 const getBreakdownBarClass = (label: string): string => {
   const normalized = label.trim().toLowerCase();
@@ -190,10 +203,16 @@ export default function PlayerDrilldownClient({
 
   const drilldown = initialData;
 
-  const overallPie = [
-    { name: "Wins", value: drilldown.overall.wins },
-    { name: "Losses", value: drilldown.overall.losses },
-  ];
+  const overallIsAdjusted = drilldown.overall.games < 5;
+  const overallPie = overallIsAdjusted
+    ? [
+        { name: "Wins", value: drilldown.overall.wins },
+        { name: "Remaining", value: 5 - drilldown.overall.wins },
+      ]
+    : [
+        { name: "Wins", value: drilldown.overall.wins },
+        { name: "Losses", value: drilldown.overall.losses },
+      ];
   const captainPie = [
     { name: "Wins", value: drilldown.captain.wins },
     { name: "Losses", value: drilldown.captain.losses },
@@ -302,6 +321,12 @@ export default function PlayerDrilldownClient({
           data={overallPie}
           record={`${drilldown.overall.wins}-${drilldown.overall.losses}`}
           winRate={drilldown.overall.winRate}
+          placementInfo={drilldown.overall.games < 5 ? {
+            playerName: drilldown.playerName,
+            wins: drilldown.overall.wins,
+            losses: drilldown.overall.losses,
+            adjustedRate: drilldown.overall.winRate,
+          } : undefined}
         />
         {drilldown.captain.games > 0 ? (
           <StatCard
@@ -434,7 +459,7 @@ export default function PlayerDrilldownClient({
                         >
                           <span className="truncate text-xs text-gray-200">{row.className}</span>
                           <span className="text-right text-xs tabular-nums text-gray-300">
-                            {row.winRate.toFixed(1)}
+                            {formatWinRate(row.winRate)}
                           </span>
                           <span className="text-right text-xs tabular-nums text-gray-300">
                             {row.wins}
@@ -509,7 +534,7 @@ export default function PlayerDrilldownClient({
                               </span>
                               <span className="inline-flex flex-col items-end leading-tight">
                                 <span className="whitespace-nowrap text-[11px] tabular-nums text-gray-300">
-                                  {row.winRate.toFixed(1)}%
+                                  {formatWinRate(row.winRate)}%
                                 </span>
                                 <span className="whitespace-nowrap text-[10px] tabular-nums text-gray-500">
                                   {row.wins}-{row.losses}
@@ -628,7 +653,7 @@ export default function PlayerDrilldownClient({
                       </span>
                     </div>
                     <span className="text-[11px] text-gray-500 tabular-nums text-right">
-                      {row.winRate.toFixed(1)}%
+                      {formatWinRate(row.winRate)}%
                     </span>
                   </div>
                 ))}
@@ -674,7 +699,7 @@ export default function PlayerDrilldownClient({
                         {row.wins}-{row.losses}
                       </span>
                       <span className="text-gray-600 w-12 text-right text-xs">
-                        {row.winRate.toFixed(1)}%
+                        {formatWinRate(row.winRate)}%
                       </span>
                       {row.opponentIsVerified ? (
                         <ChevronRight className="w-3 h-3 text-gray-700 group-hover:text-gray-500 transition-colors duration-100" />
@@ -778,7 +803,7 @@ export default function PlayerDrilldownClient({
                           </span>
                         </div>
                         <span className="text-[11px] text-gray-500 tabular-nums text-right">
-                          {row.winRate.toFixed(1)}%
+                          {formatWinRate(row.winRate)}%
                         </span>
                       </div>
                     );
@@ -821,7 +846,7 @@ export default function PlayerDrilldownClient({
                           {row.wins}-{row.losses}
                         </span>
                         <span className="text-gray-600 w-12 text-right text-xs">
-                          {row.winRate.toFixed(1)}%
+                          {formatWinRate(row.winRate)}%
                         </span>
                         {row.teammateIsVerified ? (
                           <ChevronRight className="w-3 h-3 text-gray-700 group-hover:text-gray-500 transition-colors duration-100" />
@@ -993,14 +1018,21 @@ function StatCard({
   data,
   record,
   winRate,
+  placementInfo,
 }: {
   label: string;
   data: Array<{ name: string; value: number }>;
   record: string;
   winRate: number;
+  placementInfo?: {
+    playerName: string;
+    wins: number;
+    losses: number;
+    adjustedRate: number;
+  };
 }) {
   return (
-    <Card className="bg-transparent">
+    <Card className="bg-transparent relative">
       <CardHeader className="pb-2">
         <CardTitle className="text-xs font-medium text-gray-500">
           {label}
@@ -1014,6 +1046,66 @@ function StatCard({
           </p>
         </div>
       </CardContent>
+      {placementInfo ? (
+        <Dialog>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              className="absolute bottom-3 right-3 text-[11px] font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-400/10 hover:bg-indigo-400/20 px-2.5 py-1 rounded-md transition-colors"
+            >
+              Win rate % adjusted
+            </button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogClose className="absolute right-3 top-3 text-gray-500 hover:text-gray-300 transition-colors">
+              <X className="h-4 w-4" />
+            </DialogClose>
+            <DialogHeader>
+              <DialogTitle>How Win Rate % Works</DialogTitle>
+              <DialogDescription>
+                Players need at least 5 drafts for a full win rate.
+                Until then, wins are divided by 5 instead of total games.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-3 space-y-3 text-sm text-gray-300">
+              <p className="text-[13px] text-gray-400">
+                Win Rate = Wins / (Total Games or 5, whichever is higher)
+              </p>
+              <div className="rounded-md bg-gray-800/50 px-3 py-2.5 space-y-1.5 text-xs tabular-nums">
+                <p className="text-gray-400 text-[11px] mb-1 truncate" title={placementInfo.playerName}>
+                  {placementInfo.playerName}
+                </p>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">{placementInfo.wins}-{placementInfo.losses} record</span>
+                  <span>{placementInfo.wins} / 5 = {formatWinRate(placementInfo.adjustedRate)}%</span>
+                </div>
+              </div>
+              <div className="rounded-md bg-gray-800/50 px-3 py-2.5 space-y-1.5 text-xs tabular-nums">
+                <p className="text-gray-400 text-[11px] mb-1">Under 5 drafts</p>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">2-0 record</span>
+                  <span>2 / 5 = 40%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">4-1 record</span>
+                  <span>4 / 5 = 80%</span>
+                </div>
+              </div>
+              <div className="rounded-md bg-gray-800/50 px-3 py-2.5 space-y-1.5 text-xs tabular-nums">
+                <p className="text-gray-400 text-[11px] mb-1">5+ drafts (normal)</p>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">7-3 record</span>
+                  <span>7 / 10 = 70%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">12-8 record</span>
+                  <span>12 / 20 = 60%</span>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </Card>
   );
 }
@@ -1047,7 +1139,7 @@ function MiniDonut({
       </ResponsiveContainer>
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <span className="text-lg font-semibold tabular-nums text-gray-100 leading-none">
-          {winRate.toFixed(1)}
+          {formatWinRate(winRate)}
         </span>
       </div>
     </div>
@@ -1077,7 +1169,7 @@ function BreakdownRow({
         indicatorClassName={barClass}
       />
       <span className="text-xs text-gray-500 tabular-nums w-12 text-right">
-        {stats.winRate.toFixed(1)}%
+        {formatWinRate(stats.winRate)}%
       </span>
     </div>
   );

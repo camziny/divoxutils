@@ -172,6 +172,8 @@ type DraftIdentityContext = {
   userNameByClerkUserId: Map<string, string>;
 };
 
+const MIN_GAMES_FOR_PLACEMENT_WIN_RATE = 5;
+
 function toLeaderboardPlayerId(
   discordUserId: string,
   clerkByDiscordUserId: Map<string, string>
@@ -441,13 +443,18 @@ export function aggregateHeadToHeadRow(
   };
 }
 
-function computeWinRate(wins: number, losses: number): WinLossRecord {
+function computeWinRate(
+  wins: number,
+  losses: number,
+  minGamesFloor = 0
+): WinLossRecord {
   const games = wins + losses;
+  const denominator = Math.max(games, minGamesFloor);
   return {
     wins,
     losses,
     games,
-    winRate: games > 0 ? Math.round((wins / games) * 1000) / 10 : 0,
+    winRate: denominator > 0 ? Math.round((wins / denominator) * 1000) / 10 : 0,
   };
 }
 
@@ -855,7 +862,7 @@ export function aggregatePlayerDrilldown(
     playerName,
     profileName,
     avatarUrl,
-    overall: computeWinRate(wins, losses),
+    overall: computeWinRate(wins, losses, MIN_GAMES_FOR_PLACEMENT_WIN_RATE),
     captain: computeWinRate(captainWins, captainLosses),
     byRealm,
     byClass,
