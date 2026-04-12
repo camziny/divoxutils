@@ -46,6 +46,7 @@ export interface DraftData {
   firstRealmPickTeam?: 1 | 2;
   pickOrderMode?: "snake" | "alternating";
   bansPerCaptain?: number;
+  safeClassNames?: string[];
   pickSequence?: (1 | 2)[];
   currentPickIndex?: number;
   banSequence?: (1 | 2)[];

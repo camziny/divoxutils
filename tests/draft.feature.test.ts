@@ -421,6 +421,44 @@ test("updateSettings applies pvp with valid adjusted team size", async () => {
   assert.equal(updated.pickOrderMode, "alternating");
 });
 
+test("updateSettings expands legacy untagged Mauler safe class when switching to pvp", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "mauler-switch",
+        status: "setup",
+        teamSize: 8,
+        type: "traditional",
+        createdBy: "creator",
+        safeClassNames: ["Mauler", "Hero"],
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "x1", discordUserId: "u1" },
+      { _id: "p3", draftId: "d1", token: "x2", discordUserId: "u2" },
+      { _id: "p4", draftId: "d1", token: "x3", discordUserId: "u3" },
+      { _id: "p5", draftId: "d1", token: "x4", discordUserId: "u4" },
+      { _id: "p6", draftId: "d1", token: "x5", discordUserId: "u5" },
+      { _id: "p7", draftId: "d1", token: "x6", discordUserId: "u6" },
+    ],
+  });
+
+  await (draftFns.updateSettings as any)._handler(ctx, {
+    draftId: "d1",
+    type: "pvp",
+    teamSize: 3,
+    token: "creator-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.deepEqual(
+    [...(updated.safeClassNames ?? [])].sort(),
+    ["Hero", "Mauler (Alb)", "Mauler (Hib)", "Mauler (Mid)"].sort()
+  );
+});
+
 test("updateSettings persists selected pick order mode", async () => {
   const ctx = makeCtx({
     drafts: [
@@ -822,6 +860,174 @@ test("toggleAutoBanClass rejects non-creator and non-setup usage", async () => {
     }),
     /Auto-bans can only be set in setup/
   );
+});
+
+test("toggleAutoBanClass rejects untagged Mauler in pvp", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-mauler",
+        shortId: "autoban-mauler",
+        status: "setup",
+        type: "pvp",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [{ _id: "p1", draftId: "d-mauler", token: "creator-token", discordUserId: "creator" }],
+  });
+
+  await assert.rejects(
+    (draftFns.toggleAutoBanClass as any)._handler(ctx, {
+      draftId: "d-mauler",
+      className: "Mauler",
+      token: "creator-token",
+    }),
+    /is not a valid class/
+  );
+});
+
+test("toggleSafeClass toggles safe classes and removes existing bans", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-safe",
+        shortId: "safe-setup",
+        status: "setup",
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [{ _id: "p1", draftId: "d-safe", token: "creator-token", discordUserId: "creator" }],
+    draftBans: [{ _id: "ban-safe", draftId: "d-safe", team: 1, className: "Cleric", source: "auto" }],
+  });
+
+  await (draftFns.toggleSafeClass as any)._handler(ctx, {
+    draftId: "d-safe",
+    className: "Cleric",
+    token: "creator-token",
+  });
+
+  const updatedDraft = await ctx.db.get("d-safe");
+  const bans = await ctx.db.query("draftBans").collect();
+  assert.deepEqual(updatedDraft.safeClassNames, ["Cleric"]);
+  assert.equal(bans.length, 0);
+
+  await (draftFns.toggleSafeClass as any)._handler(ctx, {
+    draftId: "d-safe",
+    className: "Cleric",
+    token: "creator-token",
+  });
+  const toggledDraft = await ctx.db.get("d-safe");
+  assert.deepEqual(toggledDraft.safeClassNames, []);
+});
+
+test("banClass rejects safe classes", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-safe-ban",
+        shortId: "safe-ban",
+        status: "banning",
+        type: "traditional",
+        teamSize: 4,
+        firstPickTeam: 1,
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        team1Realm: "Albion",
+        team2Realm: "Hibernia",
+        banSequence: [1, 2],
+        currentBanIndex: 0,
+        safeClassNames: ["Hero"],
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d-safe-ban", token: "cap1-token", discordUserId: "cap1", isCaptain: true },
+      { _id: "p2", draftId: "d-safe-ban", token: "cap2-token", discordUserId: "cap2", isCaptain: true },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.banClass as any)._handler(ctx, {
+      draftId: "d-safe-ban",
+      className: "Hero",
+      token: "cap1-token",
+    }),
+    /Class is marked safe/
+  );
+});
+
+test("setPlayerClass canonicalizes female alias class names", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-alias",
+        shortId: "alias",
+        status: "drafting",
+        type: "traditional",
+        createdBy: "creator",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-cap1",
+        draftId: "d-alias",
+        token: "cap1-token",
+        discordUserId: "cap1",
+        displayName: "Cap 1",
+        team: 1,
+        isCaptain: true,
+      },
+    ],
+  });
+
+  await (draftFns.setPlayerClass as any)._handler(ctx, {
+    draftId: "d-alias",
+    playerId: "p-cap1",
+    className: "Sorceress",
+    token: "cap1-token",
+  });
+
+  const player = await ctx.db.get("p-cap1");
+  assert.equal(player.selectedClass, "Sorcerer");
+});
+
+test("setPlayerClass accepts realm-tagged Mauler in pvp", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-pvp-mauler",
+        shortId: "pvp-mauler",
+        status: "drafting",
+        type: "pvp",
+        createdBy: "creator",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-cap1",
+        draftId: "d-pvp-mauler",
+        token: "cap1-token",
+        discordUserId: "cap1",
+        displayName: "Cap 1",
+        team: 1,
+        isCaptain: true,
+      },
+    ],
+  });
+
+  await (draftFns.setPlayerClass as any)._handler(ctx, {
+    draftId: "d-pvp-mauler",
+    playerId: "p-cap1",
+    className: "Mauler (Alb)",
+    token: "cap1-token",
+  });
+
+  const player = await ctx.db.get("p-cap1");
+  assert.equal(player.selectedClass, "Mauler (Alb)");
 });
 
 test("banClass rejects classes already auto-banned and stores captain source", async () => {
@@ -1826,6 +2032,54 @@ test("recordFightResult rejects banned classes", async () => {
     }),
     /Class is banned: Bard/
   );
+});
+
+test("recordFightResult accepts realm-tagged Mauler in pvp", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-pvp-mauler-fight",
+        shortId: "pvp-mauler-fight",
+        status: "complete",
+        type: "pvp",
+        gameStarted: true,
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-creator",
+        draftId: "d-pvp-mauler-fight",
+        token: "creator-token",
+        discordUserId: "creator",
+        displayName: "Creator",
+        team: 1,
+      },
+      {
+        _id: "p2",
+        draftId: "d-pvp-mauler-fight",
+        token: "x2",
+        discordUserId: "u2",
+        displayName: "U2",
+        team: 2,
+      },
+    ],
+  });
+
+  await (draftFns.recordFightResult as any)._handler(ctx, {
+    draftId: "d-pvp-mauler-fight",
+    winnerTeam: 1,
+    classesByPlayer: [
+      { playerId: "p-creator", className: "Mauler (Alb)" },
+      { playerId: "p2", className: "Cleric" },
+    ],
+    token: "creator-token",
+  });
+
+  const fights = await ctx.db.query("draftFights").collect();
+  assert.equal(fights.length, 1);
+  const maulerEntry = fights[0].classesByPlayer.find((entry) => entry.playerId === "p-creator");
+  assert.equal(maulerEntry?.className, "Mauler (Alb)");
 });
 
 test("getCancelableDrafts marks older duplicate as safe when newer same-creator draft exists", async () => {

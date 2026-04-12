@@ -60,3 +60,18 @@ export const classesByRealm: Record<string, string[]> = {
 export const allClasses: string[] = Array.from(
   new Set(Object.values(classesByRealm).flat())
 ).sort();
+
+const DRAFT_CLASS_ALIASES: Record<string, string> = {
+  armswoman: "Armsman",
+  enchantress: "Enchanter",
+  heroine: "Hero",
+  huntress: "Hunter",
+  sorceress: "Sorcerer",
+};
+
+export function toCanonicalDraftClassName(className: string): string {
+  const trimmed = className.trim();
+  if (!trimmed) return "";
+  const alias = DRAFT_CLASS_ALIASES[trimmed.toLowerCase()];
+  return alias ?? trimmed;
+}

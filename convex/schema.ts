@@ -38,6 +38,7 @@ export default defineSchema({
       v.union(v.literal("snake"), v.literal("alternating"))
     ),
     bansPerCaptain: v.optional(v.number()),
+    safeClassNames: v.optional(v.array(v.string())),
     pickSequence: v.optional(v.array(teamNumber)),
     currentPickIndex: v.optional(v.number()),
     banSequence: v.optional(v.array(teamNumber)),
