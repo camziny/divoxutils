@@ -1,6 +1,11 @@
 import { query, mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
-import { classesByRealm, allClasses, REALMS } from "./constants";
+import {
+  classesByRealm,
+  allClasses,
+  REALMS,
+  toCanonicalDraftClassName,
+} from "./constants";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 
@@ -55,6 +60,8 @@ const MAX_BANS_PER_CAPTAIN = 5;
 const STALE_DRAFT_NO_PROGRESS_MS = 30 * 60 * 1000;
 const STALE_DRAFT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const CREATOR_CANCEL_CONFIRMATION_TEXT = "cancel this draft";
+const PVP_REALM_TAG_PATTERN = /\s*\((Alb|Mid|Hib)\)$/;
+const PVP_MAULER_REALM_TAGS = ["Alb", "Mid", "Hib"] as const;
 
 function getDefaultBansPerCaptain(type: "traditional" | "pvp") {
   return type === "traditional"
@@ -81,6 +88,70 @@ function generateBanSequence(
 
 function buildSetScore(team1Wins: number, team2Wins: number): string {
   return `${team1Wins}-${team2Wins}`;
+}
+
+function normalizeDraftClassForType(
+  draftType: "traditional" | "pvp",
+  className: string
+): string {
+  const trimmed = className.trim();
+  if (!trimmed) return "";
+  if (draftType === "traditional") {
+    return toCanonicalDraftClassName(trimmed);
+  }
+  const realmTagMatch = trimmed.match(PVP_REALM_TAG_PATTERN);
+  const baseName = toCanonicalDraftClassName(
+    trimmed.replace(PVP_REALM_TAG_PATTERN, "")
+  );
+  if (realmTagMatch && baseName === "Mauler") {
+    return `Mauler (${realmTagMatch[1]})`;
+  }
+  return baseName;
+}
+
+function normalizeDraftClassCollection(
+  draftType: "traditional" | "pvp",
+  classNames: string[] | undefined
+): string[] {
+  if (!classNames || classNames.length === 0) return [];
+  const normalized: string[] = [];
+  for (const rawClassName of classNames) {
+    const trimmed = rawClassName.trim();
+    if (!trimmed) continue;
+
+    if (draftType === "pvp") {
+      const realmTagMatch = trimmed.match(PVP_REALM_TAG_PATTERN);
+      const baseName = toCanonicalDraftClassName(
+        trimmed.replace(PVP_REALM_TAG_PATTERN, "")
+      );
+      if (baseName === "Mauler" && !realmTagMatch) {
+        for (const realmTag of PVP_MAULER_REALM_TAGS) {
+          normalized.push(`Mauler (${realmTag})`);
+        }
+        continue;
+      }
+    }
+
+    const className = normalizeDraftClassForType(draftType, trimmed);
+    if (className.length > 0) normalized.push(className);
+  }
+  return Array.from(new Set(normalized));
+}
+
+function isValidDraftClassForType(
+  draftType: "traditional" | "pvp",
+  className: string
+): boolean {
+  if (draftType === "traditional") {
+    return allClasses.includes(className);
+  }
+  const realmTagMatch = className.match(PVP_REALM_TAG_PATTERN);
+  const baseName = className.replace(PVP_REALM_TAG_PATTERN, "");
+  if (!allClasses.includes(baseName)) return false;
+  if (baseName === "Mauler") {
+    return !!realmTagMatch;
+  }
+  return true;
 }
 
 function isSetFinalized(draft: {
@@ -420,6 +491,11 @@ export const updateSettings = mutation({
       );
     }
 
+    const safeClassNames = normalizeDraftClassCollection(
+      args.type,
+      draft.safeClassNames
+    ).filter((className) => isValidDraftClassForType(args.type, className));
+
     await ctx.db.patch(args.draftId, {
       type: args.type,
       teamSize: args.teamSize,
@@ -429,6 +505,7 @@ export const updateSettings = mutation({
         (args.type !== draft.type
           ? getDefaultBansPerCaptain(args.type)
           : getBansPerCaptain(draft)),
+      safeClassNames,
     });
   },
 });
@@ -667,6 +744,71 @@ export const pickRealm = mutation({
   },
 });
 
+export const toggleSafeClass = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    className: v.string(),
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found");
+    if (draft.status !== "setup") {
+      throw new Error("Safe classes can only be set in setup");
+    }
+
+    const callerPlayer = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .unique();
+    if (
+      !callerPlayer ||
+      callerPlayer.draftId !== args.draftId ||
+      callerPlayer.discordUserId !== draft.createdBy
+    ) {
+      throw new Error("Only the draft creator can edit safe classes");
+    }
+
+    const normalizedClassName = normalizeDraftClassForType(
+      draft.type,
+      args.className
+    );
+    if (!isValidDraftClassForType(draft.type, normalizedClassName)) {
+      throw new Error(`${args.className} is not a valid class`);
+    }
+
+    const currentSafeClassNames = normalizeDraftClassCollection(
+      draft.type,
+      draft.safeClassNames
+    );
+    const safeClassSet = new Set(currentSafeClassNames);
+
+    if (safeClassSet.has(normalizedClassName)) {
+      safeClassSet.delete(normalizedClassName);
+      await ctx.db.patch(args.draftId, {
+        safeClassNames: Array.from(safeClassSet),
+      });
+      return;
+    }
+
+    safeClassSet.add(normalizedClassName);
+    const nextSafeClassNames = Array.from(safeClassSet);
+    await ctx.db.patch(args.draftId, { safeClassNames: nextSafeClassNames });
+
+    const existingBans = await ctx.db
+      .query("draftBans")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .collect();
+    const matchingBans = existingBans.filter(
+      (ban) =>
+        normalizeDraftClassForType(draft.type, ban.className) === normalizedClassName
+    );
+    for (const ban of matchingBans) {
+      await ctx.db.delete(ban._id);
+    }
+  },
+});
+
 export const toggleAutoBanClass = mutation({
   args: {
     draftId: v.id("drafts"),
@@ -690,22 +832,28 @@ export const toggleAutoBanClass = mutation({
       throw new Error("Only the draft creator can edit auto-bans");
     }
 
-    if (draft.type === "traditional") {
-      if (!allClasses.includes(args.className)) {
-        throw new Error(`${args.className} is not a valid class`);
-      }
-    } else {
-      const baseName = args.className.replace(/\s*\((?:Alb|Mid|Hib)\)$/, "");
-      if (!allClasses.includes(baseName)) {
-        throw new Error(`${args.className} is not a valid class`);
-      }
+    const normalizedClassName = normalizeDraftClassForType(
+      draft.type,
+      args.className
+    );
+    if (!isValidDraftClassForType(draft.type, normalizedClassName)) {
+      throw new Error(`${args.className} is not a valid class`);
+    }
+    const safeClassSet = new Set(
+      normalizeDraftClassCollection(draft.type, draft.safeClassNames)
+    );
+    if (safeClassSet.has(normalizedClassName)) {
+      throw new Error("Class is marked safe");
     }
 
     const existingBans = await ctx.db
       .query("draftBans")
       .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
       .collect();
-    const matching = existingBans.filter((ban) => ban.className === args.className);
+    const matching = existingBans.filter(
+      (ban) =>
+        normalizeDraftClassForType(draft.type, ban.className) === normalizedClassName
+    );
 
     if (matching.length > 0) {
       for (const ban of matching) {
@@ -717,7 +865,7 @@ export const toggleAutoBanClass = mutation({
     await ctx.db.insert("draftBans", {
       draftId: args.draftId,
       team: 1,
-      className: args.className,
+      className: normalizedClassName,
       source: "auto",
     });
   },
@@ -750,29 +898,39 @@ export const banClass = mutation({
       throw new Error("Not your turn to ban");
     }
 
+    const normalizedClassName = normalizeDraftClassForType(
+      draft.type,
+      args.className
+    );
+
     if (draft.type === "traditional") {
       const opponentRealm =
         currentBanTeam === 1 ? draft.team2Realm! : draft.team1Realm!;
       const realmClasses = classesByRealm[opponentRealm];
-      if (!realmClasses || !realmClasses.includes(args.className)) {
+      if (!realmClasses || !realmClasses.includes(normalizedClassName)) {
         throw new Error(
-          `${args.className} is not a valid ${opponentRealm} class`
+          `${normalizedClassName} is not a valid ${opponentRealm} class`
         );
       }
-    } else {
-      const baseName = args.className.replace(/\s*\((?:Alb|Mid|Hib)\)$/, "");
-      if (!allClasses.includes(baseName)) {
-        throw new Error(`${args.className} is not a valid class`);
-      }
+    } else if (!isValidDraftClassForType(draft.type, normalizedClassName)) {
+      throw new Error(`${args.className} is not a valid class`);
     }
 
     const existingBans = await ctx.db
       .query("draftBans")
       .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
       .collect();
+    const safeClassSet = new Set(
+      normalizeDraftClassCollection(draft.type, draft.safeClassNames)
+    );
+    if (safeClassSet.has(normalizedClassName)) {
+      throw new Error("Class is marked safe");
+    }
 
     const alreadyAutoBanned = existingBans.some(
-      (ban) => ban.className === args.className && ban.source === "auto"
+      (ban) =>
+        normalizeDraftClassForType(draft.type, ban.className) === normalizedClassName &&
+        ban.source === "auto"
     );
     if (alreadyAutoBanned) {
       throw new Error("Class is already banned");
@@ -780,19 +938,26 @@ export const banClass = mutation({
 
     if (draft.type === "traditional") {
       const alreadyBannedByTeam = existingBans.some(
-        (ban) => ban.team === currentBanTeam && ban.className === args.className
+        (ban) =>
+          ban.team === currentBanTeam &&
+          normalizeDraftClassForType(draft.type, ban.className) === normalizedClassName
       );
       if (alreadyBannedByTeam) {
         throw new Error("You already banned this class");
       }
-    } else if (existingBans.some((ban) => ban.className === args.className)) {
+    } else if (
+      existingBans.some(
+        (ban) =>
+          normalizeDraftClassForType(draft.type, ban.className) === normalizedClassName
+      )
+    ) {
       throw new Error("Class is already banned");
     }
 
     await ctx.db.insert("draftBans", {
       draftId: args.draftId,
       team: currentBanTeam,
-      className: args.className,
+      className: normalizedClassName,
       source: "captain",
     });
 
@@ -896,14 +1061,23 @@ export const setPlayerClass = mutation({
       throw new Error("Invalid token for this draft");
     }
 
-    if (!allClasses.includes(args.className)) {
+    const normalizedClassName = normalizeDraftClassForType(
+      draft.type,
+      args.className
+    );
+    if (!isValidDraftClassForType(draft.type, normalizedClassName)) {
       throw new Error("Invalid class");
     }
     const existingBans = await ctx.db
       .query("draftBans")
       .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
       .collect();
-    if (existingBans.some((ban) => ban.className === args.className)) {
+    if (
+      existingBans.some(
+        (ban) =>
+          normalizeDraftClassForType(draft.type, ban.className) === normalizedClassName
+      )
+    ) {
       throw new Error("Class is banned");
     }
 
@@ -949,7 +1123,7 @@ export const setPlayerClass = mutation({
 
       const updatedClassesByPlayer = fight.classesByPlayer.map((entry) =>
         String(entry.playerId) === String(args.playerId)
-          ? { ...entry, className: args.className }
+          ? { ...entry, className: normalizedClassName }
           : entry
       );
       if (
@@ -964,7 +1138,7 @@ export const setPlayerClass = mutation({
       return;
     }
 
-    await ctx.db.patch(args.playerId, { selectedClass: args.className });
+    await ctx.db.patch(args.playerId, { selectedClass: normalizedClassName });
   },
 });
 
@@ -1013,7 +1187,10 @@ export const recordFightResult = mutation({
     }
 
     const classByPlayerId = new Map(
-      args.classesByPlayer.map((entry) => [entry.playerId, entry.className])
+      args.classesByPlayer.map((entry) => [
+        entry.playerId,
+        normalizeDraftClassForType(draft.type, entry.className),
+      ])
     );
     const seenPlayerIds = new Set(args.classesByPlayer.map((entry) => entry.playerId));
     if (seenPlayerIds.size !== args.classesByPlayer.length) {
@@ -1029,14 +1206,18 @@ export const recordFightResult = mutation({
       .query("draftBans")
       .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
       .collect();
-    const bannedClasses = new Set(existingBans.map((ban) => ban.className));
+    const bannedClasses = new Set(
+      existingBans.map((ban) =>
+        normalizeDraftClassForType(draft.type, ban.className)
+      )
+    );
 
     for (const player of draftedPlayers) {
       const className = classByPlayerId.get(player._id);
       if (!className) {
         throw new Error("Missing class entry for a drafted player");
       }
-      if (!allClasses.includes(className)) {
+      if (!isValidDraftClassForType(draft.type, className)) {
         throw new Error(`Invalid class: ${className}`);
       }
       if (bannedClasses.has(className)) {

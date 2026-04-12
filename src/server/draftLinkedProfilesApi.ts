@@ -1,4 +1,5 @@
 import { formatRealmRankWithLevel, getRealmRankForPoints } from "@/utils/character";
+import { toCanonicalDraftClassName } from "@/app/draft/constants";
 
 type HighestRankEntry = {
   rank: number;
@@ -126,7 +127,7 @@ export async function handleLinkedProfilesApi(
       const highestPointsByClass = new Map<string, number>();
       const highestPointsByClassRealm = new Map<string, number>();
       for (const userCharacter of link.user.characters) {
-        const className = userCharacter.character.className?.trim();
+        const className = toCanonicalDraftClassName(userCharacter.character.className ?? "");
         if (!className) continue;
         const normalizedRealmName = normalizeRealmName(
           userCharacter.character.realm,

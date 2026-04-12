@@ -172,6 +172,45 @@ test("linked profiles refreshes after cache expiry", async () => {
   assert.equal(fetchCalls, 2);
 });
 
+test("linked profiles canonicalizes female class aliases", async () => {
+  const handler = createLinkedProfilesHandler({
+    fetchLinkedProfiles: async () => [
+      {
+        providerUserId: "d-alias",
+        user: {
+          name: "AliasUser",
+          characters: [
+            {
+              character: {
+                className: "Sorceress",
+                realm: "Albion",
+                heraldRealm: 1,
+                totalRealmPoints: 320_000,
+                heraldRealmPoints: null,
+              },
+            },
+          ],
+        },
+      },
+    ],
+    now: () => 10_000,
+    cacheTtlMs: 60_000,
+    maxCacheEntries: 200,
+    cacheStore: new Map(),
+  });
+
+  const req = createMockRequest({
+    body: { discordUserIds: ["d-alias"] },
+  });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.body.links["d-alias"].highestRankByClass.Sorcerer);
+  assert.equal(res.body.links["d-alias"].highestRankByClass.Sorceress, undefined);
+  assert.ok(res.body.links["d-alias"].highestRankByClassRealm["Albion:Sorcerer"]);
+});
+
 test("linked profiles tracks realm-specific classes independently", async () => {
   const handler = createLinkedProfilesHandler({
     fetchLinkedProfiles: async () => [

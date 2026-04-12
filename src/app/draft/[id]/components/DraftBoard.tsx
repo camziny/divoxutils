@@ -12,6 +12,7 @@ import {
   allClasses,
   CLASS_CATEGORIES,
   ClassCategory,
+  toCanonicalDraftClassName,
 } from "../../constants";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ import {
   toUserSettingsError,
 } from "./settingsUtils";
 import { splitBansForLiveSummary } from "./banSummary";
-import { Check, ChevronLeft, ChevronRight, ExternalLink, User } from "lucide-react";
+import { Ban, Check, ChevronLeft, ChevronRight, ExternalLink, ShieldCheck, User } from "lucide-react";
 
 function PlayerAvatar({ url, name, size = 20 }: { url?: string; name?: string; size?: number }) {
   if (!url) {
@@ -120,6 +121,32 @@ function realmsForClass(className: string) {
   return REALMS.filter((realm) => (classesByRealm[realm] || []).includes(className));
 }
 
+function getRealmChipBackground(className: string) {
+  const realmTagMatch = className.match(/\((Alb|Mid|Hib)\)$/);
+  if (realmTagMatch) {
+    const taggedRealm =
+      realmTagMatch[1] === "Alb"
+        ? "Albion"
+        : realmTagMatch[1] === "Mid"
+          ? "Midgard"
+          : "Hibernia";
+    return taggedRealm === "Albion"
+      ? "bg-red-900/20"
+      : taggedRealm === "Midgard"
+        ? "bg-blue-900/20"
+        : "bg-green-900/20";
+  }
+
+  const canonical = toCanonicalDraftClassName(className.replace(/\s*\((Alb|Mid|Hib)\)$/, ""));
+  const realms = realmsForClass(canonical);
+  if (realms.length !== 1) return "bg-gray-700/30";
+  return realms[0] === "Albion"
+    ? "bg-red-900/20"
+    : realms[0] === "Midgard"
+      ? "bg-blue-900/20"
+      : "bg-green-900/20";
+}
+
 export default function DraftBoard({
   draft,
   currentPlayer,
@@ -133,6 +160,7 @@ export default function DraftBoard({
   const pickRealm = useMutation(api.drafts.pickRealm);
   const banClass = useMutation(api.drafts.banClass);
   const toggleAutoBanClass = useMutation(api.drafts.toggleAutoBanClass);
+  const toggleSafeClass = useMutation(api.drafts.toggleSafeClass);
   const pickPlayer = useMutation(api.drafts.pickPlayer);
   const setPlayerClass = useMutation(api.drafts.setPlayerClass);
   const recordFightResult = useMutation(api.drafts.recordFightResult);
@@ -155,7 +183,7 @@ export default function DraftBoard({
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelConfirmationText, setCancelConfirmationText] = useState("");
-  const [showAutoBanBoard, setShowAutoBanBoard] = useState(false);
+
 
   const team1Captain = draft.players.find(
     (p) => p.discordUserId === draft.team1CaptainId
@@ -196,6 +224,7 @@ export default function DraftBoard({
   );
   const creatorAutoBans = setupPhase ? draft.bans : sourceTaggedAutoBans;
   const bannedClassNames = draft.bans.map((b) => b.className);
+  const safeClassNames = draft.safeClassNames ?? [];
 
   const isSetup = setupPhase;
   const isCoinFlip = draft.status === "coin_flip";
@@ -597,51 +626,24 @@ export default function DraftBoard({
       )}
 
       {isSetup && isCreator && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            onClick={() => setShowAutoBanBoard((current) => !current)}
-          >
-            {showAutoBanBoard ? "Hide" : "Auto-ban classes"}
-          </Button>
-          <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-gray-500">
-            <span className="uppercase tracking-wider">Creator bans:</span>
-            {creatorAutoBans.length > 0 ? (
-              creatorAutoBans.map((ban) => (
-                <Badge
-                  key={ban._id}
-                  variant="secondary"
-                  className="text-[10px] line-through opacity-70"
-                >
-                  {ban.className}
-                </Badge>
-              ))
-            ) : (
-              <span className="text-gray-600">--</span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {isSetup && isCreator && showAutoBanBoard && (
-        <BanSection
+        <ClassRulesPanel
           draft={draft}
           bannedClassNames={bannedClassNames}
-          team1Bans={draft.bans}
-          team2Bans={[]}
-          isBanning={false}
-          isMyBanTurn={true}
+          safeClassNames={safeClassNames}
+          creatorAutoBans={creatorAutoBans}
           busy={busy}
-          title="Auto-banned classes"
-          turnLabel="Select classes to auto-ban before the draft starts."
-          showBoardWhenNotBanning={true}
-          showCreatorSummary={true}
-          creatorBans={creatorAutoBans}
-          onBan={(className) =>
+          onToggleAutoBan={(className) =>
             act(() =>
               toggleAutoBanClass({
+                draftId: draft._id,
+                className,
+                token: token!,
+              })
+            )
+          }
+          onToggleSafeClass={(className) =>
+            act(() =>
+              toggleSafeClass({
                 draftId: draft._id,
                 className,
                 token: token!,
@@ -713,6 +715,7 @@ export default function DraftBoard({
           team1Bans={team1Bans}
           team2Bans={team2Bans}
           autoBans={creatorAutoBans}
+          safeClassNames={safeClassNames}
           isBanning={isBanning}
           isMyBanTurn={isMyBanTurn}
           currentBanTeam={currentBanTeam}
@@ -1547,6 +1550,274 @@ function RealmPickSection({
   );
 }
 
+type ClassRulesMode = "ban" | "safe";
+
+function ClassRulesPanel({
+  draft,
+  bannedClassNames,
+  safeClassNames,
+  creatorAutoBans,
+  busy,
+  onToggleAutoBan,
+  onToggleSafeClass,
+}: {
+  draft: DraftData;
+  bannedClassNames: string[];
+  safeClassNames: string[];
+  creatorAutoBans: { _id: string; className: string }[];
+  busy: boolean;
+  onToggleAutoBan: (className: string) => void;
+  onToggleSafeClass: (className: string) => void;
+}) {
+  const [mode, setMode] = useState<ClassRulesMode>("ban");
+  const [open, setOpen] = useState(false);
+  const bannedSet = new Set(bannedClassNames);
+  const safeClassSet = new Set(safeClassNames);
+  const canEdit = !busy;
+
+  const hasBans = creatorAutoBans.length > 0;
+  const hasSafe = safeClassNames.length > 0;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={busy}
+          onClick={() => setOpen((c) => !c)}
+          className={cn(
+            "gap-1.5",
+            open && "border-gray-500 bg-gray-800"
+          )}
+        >
+          {open ? "Hide class rules" : "Class rules"}
+        </Button>
+
+        {(hasBans || hasSafe) && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-gray-900/40 px-2.5 py-1.5">
+            {hasBans && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
+                  <Ban size={9} />
+                  Banned
+                </span>
+                {creatorAutoBans.map((ban) => (
+                  <span
+                    key={ban._id}
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[10px] font-medium",
+                      getRealmChipBackground(ban.className),
+                      safeClassSet.has(ban.className)
+                        ? "text-gray-300"
+                        : "text-gray-500 line-through"
+                    )}
+                  >
+                    {ban.className}
+                  </span>
+                ))}
+              </div>
+            )}
+            {hasSafe && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
+                  <ShieldCheck size={9} />
+                  Safe
+                </span>
+                {safeClassNames.map((className) => (
+                  <span
+                    key={className}
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[10px] font-medium text-gray-300",
+                      getRealmChipBackground(className)
+                    )}
+                  >
+                    {className}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {open && (
+        <div className="rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center rounded-md bg-gray-900/60 p-0.5">
+              <button
+                type="button"
+                onClick={() => setMode("ban")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all",
+                  mode === "ban"
+                    ? "bg-gray-700 text-white shadow-sm"
+                    : "text-gray-400 hover:text-gray-200"
+                )}
+              >
+                <Ban size={12} />
+                Auto-ban
+                {hasBans && (
+                  <span className="ml-0.5 rounded-full bg-gray-600/40 px-1.5 py-0.5 text-[9px] text-gray-300">
+                    {creatorAutoBans.length}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("safe")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all",
+                  mode === "safe"
+                    ? "bg-gray-700 text-white shadow-sm"
+                    : "text-gray-400 hover:text-gray-200"
+                )}
+              >
+                <ShieldCheck size={12} />
+                Safe
+                {hasSafe && (
+                  <span className="ml-0.5 rounded-full bg-gray-600/40 px-1.5 py-0.5 text-[9px] text-gray-300">
+                    {safeClassNames.length}
+                  </span>
+                )}
+              </button>
+            </div>
+            <span className="text-[10px] text-gray-500">
+              {mode === "ban"
+                ? "Select classes to auto-ban before the draft starts"
+                : "Select classes that captains cannot ban"}
+            </span>
+          </div>
+
+          <ClassRulesGrid
+            draft={draft}
+            bannedSet={bannedSet}
+            safeClassSet={safeClassSet}
+            mode={mode}
+            canEdit={canEdit}
+            onToggle={mode === "ban" ? onToggleAutoBan : onToggleSafeClass}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClassRulesGrid({
+  draft,
+  bannedSet,
+  safeClassSet,
+  mode,
+  canEdit,
+  onToggle,
+}: {
+  draft: DraftData;
+  bannedSet: Set<string>;
+  safeClassSet: Set<string>;
+  mode: ClassRulesMode;
+  canEdit: boolean;
+  onToggle: (className: string) => void;
+}) {
+  const isPvp = draft.type === "pvp";
+
+  return (
+    <div className="space-y-2">
+      {(Object.entries(CLASS_CATEGORIES) as [ClassCategory, string[]][]).map(
+        ([category, classes]) => {
+          if (isPvp) {
+            const hasAny = REALMS.some((realm) =>
+              classes.some((c) => (classesByRealm[realm] || []).includes(c))
+            );
+            if (!hasAny) return null;
+          } else {
+            const relevantClasses = classes.filter((c) => allClasses.includes(c));
+            if (relevantClasses.length === 0) return null;
+          }
+
+          return (
+            <div key={category} className="flex items-start gap-3">
+              <span className="text-[10px] uppercase tracking-wider font-medium w-14 shrink-0 pt-1.5 text-gray-500">
+                {category}
+              </span>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                {REALMS.map((realm) => {
+                  const realmClasses = classes
+                    .filter((c) => (classesByRealm[realm] || []).includes(c))
+                    .sort((a, b) => a.localeCompare(b));
+                  if (realmClasses.length === 0) return null;
+                  return (
+                    <div
+                      key={`${category}-${realm}`}
+                      className={cn(
+                        "flex items-center gap-0.5 rounded-md px-1.5 py-0.5",
+                        realm === "Albion"
+                          ? "bg-red-900/15"
+                          : realm === "Midgard"
+                            ? "bg-blue-900/15"
+                            : "bg-green-900/15"
+                      )}
+                    >
+                      {realmClasses.map((className) => {
+                        const realmTag =
+                          realm === "Albion"
+                            ? "Alb"
+                            : realm === "Midgard"
+                              ? "Mid"
+                              : "Hib";
+                        const classKey =
+                          isPvp && className === "Mauler"
+                            ? `Mauler (${realmTag})`
+                            : className;
+                        const isBanned = bannedSet.has(classKey);
+                        const isSafe = safeClassSet.has(classKey);
+
+                        const isActive = mode === "ban" ? isBanned : isSafe;
+                        const isLocked = mode === "ban" ? isSafe : isBanned;
+
+                        let btnClass: string;
+                        if (isActive) {
+                          btnClass =
+                            mode === "ban"
+                              ? "text-gray-600 line-through"
+                              : "bg-gray-700/70 text-white";
+                        } else if (isLocked) {
+                          btnClass =
+                            mode === "ban"
+                              ? "text-gray-600 cursor-not-allowed"
+                              : "text-gray-600 line-through cursor-not-allowed";
+                        } else {
+                          btnClass =
+                            "text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer";
+                        }
+
+                        return (
+                          <button
+                            key={classKey}
+                            type="button"
+                            disabled={!canEdit || isLocked}
+                            onClick={() => onToggle(classKey)}
+                            className={cn(
+                              "rounded px-1.5 py-0.5 text-[10px] font-medium transition-all",
+                              btnClass,
+                              !canEdit && "opacity-50 cursor-not-allowed"
+                            )}
+                          >
+                            {className}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+      )}
+    </div>
+  );
+}
+
 function BanSection({
   draft,
   bannedClassNames,
@@ -1560,9 +1831,8 @@ function BanSection({
   title = "Bans",
   turnLabel,
   showBoardWhenNotBanning = false,
-  showCreatorSummary = false,
-  creatorBans = [],
   autoBans = [],
+  safeClassNames = [],
 }: {
   draft: DraftData;
   bannedClassNames: string[];
@@ -1576,10 +1846,10 @@ function BanSection({
   title?: string;
   turnLabel?: string;
   showBoardWhenNotBanning?: boolean;
-  showCreatorSummary?: boolean;
-  creatorBans?: { _id: string; className: string }[];
   autoBans?: { _id: string; className: string }[];
+  safeClassNames?: string[];
 }) {
+  const safeClassSet = new Set(safeClassNames);
   let classesForBan: string[];
   if (draft.type === "traditional" && isBanning && currentBanTeam) {
     const opponentRealm =
@@ -1609,6 +1879,20 @@ function BanSection({
   const banCurrentCaptain = draft.players.find(
     (p) => p.discordUserId === banCurrentCaptainId
   );
+  const traditionalBanRealms =
+    draft.type !== "pvp" && isBanning && currentBanTeam
+      ? [currentBanTeam === 1 ? draft.team2Realm! : draft.team1Realm!]
+      : REALMS.filter((realm) =>
+          classesForBan.some((className) =>
+            (classesByRealm[realm] || []).includes(className)
+          )
+        );
+
+  const hasAnySummary =
+    team1Bans.length > 0 ||
+    team2Bans.length > 0 ||
+    autoBans.length > 0 ||
+    safeClassNames.length > 0;
 
   return (
     <div className="rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-4 space-y-3">
@@ -1626,80 +1910,97 @@ function BanSection({
             <span className="text-[10px] text-gray-600">{turnLabel}</span>
           ) : null}
         </div>
-        <div className="flex items-center gap-3">
-          {showCreatorSummary ? (
+      </div>
+
+      {hasAnySummary && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-md bg-gray-900/40 px-3 py-2">
+          {team1Bans.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-gray-500">Creator:</span>
-              {creatorBans.length > 0 ? (
-                creatorBans.map((b) => (
-                  <Badge
-                    key={b._id}
-                    variant="secondary"
-                    className="text-[10px] line-through opacity-70"
-                  >
-                    {b.className}
-                  </Badge>
-                ))
-              ) : (
-                <span className="text-[10px] text-gray-600">--</span>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-gray-500">T1:</span>
-              {team1Bans.length > 0 ? (
-                team1Bans.map((b) => (
-                  <Badge
-                    key={b._id}
-                    variant="secondary"
-                    className="text-[10px] line-through opacity-70"
-                  >
-                    {b.className}
-                  </Badge>
-                ))
-              ) : (
-                <span className="text-[10px] text-gray-600">--</span>
-              )}
+              <span className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
+                <Ban size={9} />
+                T1
+              </span>
+              {team1Bans.map((b) => (
+                <span
+                  key={b._id}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[10px] font-medium",
+                    getRealmChipBackground(b.className),
+                    safeClassSet.has(b.className)
+                      ? "text-gray-300"
+                      : "text-gray-500 line-through"
+                  )}
+                >
+                  {b.className}
+                </span>
+              ))}
             </div>
           )}
-          {!showCreatorSummary ? (
+          {team2Bans.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-indigo-400/60">T2:</span>
-              {team2Bans.length > 0 ? (
-                team2Bans.map((b) => (
-                  <Badge
-                    key={b._id}
-                    variant="secondary"
-                    className="text-[10px] line-through opacity-70"
-                  >
-                    {b.className}
-                  </Badge>
-                ))
-              ) : (
-                <span className="text-[10px] text-gray-600">--</span>
-              )}
+              <span className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
+                <Ban size={9} />
+                T2
+              </span>
+              {team2Bans.map((b) => (
+                <span
+                  key={b._id}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[10px] font-medium",
+                    getRealmChipBackground(b.className),
+                    safeClassSet.has(b.className)
+                      ? "text-gray-300"
+                      : "text-gray-500 line-through"
+                  )}
+                >
+                  {b.className}
+                </span>
+              ))}
             </div>
-          ) : null}
-          {!showCreatorSummary ? (
+          )}
+          {autoBans.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-gray-400">Auto:</span>
-              {autoBans.length > 0 ? (
-                autoBans.map((b) => (
-                  <Badge
-                    key={b._id}
-                    variant="secondary"
-                    className="text-[10px] line-through opacity-70"
-                  >
-                    {b.className}
-                  </Badge>
-                ))
-              ) : (
-                <span className="text-[10px] text-gray-600">--</span>
-              )}
+              <span className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
+                <Ban size={9} />
+                Auto
+              </span>
+              {autoBans.map((b) => (
+                <span
+                  key={b._id}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[10px] font-medium",
+                    getRealmChipBackground(b.className),
+                    safeClassSet.has(b.className)
+                      ? "text-gray-300"
+                      : "text-gray-500 line-through"
+                  )}
+                >
+                  {b.className}
+                </span>
+              ))}
             </div>
-          ) : null}
+          )}
+          {safeClassNames.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
+                <ShieldCheck size={9} />
+                Safe
+              </span>
+              {safeClassNames.map((className) => (
+                <span
+                  key={className}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[10px] font-medium text-gray-300",
+                    getRealmChipBackground(className)
+                  )}
+                >
+                  {className}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {(isBanning || showBoardWhenNotBanning) && draft.type === "pvp" && (
         <div className="space-y-2">
@@ -1748,19 +2049,22 @@ function BanSection({
                               : cls;
                           const isBanned =
                             bannedClassNames.includes(banKey);
+                          const isSafe = safeClassSet.has(banKey);
                           return (
                             <button
                               key={banKey}
-                              disabled={!isMyBanTurn || busy || isBanned}
+                              disabled={!isMyBanTurn || busy || isBanned || isSafe}
                               onClick={() => onBan(banKey)}
                               className={cn(
                                 "rounded px-1.5 py-0.5 text-[10px] font-medium transition-all",
-                                isBanned &&
-                                  "text-gray-600 line-through",
+                                isBanned && "text-gray-600 line-through",
+                                isSafe && "text-gray-600 cursor-not-allowed",
                                 !isBanned &&
+                                  !isSafe &&
                                   isMyBanTurn &&
                                   "text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer",
                                 !isBanned &&
+                                  !isSafe &&
                                   !isMyBanTurn &&
                                   "text-gray-600"
                               )}
@@ -1783,37 +2087,70 @@ function BanSection({
         <div className="space-y-2">
           {(Object.entries(CLASS_CATEGORIES) as [ClassCategory, string[]][]).map(
             ([category, classes]) => {
-              const relevantClasses = classes
-                .filter((c) => classesForBan.includes(c))
-                .sort((a, b) => a.localeCompare(b));
-              if (relevantClasses.length === 0) return null;
+              const hasAny = traditionalBanRealms.some((r) =>
+                classes.some(
+                  (c) =>
+                    (classesByRealm[r] || []).includes(c) &&
+                    classesForBan.includes(c)
+                )
+              );
+              if (!hasAny) return null;
               return (
-                <div key={category} className="flex items-start gap-2">
-                  <span className="text-[10px] uppercase tracking-wider font-medium w-16 shrink-0 pt-1.5 text-gray-500">
+                <div key={category} className="flex items-start gap-3">
+                  <span className="text-[10px] uppercase tracking-wider font-medium w-14 shrink-0 pt-1 text-gray-500">
                     {category}
                   </span>
-                  <div className="flex flex-wrap gap-1">
-                    {relevantClasses.map((cls) => {
-                      const isBanned = bannedClassNames.includes(cls);
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {traditionalBanRealms.map((realm) => {
+                      const realmClasses = classes
+                        .filter(
+                          (c) =>
+                            (classesByRealm[realm] || []).includes(c) &&
+                            classesForBan.includes(c)
+                        )
+                        .sort((a, b) => a.localeCompare(b));
+                      if (realmClasses.length === 0) return null;
+                      const groupBg =
+                        realm === "Albion"
+                          ? "bg-red-900/15"
+                          : realm === "Midgard"
+                            ? "bg-blue-900/15"
+                            : "bg-green-900/15";
                       return (
-                        <button
-                          key={cls}
-                          disabled={!isMyBanTurn || busy || isBanned}
-                          onClick={() => onBan(cls)}
+                        <div
+                          key={realm}
                           className={cn(
-                            "rounded border px-2 py-1 text-[11px] font-medium transition-all",
-                            isBanned &&
-                              "border-gray-700 bg-gray-800/40 text-gray-600 line-through opacity-50",
-                            !isBanned &&
-                              isMyBanTurn &&
-                              "border-gray-600 bg-gray-700/40 text-gray-300 hover:bg-gray-700 hover:text-white hover:border-gray-500 cursor-pointer",
-                            !isBanned &&
-                              !isMyBanTurn &&
-                              "border-gray-700/50 bg-gray-800/30 text-gray-600"
+                            "flex items-center gap-0.5 rounded-md px-1.5 py-0.5",
+                            groupBg
                           )}
                         >
-                          {cls}
-                        </button>
+                          {realmClasses.map((cls) => {
+                            const isBanned = bannedClassNames.includes(cls);
+                            const isSafe = safeClassSet.has(cls);
+                            return (
+                              <button
+                                key={cls}
+                                disabled={!isMyBanTurn || busy || isBanned || isSafe}
+                                onClick={() => onBan(cls)}
+                                className={cn(
+                                  "rounded px-1.5 py-0.5 text-[10px] font-medium transition-all",
+                                  isBanned && "text-gray-600 line-through",
+                                  isSafe && "text-gray-600 cursor-not-allowed",
+                                  !isBanned &&
+                                    !isSafe &&
+                                    isMyBanTurn &&
+                                    "text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer",
+                                  !isBanned &&
+                                    !isSafe &&
+                                    !isMyBanTurn &&
+                                    "text-gray-600"
+                                )}
+                              >
+                                {cls}
+                              </button>
+                            );
+                          })}
+                        </div>
                       );
                     })}
                   </div>
@@ -2560,10 +2897,13 @@ function FightClassSetup({
                             const isSelected = activePlayerDisplayedClass === className;
                             const classAppearsInMultipleRealms = realmsForClass(className).length > 1;
                             const realmAwareMeta =
-                              activePlayerOwnedClassesByRealm[`${realm}:${className}`];
+                              activePlayerOwnedClassesByRealm[
+                                `${realm}:${toCanonicalDraftClassName(className)}`
+                              ];
                             const ownedClassMeta = classAppearsInMultipleRealms
                               ? realmAwareMeta
-                              : realmAwareMeta ?? activePlayerOwnedClasses[className];
+                              : realmAwareMeta ??
+                                activePlayerOwnedClasses[toCanonicalDraftClassName(className)];
                             const classButton = (
                               <button
                                 key={className}
