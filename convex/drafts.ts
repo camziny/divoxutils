@@ -3202,6 +3202,7 @@ export const getActiveDrafts = query({
 
       results.push({
         shortId: draft.shortId,
+        createdAtMs: draft._creationTime,
         status: draft.status,
         gameStarted: draft.gameStarted,
         discordGuildId: draft.discordGuildId,
@@ -3220,7 +3221,7 @@ export const getActiveDrafts = query({
       });
     }
 
-    return results;
+    return results.sort((a, b) => b.createdAtMs - a.createdAtMs);
   },
 });
 

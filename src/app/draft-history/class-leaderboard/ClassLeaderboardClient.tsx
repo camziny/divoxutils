@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import { Pagination } from "@/components/ui/pagination";
 import { CheckCircle2, User } from "lucide-react";
@@ -28,9 +28,23 @@ type SortKey = "wins" | "winRate" | "games" | "losses";
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "winRate", label: "Win %" },
   { key: "wins", label: "Wins" },
-  { key: "games", label: "Fights" },
   { key: "losses", label: "Losses" },
+  { key: "games", label: "Fights" },
 ];
+
+function parseClassLeaderboardSort(value: string | null): SortKey {
+  if (value === "wins" || value === "losses" || value === "games" || value === "winRate") {
+    return value;
+  }
+  return "winRate";
+}
+
+function parseClassLeaderboardPage(value: string | null): number {
+  if (!value) return 1;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) return 1;
+  return parsed;
+}
 
 function sortRows(rows: DraftClassLeaderboardRow[], key: SortKey): DraftClassLeaderboardRow[] {
   return [...rows].sort((a, b) => {
@@ -50,10 +64,16 @@ export default function ClassLeaderboardClient({
   classOptions: string[];
   rows: DraftClassLeaderboardRow[];
 }) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<SortKey>("winRate");
-  const [animate, setAnimate] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const safePathname = pathname ?? "/draft-history/class-leaderboard";
+  const searchParams = useSearchParams();
+  const searchParamsString = searchParams?.toString() ?? "";
+  const sortFromUrl = parseClassLeaderboardSort(searchParams?.get("sort") ?? null);
+  const pageFromUrl = parseClassLeaderboardPage(searchParams?.get("page") ?? null);
+  const [currentPage, setCurrentPage] = useState(pageFromUrl);
+  const [sortBy, setSortBy] = useState<SortKey>(sortFromUrl);
+  const [animate, setAnimate] = useState(false);
   const sortedRows = useMemo(() => sortRows(rows, sortBy), [rows, sortBy]);
 
   const totalPages = useMemo(
@@ -66,8 +86,22 @@ export default function ClassLeaderboardClient({
   }, [sortedRows, currentPage]);
 
   useEffect(() => {
-    setCurrentPage(1);
-    setSortBy("winRate");
+    setSortBy(sortFromUrl);
+  }, [sortFromUrl]);
+
+  useEffect(() => {
+    setCurrentPage(pageFromUrl);
+  }, [pageFromUrl]);
+
+  useEffect(() => {
+    if (totalPages === 0) {
+      if (currentPage !== 1) setCurrentPage(1);
+      return;
+    }
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
     setAnimate(false);
     requestAnimationFrame(() => requestAnimationFrame(() => setAnimate(true)));
   }, [className]);
@@ -75,6 +109,39 @@ export default function ClassLeaderboardClient({
   useEffect(() => {
     requestAnimationFrame(() => setAnimate(true));
   }, []);
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams(searchParamsString);
+    if (className === classOptions[0]) {
+      nextParams.delete("class");
+    } else {
+      nextParams.set("class", className);
+    }
+    if (sortBy === "winRate") {
+      nextParams.delete("sort");
+    } else {
+      nextParams.set("sort", sortBy);
+    }
+    if (currentPage <= 1) {
+      nextParams.delete("page");
+    } else {
+      nextParams.set("page", String(currentPage));
+    }
+    const nextQuery = nextParams.toString();
+    const nextUrl = nextQuery ? `${safePathname}?${nextQuery}` : safePathname;
+    const currentUrl = searchParamsString ? `${safePathname}?${searchParamsString}` : safePathname;
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [
+    className,
+    classOptions,
+    currentPage,
+    router,
+    safePathname,
+    searchParamsString,
+    sortBy,
+  ]);
 
   return (
     <>
@@ -103,11 +170,21 @@ export default function ClassLeaderboardClient({
           </ToggleGroup>
           <Select
             value={className}
-            onValueChange={(value) =>
+            onValueChange={(value) => {
+              const nextParams = new URLSearchParams(searchParamsString);
+              if (value === classOptions[0]) {
+                nextParams.delete("class");
+              } else {
+                nextParams.set("class", value);
+              }
+              nextParams.delete("page");
+              const nextQuery = nextParams.toString();
               router.push(
-                `/draft-history/class-leaderboard?class=${encodeURIComponent(value)}`
-              )
-            }
+                nextQuery
+                  ? `${safePathname}?${nextQuery}`
+                  : safePathname
+              );
+            }}
           >
             <SelectTrigger className="h-8 w-full sm:w-[220px] border-gray-800 bg-gray-900 text-xs text-gray-200">
               <SelectValue placeholder="Select class" />

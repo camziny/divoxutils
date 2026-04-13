@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import { Pagination } from "@/components/ui/pagination";
 import { CheckCircle2, ChevronRight, User, X } from "lucide-react";
@@ -28,11 +29,25 @@ type SortKey = "wins" | "winRate" | "games" | "losses";
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "winRate", label: "Win %" },
   { key: "wins", label: "Wins" },
-  { key: "games", label: "Drafts" },
   { key: "losses", label: "Losses" },
+  { key: "games", label: "Drafts" },
 ];
 
 const ITEMS_PER_PAGE = 20;
+
+function parseLeaderboardSort(value: string | null): SortKey {
+  if (value === "wins" || value === "losses" || value === "games" || value === "winRate") {
+    return value;
+  }
+  return "winRate";
+}
+
+function parseLeaderboardPage(value: string | null): number {
+  if (!value) return 1;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) return 1;
+  return parsed;
+}
 
 function sortRows(rows: DraftLeaderboardRow[], key: SortKey): DraftLeaderboardRow[] {
   return [...rows].sort((a, b) => {
@@ -52,8 +67,15 @@ export default function LeaderboardClient({
 }: {
   initialRows: DraftLeaderboardRow[];
 }) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<SortKey>("winRate");
+  const router = useRouter();
+  const pathname = usePathname();
+  const safePathname = pathname ?? "/draft-history/leaderboard";
+  const searchParams = useSearchParams();
+  const searchParamsString = searchParams?.toString() ?? "";
+  const sortFromUrl = parseLeaderboardSort(searchParams?.get("sort") ?? null);
+  const pageFromUrl = parseLeaderboardPage(searchParams?.get("page") ?? null);
+  const [currentPage, setCurrentPage] = useState(pageFromUrl);
+  const [sortBy, setSortBy] = useState<SortKey>(sortFromUrl);
   const [animate, setAnimate] = useState(false);
 
   const sorted = useMemo(() => sortRows(initialRows, sortBy), [initialRows, sortBy]);
@@ -69,6 +91,14 @@ export default function LeaderboardClient({
   }, [sorted, currentPage]);
 
   useEffect(() => {
+    setSortBy(sortFromUrl);
+  }, [sortFromUrl]);
+
+  useEffect(() => {
+    setCurrentPage(pageFromUrl);
+  }, [pageFromUrl]);
+
+  useEffect(() => {
     if (totalPages === 0) {
       if (currentPage !== 1) setCurrentPage(1);
       return;
@@ -79,6 +109,26 @@ export default function LeaderboardClient({
   useEffect(() => {
     requestAnimationFrame(() => setAnimate(true));
   }, []);
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams(searchParamsString);
+    if (sortBy === "winRate") {
+      nextParams.delete("sort");
+    } else {
+      nextParams.set("sort", sortBy);
+    }
+    if (currentPage <= 1) {
+      nextParams.delete("page");
+    } else {
+      nextParams.set("page", String(currentPage));
+    }
+    const nextQuery = nextParams.toString();
+    const nextUrl = nextQuery ? `${safePathname}?${nextQuery}` : safePathname;
+    const currentUrl = searchParamsString ? `${safePathname}?${searchParamsString}` : safePathname;
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [currentPage, router, safePathname, searchParamsString, sortBy]);
 
   const handleSort = (key: SortKey) => {
     setAnimate(false);

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ResponsiveContainer,
   PieChart,
@@ -61,21 +62,60 @@ type ClassView = "table" | "map";
 type HeadToHeadView = "all" | "captain";
 type TeammateView = "winning" | "losing";
 
+const DEFAULT_CLASS_SORT: ClassSortKey = "winRate";
+const DEFAULT_CLASS_VIEW: ClassView = "table";
+const DEFAULT_HEAD_TO_HEAD_VIEW: HeadToHeadView = "all";
+const DEFAULT_TEAMMATE_VIEW: TeammateView = "winning";
+
+function parseClassSort(value: string | null): ClassSortKey {
+  if (value === "games" || value === "winRate" || value === "wins" || value === "losses") {
+    return value;
+  }
+  return DEFAULT_CLASS_SORT;
+}
+
+function parseClassView(value: string | null): ClassView {
+  if (value === "table" || value === "map") return value;
+  return DEFAULT_CLASS_VIEW;
+}
+
+function parseHeadToHeadView(value: string | null): HeadToHeadView {
+  if (value === "all" || value === "captain") return value;
+  return DEFAULT_HEAD_TO_HEAD_VIEW;
+}
+
+function parseTeammateView(value: string | null): TeammateView {
+  if (value === "winning" || value === "losing") return value;
+  return DEFAULT_TEAMMATE_VIEW;
+}
+
 export default function PlayerDrilldownClient({
   initialData,
 }: {
   initialData: DraftPlayerDrilldown | null;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const currentPathname = pathname ?? null;
+  const searchParams = useSearchParams();
+  const searchParamsString = searchParams?.toString() ?? "";
+  const classSortFromUrl = parseClassSort(searchParams?.get("classSort") ?? null);
+  const classQueryFromUrl = searchParams?.get("classQuery") ?? "";
+  const classViewFromUrl = parseClassView(searchParams?.get("classView") ?? null);
+  const selectedClassFromUrl = searchParams?.get("selectedClass") ?? "";
+  const headToHeadViewFromUrl = parseHeadToHeadView(searchParams?.get("h2h") ?? null);
+  const teammateViewFromUrl = parseTeammateView(searchParams?.get("teammates") ?? null);
   const [opponentsOpen, setOpponentsOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
-  const [classSortBy, setClassSortBy] = useState<ClassSortKey>("winRate");
-  const [classQuery, setClassQuery] = useState("");
-  const [classView, setClassView] = useState<ClassView>("table");
-  const [headToHeadView, setHeadToHeadView] = useState<HeadToHeadView>("all");
-  const [teammateView, setTeammateView] = useState<TeammateView>("winning");
+  const [classSortBy, setClassSortBy] = useState<ClassSortKey>(classSortFromUrl);
+  const [classQuery, setClassQuery] = useState(classQueryFromUrl);
+  const [classView, setClassView] = useState<ClassView>(classViewFromUrl);
+  const [headToHeadView, setHeadToHeadView] = useState<HeadToHeadView>(headToHeadViewFromUrl);
+  const [teammateView, setTeammateView] = useState<TeammateView>(teammateViewFromUrl);
   const [progressAnimate, setProgressAnimate] = useState(false);
   const [teammatesOpen, setTeammatesOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [debouncedClassQuery, setDebouncedClassQuery] = useState(classQueryFromUrl);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -108,7 +148,7 @@ export default function PlayerDrilldownClient({
         .sort((a, b) => a.localeCompare(b)),
     [classRows]
   );
-  const [selectedClass, setSelectedClass] = useState<string>("");
+  const [selectedClass, setSelectedClass] = useState<string>(selectedClassFromUrl);
   const filteredClassRows = useMemo(() => {
     const query = classQuery.trim().toLowerCase();
     const base = query
@@ -136,6 +176,37 @@ export default function PlayerDrilldownClient({
     requestAnimationFrame(() => setProgressAnimate(true));
   }, []);
 
+  useEffect(() => {
+    setClassSortBy(classSortFromUrl);
+  }, [classSortFromUrl]);
+
+  useEffect(() => {
+    setClassQuery(classQueryFromUrl);
+  }, [classQueryFromUrl]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedClassQuery(classQuery);
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [classQuery]);
+
+  useEffect(() => {
+    setClassView(classViewFromUrl);
+  }, [classViewFromUrl]);
+
+  useEffect(() => {
+    setHeadToHeadView(headToHeadViewFromUrl);
+  }, [headToHeadViewFromUrl]);
+
+  useEffect(() => {
+    setTeammateView(teammateViewFromUrl);
+  }, [teammateViewFromUrl]);
+
+  useEffect(() => {
+    setSelectedClass(selectedClassFromUrl);
+  }, [selectedClassFromUrl]);
+
   const handleHeadToHeadViewChange = (view: HeadToHeadView) => {
     if (view === headToHeadView) return;
     setProgressAnimate(false);
@@ -159,6 +230,57 @@ export default function PlayerDrilldownClient({
       setSelectedClass(nextDefault);
     }
   }, [selectedClass, alphabeticalPlayedClasses]);
+
+  useEffect(() => {
+    if (!currentPathname) return;
+    const nextParams = new URLSearchParams(searchParamsString);
+    if (classSortBy === DEFAULT_CLASS_SORT) {
+      nextParams.delete("classSort");
+    } else {
+      nextParams.set("classSort", classSortBy);
+    }
+    if (debouncedClassQuery.trim().length === 0) {
+      nextParams.delete("classQuery");
+    } else {
+      nextParams.set("classQuery", debouncedClassQuery);
+    }
+    if (classView === DEFAULT_CLASS_VIEW) {
+      nextParams.delete("classView");
+    } else {
+      nextParams.set("classView", classView);
+    }
+    if (!selectedClass) {
+      nextParams.delete("selectedClass");
+    } else {
+      nextParams.set("selectedClass", selectedClass);
+    }
+    if (headToHeadView === DEFAULT_HEAD_TO_HEAD_VIEW) {
+      nextParams.delete("h2h");
+    } else {
+      nextParams.set("h2h", headToHeadView);
+    }
+    if (teammateView === DEFAULT_TEAMMATE_VIEW) {
+      nextParams.delete("teammates");
+    } else {
+      nextParams.set("teammates", teammateView);
+    }
+    const nextQuery = nextParams.toString();
+    const nextUrl = nextQuery ? `${currentPathname}?${nextQuery}` : currentPathname;
+    const currentUrl = searchParamsString ? `${currentPathname}?${searchParamsString}` : currentPathname;
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [
+    classSortBy,
+    debouncedClassQuery,
+    classView,
+    headToHeadView,
+    teammateView,
+    selectedClass,
+    currentPathname,
+    router,
+    searchParamsString,
+  ]);
 
   useEffect(() => {
     if (!selectedClass) {
@@ -409,8 +531,8 @@ export default function PlayerDrilldownClient({
                   <ToggleGroup value={classSortBy} onValueChange={(val) => { if (val) setClassSortBy(val as ClassSortKey); }}>
                     <ToggleGroupItem value="winRate">Win %</ToggleGroupItem>
                     <ToggleGroupItem value="wins">Wins</ToggleGroupItem>
-                    <ToggleGroupItem value="games">Fights</ToggleGroupItem>
                     <ToggleGroupItem value="losses">Losses</ToggleGroupItem>
+                    <ToggleGroupItem value="games">Fights</ToggleGroupItem>
                   </ToggleGroup>
                 ) : null}
                 {classView === "map" ? (
@@ -435,8 +557,8 @@ export default function PlayerDrilldownClient({
                     <span>Class</span>
                     <span className="text-right">Win %</span>
                     <span className="text-right">Wins</span>
-                    <span className="text-right">Fights</span>
                     <span className="text-right">Losses</span>
+                    <span className="text-right">Fights</span>
                   </div>
                   <div className="max-h-[420px] overflow-y-auto">
                     {filteredClassRows.length === 0 ? (
@@ -465,10 +587,10 @@ export default function PlayerDrilldownClient({
                             {row.wins}
                           </span>
                           <span className="text-right text-xs tabular-nums text-gray-500">
-                            {row.games}
+                            {row.losses}
                           </span>
                           <span className="text-right text-xs tabular-nums text-gray-500">
-                            {row.losses}
+                            {row.games}
                           </span>
                         </button>
                       ))
