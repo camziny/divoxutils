@@ -77,8 +77,10 @@ export const realmRanksMap: Map<number, number> = getRealmRanks();
 
 export function getRealmRankForPoints(points: number): number {
   let rank = 0;
+  const rankEntries = Array.from(realmRanksMap.entries());
 
-  for (const [rr, requiredPoints] of realmRanksMap) {
+  for (let index = 0; index < rankEntries.length; index += 1) {
+    const [rr, requiredPoints] = rankEntries[index];
     if (points >= requiredPoints) {
       rank = rr;
     } else {
@@ -95,7 +97,7 @@ export function formatRealmRankWithLevel(rank: number): string {
 }
 
 export function getMaxRealmRank(): number {
-  return Math.max(...realmRanksMap.keys());
+  return Math.max(...Array.from(realmRanksMap.keys()));
 }
 
 export function getRealmRankThreshold(rank: number): number | undefined {
