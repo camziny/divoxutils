@@ -37,14 +37,13 @@ export default function RealmRanksPage() {
           <h1 className="text-2xl font-bold text-white tracking-tight">
             Realm Ranks
           </h1>
+          <p className="mt-2 text-sm text-gray-500 leading-relaxed">
+            Realm points are capped at 2,000,000,000.
+          </p>
         </header>
 
         <div className="space-y-12">
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold text-white">Official Realm Ranks</h2>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Realm points are capped at 2,000,000,000.
-            </p>
             <div className="rounded-lg border border-gray-800 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
@@ -68,9 +67,6 @@ export default function RealmRanksPage() {
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-gray-600">
-              Patch 1.130a also caps realm points at 2,000,000,000.
-            </p>
           </section>
         </div>
       </div>
