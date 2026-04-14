@@ -11,6 +11,52 @@ export const getRealmNameAndColor = (realmName: string) => {
   }
 };
 
+export const OFFICIAL_REALM_RANK_MAX = 150;
+export const MAX_REALM_RANK = OFFICIAL_REALM_RANK_MAX;
+
+const officialRealmRankThresholds: [number, number][] = [
+  [111, 9111713],
+  [112, 10114001],
+  [113, 11226541],
+  [114, 12461460],
+  [115, 13832221],
+  [116, 15353765],
+  [117, 17042680],
+  [118, 18917374],
+  [119, 20998286],
+  [120, 23308097],
+  [121, 25871988],
+  [122, 28717906],
+  [123, 31876876],
+  [124, 35383333],
+  [125, 39275499],
+  [126, 43595804],
+  [127, 48391343],
+  [128, 53714390],
+  [129, 59622973],
+  [130, 66181501],
+  [131, 73461466],
+  [132, 81542227],
+  [133, 90511872],
+  [134, 100468178],
+  [135, 111519678],
+  [136, 123786843],
+  [137, 137403395],
+  [138, 152517769],
+  [139, 169294723],
+  [140, 187917143],
+  [141, 223084000],
+  [142, 278317600],
+  [143, 355644640],
+  [144, 445902496],
+  [145, 555928241],
+  [146, 680853214],
+  [147, 820594584],
+  [148, 990514251],
+  [149, 1230285525],
+  [150, 1650444126],
+];
+
 export function getRealmRanks(): Map<number, number> {
   const realmRanks = new Map<number, number>();
 
@@ -21,71 +67,20 @@ export function getRealmRanks(): Map<number, number> {
     );
   }
 
-  const hardcodedRanks: [number, number][] = [
-    [111, 9111713],
-    [112, 10114001],
-    [113, 11226541],
-    [114, 12461460],
-    [115, 13832221],
-    [116, 15353765],
-    [117, 17042680],
-    [118, 18917374],
-    [119, 20998286],
-    [120, 23308097],
-    [121, 25871988],
-    [122, 28717906],
-    [123, 31876876],
-    [124, 35383333],
-    [125, 39275499],
-    [126, 43595804],
-    [127, 48391343],
-    [128, 53714390],
-    [129, 59622973],
-    [130, 66181501],
-    [131, 73461466],
-    [132, 81542227],
-    [133, 90511872],
-    [134, 100468178],
-    [135, 111519678],
-    [136, 123786843],
-    [137, 137403395],
-    [138, 152517769],
-    [139, 169294723],
-    [140, 187917143],
-    [141, 208588033],
-    [142, 231532727],
-    [143, 257001346],
-    [144, 285271524],
-    [145, 316651435],
-    [146, 351483152],
-    [147, 390146276],
-    [148, 433062164],
-    [149, 480698522],
-    [150, 533574504],
-    [151, 592266371],
-    [152, 657413773],
-    [153, 729726722],
-    [154, 809993331],
-    [155, 899088405],
-    [156, 997982978],
-    [157, 1107754898],
-    [158, 1229600576],
-    [159, 1364848028],
-    [160, 1514971352],
-  ];
-
-  for (const [rank, points] of hardcodedRanks) {
+  for (const [rank, points] of officialRealmRankThresholds) {
     realmRanks.set(rank, points);
   }
 
   return realmRanks;
 }
-export const realmRanksMap: any = getRealmRanks();
+export const realmRanksMap: Map<number, number> = getRealmRanks();
 
 export function getRealmRankForPoints(points: number): number {
   let rank = 0;
+  const rankEntries = Array.from(realmRanksMap.entries());
 
-  for (const [rr, requiredPoints] of realmRanksMap) {
+  for (let index = 0; index < rankEntries.length; index += 1) {
+    const [rr, requiredPoints] = rankEntries[index];
     if (points >= requiredPoints) {
       rank = rr;
     } else {
@@ -101,12 +96,32 @@ export function formatRealmRankWithLevel(rank: number): string {
   return `${rankString.slice(0, -1)}L${rankString.slice(-1)}`;
 }
 
+export function getMaxRealmRank(): number {
+  return Math.max(...Array.from(realmRanksMap.keys()));
+}
+
+export function getRealmRankThreshold(rank: number): number | undefined {
+  return realmRanksMap.get(rank);
+}
+
+export function getNextRealmRank(currentRank: number): number | null {
+  const nextRank = currentRank + 1;
+  return nextRank <= getMaxRealmRank() ? nextRank : null;
+}
+
 export function calculateProgressPercentage(
   realmPoints: number,
-  nextRankPoints: number
+  nextRankPoints?: number | null
 ): number {
   const currentRank = getRealmRankForPoints(realmPoints);
   const pointsForCurrentRank = realmRanksMap.get(currentRank) || 0;
+  if (
+    nextRankPoints === undefined ||
+    nextRankPoints === null ||
+    nextRankPoints <= pointsForCurrentRank
+  ) {
+    return 0;
+  }
   const totalPointsForNextRank = nextRankPoints - pointsForCurrentRank;
   const pointsEarnedForNextRank = realmPoints - pointsForCurrentRank;
   const progressPercentage =

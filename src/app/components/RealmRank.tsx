@@ -1,7 +1,8 @@
 import React from "react";
 import {
-  getRealmRanks,
   getRealmRankForPoints,
+  getNextRealmRank,
+  getRealmRankThreshold,
   calculateProgressPercentage,
   formatRealmRankWithLevel,
 } from "@/utils/character";
@@ -11,9 +12,12 @@ interface RealmRankProps {
 }
 
 function getPointsUntilNextRank(currentPoints: number): number {
-  const realmRanksMap = getRealmRanks();
   const currentRank = getRealmRankForPoints(currentPoints);
-  const nextRankPoints = realmRanksMap.get(currentRank + 1);
+  const nextRank = getNextRealmRank(currentRank);
+  if (nextRank === null) {
+    return 0;
+  }
+  const nextRankPoints = getRealmRankThreshold(nextRank);
   if (nextRankPoints === undefined) {
     return 0;
   }
@@ -21,22 +25,28 @@ function getPointsUntilNextRank(currentPoints: number): number {
 }
 
 const RealmRank: React.FC<RealmRankProps> = ({ realmPoints }) => {
+  const currentRank = getRealmRankForPoints(realmPoints);
+  const nextRank = getNextRealmRank(currentRank);
+
   return (
     <div>
       <p>
-        Current Rank: {formatRealmRankWithLevel(getRealmRankForPoints(realmPoints))}
+        Current Rank: {formatRealmRankWithLevel(currentRank)}
       </p>
-      <p>
-        Realm points until {formatRealmRankWithLevel(getRealmRankForPoints(realmPoints) + 1)}:
-        {new Intl.NumberFormat().format(getPointsUntilNextRank(realmPoints))}
-      </p>
+      {nextRank !== null && (
+        <p>
+          Realm points until {formatRealmRankWithLevel(nextRank)}:
+          {new Intl.NumberFormat().format(getPointsUntilNextRank(realmPoints))}
+        </p>
+      )}
     </div>
   );
 };
 
 export {
   getRealmRankForPoints,
-  getRealmRanks,
+  getNextRealmRank,
+  getRealmRankThreshold,
   calculateProgressPercentage,
   formatRealmRankWithLevel,
 };

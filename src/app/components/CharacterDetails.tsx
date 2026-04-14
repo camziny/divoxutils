@@ -2,7 +2,8 @@ import React from "react";
 import { TableCell } from "@mui/material";
 import {
   getRealmRankForPoints,
-  getRealmRanks,
+  getNextRealmRank,
+  getRealmRankThreshold,
   calculateProgressPercentage,
   formatRealmRankWithLevel,
 } from "@/utils/character";
@@ -49,11 +50,15 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
       ? parseFloat((realmPoints / deaths).toFixed(2))
       : undefined;
   const currentRank = getRealmRankForPoints(realmPoints);
-  const nextRankPoints = getRealmRanks().get(currentRank + 1) || 0;
-  const pointsUntilNextRank = Math.max(nextRankPoints - realmPoints, 0);
-  const currentRankNumber = getRealmRankForPoints(character.heraldRealmPoints);
-  const nextRankFormatted = formatRealmRankWithLevel(currentRankNumber + 1);
   const currentRankFormatted = formatRealmRankWithLevel(currentRank);
+  const nextRank = getNextRealmRank(currentRank);
+  const nextRankPoints = nextRank ? getRealmRankThreshold(nextRank) : undefined;
+  const pointsUntilNextRank = nextRankPoints
+    ? Math.max(nextRankPoints - realmPoints, 0)
+    : 0;
+  const nextRankFormatted = nextRank
+    ? formatRealmRankWithLevel(nextRank)
+    : currentRankFormatted;
   const totalDeathblows = character.player_kills?.total?.death_blows;
   const totalSoloKills = character.player_kills?.total?.solo_kills;
 
