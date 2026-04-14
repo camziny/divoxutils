@@ -4,7 +4,8 @@ import {
   getRealmRankForPoints,
   formatRealmRankWithLevel,
   calculateProgressPercentage,
-  getRealmRanks
+  getNextRealmRank,
+  getRealmRankThreshold,
 } from "@/utils/character";
 import { getRealmSurfaceClass } from "./characterTileTheme";
 
@@ -27,10 +28,13 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
 }) => {
   const realmPoints = character.heraldRealmPoints || 0;
   const currentRank = getRealmRankForPoints(realmPoints);
-  const nextRankPoints = getRealmRanks().get(currentRank + 1) || 0;
+  const nextRank = getNextRealmRank(currentRank);
+  const nextRankPoints = nextRank ? getRealmRankThreshold(nextRank) : undefined;
   const progressPercentage = calculateProgressPercentage(realmPoints, nextRankPoints);
   const currentRankFormatted = formatRealmRankWithLevel(currentRank);
-  const nextRankFormatted = formatRealmRankWithLevel(currentRank + 1);
+  const nextRankFormatted = nextRank
+    ? formatRealmRankWithLevel(nextRank)
+    : currentRankFormatted;
   
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
@@ -122,9 +126,17 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
             style={{ width: `${animatedProgress}%` }}
           />
         </div>
-        <div className={`text-center ${compact ? "text-[10px]" : "text-xs"} text-gray-400`}>
-          <span className="text-gray-300">{formatNumber(nextRankPoints - realmPoints)} RP</span> to <span className={`text-indigo-300 ${compact ? "text-[10px]" : "text-sm"}`}>{nextRankFormatted}</span>
-        </div>
+        {nextRankPoints && (
+          <div className={`text-center ${compact ? "text-[10px]" : "text-xs"} text-gray-400`}>
+            <span className="text-gray-300">
+              {formatNumber(nextRankPoints - realmPoints)} RP
+            </span>{" "}
+            to{" "}
+            <span className={`text-indigo-300 ${compact ? "text-[10px]" : "text-sm"}`}>
+              {nextRankFormatted}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className={`grid grid-cols-3 ${compact ? "gap-1 max-[360px]:gap-0.5" : "gap-2"} ${sectionGap}`}>

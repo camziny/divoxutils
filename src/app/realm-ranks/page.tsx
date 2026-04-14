@@ -1,33 +1,14 @@
 import React from "react";
-import EstimatedInfoDialog from "./EstimatedInfoDialog";
-import { getRealmRanks } from "@/utils/character";
-
-const estimated: Record<string, string> = {
-  "14L1": "208,588,033",
-  "14L2": "231,532,727",
-  "14L3": "257,001,346",
-  "14L4": "285,271,524",
-  "14L5": "316,651,435",
-  "14L6": "351,483,152",
-  "14L7": "390,146,276",
-  "14L8": "433,062,164",
-  "14L9": "480,698,522",
-  "15L0": "533,574,504",
-  "15L1": "592,266,371",
-  "15L2": "657,413,773",
-  "15L3": "729,726,722",
-  "15L4": "809,993,331",
-  "15L5": "899,088,405",
-  "15L6": "997,982,978",
-  "15L7": "1,107,754,898",
-  "15L8": "1,229,600,576",
-  "15L9": "1,364,848,028",
-  "16L0": "1,514,971,352",
-};
+import { OFFICIAL_REALM_RANK_MAX, getRealmRanks } from "@/utils/character";
 
 function formatRankKey(numeric: number): string {
   const s = numeric.toString();
   return `${s.slice(0, -1)}L${s.slice(-1)}`;
+}
+
+function parseRankToNumeric(key: string): number {
+  const [major, minor] = key.split("L");
+  return parseInt(major, 10) * 10 + parseInt(minor, 10);
 }
 
 export const metadata = {
@@ -36,20 +17,16 @@ export const metadata = {
 
 export default function RealmRanksPage() {
   const realmRanksMap = getRealmRanks();
-
-  const rowsActual = Array.from(realmRanksMap)
-    .filter(([n]) => n >= 11 && n <= 140)
-    .map(([n, pts]) => ({ rank: formatRankKey(n), points: new Intl.NumberFormat().format(pts) }));
-  const estimatedRows = Object.entries(estimated).map(([rank, points]) => ({ rank, points }));
-
-  const parseRankToNumeric = (key: string) => {
-    const [major, minor] = key.split("L");
-    return parseInt(major) * 10 + parseInt(minor);
-  };
-  const estimatedSorted = [...estimatedRows]
-    .map(r => ({ ...r, numeric: parseRankToNumeric(r.rank) }))
-    .sort((a, b) => b.numeric - a.numeric);
-  const actualSorted = [...rowsActual]
+  const rows = Array.from(realmRanksMap)
+    .filter(([n]) => n >= 11)
+    .map(([n, pts]) => ({
+      rank: formatRankKey(n),
+      points: new Intl.NumberFormat().format(pts),
+    }));
+  const officialRows = rows.filter(
+    ({ rank }) => parseRankToNumeric(rank) <= OFFICIAL_REALM_RANK_MAX
+  );
+  const officialSorted = [...officialRows]
     .map(r => ({ ...r, numeric: parseRankToNumeric(r.rank) }))
     .sort((a, b) => b.numeric - a.numeric);
 
@@ -64,14 +41,10 @@ export default function RealmRanksPage() {
 
         <div className="space-y-12">
           <section className="space-y-3">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold text-white">Estimated Ranks</h2>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                Best-guess projections based on exponential progression with
-                ~1.11× growth per rank.
-              </p>
-              <EstimatedInfoDialog />
-            </div>
+            <h2 className="text-lg font-semibold text-white">Official Realm Ranks</h2>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Realm points are capped at 2,000,000,000.
+            </p>
             <div className="rounded-lg border border-gray-800 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
@@ -81,7 +54,7 @@ export default function RealmRanksPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {estimatedSorted.map(({ rank, points }, index) => (
+                  {officialSorted.map(({ rank, points }, index) => (
                     <tr
                       key={rank}
                       className={`border-b border-gray-800/50 transition-colors hover:bg-indigo-500/10 ${
@@ -95,34 +68,9 @@ export default function RealmRanksPage() {
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-gray-600">These values are not official.</p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold text-white">Realm Ranks</h2>
-            <div className="rounded-lg border border-gray-800 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-800 text-gray-500">
-                    <th className="text-left px-4 py-2.5 font-medium text-xs uppercase tracking-wider">Realm Rank</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-xs uppercase tracking-wider">Realm Points</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {actualSorted.map(({ rank, points }, index) => (
-                    <tr
-                      key={rank}
-                      className={`border-b border-gray-800/50 transition-colors hover:bg-indigo-500/10 ${
-                        index % 2 === 0 ? "bg-gray-800/30" : ""
-                      }`}
-                    >
-                      <td className="px-4 py-2.5 font-medium text-white">{rank}</td>
-                      <td className="px-4 py-2.5 text-gray-400">{points}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <p className="text-xs text-gray-600">
+              Patch 1.130a also caps realm points at 2,000,000,000.
+            </p>
           </section>
         </div>
       </div>

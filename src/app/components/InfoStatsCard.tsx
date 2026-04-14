@@ -1,5 +1,6 @@
 import React from "react";
-import { Card, CardBody, CardHeader, Progress } from "@nextui-org/react";
+import { Card, CardBody, CardHeader } from "@nextui-org/react";
+import { formatRealmRankWithLevel, getMaxRealmRank } from "@/utils/character";
 
 interface InfoStatsCardProps {
   totalRP: string;
@@ -26,7 +27,8 @@ const InfoStatsCard: React.FC<InfoStatsCardProps> = ({
   realmPointsLastWeek,
   realmPointsThisWeek,
 }) => {
-  const isMaxRank = currentRank?.trim() === "16L0";
+  const isMaxRank =
+    currentRank?.trim() === formatRealmRankWithLevel(getMaxRealmRank());
   const displayProgress = isMaxRank ? 0 : progressPercentage;
   const barWidth = isMaxRank
     ? 0
