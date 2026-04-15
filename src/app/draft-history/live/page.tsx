@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { User } from "lucide-react";
 import { getLiveDraftRows } from "@/server/draftLive";
+import LiveDraftsAutoRefresh from "./LiveDraftsAutoRefresh";
 
 export const revalidate = 15;
 
@@ -23,6 +24,7 @@ export default async function LiveDraftsPage() {
 
   return (
     <>
+      <LiveDraftsAutoRefresh />
       <div className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight text-gray-100">Live Drafts</h1>
         <p className="mt-1 text-[13px] text-gray-500">
