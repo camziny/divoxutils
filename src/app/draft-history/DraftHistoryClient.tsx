@@ -614,14 +614,6 @@ export default function DraftHistoryClient({
                         <span className="text-gray-400">
                           {row.teamSize}v{row.teamSize}
                         </span>
-                        {autoBans.length > 0 ? (
-                          <>
-                            <span className="text-gray-700 select-none">&middot;</span>
-                            <span className="inline-flex items-center gap-1 rounded border border-gray-700/60 bg-gray-800/40 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
-                              Auto-banned &middot; {autoBans.length}
-                            </span>
-                          </>
-                        ) : null}
                         <span className="text-gray-700 select-none">&middot;</span>
                         <span className="inline-flex min-w-0 items-center gap-1.5 text-gray-500">
                           <User className="w-3 h-3 flex-shrink-0 text-gray-600" />
