@@ -44,3 +44,9 @@ scripts/seedFromProduction.js
 .cursor/
 .agents/
 .env.prod
+
+# editor (local preferences)
+.vscode/
+
+# compiled script output (see scripts/*.ts)
+/dist/
