@@ -14,8 +14,8 @@ import {
   analyzeFightEditor,
   createEmptyFightRow,
   toFightEditorRows,
-  type FightEditorRow,
 } from "./fightEditorUtils";
+import type { FightEditorRow } from "./fightEditorUtils";
 import {
   Dialog,
   DialogContent,
@@ -25,104 +25,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-type ModerationPlayer = {
-  _id: string;
-  discordUserId: string;
-  displayName: string;
-  avatarUrl?: string;
-  team?: 1 | 2;
-  isCaptain: boolean;
-  selectedClass?: string;
-};
-
-type ModerationFight = {
-  fightNumber: number;
-  winnerTeam: 1 | 2;
-  classesByPlayer: Array<{
-    playerId: string;
-    discordUserId: string;
-    className: string;
-    substituteMode?: "known" | "manual";
-    substituteDiscordUserId?: string;
-    substituteDisplayName?: string;
-    substituteAvatarUrl?: string;
-  }>;
-};
-
-type ModerationDraft = {
-  _id: string;
-  shortId: string;
-  discordGuildId: string;
-  discordGuildName?: string;
-  winnerTeam?: 1 | 2;
-  team1FightWins: number;
-  team2FightWins: number;
-  setScore: string;
-  createdBy: string;
-  createdByDisplayName?: string;
-  createdByAvatarUrl?: string;
-  resultStatus: "unverified" | "verified" | "voided";
-  resultModeratedAt?: number;
-  resultModeratedBy?: string;
-  _creationTime: number;
-  players: ModerationPlayer[];
-  fights: ModerationFight[];
-};
-
-type CancelableDraft = {
-  _id: string;
-  shortId: string;
-  status: "setup" | "coin_flip" | "realm_pick" | "banning" | "drafting" | "complete";
-  gameStarted?: boolean;
-  discordGuildId: string;
-  discordGuildName?: string;
-  createdBy: string;
-  createdByDisplayName?: string;
-  createdByAvatarUrl?: string;
-  teamSize: number;
-  playerCount: number;
-  assignedCount: number;
-  captainCount: number;
-  selectedClassCount: number;
-  fightCount: number;
-  minimumPlayers: number;
-  hasEnoughPlayers: boolean;
-  ageMinutes: number;
-  isLikelyStale: boolean;
-  cancelConfidence: "safe" | "probably_abandoned" | "needs_review";
-  cancelReasons: string[];
-  _creationTime: number;
-};
-
-type CancelledDraftEntry = {
-  _id: string;
-  shortId: string;
-  cancelledAt: number;
-  cancelledBy?: string;
-  cancelReason?: string;
-  discordGuildId: string;
-  discordGuildName?: string;
-  createdBy: string;
-  createdByDisplayName?: string;
-  playerCount: number;
-  assignedCount: number;
-  selectedClassCount: number;
-  fightCount: number;
-  _creationTime: number;
-};
-
-type Action = "verify" | "void" | "override_team_1" | "override_team_2";
-type SortOrder = "newest" | "oldest";
-type CancelableFilter = "safe" | "probably_abandoned" | "all";
-type ReviewedFilter = "all" | "verified" | "voided";
-type ConfirmAction = {
-  kind: "cancel" | "restore";
-  shortId: string;
-  title: string;
-  description: string;
-  confirmLabel: string;
-};
+import type {
+  Action,
+  CancelableDraft,
+  CancelableFilter,
+  CancelledDraftEntry,
+  ConfirmAction,
+  ModerationDraft,
+  ModerationPlayer,
+  ReviewedFilter,
+  SortOrder,
+} from "./moderationTypes";
 
 export default function AdminDraftModerationClient() {
   const [pendingDrafts, setPendingDrafts] = useState<ModerationDraft[]>([]);

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { createUserFromClerk } from "@/controllers/userController";
+import { createUserFromClerk } from "@/server/services/userService";
 import prisma from "../../../../prisma/prismaClient";
 import { createClerkWebhookHandler } from "@/server/api/clerkWebhookRouteHandler";
+import { jsonMethodNotAllowed } from "@/server/api/routeHandlers";
 
 export const runtime = "nodejs";
 
@@ -54,9 +55,6 @@ const postHandler = createClerkWebhookHandler({
   },
 });
 
-const methodNotAllowed = () =>
-  NextResponse.json({ success: false, message: "Method not allowed" }, { status: 405 });
-
 const runPost = async (request: Request) => {
   const rawBody = await request.text();
   const result = await postHandler({
@@ -75,17 +73,17 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  return methodNotAllowed();
+  return jsonMethodNotAllowed("POST");
 }
 
 export async function PUT() {
-  return methodNotAllowed();
+  return jsonMethodNotAllowed("POST");
 }
 
 export async function PATCH() {
-  return methodNotAllowed();
+  return jsonMethodNotAllowed("POST");
 }
 
 export async function DELETE() {
-  return methodNotAllowed();
+  return jsonMethodNotAllowed("POST");
 }

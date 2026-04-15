@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import * as characterController from "@/controllers/characterController";
+import * as characterController from "@/server/services/characterService";
 import prisma from "../../../../prisma/prismaClient";
 import { createCharactersCollectionRouteHandlers } from "@/server/api/charactersCollectionRouteHandlers";
 

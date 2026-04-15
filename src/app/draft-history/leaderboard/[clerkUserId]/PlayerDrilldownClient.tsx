@@ -42,52 +42,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { allClasses } from "@/app/draft/constants";
-const PIE_COLORS = ["#818cf8", "#374151"];
-
-function formatWinRate(rate: number): string {
-  return rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(1);
-}
-
-const getBreakdownBarClass = (label: string): string => {
-  const normalized = label.trim().toLowerCase();
-  if (normalized === "pvp") return "bg-indigo-400/60";
-  if (normalized === "albion" || normalized === "alb") return "bg-red-400/60";
-  if (normalized === "midgard" || normalized === "mid") return "bg-blue-400/60";
-  if (normalized === "hibernia" || normalized === "hib") return "bg-green-400/60";
-  return "bg-gray-400/60";
-};
-
-type ClassSortKey = "games" | "winRate" | "wins" | "losses";
-type ClassView = "table" | "map";
-type HeadToHeadView = "all" | "captain";
-type TeammateView = "winning" | "losing";
-
-const DEFAULT_CLASS_SORT: ClassSortKey = "winRate";
-const DEFAULT_CLASS_VIEW: ClassView = "table";
-const DEFAULT_HEAD_TO_HEAD_VIEW: HeadToHeadView = "all";
-const DEFAULT_TEAMMATE_VIEW: TeammateView = "winning";
-
-function parseClassSort(value: string | null): ClassSortKey {
-  if (value === "games" || value === "winRate" || value === "wins" || value === "losses") {
-    return value;
-  }
-  return DEFAULT_CLASS_SORT;
-}
-
-function parseClassView(value: string | null): ClassView {
-  if (value === "table" || value === "map") return value;
-  return DEFAULT_CLASS_VIEW;
-}
-
-function parseHeadToHeadView(value: string | null): HeadToHeadView {
-  if (value === "all" || value === "captain") return value;
-  return DEFAULT_HEAD_TO_HEAD_VIEW;
-}
-
-function parseTeammateView(value: string | null): TeammateView {
-  if (value === "winning" || value === "losing") return value;
-  return DEFAULT_TEAMMATE_VIEW;
-}
+import {
+  DEFAULT_CLASS_SORT,
+  DEFAULT_CLASS_VIEW,
+  DEFAULT_HEAD_TO_HEAD_VIEW,
+  DEFAULT_TEAMMATE_VIEW,
+  formatWinRate,
+  getBreakdownBarClass,
+  parseClassSort,
+  parseClassView,
+  parseHeadToHeadView,
+  parseTeammateView,
+  PIE_COLORS,
+  type ClassSortKey,
+  type ClassView,
+  type HeadToHeadView,
+  type TeammateView,
+} from "./drilldownViewState";
 
 export default function PlayerDrilldownClient({
   initialData,

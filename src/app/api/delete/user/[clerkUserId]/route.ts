@@ -1,7 +1,7 @@
 import {
   deleteUserByClerkUserId,
   getUserByClerkUserId,
-} from "@/controllers/userController";
+} from "@/server/services/userService";
 import { createDeleteUserByClerkUserIdRouteHandlers } from "@/server/deleteUserByClerkUserIdRouteHandlers";
 
 const handlers = createDeleteUserByClerkUserIdRouteHandlers({

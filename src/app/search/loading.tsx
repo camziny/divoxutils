@@ -1,5 +1,5 @@
 import React from "react";
-import UserListSkeleton from "../components/UserListSkeleton";
+import UserListSkeleton from "./_components/UserListSkeleton";
 
 export default function SearchLoading() {
   return (

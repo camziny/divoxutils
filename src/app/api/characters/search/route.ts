@@ -1,4 +1,4 @@
-import { fetchCharacterDetails } from "@/controllers/characterController";
+import { fetchCharacterDetails } from "@/server/services/characterService";
 import { createCharactersSearchRouteHandlers } from "@/server/charactersSearchRouteHandlers";
 
 const handlers = createCharactersSearchRouteHandlers({

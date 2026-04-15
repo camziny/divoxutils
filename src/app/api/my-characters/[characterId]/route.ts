@@ -4,7 +4,7 @@ import { revalidateTag } from "next/cache";
 import {
   getUserCharacterById,
   deleteUserCharacter,
-} from "../../../../controllers/userCharacterController";
+} from "@/server/services/userCharacterService";
 
 type RouteContext = {
   params: {

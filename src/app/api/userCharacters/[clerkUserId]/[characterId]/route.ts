@@ -3,7 +3,7 @@ import { createUserCharacterRouteHandlers } from "@/server/userCharacterRouteHan
 import {
   deleteUserCharacter,
   getUserCharacterById,
-} from "@/controllers/userCharacterController";
+} from "@/server/services/userCharacterService";
 
 const handlers = createUserCharacterRouteHandlers({
   getAuthUserId: async () => {

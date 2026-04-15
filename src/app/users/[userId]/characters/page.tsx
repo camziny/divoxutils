@@ -1,18 +1,18 @@
 import React from "react";
 import dynamic from "next/dynamic";
-import { PageReload } from "@/app/components/PageReload";
+import { PageReload } from "@/app/user/_components/PageReload";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
 import prisma from "../../../../../prisma/prismaClient";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
-import DraftProfileButton from "@/app/components/DraftProfileButton";
+import DraftProfileButton from "@/app/user/_components/DraftProfileButton";
 import { getCurrentUserCharacterListLayoutPreference } from "@/server/characterListLayoutPreference";
 
 const CharacterListOptimized = dynamic(
   () => import("@/app/components/CharacterListOptimized"),
   {
     loading: () => {
-      const CharacterListSkeleton = require("@/app/components/CharacterListSkeleton").default;
+      const CharacterListSkeleton = require("@/app/user/_components/CharacterListSkeleton").default;
       return <CharacterListSkeleton />;
     },
   }

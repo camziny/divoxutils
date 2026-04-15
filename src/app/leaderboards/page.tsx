@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
-import LeaderboardWrapper from "@/app/components/LeaderboardWrapper";
-import LeaderboardTooltip from "@/app/components/LeaderboardTooltip";
+import LeaderboardWrapper from "./_components/LeaderboardWrapper";
+import LeaderboardTooltip from "./_components/LeaderboardTooltip";
 import { getLeaderboardData, type LeaderboardItem } from "@/server/leaderboard";
 
 export const metadata: Metadata = {

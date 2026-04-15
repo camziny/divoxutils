@@ -2,7 +2,7 @@ import prisma from "../../../../prisma/prismaClient";
 import {
   getLastProcessedHeraldCharacterId,
   updateLastProcessedHeraldCharacterId,
-} from "@/controllers/batchStateController";
+} from "@/server/services/batchStateService";
 import { createBatchedHeraldUpdateRouteHandlers } from "@/server/api/batchedHeraldUpdateRouteHandlers";
 
 const handlers = createBatchedHeraldUpdateRouteHandlers({

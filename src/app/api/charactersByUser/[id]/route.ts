@@ -1,4 +1,4 @@
-import { getUserCharactersByUserId } from "@/controllers/userCharacterController";
+import { getUserCharactersByUserId } from "@/server/services/userCharacterService";
 import { createCharactersByUserIdRouteHandlers } from "@/server/charactersByUserIdRouteHandlers";
 
 const handlers = createCharactersByUserIdRouteHandlers({

@@ -1,9 +1,12 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
 const PROD_BLOCKED_TEST_ROUTES = new Set([
-  "/draft/test",
-  "/draft-history/test",
-  "/draft-history/link-test",
+  "/test",
+  "/test/support-modal",
+  "/test/loading",
+  "/test/draft",
+  "/test/draft-history",
+  "/test/draft-history/link-card",
 ]);
 
 export default clerkMiddleware((_auth, req) => {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import SupporterBadge, { SUPPORTER_TIERS } from "@/app/components/SupporterBadge";
+import SupporterBadge, { SUPPORTER_TIERS } from "@/components/support/SupporterBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 

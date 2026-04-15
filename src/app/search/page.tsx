@@ -1,9 +1,9 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
-import UserListWrapper from "@/app/components/UserListWrapper";
-import UserAndCharacterNameSearch from "@/app/components/UserAndCharacterSearchResults";
-import SearchUserListToggle from "@/app/components/SearchUserListToggle";
-import UserListSkeleton from "@/app/components/UserListSkeleton";
+import UserListWrapper from "./_components/UserListWrapper";
+import UserAndCharacterNameSearch from "./_components/UserAndCharacterSearchResults";
+import SearchUserListToggle from "./_components/SearchUserListToggle";
+import UserListSkeleton from "./_components/UserListSkeleton";
 import { SearchProvider } from "./SearchContext";
 import { shouldHideUserListForQuery } from "./urlState";
 
