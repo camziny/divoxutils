@@ -1,6 +1,6 @@
 import * as userController from "@/server/services/userService";
 import { clerkClient } from "@clerk/nextjs/server";
-import { createUserByClerkIdRouteHandlers } from "@/server/userByClerkIdRouteHandlers";
+import { createUserByClerkIdRouteHandlers } from "@/server/api/userByClerkIdRouteHandlers";
 
 const handlers = createUserByClerkIdRouteHandlers({
   deps: {

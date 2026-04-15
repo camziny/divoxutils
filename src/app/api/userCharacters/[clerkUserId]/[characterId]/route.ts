@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { createUserCharacterRouteHandlers } from "@/server/userCharacterRouteHandlers";
+import { createUserCharacterRouteHandlers } from "@/server/api/userCharacterRouteHandlers";
 import {
   deleteUserCharacter,
   getUserCharacterById,

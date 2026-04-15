@@ -1,5 +1,5 @@
 import * as characterController from "@/server/services/characterService";
-import { createCharacterByIdRouteHandlers } from "@/server/characterByIdRouteHandlers";
+import { createCharacterByIdRouteHandlers } from "@/server/api/characterByIdRouteHandlers";
 
 const handlers = createCharacterByIdRouteHandlers({
   deps: {

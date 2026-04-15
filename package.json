@@ -1,6 +1,7 @@
 {
   "name": "divoxutils",
   "version": "0.1.0",
+  "packageManager": "pnpm@10.0.0",
   "engines": {
     "node": ">=20 <21"
   },
@@ -12,6 +13,9 @@
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm run test:feature",
+    "check": "pnpm run lint && pnpm run typecheck && pnpm run test:feature && pnpm run build",
     "seed:from-prod": "node scripts/seedFromProduction.js",
     "seed:draft-history:dev": "tsx scripts/seedDraftHistoryDev.ts",
     "test:draft": "tsx --test tests/draft.feature.test.ts",

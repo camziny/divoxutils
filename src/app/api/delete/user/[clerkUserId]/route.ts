@@ -2,7 +2,7 @@ import {
   deleteUserByClerkUserId,
   getUserByClerkUserId,
 } from "@/server/services/userService";
-import { createDeleteUserByClerkUserIdRouteHandlers } from "@/server/deleteUserByClerkUserIdRouteHandlers";
+import { createDeleteUserByClerkUserIdRouteHandlers } from "@/server/api/deleteUserByClerkUserIdRouteHandlers";
 
 const handlers = createDeleteUserByClerkUserIdRouteHandlers({
   apiSecret: process.env.DISCORD_BOT_API_KEY,

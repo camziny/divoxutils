@@ -2078,7 +2078,9 @@ test("recordFightResult accepts realm-tagged Mauler in pvp", async () => {
 
   const fights = await ctx.db.query("draftFights").collect();
   assert.equal(fights.length, 1);
-  const maulerEntry = fights[0].classesByPlayer.find((entry) => entry.playerId === "p-creator");
+  const maulerEntry = fights[0].classesByPlayer.find(
+    (entry: { playerId: string }) => entry.playerId === "p-creator"
+  );
   assert.equal(maulerEntry?.className, "Mauler (Alb)");
 });
 

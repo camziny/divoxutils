@@ -1,6 +1,6 @@
 import prisma from "../../../../../../prisma/prismaClient";
 import { getAllUserNames } from "@/server/services/userCharacterService";
-import { createUsersStatsByNameRouteHandlers } from "@/server/usersStatsByNameRouteHandlers";
+import { createUsersStatsByNameRouteHandlers } from "@/server/api/usersStatsByNameRouteHandlers";
 
 const handlers = createUsersStatsByNameRouteHandlers({
   apiSecret: process.env.DISCORD_BOT_API_KEY,
