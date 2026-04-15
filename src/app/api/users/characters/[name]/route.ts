@@ -1,7 +1,7 @@
 import {
   getAllUserNames,
   getUserCharactersByUserName,
-} from "@/controllers/userCharacterController";
+} from "@/server/services/userCharacterService";
 import { createUsersCharactersByNameRouteHandlers } from "@/server/usersCharactersByNameRouteHandlers";
 
 const handlers = createUsersCharactersByNameRouteHandlers({

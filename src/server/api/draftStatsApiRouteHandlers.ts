@@ -8,15 +8,7 @@ import {
   getPlayerDraftDrilldownStats,
 } from "@/server/draftStats";
 import { parseDraftStatsFiltersFromSearchParams } from "@/server/api/draftStatsQueryParams";
-
-function methodNotAllowed() {
-  const response = NextResponse.json(
-    { error: "Method not allowed" },
-    { status: 405 }
-  );
-  response.headers.set("Allow", "GET");
-  return response;
-}
+import { jsonMethodNotAllowed } from "@/server/api/routeHandlers";
 
 export function createOverallDraftStatsRouteHandlers(deps?: {
   getOverallRows?: (filters: DraftStatsFilters) => Promise<unknown>;
@@ -26,7 +18,7 @@ export function createOverallDraftStatsRouteHandlers(deps?: {
   return {
     GET: async (request: NextRequest) => {
       if (request.method !== "GET") {
-        return methodNotAllowed();
+        return jsonMethodNotAllowed("GET");
       }
 
       let filters: DraftStatsFilters;
@@ -63,7 +55,7 @@ export function createCaptainDraftStatsRouteHandlers(deps?: {
   return {
     GET: async (request: NextRequest) => {
       if (request.method !== "GET") {
-        return methodNotAllowed();
+        return jsonMethodNotAllowed("GET");
       }
 
       let filters: DraftStatsFilters;
@@ -104,7 +96,7 @@ export function createHeadToHeadDraftStatsRouteHandlers(deps?: {
   return {
     GET: async (request: NextRequest) => {
       if (request.method !== "GET") {
-        return methodNotAllowed();
+        return jsonMethodNotAllowed("GET");
       }
 
       const searchParams = new URL(request.url).searchParams;
@@ -166,7 +158,7 @@ export function createPlayerDraftDrilldownRouteHandlers(deps?: {
   return {
     GET: async (request: NextRequest) => {
       if (request.method !== "GET") {
-        return methodNotAllowed();
+        return jsonMethodNotAllowed("GET");
       }
 
       const searchParams = new URL(request.url).searchParams;
@@ -210,7 +202,7 @@ export function createDraftLogRouteHandlers(deps?: {
   return {
     GET: async (request: NextRequest) => {
       if (request.method !== "GET") {
-        return methodNotAllowed();
+        return jsonMethodNotAllowed("GET");
       }
 
       try {

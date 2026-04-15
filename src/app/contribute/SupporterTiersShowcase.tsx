@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import SupporterBadge from "@/app/components/SupporterBadge";
+import SupporterBadge from "@/components/support/SupporterBadge";
 import { SUPPORTER_TIER_PLANS } from "./supporterTierPlans";
 
 export default function SupporterTiersShowcase() {

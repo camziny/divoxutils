@@ -4,17 +4,14 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Navbar from "./navbar";
 import { ClerkProvider } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
 import Footer from "./footer";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "./providers";
 import { Toaster } from "sonner";
-import SupportPromptModal from "./components/SupportPromptModal";
-import SignedOutNudge from "./components/SignedOutNudge";
-import prisma from "../../prisma/prismaClient";
-import { isAdminClerkUserId } from "@/server/adminAuth";
-import { isEffectivelySupporter } from "@/server/supporterStatus";
+import SupportPromptModal from "@/components/support/SupportPromptModal";
+import SignedOutNudge from "@/components/auth/SignedOutNudge";
+import { getLayoutViewerContext } from "@/server/layoutViewerContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -46,27 +43,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let isSupporter = false;
-  let isAdmin = false;
-  try {
-    const { userId } = await auth();
-    isAdmin = isAdminClerkUserId(userId);
-    if (userId) {
-      const user = await prisma.user.findUnique({
-        where: { clerkUserId: userId },
-        select: {
-          supporterTier: true,
-          subscriptionStatus: true,
-          subscriptionCancelAtPeriodEnd: true,
-          subscriptionCurrentPeriodEnd: true,
-        },
-      });
-      isSupporter = isEffectivelySupporter(user);
-    }
-  } catch {
-    isSupporter = false;
-    isAdmin = false;
-  }
+  const { isSupporter, isAdmin } = await getLayoutViewerContext();
 
   return (
     <html lang="en">

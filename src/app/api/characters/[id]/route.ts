@@ -1,4 +1,4 @@
-import * as characterController from "@/controllers/characterController";
+import * as characterController from "@/server/services/characterService";
 import { createCharacterByIdRouteHandlers } from "@/server/characterByIdRouteHandlers";
 
 const handlers = createCharacterByIdRouteHandlers({

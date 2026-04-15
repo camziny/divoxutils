@@ -1,4 +1,4 @@
-import * as userController from "@/controllers/userController";
+import * as userController from "@/server/services/userService";
 import { createUsersRouteHandlers } from "@/server/usersRouteHandlers";
 
 const handlers = createUsersRouteHandlers({

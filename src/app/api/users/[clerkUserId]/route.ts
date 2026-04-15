@@ -1,4 +1,4 @@
-import * as userController from "@/controllers/userController";
+import * as userController from "@/server/services/userService";
 import { clerkClient } from "@clerk/nextjs/server";
 import { createUserByClerkIdRouteHandlers } from "@/server/userByClerkIdRouteHandlers";
 

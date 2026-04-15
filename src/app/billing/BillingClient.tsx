@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { track } from "@vercel/analytics/react";
-import SupporterBadge from "@/app/components/SupporterBadge";
+import SupporterBadge from "@/components/support/SupporterBadge";
 import {
   appendTrackedCheckoutSessionId,
   hasTrackedCheckoutSessionId,

@@ -18,7 +18,8 @@ test("isSupportPromptExcludedPath excludes required routes", () => {
   assert.equal(isSupportPromptExcludedPath("/draft/abc123/extra"), false);
   assert.equal(isSupportPromptExcludedPath("/sign-in"), true);
   assert.equal(isSupportPromptExcludedPath("/sign-up/continue"), true);
-  assert.equal(isSupportPromptExcludedPath("/support-modal-test"), true);
+  assert.equal(isSupportPromptExcludedPath("/test/support-modal"), true);
+  assert.equal(isSupportPromptExcludedPath("/support-modal-test"), false);
   assert.equal(isSupportPromptExcludedPath(null), true);
   assert.equal(isSupportPromptExcludedPath("/user/cameron/characters"), false);
 });

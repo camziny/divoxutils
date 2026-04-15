@@ -2,7 +2,7 @@ import prisma from "../../../../prisma/prismaClient";
 import {
   getLastProcessedRealmCharacterId,
   updateLastProcessedRealmCharacterId,
-} from "@/controllers/batchStateController";
+} from "@/server/services/batchStateService";
 import { createBatchedRealmUpdateRouteHandlers } from "@/server/api/batchedRealmUpdateRouteHandlers";
 
 const handlers = createBatchedRealmUpdateRouteHandlers({

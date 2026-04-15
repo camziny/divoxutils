@@ -1,5 +1,5 @@
 import prisma from "../../../../../../prisma/prismaClient";
-import { getAllUserNames } from "@/controllers/userCharacterController";
+import { getAllUserNames } from "@/server/services/userCharacterService";
 import { createUsersStatsByNameRouteHandlers } from "@/server/usersStatsByNameRouteHandlers";
 
 const handlers = createUsersStatsByNameRouteHandlers({
