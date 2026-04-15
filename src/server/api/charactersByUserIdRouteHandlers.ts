@@ -1,0 +1,1 @@
+export { createCharactersByUserIdRouteHandlers } from "../charactersByUserIdRouteHandlers";

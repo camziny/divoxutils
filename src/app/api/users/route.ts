@@ -1,5 +1,5 @@
 import * as userController from "@/server/services/userService";
-import { createUsersRouteHandlers } from "@/server/usersRouteHandlers";
+import { createUsersRouteHandlers } from "@/server/api/usersRouteHandlers";
 
 const handlers = createUsersRouteHandlers({
   deps: {

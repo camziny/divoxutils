@@ -1,5 +1,5 @@
 import { getUserCharactersByUserId } from "@/server/services/userCharacterService";
-import { createCharactersByUserIdRouteHandlers } from "@/server/charactersByUserIdRouteHandlers";
+import { createCharactersByUserIdRouteHandlers } from "@/server/api/charactersByUserIdRouteHandlers";
 
 const handlers = createCharactersByUserIdRouteHandlers({
   deps: {

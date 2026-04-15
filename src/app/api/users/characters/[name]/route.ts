@@ -2,7 +2,7 @@ import {
   getAllUserNames,
   getUserCharactersByUserName,
 } from "@/server/services/userCharacterService";
-import { createUsersCharactersByNameRouteHandlers } from "@/server/usersCharactersByNameRouteHandlers";
+import { createUsersCharactersByNameRouteHandlers } from "@/server/api/usersCharactersByNameRouteHandlers";
 
 const handlers = createUsersCharactersByNameRouteHandlers({
   apiSecret: process.env.DISCORD_BOT_API_KEY,

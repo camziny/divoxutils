@@ -18,6 +18,14 @@ test("shared components are not sourced from app components", () => {
 test("legacy app component paths point to shared components", () => {
   const appSupporterBadgeSource = readFileSync("src/app/components/SupporterBadge.tsx", "utf8");
   const appSignedOutNudgeSource = readFileSync("src/app/components/SignedOutNudge.tsx", "utf8");
+  const appHoverPrefetchLinkSource = readFileSync(
+    "src/app/components/HoverPrefetchLink.tsx",
+    "utf8"
+  );
+  const appViewportPrefetchLinkSource = readFileSync(
+    "src/app/components/ViewportPrefetchLink.tsx",
+    "utf8"
+  );
 
   assert.equal(
     appSupporterBadgeSource.includes('from "@/components/support/SupporterBadge"'),
@@ -27,4 +35,17 @@ test("legacy app component paths point to shared components", () => {
     appSignedOutNudgeSource.includes('from "@/components/auth/SignedOutNudge"'),
     true
   );
+  assert.equal(
+    appHoverPrefetchLinkSource.includes('from "@/components/navigation/HoverPrefetchLink"'),
+    true
+  );
+  assert.equal(
+    appViewportPrefetchLinkSource.includes('from "@/components/navigation/ViewportPrefetchLink"'),
+    true
+  );
+});
+
+test("legacy duplicate route component folders are removed", () => {
+  assert.equal(existsSync("src/app/leaderboards/components"), false);
+  assert.equal(existsSync("src/app/search/components"), false);
 });

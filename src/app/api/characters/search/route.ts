@@ -1,5 +1,5 @@
 import { fetchCharacterDetails } from "@/server/services/characterService";
-import { createCharactersSearchRouteHandlers } from "@/server/charactersSearchRouteHandlers";
+import { createCharactersSearchRouteHandlers } from "@/server/api/charactersSearchRouteHandlers";
 
 const handlers = createCharactersSearchRouteHandlers({
   deps: {

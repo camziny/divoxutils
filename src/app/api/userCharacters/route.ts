@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import * as userCharacterController from "@/server/services/userCharacterService";
-import { createUserCharactersRouteHandlers } from "@/server/userCharactersRouteHandlers";
+import { createUserCharactersRouteHandlers } from "@/server/api/userCharactersRouteHandlers";
 
 const handlers = createUserCharactersRouteHandlers({
   deps: {

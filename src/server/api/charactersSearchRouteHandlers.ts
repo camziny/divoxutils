@@ -1,0 +1,1 @@
+export { createCharactersSearchRouteHandlers } from "../charactersSearchRouteHandlers";

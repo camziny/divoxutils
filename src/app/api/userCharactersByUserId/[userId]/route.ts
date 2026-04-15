@@ -1,4 +1,4 @@
-import { createUserCharactersByUserIdRouteHandlers } from "@/server/userCharactersByUserIdRouteHandlers";
+import { createUserCharactersByUserIdRouteHandlers } from "@/server/api/userCharactersByUserIdRouteHandlers";
 import { getUserCharactersByUserId } from "@/server/services/userCharacterService";
 
 const handlers = createUserCharactersByUserIdRouteHandlers({
