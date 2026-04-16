@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
-import HomeCarousel from "./components/HomeCarousel";
+import HomeCarousel from "./_components/HomeCarousel";
 
 export const metadata: Metadata = {
   title: "Home - divoxutils",

@@ -1,5 +1,5 @@
 import React from "react";
-import LeaderboardListSkeleton from "../components/LeaderboardListSkeleton";
+import LeaderboardListSkeleton from "./_components/LeaderboardListSkeleton";
 import LeaderboardTooltip from "./_components/LeaderboardTooltip";
 
 export default function LeaderboardsLoading() {

@@ -1,5 +1,4 @@
 import React from "react";
-import CharacterNameSearch from "../components/UserAndCharacterSearchResults";
 
 export const metadata = {
   title: "Search Characters - divoxutils",

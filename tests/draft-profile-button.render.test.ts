@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import DraftProfileButton from "../src/app/components/DraftProfileButton";
+import DraftProfileButton from "../src/app/user/_components/DraftProfileButton";
 
 test("DraftProfileButton renders link and swords icon", () => {
   const href = "/draft-history/leaderboard/test~user_123";

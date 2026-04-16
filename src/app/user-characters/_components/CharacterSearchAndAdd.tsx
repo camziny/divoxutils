@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import useDebounce from "./UseDebounce";
+import useDebounce from "./useDebounce";
 import { Plus, X, Loader2, Search } from "lucide-react";
 import CharacterSearchAndAddTooltip from "./CharacterSearchAndAddTooltip";
 import { getRealmRankForPoints, formatRealmRankWithLevel } from "@/utils/character";
@@ -46,7 +46,6 @@ type CharacterType = {
   heraldMasterLevel: string;
 };
 
-
 function CharacterSearchAndAdd() {
   const { userId } = useAuth();
   const router = useRouter();
@@ -62,10 +61,11 @@ function CharacterSearchAndAdd() {
 
   const debouncedSearchTerm = useDebounce(name, 300);
 
-  const fetchCharacters = useCallback(async (name: string, cluster: string) => {
+  const fetchCharacters = useCallback(async (name: string, cluster: string, signal?: AbortSignal) => {
     const params = new URLSearchParams({ name, cluster });
     const response = await fetch(`/api/characters/search?${params.toString()}`, {
       cache: "no-store",
+      signal,
     });
     if (!response.ok) {
       throw new Error(`Search failed: ${response.statusText}`);
@@ -74,8 +74,11 @@ function CharacterSearchAndAdd() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const performSearch = async () => {
       if (debouncedSearchTerm.length < 3) {
+        setIsSearching(false);
         if (debouncedSearchTerm.length > 0) {
           setMessage("Please enter at least 3 characters");
         } else {
@@ -91,21 +94,30 @@ function CharacterSearchAndAdd() {
       setIsSearching(true);
 
       try {
-        const results = await fetchCharacters(debouncedSearchTerm, cluster);
+        const results = await fetchCharacters(debouncedSearchTerm, cluster, controller.signal);
         if (results && results.results) {
           setSearchResults(results.results);
         } else {
           setSearchResults([]);
         }
       } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
         console.error("Error fetching characters:", error);
         setMessage("Failed to search characters. Please try again.");
       } finally {
-        setIsSearching(false);
+        if (!controller.signal.aborted) {
+          setIsSearching(false);
+        }
       }
     };
 
     performSearch();
+
+    return () => {
+      controller.abort();
+    };
   }, [debouncedSearchTerm, cluster, fetchCharacters]);
 
   const handleToggleCharacter = useCallback((characterId: string) => {
@@ -164,6 +176,7 @@ function CharacterSearchAndAdd() {
   }, [selectedCharacters, router, userId, startTransition]);
 
   const handleClear = useCallback(() => {
+    setIsSearching(false);
     setSearchResults([]);
     setName("");
     setSelectedCharacters(new Set());
@@ -218,7 +231,7 @@ function CharacterSearchAndAdd() {
             {name && (
               <button
                 type="button"
-                onClick={() => { setName(""); setSearchResults([]); setHasSearched(false); }}
+                onClick={handleClear}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40"
                 aria-label="Clear character search"
               >
@@ -242,7 +255,7 @@ function CharacterSearchAndAdd() {
           </div>
         )}
 
-        {isExpanded && !isSearching && hasSearched && !hasResults && name.length >= 3 && (
+        {isExpanded && !isSearching && hasSearched && !hasResults && !message && name.length >= 3 && (
           <div className="mt-4 py-8 text-center">
             <p className="text-sm text-gray-500">No characters found</p>
             <p className="text-[11px] text-gray-500 mt-1">Try a different name or server</p>
