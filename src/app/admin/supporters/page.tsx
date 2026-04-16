@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { isAdminClerkUserId } from "@/server/adminAuth";
-import AdminSupportersClient from "./AdminSupportersClient";
+import AdminSupportersClient from "./_components/AdminSupportersClient";
 
 export const metadata = {
   title: "Admin Supporters - divoxutils",

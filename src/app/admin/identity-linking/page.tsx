@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { isAdminClerkUserId } from "@/server/adminAuth";
-import AdminIdentityLinkingClient from "./AdminIdentityLinkingClient";
+import AdminIdentityLinkingClient from "./_components/AdminIdentityLinkingClient";
 
 export const metadata = {
   title: "Admin Identity Linking - divoxutils",

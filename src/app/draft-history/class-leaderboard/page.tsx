@@ -1,6 +1,6 @@
 import { allClasses } from "@/app/draft/constants";
 import { getClassDraftStats } from "@/server/draftStats";
-import ClassLeaderboardClient from "./ClassLeaderboardClient";
+import ClassLeaderboardClient from "./_components/ClassLeaderboardClient";
 
 export const revalidate = 60;
 

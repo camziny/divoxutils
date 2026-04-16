@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchActive } from "../SearchContext";
+import { useSearchActive } from "../_lib/SearchContext";
 
 export default function SearchUserListToggle({
   children,
