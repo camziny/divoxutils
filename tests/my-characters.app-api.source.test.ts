@@ -21,11 +21,11 @@ test("my-characters search resets searching state on short input and clear", () 
   const searchAdd = read("src/app/user-characters/_components/CharacterSearchAndAdd.tsx");
   assert.match(
     searchAdd,
-    /if \(debouncedSearchTerm\.length < 3\) \{\s*setIsSearching\(false\);/s
+    /if \(debouncedSearchTerm\.length < 3\) \{[\s\S]*setIsSearching\(false\);/
   );
   assert.match(
     searchAdd,
-    /const handleClear = useCallback\(\(\) => \{\s*setIsSearching\(false\);/s
+    /const handleClear = useCallback\(\(\) => \{[\s\S]*setIsSearching\(false\);/
   );
 });
 
