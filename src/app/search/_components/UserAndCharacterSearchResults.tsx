@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import useDebounce from "./useDebounce";
 import Loading from "@/app/loading";
-import { buildSearchUrl, shouldHideUserListForQuery } from "../urlState";
-import { useSearchActive } from "../SearchContext";
+import { buildSearchUrl, shouldHideUserListForQuery } from "../_lib/urlState";
+import { useSearchActive } from "../_lib/SearchContext";
 import {
   formatRealmRankWithLevel,
   getRealmRankForPoints,

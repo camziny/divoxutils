@@ -6,7 +6,7 @@ import SupporterBadge, {
   supporterRowClass,
   supporterNameStyle,
 } from "@/components/support/SupporterBadge";
-import { useSearchActive } from "../SearchContext";
+import { useSearchActive } from "../_lib/SearchContext";
 import { useUser } from "@clerk/nextjs";
 
 type User = {

@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import AdminIdentityClaimsClient from "./AdminIdentityClaimsClient";
+import AdminIdentityClaimsClient from "./_components/AdminIdentityClaimsClient";
 import { isAdminClerkUserId } from "@/server/adminAuth";
 
 export const metadata = {

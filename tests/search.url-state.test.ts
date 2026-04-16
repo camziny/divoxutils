@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildSearchUrl, shouldHideUserListForQuery } from "../src/app/search/urlState";
+import { buildSearchUrl, shouldHideUserListForQuery } from "../src/app/search/_lib/urlState";
 
 test("shouldHideUserListForQuery hides list for trimmed query length >= 3", () => {
   assert.equal(shouldHideUserListForQuery("abc"), true);

@@ -4,8 +4,8 @@ import UserListWrapper from "./_components/UserListWrapper";
 import UserAndCharacterNameSearch from "./_components/UserAndCharacterSearchResults";
 import SearchUserListToggle from "./_components/SearchUserListToggle";
 import UserListSkeleton from "./_components/UserListSkeleton";
-import { SearchProvider } from "./SearchContext";
-import { shouldHideUserListForQuery } from "./urlState";
+import { SearchProvider } from "./_lib/SearchContext";
+import { shouldHideUserListForQuery } from "./_lib/urlState";
 
 export const metadata: Metadata = {
   title: "Search Users - divoxutils",
