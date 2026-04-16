@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   getWindowedImpressions,
   resolveCadence,
-} from "../src/app/components/supportPromptCadence";
+} from "../src/components/support/supportPromptCadence";
 
 test("resolveCadence returns unified cadence config for signed-in users", () => {
   const cadence = resolveCadence(true);

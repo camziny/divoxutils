@@ -5,7 +5,7 @@ import {
   shouldClearKnownExempt,
   isSupportPromptEligible,
   isSupportPromptExcludedPath,
-} from "../src/app/components/supportPromptRules";
+} from "../src/components/support/supportPromptRules";
 
 test("isSupportPromptExcludedPath excludes required routes", () => {
   assert.equal(isSupportPromptExcludedPath("/"), true);

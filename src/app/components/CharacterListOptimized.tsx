@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useCallback, memo, useTransition, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import CharacterTableHeader from "./CharacterTableHeader";
-import CharacterListSkeleton from "./CharacterListSkeleton";
+import CharacterListSkeleton from "@/app/user/_components/CharacterListSkeleton";
 import { CharacterData } from "@/utils/character";
 import { sortCharacters } from "@/utils/sortCharacters";
 import { useUser } from "@clerk/nextjs";

@@ -1,6 +1,6 @@
-import DraftHistoryNav from "./DraftHistoryNav";
+import DraftHistoryNav from "./_components/DraftHistoryNav";
 import { getLiveDraftCount } from "@/server/draftLive";
-import DraftHistoryNavAutoRefresh from "./DraftHistoryNavAutoRefresh";
+import DraftHistoryNavAutoRefresh from "./_components/DraftHistoryNavAutoRefresh";
 
 export const revalidate = 30;
 

@@ -5,14 +5,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { track } from "@vercel/analytics/react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import SupporterBadge from "./SupporterBadge";
-import { getWindowedImpressions, resolveCadence } from "./supportPromptCadence";
-import { SUPPORT_PROMPT_TIER_PLANS } from "./supportPromptTierPlans";
+import SupporterBadge from "@/components/support/SupporterBadge";
+import { getWindowedImpressions, resolveCadence } from "@/components/support/supportPromptCadence";
+import { SUPPORT_PROMPT_TIER_PLANS } from "@/components/support/supportPromptTierPlans";
 import {
   isKnownExemptActive,
   shouldClearKnownExempt,
   isSupportPromptEligible,
-} from "./supportPromptRules";
+} from "@/components/support/supportPromptRules";
 
 const CLOSE_DELAY_SECONDS = 10;
 const KNOWN_EXEMPT_UNTIL_KEY = "divoxutils_support_prompt_known_exempt_until_v1";

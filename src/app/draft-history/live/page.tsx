@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { User } from "lucide-react";
 import { getLiveDraftRows } from "@/server/draftLive";
-import LiveDraftsAutoRefresh from "./LiveDraftsAutoRefresh";
+import LiveDraftsAutoRefresh from "./_components/LiveDraftsAutoRefresh";
 
 export const revalidate = 15;
 

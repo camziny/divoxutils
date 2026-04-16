@@ -1,1 +1,0 @@
-export { ViewportPrefetchLink } from "@/components/navigation/ViewportPrefetchLink";

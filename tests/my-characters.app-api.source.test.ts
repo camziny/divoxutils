@@ -10,11 +10,31 @@ function read(relativePath: string) {
 }
 
 test("my-characters client calls app api routes for add/delete", () => {
-  const searchAdd = read("src/app/components/CharacterSearchAndAdd.tsx");
+  const searchAdd = read("src/app/user-characters/_components/CharacterSearchAndAdd.tsx");
   const list = read("src/app/components/CharacterListOptimized.tsx");
 
   assert.match(searchAdd, /fetch\("\/api\/my-characters\/add"/);
   assert.match(list, /fetch\(\s*`\/api\/my-characters\/\$\{characterId\}`/);
+});
+
+test("my-characters search resets searching state on short input and clear", () => {
+  const searchAdd = read("src/app/user-characters/_components/CharacterSearchAndAdd.tsx");
+  assert.match(
+    searchAdd,
+    /if \(debouncedSearchTerm\.length < 3\) \{\s*setIsSearching\(false\);/s
+  );
+  assert.match(
+    searchAdd,
+    /const handleClear = useCallback\(\(\) => \{\s*setIsSearching\(false\);/s
+  );
+});
+
+test("my-characters search empty-state is suppressed when an error message exists", () => {
+  const searchAdd = read("src/app/user-characters/_components/CharacterSearchAndAdd.tsx");
+  assert.match(
+    searchAdd,
+    /isExpanded && !isSearching && hasSearched && !hasResults && !message && name\.length >= 3/
+  );
 });
 
 test("app api handlers use auth and revalidate public character cache tag", () => {

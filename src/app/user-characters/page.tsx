@@ -1,12 +1,12 @@
 import React from "react";
 import dynamic from "next/dynamic";
-import CharacterSearchAndAdd from "../components/CharacterSearchAndAdd";
+import CharacterSearchAndAdd from "./_components/CharacterSearchAndAdd";
 import { currentUser } from "@clerk/nextjs/server";
 import { Suspense } from "react";
 import Loading from "../loading";
 import ShareProfileButton from "../user/_components/ShareProfileButton";
 import DraftProfileButton from "../user/_components/DraftProfileButton";
-import SupporterBadge from "../components/SupporterBadge";
+import SupporterBadge from "@/components/support/SupporterBadge";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import prisma from "../../../prisma/prismaClient";
@@ -39,10 +39,10 @@ export const metadata: Metadata = {
 };
 
 const CharacterListOptimized = dynamic(
-  () => import("../components/CharacterListOptimized"),
+  () => import("@/app/components/CharacterListOptimized"),
   {
     loading: () => {
-      const CharacterListSkeleton = require("../components/CharacterListSkeleton").default;
+      const CharacterListSkeleton = require("@/app/user/_components/CharacterListSkeleton").default;
       return <CharacterListSkeleton />;
     },
   }

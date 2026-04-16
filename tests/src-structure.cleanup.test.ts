@@ -15,34 +15,14 @@ test("shared components are not sourced from app components", () => {
   assert.equal(signedOutNudgeSource.includes("@/app/components/"), false);
 });
 
-test("legacy app component paths point to shared components", () => {
-  const appSupporterBadgeSource = readFileSync("src/app/components/SupporterBadge.tsx", "utf8");
-  const appSignedOutNudgeSource = readFileSync("src/app/components/SignedOutNudge.tsx", "utf8");
-  const appHoverPrefetchLinkSource = readFileSync(
-    "src/app/components/HoverPrefetchLink.tsx",
-    "utf8"
-  );
-  const appViewportPrefetchLinkSource = readFileSync(
-    "src/app/components/ViewportPrefetchLink.tsx",
-    "utf8"
-  );
-
-  assert.equal(
-    appSupporterBadgeSource.includes('from "@/components/support/SupporterBadge"'),
-    true
-  );
-  assert.equal(
-    appSignedOutNudgeSource.includes('from "@/components/auth/SignedOutNudge"'),
-    true
-  );
-  assert.equal(
-    appHoverPrefetchLinkSource.includes('from "@/components/navigation/HoverPrefetchLink"'),
-    true
-  );
-  assert.equal(
-    appViewportPrefetchLinkSource.includes('from "@/components/navigation/ViewportPrefetchLink"'),
-    true
-  );
+test("legacy app component wrappers are removed", () => {
+  assert.equal(existsSync("src/app/components/SupporterBadge.tsx"), false);
+  assert.equal(existsSync("src/app/components/SignedOutNudge.tsx"), false);
+  assert.equal(existsSync("src/app/components/HoverPrefetchLink.tsx"), false);
+  assert.equal(existsSync("src/app/components/ViewportPrefetchLink.tsx"), false);
+  assert.equal(existsSync("src/app/components/supportPromptCadence.ts"), false);
+  assert.equal(existsSync("src/app/components/supportPromptRules.ts"), false);
+  assert.equal(existsSync("src/app/components/supportPromptTierPlans.ts"), false);
 });
 
 test("legacy duplicate route component folders are removed", () => {

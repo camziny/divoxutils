@@ -108,7 +108,7 @@ export default function HomeCarousel() {
             </div>
           ))}
         </div>
-        
+
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
           <div className="flex space-x-3">
             {slides.map((_, index) => (

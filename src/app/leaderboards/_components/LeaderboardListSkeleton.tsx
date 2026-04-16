@@ -10,7 +10,7 @@ const LeaderboardListSkeleton = () => {
             <div className="animate-pulse bg-gray-800 h-8 w-20 border-r border-gray-700/50"></div>
             <div className="animate-pulse bg-gray-800 rounded-r-md h-8 w-20"></div>
           </div>
-          
+
           <div className="animate-pulse bg-gray-800 rounded-md h-8 w-[140px]"></div>
         </div>
       </div>
@@ -31,7 +31,7 @@ const LeaderboardListSkeleton = () => {
           </li>
         ))}
       </ol>
-      
+
       <div className="my-8 flex justify-center">
         <div className="flex gap-1 overflow-visible h-10 rounded-md bg-gray-900 p-2 border border-gray-800">
           <div className="animate-pulse bg-gray-800 rounded-md w-10 h-8"></div>
