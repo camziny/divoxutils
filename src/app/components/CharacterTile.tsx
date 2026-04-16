@@ -117,6 +117,7 @@ const CharacterTile: React.FC<{
   const isOwner = userId === ownerId;
 
   const showDeleteIcon = isOwner && showDelete;
+  const detailsRegionId = `character-details-${character.id}`;
 
   const getOpponentRealms = (realmName: string) => {
     const realms = ["Albion", "Midgard", "Hibernia"];
@@ -135,15 +136,26 @@ const CharacterTile: React.FC<{
   const formattedRank = formatRealmRankWithLevel(
     getRealmRankForPoints(characterDetails.heraldRealmPoints || 0)
   );
+  const toggleOpen = () => setOpen((prev) => !prev);
 
   return (
     <>
       <TableRow
-        onClick={() => setOpen(!open)}
+        onClick={toggleOpen}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            toggleOpen();
+          }
+        }}
+        tabIndex={0}
+        role="button"
+        aria-expanded={open}
+        aria-controls={detailsRegionId}
         className={`
           cursor-pointer
           ${getRealmSurfaceInteractiveClass(realm.name)}
-          transition-colors duration-100
+          transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40
         `}
         sx={{
           padding: 0,
@@ -163,8 +175,9 @@ const CharacterTile: React.FC<{
             size="small"
             onClick={(e) => {
               e.stopPropagation();
-              setOpen(!open);
+              toggleOpen();
             }}
+            aria-label={open ? "Collapse character details" : "Expand character details"}
             sx={{
               padding: "2px",
               backgroundColor: "transparent",
@@ -174,9 +187,9 @@ const CharacterTile: React.FC<{
             }}
           >
             {open ? (
-              <ExpandLessIcon className="text-white text-xs" />
+              <ExpandLessIcon className="text-white text-xs" aria-hidden="true" />
             ) : (
-              <ExpandMoreIcon className="text-white text-xs" />
+              <ExpandMoreIcon className="text-white text-xs" aria-hidden="true" />
             )}
           </IconButton>
         </TableCell>
@@ -248,6 +261,7 @@ const CharacterTile: React.FC<{
         >
           {showDeleteIcon && isOwner && (
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 if (onDelete && !isDeleting) {
@@ -255,13 +269,14 @@ const CharacterTile: React.FC<{
                 }
               }}
               disabled={isDeleting}
+              aria-label={`Delete ${character.heraldName}`}
               data-testid={`delete-character-${character.id}`}
-              className="p-1 rounded-md text-gray-500 hover:text-red-400 transition-colors duration-150 disabled:opacity-40"
+              className="p-1 rounded-md text-gray-400 hover:text-red-300 transition-colors duration-150 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40"
             >
               {isDeleting ? (
-                <Loader2 size={12} className="animate-spin" />
+                <Loader2 size={12} className="animate-spin" aria-hidden="true" />
               ) : (
-                <X size={12} />
+                <X size={12} aria-hidden="true" />
               )}
             </button>
           )}
@@ -272,6 +287,7 @@ const CharacterTile: React.FC<{
           <TableRow className="bg-transparent">
             <TableCell colSpan={10} className="p-0">
               <motion.div
+                id={detailsRegionId}
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}

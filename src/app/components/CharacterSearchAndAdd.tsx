@@ -175,27 +175,54 @@ function CharacterSearchAndAdd() {
   const hasSelections = selectedCharacters.size > 0;
   const isLoading = isAdding || isPending;
   const isExpanded = isSearching || hasSearched || hasResults || hasSelections || Boolean(message);
+  const statusMessage = isSearching
+    ? "Searching for characters"
+    : message
+      ? message
+      : hasSearched && !hasResults && name.length >= 3
+        ? "No characters found"
+        : hasResults
+          ? `${searchResults.length} results available`
+          : "";
 
   return (
     <div className="relative z-20 rounded-xl border border-gray-800 bg-gray-900/80 backdrop-blur-sm overflow-visible">
       <div className="p-4">
+        <div className="sr-only" role="status" aria-live="polite">
+          {statusMessage}
+        </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+            <label htmlFor="character-search-and-add-input" className="sr-only">
+              Search and add characters
+            </label>
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" aria-hidden="true" />
             <input
-              type="text"
+              id="character-search-and-add-input"
+              name="characterSearchAndAdd"
+              type="search"
+              inputMode="search"
+              enterKeyHint="search"
+              autoComplete="off"
               placeholder="Search and add characters..."
               value={name}
               onChange={(e) => setName(e.target.value)}
               data-testid="character-search-input"
-              className="w-full h-9 pl-8 pr-8 rounded-lg border border-gray-800 bg-gray-950/50 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600 transition-all"
+              aria-describedby="character-search-and-add-help"
+              aria-controls="character-search-results"
+              className="w-full h-9 pl-8 pr-8 rounded-lg border border-gray-700 bg-gray-950/50 text-sm text-gray-200 placeholder:text-gray-500 focus-visible:outline-none focus-visible:border-gray-500 focus-visible:ring-2 focus-visible:ring-indigo-400/30 transition-all"
             />
+            <p id="character-search-and-add-help" className="sr-only">
+              Enter at least 3 characters to search and select characters to add.
+            </p>
             {name && (
               <button
+                type="button"
                 onClick={() => { setName(""); setSearchResults([]); setHasSearched(false); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-600 hover:text-gray-300 transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40"
+                aria-label="Clear character search"
               >
-                <X size={13} />
+                <X size={13} aria-hidden="true" />
               </button>
             )}
           </div>
@@ -203,7 +230,9 @@ function CharacterSearchAndAdd() {
         </div>
 
         {isExpanded && message && !hasResults && (
-          <p className="mt-3 text-xs text-gray-500">{message}</p>
+          <p className="mt-3 text-xs text-gray-400" role="alert">
+            {message}
+          </p>
         )}
 
         {isExpanded && isSearching && (
@@ -216,7 +245,7 @@ function CharacterSearchAndAdd() {
         {isExpanded && !isSearching && hasSearched && !hasResults && name.length >= 3 && (
           <div className="mt-4 py-8 text-center">
             <p className="text-sm text-gray-500">No characters found</p>
-            <p className="text-[11px] text-gray-700 mt-1">Try a different name or server</p>
+            <p className="text-[11px] text-gray-500 mt-1">Try a different name or server</p>
           </div>
         )}
 
@@ -233,19 +262,27 @@ function CharacterSearchAndAdd() {
               )}
             </div>
 
-            <div className="space-y-px max-h-72 overflow-y-auto rounded-lg border border-gray-800" data-testid="character-search-results">
+            <div
+              id="character-search-results"
+              className="space-y-px max-h-72 overflow-y-auto rounded-lg border border-gray-800"
+              data-testid="character-search-results"
+              role="list"
+              aria-label="Character search results"
+            >
               {searchResults.map((character, index) => {
                 const realmRank = getRealmRankForPoints(character.realm_points);
                 const formattedRealmRank = formatRealmRankWithLevel(realmRank);
                 const isSelected = selectedCharacters.has(character.character_web_id);
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={character.character_web_id}
                     onClick={() => handleToggleCharacter(character.character_web_id)}
                     data-testid={`character-search-result-${character.character_web_id}`}
+                    aria-pressed={isSelected}
                     className={`
-                      flex items-center justify-between px-3 py-2.5 cursor-pointer transition-all duration-100
+                      w-full flex items-center justify-between px-3 py-2.5 cursor-pointer transition-all duration-100 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40
                       ${isSelected
                         ? "bg-indigo-500/10"
                         : "bg-gray-900 hover:bg-gray-800/70"
@@ -260,7 +297,7 @@ function CharacterSearchAndAdd() {
                           : "border border-gray-700 bg-transparent"
                       }`}>
                         {isSelected && (
-                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
                             <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         )}
@@ -287,7 +324,7 @@ function CharacterSearchAndAdd() {
                         {formattedRealmRank}
                       </span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -306,11 +343,11 @@ function CharacterSearchAndAdd() {
                 `}
               >
                 {isLoading ? (
-                  <Loader2 size={12} className="animate-spin" />
+                  <Loader2 size={12} className="animate-spin" aria-hidden="true" />
                 ) : (
-                  <Plus size={12} />
+                  <Plus size={12} aria-hidden="true" />
                 )}
-                {isLoading ? "Adding..." : `Add${hasSelections ? ` (${selectedCharacters.size})` : ""}`}
+                {isLoading ? "Adding…" : `Add${hasSelections ? ` (${selectedCharacters.size})` : ""}`}
               </button>
 
               <button
@@ -335,8 +372,8 @@ function CharacterSearchAndAdd() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-gray-900 border border-gray-800 rounded-xl px-6 py-5">
             <div className="flex items-center gap-3">
-              <Loader2 size={16} className="animate-spin text-indigo-400" />
-              <span className="text-sm text-gray-300">Adding characters...</span>
+              <Loader2 size={16} className="animate-spin text-indigo-400" aria-hidden="true" />
+              <span className="text-sm text-gray-300">Adding characters…</span>
             </div>
           </div>
         </div>

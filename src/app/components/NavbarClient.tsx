@@ -180,7 +180,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
       <div className="relative flex h-14 items-center justify-between lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center">
         <Link
           href="/"
-          className="text-sm font-bold tracking-tight hover:text-gray-300 transition-colors lg:justify-self-start"
+          className="text-sm font-bold tracking-tight hover:text-gray-300 transition-colors lg:justify-self-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40 rounded-sm"
         >
           <span className="text-indigo-400">d</span>
           <span className="text-white">u</span>
@@ -206,7 +206,8 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
                 isActive(link.href)
                   ? "text-white"
                   : "text-gray-400 hover:text-white"
-              }`}
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40`}
+              aria-current={isActive(link.href) ? "page" : undefined}
             >
               {link.label}
             </Link>
@@ -248,12 +249,12 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
               isActive("/contribute")
                 ? "text-indigo-400"
                 : "text-gray-500 hover:text-indigo-400"
-            }`}
+            } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40`}
             aria-label="Contribute"
           >
             <FaCoffee className="w-4 h-4" />
             {showContributeNudge ? (
-              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-indigo-500" />
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-indigo-500" aria-hidden="true" />
             ) : null}
           </Link>
           {isSignedIn ? (
@@ -265,7 +266,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
                   pathname === "/user-characters"
                     ? "text-white bg-gray-800/60"
                     : "text-gray-400 hover:text-white hover:bg-gray-800/40"
-                }`}
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40`}
               >
                 My Characters
               </Link>
@@ -283,13 +284,13 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
             <>
               <Link
                 href="/sign-in"
-                className="rounded-md px-3 py-1.5 text-[13px] font-medium text-gray-400 hover:text-white transition-colors"
+                className="rounded-md px-3 py-1.5 text-[13px] font-medium text-gray-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40"
               >
                 Sign In
               </Link>
               <Link
                 href="/sign-up"
-                className="rounded-md border border-gray-700 px-3 py-1.5 text-[13px] font-medium text-gray-300 hover:border-gray-600 hover:text-white transition-colors"
+                className="rounded-md border border-gray-700 px-3 py-1.5 text-[13px] font-medium text-gray-300 hover:border-gray-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40"
               >
                 Register
               </Link>
@@ -298,9 +299,12 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
         </div>
 
         <button
+          type="button"
           onClick={() => setMenuOpen(!menuOpen)}
-          className="lg:hidden relative w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+          className="lg:hidden relative w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40 rounded-sm"
           aria-label="Toggle menu"
+          aria-expanded={menuOpen}
+          aria-controls="mobile-navigation-menu"
         >
           <div className="flex flex-col gap-[5px]">
             <span
@@ -323,7 +327,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
       </div>
 
       {menuOpen && (
-        <div className="lg:hidden fixed inset-0 top-14 z-40 bg-gray-900">
+        <div id="mobile-navigation-menu" className="lg:hidden fixed inset-0 top-14 z-40 bg-gray-900">
           <div className="flex flex-col px-4 py-6 space-y-1">
             {links.map((link) => (
               <Link
@@ -333,7 +337,8 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
                   pathname === link.href || pathname?.startsWith(link.href + "/")
                     ? "text-white bg-gray-800/60"
                     : "text-gray-400 hover:text-white hover:bg-gray-800/40"
-                }`}
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40`}
+                aria-current={pathname === link.href || pathname?.startsWith(link.href + "/") ? "page" : undefined}
               >
                 {link.label}
               </Link>
@@ -351,12 +356,12 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
                 isActive("/contribute")
                   ? "text-indigo-400 bg-gray-800/60"
                   : "text-gray-400 hover:text-white hover:bg-gray-800/40"
-              }`}
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40`}
             >
               <span className="relative">
                 <FaCoffee className="w-4 h-4" />
                 {showContributeNudge ? (
-                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-indigo-500" />
+                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-indigo-500" aria-hidden="true" />
                 ) : null}
               </span>
               Contribute
@@ -373,7 +378,7 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
                     pathname === "/user-characters"
                       ? "text-white bg-gray-800/60"
                       : "text-gray-400 hover:text-white hover:bg-gray-800/40"
-                  }`}
+                  } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40`}
                 >
                   My Characters
                 </Link>
@@ -393,13 +398,13 @@ const NavbarClient: React.FC<NavbarClientProps> = ({ isAdmin, isSubscribed }) =>
               <div className="flex gap-2 px-3 pt-2">
                 <Link
                   href="/sign-in"
-                  className="rounded-md px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                  className="rounded-md px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="rounded-md border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:border-gray-600 hover:text-white transition-colors"
+                  className="rounded-md border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:border-gray-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40"
                 >
                   Register
                 </Link>

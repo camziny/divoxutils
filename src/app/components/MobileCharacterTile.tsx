@@ -1,8 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { IconButton } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandCircleDown";
-import ExpandLessIcon from "@mui/icons-material/ExpandCircleDown";
 import MobileCharacterDetails from "./MobileCharacterDetails";
 import { getRealmRankForPoints, formatRealmRankWithLevel } from "@/utils/character";
 import { X, Loader2 } from "lucide-react";
@@ -65,13 +63,7 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
 
   const realm = getRealmNameAndColor(characterDetails.realm);
   const opponentRealms = getOpponentRealms(characterDetails.realm);
-
-  const truncateText = (text: string, maxLength: number) => {
-    if (!text) return "N/A";
-    return text.length > maxLength
-      ? `${text.substring(0, maxLength - 3)}...`
-      : text;
-  };
+  const detailsRegionId = `mobile-character-details-${character.id}`;
 
   const realmPointsThisWeek =
     characterDetails.heraldRealmPoints - totalRealmPoints;
@@ -83,28 +75,37 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
   return (
     <div className="mb-1 mx-3">
       <div
-        className={`relative overflow-hidden rounded-md ${getRealmSurfaceInteractiveClass(realm.name)} cursor-pointer transition-colors duration-100`}
+        className={`relative overflow-hidden rounded-md ${getRealmSurfaceInteractiveClass(realm.name)} cursor-pointer transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40`}
         onClick={() => setOpen(!open)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setOpen((prev) => !prev);
+          }
+        }}
+        tabIndex={0}
+        role="button"
+        aria-expanded={open}
+        aria-controls={detailsRegionId}
       >
         <div className="flex items-center px-3 py-1.5">
-          {/* Expand/Collapse Button */}
           <div className="mr-2">
             <div className={`transform transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
               <ExpandMoreIcon 
-                className="text-white/70" 
+                className="text-white/85" 
                 style={{ fontSize: 18 }} 
+                aria-hidden="true"
               />
             </div>
           </div>
           
-          {/* Character Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-2">
                 <h4 className="text-white font-medium text-sm leading-tight truncate">
                   {characterDetails.heraldName || "Unknown"}
                 </h4>
-                <p className="text-gray-400 text-xs">
+                <p className="text-gray-300 text-xs">
                   {characterDetails.heraldClassName || "Unknown"}
                 </p>
               </div>
@@ -114,25 +115,27 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
                   <div className="text-white font-semibold text-sm">
                     {formattedRank || "0"}
                   </div>
-                  <div className="text-gray-400 text-xs">
+                  <div className="text-gray-300 text-xs">
                     {characterDetails.heraldServerName || "Unknown"}
                   </div>
                 </div>
                 
                 {showDeleteIcon && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (onDelete && !isDeleting) onDelete();
                     }}
                     disabled={isDeleting}
+                    aria-label={`Delete ${character.heraldName}`}
                     data-testid={`delete-character-${character.id}`}
-                    className="p-1.5 rounded-md text-gray-500 hover:text-red-400 transition-colors duration-150 disabled:opacity-40"
+                    className="p-1.5 rounded-md text-gray-400 hover:text-red-300 transition-colors duration-150 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40"
                   >
                     {isDeleting ? (
-                      <Loader2 size={14} className="animate-spin" />
+                      <Loader2 size={14} className="animate-spin" aria-hidden="true" />
                     ) : (
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     )}
                   </button>
                 )}
@@ -143,7 +146,7 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
       </div>
 
       {open && (
-        <div className="mt-1 animate-in slide-in-from-top-2 duration-200">
+        <div id={detailsRegionId} className="mt-1 animate-in slide-in-from-top-2 duration-200">
           <MobileCharacterDetails
             character={characterDetails}
             opponentRealms={opponentRealms}

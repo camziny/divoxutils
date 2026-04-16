@@ -238,18 +238,23 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
 
   const alphabetNav = useMemo(
     () => (
-      <div className="hidden sm:block sticky top-14 z-30 bg-gray-900 border-b border-gray-800">
+      <nav
+        aria-label="User list alphabet navigation"
+        className="hidden sm:block sticky top-14 z-30 bg-gray-900 border-b border-gray-800"
+      >
         <div className="container mx-auto py-1.5 px-2 sm:px-4">
           <div className="flex flex-wrap sm:flex-nowrap justify-center gap-0.5 sm:gap-0 max-w-none sm:overflow-x-auto [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full">
             {alphabet.map((letter) => (
               <a
                 key={letter}
                 href={`#group-${letter}`}
+                aria-label={`Jump to ${letter} users`}
+                aria-current={currentSection === letter ? "location" : undefined}
                 className={`${
                   currentSection === letter
                     ? "text-indigo-400 bg-indigo-500/10"
-                    : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/50"
-                } px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-md transition-colors duration-150 font-medium text-[11px] sm:text-xs min-w-[22px] sm:min-w-[26px] md:min-w-[30px] text-center whitespace-nowrap flex-shrink-0`}
+                    : "text-gray-300 hover:text-gray-200 hover:bg-gray-800/50"
+                } px-1.5 sm:px-2 md:px-2.5 py-0.5 rounded-md transition-colors duration-150 font-medium text-[11px] sm:text-xs min-w-[22px] sm:min-w-[26px] md:min-w-[30px] text-center whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40`}
                 onClick={(e) => handleLetterClick(e, letter)}
               >
                 {letter}
@@ -257,7 +262,7 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
             ))}
           </div>
         </div>
-      </div>
+      </nav>
     ),
     [alphabet, handleLetterClick, currentSection]
   );
@@ -265,7 +270,7 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
   if (alphabet.length === 0) {
     return (
       <div className="text-center py-8">
-        <div className="text-gray-500">No users available</div>
+        <div className="text-gray-300">No users available</div>
       </div>
     );
   }
@@ -287,13 +292,13 @@ const UserListClient: React.FC<UserListClientProps> = ({ initialData }) => {
 const UserGroup = React.memo(
   ({ letter, users }: { letter: string; users: User[] }) => {
     return (
-      <div id={`group-${letter}`} className="mb-6">
+      <div id={`group-${letter}`} className="mb-6 scroll-mt-60">
         <div className="flex items-center gap-3 mb-2">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <h2 className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
             {letter}
-          </h3>
+          </h2>
           <div className="flex-1 h-px bg-gray-800" />
-          <span className="text-[11px] text-gray-600 tabular-nums">{users.length}</span>
+          <span className="text-[11px] text-gray-400 tabular-nums">{users.length}</span>
         </div>
         <div className="divide-y divide-gray-800/50">
           {users.map((user) => (
@@ -312,7 +317,7 @@ const UserItem = React.memo(({ user }: { user: User }) => {
   return (
     <HoverPrefetchLink
       href={`/user/${user.name}/characters`}
-      className={`flex items-center gap-1.5 text-gray-400 hover:text-indigo-400 hover:bg-gray-800/40 cursor-pointer py-1.5 px-3 transition-colors duration-150 text-sm relative overflow-hidden ${rowBg}`}
+      className={`flex items-center gap-1.5 text-gray-300 hover:text-indigo-300 hover:bg-gray-800/40 cursor-pointer py-1.5 px-3 transition-colors duration-150 text-sm relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40 ${rowBg}`}
       prefetchDelay={150}
     >
       <span style={supporterNameStyle(user.supporterTier)}>{user.name}</span>

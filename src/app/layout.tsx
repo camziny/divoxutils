@@ -62,10 +62,18 @@ export default async function RootLayout({
         >
           <div className="flex flex-col min-h-screen">
             <Providers>
+              <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-md focus:bg-gray-900 focus:px-3 focus:py-2 focus:text-sm focus:text-gray-100 focus:ring-2 focus:ring-indigo-400"
+              >
+                Skip to main content
+              </a>
               <Navbar />
               <SupportPromptModal isSupporter={isSupporter} isAdmin={isAdmin} />
               <SignedOutNudge />
-              {children}
+              <main id="main-content" className="flex-1 focus:outline-none" tabIndex={-1}>
+                {children}
+              </main>
               <SpeedInsights />
               <Analytics />
               <Footer />

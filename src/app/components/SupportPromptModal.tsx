@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { track } from "@vercel/analytics/react";
@@ -170,6 +170,7 @@ export default function SupportPromptModal({
   isSupporter = false,
   isAdmin = false,
 }: SupportPromptModalProps) {
+  const checkoutErrorId = useId();
   const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -530,7 +531,7 @@ export default function SupportPromptModal({
           setIsOpen(true);
         }}
       >
-        <DialogContent className="max-w-md border-gray-800 bg-gray-900 p-0 gap-0 overflow-hidden max-h-[90dvh] overflow-y-auto">
+        <DialogContent className="max-w-md border-gray-800 bg-gray-900 p-0 gap-0 overflow-hidden max-h-[90dvh] overflow-y-auto overscroll-contain">
           <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4">
             <DialogTitle className="text-base font-semibold text-white">
               Help keep divoxutils running
@@ -543,20 +544,20 @@ export default function SupportPromptModal({
 
           <div className="mx-4 sm:mx-5 rounded-lg border border-gray-800 bg-gray-800/20 p-3 sm:p-4 space-y-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cost Breakdown</h3>
-            <div className="grid grid-cols-[1fr_auto] gap-x-3 sm:gap-x-6 gap-y-1.5 sm:gap-y-2 text-sm">
-              <span className="text-gray-300">Cloud hosting and runtime infrastructure</span>
-              <span className="text-gray-200 tabular-nums text-right shrink-0">$20 / mo</span>
-              <span className="text-gray-300">Database and storage</span>
-              <span className="text-gray-200 tabular-nums text-right shrink-0">$30 / mo</span>
-              <span className="text-gray-300">Automated QA and deployment safety</span>
-              <span className="text-gray-200 tabular-nums text-right shrink-0">$5 - $60+ / mo</span>
-              <span className="text-gray-300">Discord bot hosting</span>
-              <span className="text-gray-200 tabular-nums text-right shrink-0">$5 / mo</span>
-              <span className="text-gray-300">Domain name registration</span>
-              <span className="text-gray-200 tabular-nums text-right shrink-0">$1.25 / mo</span>
-              <span className="text-gray-300">Cloud compute and usage overages (variable)</span>
-              <span className="text-gray-200 tabular-nums text-right shrink-0">$0 - $5 / mo</span>
-            </div>
+            <dl className="grid grid-cols-[1fr_auto] gap-x-3 sm:gap-x-6 gap-y-1.5 sm:gap-y-2 text-sm">
+              <dt className="text-gray-300">Cloud hosting and runtime infrastructure</dt>
+              <dd className="text-gray-200 tabular-nums text-right shrink-0">$20 / mo</dd>
+              <dt className="text-gray-300">Database and storage</dt>
+              <dd className="text-gray-200 tabular-nums text-right shrink-0">$30 / mo</dd>
+              <dt className="text-gray-300">Automated QA and deployment safety</dt>
+              <dd className="text-gray-200 tabular-nums text-right shrink-0">$5 - $60+ / mo</dd>
+              <dt className="text-gray-300">Discord bot hosting</dt>
+              <dd className="text-gray-200 tabular-nums text-right shrink-0">$5 / mo</dd>
+              <dt className="text-gray-300">Domain name registration</dt>
+              <dd className="text-gray-200 tabular-nums text-right shrink-0">$1.25 / mo</dd>
+              <dt className="text-gray-300">Cloud compute and usage overages (variable)</dt>
+              <dd className="text-gray-200 tabular-nums text-right shrink-0">$0 - $5 / mo</dd>
+            </dl>
             <div className="h-px bg-gray-800" />
             <div className="space-y-2 text-sm">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total costs</p>
@@ -578,11 +579,12 @@ export default function SupportPromptModal({
                 type="button"
                 disabled={loadingTier !== null}
                 onClick={() => subscribeNow(plan.tier)}
+                aria-describedby={checkoutError ? checkoutErrorId : undefined}
                 className={`w-full flex items-center gap-2.5 sm:gap-3 rounded-md border px-3 sm:px-4 py-2.5 sm:py-3 text-left transition-colors disabled:opacity-50 ${
                   plan.tier === 3
                     ? "border-indigo-500/20 bg-indigo-500/[0.06] hover:bg-indigo-500/[0.12]"
                     : "border-gray-800 bg-gray-800/20 hover:bg-gray-800/40"
-                }`}
+                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40`}
               >
                 <SupporterBadge tier={plan.tier} size="md" showTooltip={false} />
                 <div className="min-w-0 flex-1">
@@ -590,7 +592,7 @@ export default function SupportPromptModal({
                   <p className="text-xs text-gray-400 mt-0.5">{plan.description}</p>
                 </div>
                 <span className="shrink-0 rounded-md bg-indigo-500/20 px-3 py-1.5 text-xs font-medium text-indigo-300">
-                  {loadingTier === plan.tier ? "..." : "Subscribe"}
+                  {loadingTier === plan.tier ? "Loading…" : "Subscribe"}
                 </span>
               </button>
             ))}
@@ -598,7 +600,12 @@ export default function SupportPromptModal({
 
           {checkoutError && (
             <div className="mx-4 sm:mx-5 mt-2">
-              <p className="rounded-md border border-red-900/60 bg-red-900/20 px-3 py-2 text-xs text-red-300">
+              <p
+                id={checkoutErrorId}
+                role="alert"
+                aria-live="assertive"
+                className="rounded-md border border-red-900/60 bg-red-900/20 px-3 py-2 text-xs text-red-300"
+              >
                 {checkoutError}
               </p>
             </div>
@@ -613,7 +620,7 @@ export default function SupportPromptModal({
                   const redirectPath = pathname || "/";
                   router.push(`/sign-in?redirect_url=${encodeURIComponent(redirectPath)}`);
                 }}
-                className="text-xs text-indigo-300 hover:text-indigo-200 transition-colors disabled:opacity-50"
+                className="text-xs text-indigo-300 hover:text-indigo-200 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40 rounded-sm"
               >
                 Already supporting? Sign in
               </button>
@@ -628,7 +635,7 @@ export default function SupportPromptModal({
               type="button"
               disabled={!canClose || loadingTier !== null}
               onClick={dismiss}
-              className="rounded-md border border-gray-700 px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-md border border-gray-700 px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40"
             >
               {canClose ? "Not now" : `Not now (${secondsLeft}s)`}
             </button>

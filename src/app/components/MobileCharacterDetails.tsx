@@ -40,6 +40,11 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setAnimatedProgress(progressPercentage);
+      setAnimatedPercentage(progressPercentage);
+      return;
+    }
     const timer = setTimeout(() => {
       const startTime = Date.now();
       const duration = 1000;
@@ -79,13 +84,13 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
     return "0";
   };
 
-  const label = compact ? "text-[10px] max-[360px]:text-[9px] text-gray-400 leading-tight" : "text-xs text-gray-400";
+  const label = compact ? "text-[10px] max-[360px]:text-[9px] text-gray-300 leading-tight" : "text-xs text-gray-300";
   const value = compact ? "text-[11px] max-[360px]:text-[10px] font-semibold text-white leading-tight" : "text-base font-semibold text-white";
   const valueSmall = compact ? "text-[11px] font-semibold text-white" : "text-sm font-semibold text-white";
   const heading = compact ? "text-[11px] font-medium text-white" : "text-sm font-medium text-white";
   const badge = compact
-    ? "bg-gray-800 px-1 py-px rounded text-[9px] text-gray-400"
-    : "bg-gray-800 px-2 py-0.5 rounded text-gray-400";
+    ? "bg-gray-800 px-1 py-px rounded text-[9px] text-gray-300"
+    : "bg-gray-800 px-2 py-0.5 rounded text-gray-300";
   const card = compact ? "bg-gray-800/30 rounded p-1.5 max-[360px]:p-1" : "bg-gray-800/30 rounded-md p-2";
   const outer = compact
     ? "rounded p-1.5 mx-1 bg-gray-900/20"
@@ -102,7 +107,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
             &lt;{character.heraldGuildName}&gt;
           </div>
         )}
-        <div className={`${compact ? "text-[10px]" : "text-xs"} text-gray-400 space-x-2`}>
+        <div className={`${compact ? "text-[10px]" : "text-xs"} text-gray-300 space-x-2`}>
           <span className="text-indigo-300">{character.heraldClassName}</span>
           <span>•</span>
           <span>{character.heraldRace}</span>
@@ -120,14 +125,21 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
             {animatedPercentage.toFixed(1)}%
           </span>
         </div>
-        <div className={`w-full bg-gray-800 rounded-full ${barHeight} overflow-hidden ${compact ? "mb-0.5" : "mb-1"}`}>
+        <div
+          className={`w-full bg-gray-800 rounded-full ${barHeight} overflow-hidden ${compact ? "mb-0.5" : "mb-1"}`}
+          role="progressbar"
+          aria-label="Rank progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Number(animatedPercentage.toFixed(1))}
+        >
           <div 
             className="h-full bg-indigo-500"
             style={{ width: `${animatedProgress}%` }}
           />
         </div>
         {nextRankPoints && (
-          <div className={`text-center ${compact ? "text-[10px]" : "text-xs"} text-gray-400`}>
+          <div className={`text-center ${compact ? "text-[10px]" : "text-xs"} text-gray-300`}>
             <span className="text-gray-300">
               {formatNumber(nextRankPoints - realmPoints)} RP
             </span>{" "}
@@ -163,7 +175,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
               {formatNumber(realmPointsLastWeek === totalRealmPoints ? 0 : realmPointsLastWeek)}
             </div>
           </div>
-          <div className={`text-gray-600 ${compact ? "text-sm" : "text-lg"}`}>→</div>
+          <div className={`text-gray-500 ${compact ? "text-sm" : "text-lg"}`}>→</div>
           <div className="text-right">
             <div className={`${compact ? "text-[10px]" : "text-xs"} text-gray-300`}>This Week</div>
             <div className={valueSmall}>
