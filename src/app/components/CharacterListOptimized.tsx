@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo, useCallback, memo, useTransition, useEffect } from "react";
+import React, { useState, useMemo, useCallback, memo, useTransition, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import CharacterTableHeader from "./CharacterTableHeader";
 import CharacterListSkeleton from "./CharacterListSkeleton";
@@ -107,6 +107,10 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   const [columnSortDir, setColumnSortDir] = useState<"asc" | "desc">(initialColumnSortDir);
   const [showFilters, setShowFilters] = useState(initialClassFilter !== "all");
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
+  const deleteDialogRef = useRef<HTMLDivElement | null>(null);
+  const deleteCancelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const deleteSubmitButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previousFocusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 640px)");
@@ -115,6 +119,62 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     mediaQuery.addEventListener("change", updateViewportState);
     return () => mediaQuery.removeEventListener("change", updateViewportState);
   }, []);
+
+  useEffect(() => {
+    if (!confirmDelete) return;
+
+    previousFocusedElementRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusTimer = window.setTimeout(() => {
+      deleteCancelButtonRef.current?.focus();
+    }, 0);
+
+    const handleDialogKeydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setConfirmDelete(null);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const focusable = [
+        deleteCancelButtonRef.current,
+        deleteSubmitButtonRef.current,
+      ].filter((node): node is HTMLButtonElement => node !== null);
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const activeElement =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+      if (event.shiftKey) {
+        if (!activeElement || activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+
+      if (!activeElement || activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleDialogKeydown);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleDialogKeydown);
+      document.body.style.overflow = previousOverflow;
+      previousFocusedElementRef.current?.focus();
+    };
+  }, [confirmDelete]);
 
   const filteredCharacters = useMemo(
     () => filterCharactersByClass(characters, classFilter),
@@ -285,7 +345,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         <p className="text-sm font-medium text-gray-300 mb-1">
           No characters yet
         </p>
-        <p className="text-xs text-gray-600 text-center max-w-xs">
+        <p className="text-xs text-gray-400 text-center max-w-xs">
           {showDelete
             ? "Use the search above to find and add your characters."
             : "This user hasn't added any characters yet."}
@@ -372,15 +432,19 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         <div className="w-px h-4 bg-gray-700/60 mx-0.5" />
 
         <button
+          type="button"
           onClick={() => setShowFilters((prev) => !prev)}
+          aria-label="Toggle class filters"
+          aria-expanded={showFilters}
+          aria-controls="character-class-filters"
           className={`relative flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-150 ${
             showFilters ? "bg-gray-700/80 text-gray-200" : "text-gray-400 hover:text-gray-200 hover:bg-gray-700/40"
           }`}
         >
-          <SlidersHorizontal size={11} />
+          <SlidersHorizontal size={11} aria-hidden="true" />
           Filter
           {classFilter !== "all" && (
-            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-indigo-400" />
+            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-indigo-400" aria-hidden="true" />
           )}
         </button>
       </div>
@@ -389,6 +453,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         {showFilters && (
           <motion.div
             key="class-filters"
+            id="character-class-filters"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -420,10 +485,11 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
             className="hidden sm:block overflow-hidden"
           >
             <button
+              type="button"
               onClick={handleSaveLayoutPreference}
               className="inline-flex items-center gap-1.5 rounded-md border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-[11px] font-medium text-indigo-300 hover:bg-indigo-500/20 hover:border-indigo-500/30 transition-colors duration-150"
             >
-              <Pin size={10} className="rotate-45" />
+              <Pin size={10} className="rotate-45" aria-hidden="true" />
               Set {getDesktopLayoutLabel(desktopLayout)} as your preferred layout
             </button>
           </motion.div>
@@ -570,16 +636,16 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       </div>
 
       {message && (
-        <div className="fixed bottom-4 right-4 z-50 px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg shadow-lg max-w-sm">
+        <div role="status" aria-live="polite" className="fixed bottom-4 right-4 z-50 px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg shadow-lg max-w-sm">
           <span className="text-xs text-gray-300">{message}</span>
         </div>
       )}
 
       {isPending && (
-        <div className="mt-4 p-3 text-center">
+        <div className="mt-4 p-3 text-center" role="status" aria-live="polite">
           <div className="inline-flex items-center gap-2">
-            <Loader2 size={14} className="animate-spin text-indigo-400" />
-            <span className="text-xs text-gray-500">Updating...</span>
+            <Loader2 size={14} className="animate-spin text-indigo-400" aria-hidden="true" />
+            <span className="text-xs text-gray-400">Updating…</span>
           </div>
         </div>
       )}
@@ -590,32 +656,36 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
 
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" data-testid="delete-confirm-overlay">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl max-w-sm w-full mx-4 overflow-hidden" data-testid="delete-confirm-modal">
+          <div ref={deleteDialogRef} role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title" aria-describedby="delete-confirm-description" className="bg-gray-900 border border-gray-800 rounded-xl max-w-sm w-full mx-4 overflow-hidden" data-testid="delete-confirm-modal">
             <div className="px-5 py-4 border-b border-gray-800">
-              <h3 className="text-sm font-medium text-gray-200">Delete Character</h3>
+              <h3 id="delete-confirm-title" className="text-sm font-medium text-gray-200">Delete Character</h3>
             </div>
             <div className="px-5 py-5">
               <div className="flex items-start gap-3">
                 <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/10 flex-shrink-0 mt-0.5">
-                  <AlertTriangle size={14} className="text-red-400" />
+                  <AlertTriangle size={14} className="text-red-400" aria-hidden="true" />
                 </div>
-                <p className="text-sm text-gray-400 leading-relaxed">
+                <p id="delete-confirm-description" className="text-sm text-gray-300 leading-relaxed">
                   Are you sure you want to remove <span className="text-gray-200 font-medium">{confirmDelete.name}</span> from your list?
                 </p>
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-800">
               <button
+                type="button"
+                ref={deleteCancelButtonRef}
                 onClick={() => setConfirmDelete(null)}
                 data-testid="delete-confirm-cancel"
-                className="h-8 px-3 rounded-md text-xs font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 transition-colors duration-150"
+                className="h-8 px-3 rounded-md text-xs font-medium text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/40"
               >
                 Cancel
               </button>
               <button
+                type="button"
+                ref={deleteSubmitButtonRef}
                 onClick={confirmDeleteAction}
                 data-testid="delete-confirm-submit"
-                className="h-8 px-3 rounded-md text-xs font-medium bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors duration-150"
+                className="h-8 px-3 rounded-md text-xs font-medium bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
               >
                 Delete
               </button>

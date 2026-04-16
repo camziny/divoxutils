@@ -10,9 +10,9 @@ export default function GlobalError({
   return (
     <div className="bg-gray-900 text-gray-200 min-h-screen">
       <div className="mx-auto max-w-xl px-6 py-24 text-center">
-        <h2 className="text-2xl font-semibold text-white mb-3">
+        <h1 className="text-2xl font-semibold text-white mb-3">
           Something went wrong
-        </h2>
+        </h1>
         <p className="text-sm text-gray-400 mb-6">
           {error.message || "An unexpected error occurred."}
         </p>
