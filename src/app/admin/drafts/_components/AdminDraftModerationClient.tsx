@@ -14,8 +14,8 @@ import {
   analyzeFightEditor,
   createEmptyFightRow,
   toFightEditorRows,
-} from "./fightEditorUtils";
-import type { FightEditorRow } from "./fightEditorUtils";
+} from "../_lib/fightEditorUtils";
+import type { FightEditorRow } from "../_lib/fightEditorUtils";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ import type {
   ModerationPlayer,
   ReviewedFilter,
   SortOrder,
-} from "./moderationTypes";
+} from "../_lib/moderationTypes";
 
 export default function AdminDraftModerationClient() {
   const [pendingDrafts, setPendingDrafts] = useState<ModerationDraft[]>([]);
@@ -58,6 +58,7 @@ export default function AdminDraftModerationClient() {
   const [showCancelledArchive, setShowCancelledArchive] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [confirmText, setConfirmText] = useState("");
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [guildSearch, setGuildSearch] = useState("");
@@ -191,6 +192,7 @@ export default function AdminDraftModerationClient() {
 
   const openCancelConfirm = useCallback((shortId: string) => {
     setConfirmText("");
+    setConfirmError(null);
     setConfirmAction({
       kind: "cancel",
       shortId,
@@ -300,6 +302,7 @@ export default function AdminDraftModerationClient() {
 
   const openRestoreConfirm = useCallback((shortId: string) => {
     setConfirmText("");
+    setConfirmError(null);
     setConfirmAction({
       kind: "restore",
       shortId,
@@ -313,10 +316,11 @@ export default function AdminDraftModerationClient() {
   const handleConfirmAction = useCallback(async () => {
     if (!confirmAction) return;
     if (confirmText.trim() !== confirmAction.shortId) {
-      setError(`Confirmation must match ${confirmAction.shortId}.`);
+      setConfirmError(`Confirmation must match ${confirmAction.shortId}.`);
       return;
     }
     const action = confirmAction;
+    setConfirmError(null);
     setConfirmAction(null);
     setConfirmText("");
     if (action.kind === "cancel") {
@@ -1496,9 +1500,7 @@ export default function AdminDraftModerationClient() {
                       const agoLabel =
                         ago < 1
                           ? "just now"
-                          : ago === 1
-                            ? "1 minute ago"
-                            : `${ago} minutes ago`;
+                          : `${formatAge(ago)} ago`;
                       return (
                         <div
                           key={`cancelled-${entry.shortId}-${entry.cancelledAt}`}
@@ -1552,6 +1554,7 @@ export default function AdminDraftModerationClient() {
             if (!open) {
               setConfirmAction(null);
               setConfirmText("");
+              setConfirmError(null);
             }
           }}
         >
@@ -1566,9 +1569,15 @@ export default function AdminDraftModerationClient() {
               </p>
               <Input
                 value={confirmText}
-                onChange={(event) => setConfirmText(event.target.value)}
+                onChange={(event) => {
+                  setConfirmText(event.target.value);
+                  if (confirmError) setConfirmError(null);
+                }}
                 placeholder={confirmAction?.shortId ?? ""}
               />
+              {confirmError && (
+                <p className="text-xs text-red-400">{confirmError}</p>
+              )}
             </div>
             <DialogFooter>
               <button
@@ -1576,6 +1585,7 @@ export default function AdminDraftModerationClient() {
                 onClick={() => {
                   setConfirmAction(null);
                   setConfirmText("");
+                  setConfirmError(null);
                 }}
                 className="rounded-md border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-gray-500"
               >

@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { isAdminClerkUserId } from "@/server/adminAuth";
-import AdminAccountsClient from "./AdminAccountsClient";
+import AdminAccountsClient from "./_components/AdminAccountsClient";
 
 export const metadata = {
   title: "Admin Account Removal - divoxutils",

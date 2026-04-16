@@ -55,6 +55,7 @@ export default function AdminAccountsClient() {
   const closeConfirm = useCallback(() => {
     setConfirmTarget(null);
     setConfirmInput("");
+    setError(null);
   }, []);
 
   const handleDelete = useCallback(async () => {

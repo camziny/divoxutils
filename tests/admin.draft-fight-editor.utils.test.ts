@@ -5,7 +5,7 @@ import {
   createEmptyFightRow,
   toFightEditorRows,
   type FightEditorPlayer,
-} from "../src/app/admin/drafts/fightEditorUtils";
+} from "../src/app/admin/drafts/_lib/fightEditorUtils";
 
 const draftedPlayers: FightEditorPlayer[] = [
   { _id: "p1", displayName: "Alice", team: 1 },

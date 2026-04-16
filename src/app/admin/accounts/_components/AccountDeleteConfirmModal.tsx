@@ -28,7 +28,9 @@ export type SearchResult = {
 };
 
 export function getDeleteConfirmName(user: SearchResult | null): string {
-  return user?.name ?? user?.clerkUserId ?? "";
+  const normalizedName = user?.name?.trim();
+  if (normalizedName) return normalizedName;
+  return user?.clerkUserId ?? "";
 }
 
 export function isDeleteConfirmMatch(input: string, expected: string): boolean {
