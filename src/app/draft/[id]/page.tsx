@@ -1,4 +1,4 @@
-import DraftClient from "./DraftClient";
+import DraftClient from "./_components/DraftClient";
 
 export const metadata = {
   title: "Draft - divoxutils",

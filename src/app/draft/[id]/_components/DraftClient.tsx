@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
-import { DraftData, CurrentPlayer } from "../types";
-import DraftBoard from "./components/DraftBoard";
+import { api } from "../../../../../convex/_generated/api";
+import { DraftData, CurrentPlayer } from "../../types";
+import DraftBoard from "../components/DraftBoard";
 
 export default function DraftClient({
   shortId,

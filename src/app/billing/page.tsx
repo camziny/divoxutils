@@ -8,7 +8,7 @@ import {
   getTierFromPriceId,
   shouldGrantSupporterBadge,
 } from "@/server/billing/stripe";
-import BillingClient from "./BillingClient";
+import BillingClient from "./_components/BillingClient";
 
 export const metadata = {
   title: "Billing - divoxutils",

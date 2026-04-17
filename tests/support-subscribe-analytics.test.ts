@@ -5,7 +5,7 @@ import {
   hasTrackedCheckoutSessionId,
   isActiveSupportSubscriptionStatus,
   shouldTrackSupportSubscribeSuccess,
-} from "../src/app/billing/supportSubscribeAnalytics";
+} from "../src/app/billing/_lib/supportSubscribeAnalytics";
 
 test("isActiveSupportSubscriptionStatus matches active support states", () => {
   assert.equal(isActiveSupportSubscriptionStatus("active"), true);

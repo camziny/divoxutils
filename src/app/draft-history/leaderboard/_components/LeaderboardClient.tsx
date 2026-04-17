@@ -352,4 +352,3 @@ function VerifiedCheck() {
     </TooltipProvider>
   );
 }
-
