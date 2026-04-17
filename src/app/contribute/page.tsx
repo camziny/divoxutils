@@ -2,7 +2,7 @@ import React from "react";
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import prisma from "../../../prisma/prismaClient";
-import SubscribeInline from "./SubscribeInline";
+import SubscribeInline from "./_components/SubscribeInline";
 
 export const metadata: Metadata = {
   title: "Contribute - divoxutils",

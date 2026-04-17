@@ -1,5 +1,5 @@
 import { getOverallDraftStats } from "@/server/draftStats";
-import LeaderboardClient from "./LeaderboardClient";
+import LeaderboardClient from "./_components/LeaderboardClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;

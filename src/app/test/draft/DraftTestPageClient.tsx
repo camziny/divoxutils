@@ -5,7 +5,7 @@ import { api } from "../../../../convex/_generated/api";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import DraftClient from "@/app/draft/[id]/DraftClient";
+import DraftClient from "@/app/draft/[id]/_components/DraftClient";
 import DiscordIdentityLinkCard from "@/app/draft-history/DiscordIdentityLinkCard";
 
 const DUMMY_NAMES = [

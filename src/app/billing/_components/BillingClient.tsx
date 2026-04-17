@@ -10,7 +10,7 @@ import {
   isActiveSupportSubscriptionStatus,
   shouldTrackSupportSubscribeSuccess,
   TRACKED_CHECKOUT_SESSION_IDS_KEY,
-} from "./supportSubscribeAnalytics";
+} from "../_lib/supportSubscribeAnalytics";
 
 type SubscriptionInfo = {
   tier: number;

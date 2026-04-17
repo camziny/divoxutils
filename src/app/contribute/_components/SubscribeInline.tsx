@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import SupporterBadge from "@/components/support/SupporterBadge";
-import { SUPPORTER_TIER_PLANS } from "./supporterTierPlans";
+import { SUPPORTER_TIER_PLANS } from "../_lib/supporterTierPlans";
 
 type Props = {
   activeTier: number | null;
