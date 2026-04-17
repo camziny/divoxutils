@@ -6,7 +6,7 @@ import AccountDeleteConfirmModal, {
   SearchResult,
   getDeleteConfirmName,
   isDeleteConfirmMatch,
-} from "../src/app/admin/accounts/AccountDeleteConfirmModal";
+} from "../src/app/admin/accounts/_components/AccountDeleteConfirmModal";
 
 const sampleUser: SearchResult = {
   id: 1,
@@ -37,6 +37,23 @@ test("getDeleteConfirmName prefers username over clerk id", () => {
     "user_123"
   );
   assert.equal(getDeleteConfirmName(null), "");
+});
+
+test("getDeleteConfirmName falls back when username is blank", () => {
+  assert.equal(
+    getDeleteConfirmName({
+      ...sampleUser,
+      name: "",
+    }),
+    "user_123"
+  );
+  assert.equal(
+    getDeleteConfirmName({
+      ...sampleUser,
+      name: "   ",
+    }),
+    "user_123"
+  );
 });
 
 test("isDeleteConfirmMatch is case-insensitive and requires non-empty input", () => {

@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { isAdminClerkUserId } from "@/server/adminAuth";
-import AdminDraftModerationClient from "./AdminDraftModerationClient";
+import AdminDraftModerationClient from "./_components/AdminDraftModerationClient";
 
 export const metadata = {
   title: "Admin Draft Moderation - divoxutils",
