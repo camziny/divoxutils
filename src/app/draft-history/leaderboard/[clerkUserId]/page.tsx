@@ -1,6 +1,6 @@
 import { getPlayerDraftDrilldownStats } from "@/server/draftStats";
 import { getClerkUserIdFromLeaderboardParam } from "@/lib/draftHistoryLeaderboardPath";
-import PlayerDrilldownClient from "./PlayerDrilldownClient";
+import PlayerDrilldownClient from "./_components/PlayerDrilldownClient";
 
 export const revalidate = 60;
 

@@ -5,7 +5,7 @@ import {
   getMaxSelectableTeamSize,
   isTeamSizeSelectable,
   toUserSettingsError,
-} from "../src/app/draft/[id]/components/settingsUtils";
+} from "../src/app/draft/[id]/_components/settingsUtils";
 
 test("getMaxSelectableTeamSize computes max based on players", () => {
   assert.equal(getMaxSelectableTeamSize(7), 3);

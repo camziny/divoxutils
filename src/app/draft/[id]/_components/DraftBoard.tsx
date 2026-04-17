@@ -30,7 +30,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import DiscordIdentityLinkCard from "@/app/draft-history/DiscordIdentityLinkCard";
+import DiscordIdentityLinkCard from "@/app/draft-history/_components/DiscordIdentityLinkCard";
 import { getPlayerPoolEmptyState } from "./playerPoolState";
 import {
   getFightSetupMaxViewFightIndex,

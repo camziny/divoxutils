@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getPlayerPoolEmptyState } from "../src/app/draft/[id]/components/playerPoolState";
+import { getPlayerPoolEmptyState } from "../src/app/draft/[id]/_components/playerPoolState";
 
 test("player pool shows setup empty label when no players in setup", () => {
   const state = getPlayerPoolEmptyState({
