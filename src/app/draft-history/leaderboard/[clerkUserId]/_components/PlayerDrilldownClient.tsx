@@ -41,7 +41,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { allClasses } from "@/app/draft/constants";
+import { allClasses } from "@/app/draft/_lib/constants";
 import {
   DEFAULT_CLASS_SORT,
   DEFAULT_CLASS_VIEW,

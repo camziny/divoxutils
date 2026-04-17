@@ -11,7 +11,7 @@ function read(relativePath: string) {
 
 test("my-characters client calls app api routes for add/delete", () => {
   const searchAdd = read("src/app/user-characters/_components/CharacterSearchAndAdd.tsx");
-  const list = read("src/app/components/CharacterListOptimized.tsx");
+  const list = read("src/app/_components/characters/CharacterListOptimized.tsx");
 
   assert.match(searchAdd, /fetch\("\/api\/my-characters\/add"/);
   assert.match(list, /fetch\(\s*`\/api\/my-characters\/\$\{characterId\}`/);

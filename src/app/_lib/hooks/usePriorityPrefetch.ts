@@ -11,7 +11,7 @@ export function usePriorityPrefetch(routes: PrefetchRoute[]) {
   const router = useRouter();
 
   useEffect(() => {
-    const sortedRoutes = routes.sort((a, b) => {
+    const sortedRoutes = [...routes].sort((a, b) => {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
     });

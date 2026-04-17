@@ -1,4 +1,4 @@
-import { allClasses } from "@/app/draft/constants";
+import { allClasses } from "@/app/draft/_lib/constants";
 import { getClassDraftStats } from "@/server/draftStats";
 import ClassLeaderboardClient from "./_components/ClassLeaderboardClient";
 

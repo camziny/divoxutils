@@ -1,5 +1,5 @@
 import { formatRealmRankWithLevel, getRealmRankForPoints } from "@/utils/character";
-import { toCanonicalDraftClassName } from "@/app/draft/constants";
+import { toCanonicalDraftClassName } from "@/app/draft/_lib/constants";
 
 type HighestRankEntry = {
   rank: number;

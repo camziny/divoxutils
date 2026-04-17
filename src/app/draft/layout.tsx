@@ -1,4 +1,4 @@
-import ConvexClientProvider from "./ConvexClientProvider";
+import ConvexClientProvider from "./_components/ConvexClientProvider";
 
 export default function DraftLayout({
   children,

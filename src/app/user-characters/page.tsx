@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 const CharacterListOptimized = dynamic(
-  () => import("@/app/components/CharacterListOptimized"),
+  () => import("@/app/_components/characters/CharacterListOptimized"),
   {
     loading: () => {
       const CharacterListSkeleton = require("@/app/user/_components/CharacterListSkeleton").default;

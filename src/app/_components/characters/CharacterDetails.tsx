@@ -91,6 +91,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   
   useEffect(() => {
+    let animationFrameId: number | null = null;
     const timer = setTimeout(() => {
       const startTime = Date.now();
       const duration = 1000;
@@ -104,7 +105,7 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
         setAnimatedPercentage(progressPercentage * easeOut);
         
         if (progress < 1) {
-          requestAnimationFrame(animate);
+          animationFrameId = requestAnimationFrame(animate);
         }
       };
       animate();
@@ -112,6 +113,9 @@ const CharacterDetails: React.FC<CharacterDetailsProps> = ({
     
     return () => {
       clearTimeout(timer);
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
     };
   }, [progressPercentage]);
 

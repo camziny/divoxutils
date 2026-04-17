@@ -1,8 +1,8 @@
 import React from "react";
-import NavbarClient from "./components/NavbarClient";
+import NavbarClient from "./NavbarClient";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminClerkUserId } from "@/server/adminAuth";
-import prisma from "../../prisma/prismaClient";
+import prisma from "../../../prisma/prismaClient";
 import { isEffectivelySupporter } from "@/server/supporterStatus";
 
 const Navbar = async () => {

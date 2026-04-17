@@ -4,7 +4,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { DraftData, CurrentPlayer } from "../../types";
+import { DraftData, CurrentPlayer } from "@/app/draft/_lib/types";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import {
   REALMS,
@@ -13,7 +13,7 @@ import {
   CLASS_CATEGORIES,
   ClassCategory,
   toCanonicalDraftClassName,
-} from "../../constants";
+} from "../../_lib/constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {

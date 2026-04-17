@@ -9,7 +9,7 @@ import DraftProfileButton from "@/app/user/_components/DraftProfileButton";
 import { getCurrentUserCharacterListLayoutPreference } from "@/server/characterListLayoutPreference";
 
 const CharacterListOptimized = dynamic(
-  () => import("@/app/components/CharacterListOptimized"),
+  () => import("@/app/_components/characters/CharacterListOptimized"),
   {
     loading: () => {
       const CharacterListSkeleton = require("@/app/user/_components/CharacterListSkeleton").default;

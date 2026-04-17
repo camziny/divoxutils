@@ -4,7 +4,7 @@ import {
   getLocalDayKey,
   isContributePath,
   shouldShowContributeNudge,
-} from "../src/app/components/contributeNudge";
+} from "../src/app/_lib/contributeNudge";
 
 test("getLocalDayKey formats date as YYYY-MM-DD", () => {
   const value = getLocalDayKey(new Date("2026-03-27T12:00:00.000Z"));

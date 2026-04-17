@@ -1,4 +1,4 @@
-import { allClasses } from "@/app/draft/constants";
+import { allClasses } from "@/app/draft/_lib/constants";
 
 export type FightEditorPlayer = {
   _id: string;

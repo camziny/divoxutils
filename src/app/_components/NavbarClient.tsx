@@ -10,7 +10,7 @@ import {
   getLocalDayKey,
   isContributePath,
   shouldShowContributeNudge,
-} from "./contributeNudge";
+} from "@/app/_lib/contributeNudge";
 
 const NAV_LINKS = [
   { href: "/leaderboards", label: "Leaderboards" },
