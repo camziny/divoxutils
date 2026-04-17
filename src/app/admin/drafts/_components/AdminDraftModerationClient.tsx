@@ -9,7 +9,7 @@ import {
   classesByRealm,
   REALMS,
   type ClassCategory,
-} from "@/app/draft/constants";
+} from "@/app/draft/_lib/constants";
 import {
   analyzeFightEditor,
   createEmptyFightRow,

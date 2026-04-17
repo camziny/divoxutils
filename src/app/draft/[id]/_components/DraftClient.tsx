@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { DraftData, CurrentPlayer } from "../../types";
+import { DraftData, CurrentPlayer } from "@/app/draft/_lib/types";
 import DraftBoard from "./DraftBoard";
 
 export default function DraftClient({

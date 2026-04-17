@@ -15,7 +15,7 @@ test("CharacterSearchAndAdd uses sonner success toast for add flow", () => {
 });
 
 test("CharacterListOptimized uses sonner success toast for delete flow", () => {
-  const source = readAppFile("components/CharacterListOptimized.tsx");
+  const source = readAppFile("_components/characters/CharacterListOptimized.tsx");
   assert.match(source, /import\s+\{\s*toast\s*\}\s+from\s+"sonner"/);
   assert.match(source, /toast\.success\(`Successfully deleted/);
 });

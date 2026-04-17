@@ -2,7 +2,7 @@ import {
   REALMS,
   classesByRealm,
   toCanonicalDraftClassName,
-} from "../../constants";
+} from "../../_lib/constants";
 
 export const REALM_CLASS_COLORS: Record<
   string,

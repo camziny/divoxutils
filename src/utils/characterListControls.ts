@@ -1,4 +1,4 @@
-import { CLASS_CATEGORIES } from "@/app/draft/constants";
+import { CLASS_CATEGORIES } from "@/app/draft/_lib/constants";
 import { CharacterData } from "@/utils/character";
 
 export type ClassFilter = "all" | "tank" | "caster" | "support" | "stealth";

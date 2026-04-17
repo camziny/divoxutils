@@ -40,6 +40,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   
   useEffect(() => {
+    let animationFrameId: number | null = null;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setAnimatedProgress(progressPercentage);
       setAnimatedPercentage(progressPercentage);
@@ -58,7 +59,7 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
         setAnimatedPercentage(progressPercentage * easeOut);
         
         if (progress < 1) {
-          requestAnimationFrame(animate);
+          animationFrameId = requestAnimationFrame(animate);
         }
       };
       animate();
@@ -66,6 +67,9 @@ const MobileCharacterDetails: React.FC<MobileCharacterDetailsProps> = ({
     
     return () => {
       clearTimeout(timer);
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
     };
   }, [progressPercentage]);
   

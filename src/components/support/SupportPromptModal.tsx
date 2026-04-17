@@ -1,1 +1,1 @@
-export { default } from "../../app/components/SupportPromptModal";
+export { default } from "../../app/_components/SupportPromptModal";

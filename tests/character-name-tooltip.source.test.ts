@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const root = path.resolve(process.cwd(), "src", "app", "components");
+const root = path.resolve(process.cwd(), "src", "app", "_components", "characters");
 
 const readComponent = (fileName: string) =>
   readFileSync(path.join(root, fileName), "utf8");

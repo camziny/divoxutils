@@ -1,4 +1,4 @@
-import { DraftBan } from "../../types";
+import { DraftBan } from "@/app/draft/_lib/types";
 
 export type BanSummaryGroup = {
   key: "team1" | "team2" | "auto";
