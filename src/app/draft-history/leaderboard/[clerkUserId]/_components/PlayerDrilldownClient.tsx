@@ -58,7 +58,7 @@ import {
   type ClassView,
   type HeadToHeadView,
   type TeammateView,
-} from "./drilldownViewState";
+} from "../_lib/drilldownViewState";
 
 export default function PlayerDrilldownClient({
   initialData,
@@ -706,7 +706,11 @@ export default function PlayerDrilldownClient({
                 {drilldown.playerName} has yet to captain a draft.
               </p>
             ) : topH2H.length === 0 ? (
-              <p className="text-sm text-gray-600">No captain head-to-head data yet.</p>
+              <p className="text-sm text-gray-600">
+                {headToHeadView === "captain"
+                  ? "No captain head-to-head data yet."
+                  : "No head-to-head data yet."}
+              </p>
             ) : (
               <div className="space-y-2">
                 {topH2H.map((row) => (

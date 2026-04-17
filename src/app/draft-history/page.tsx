@@ -1,5 +1,5 @@
 import { getDraftLogRows } from "@/server/draftStats";
-import DraftHistoryClient from "./DraftHistoryClient";
+import DraftHistoryClient from "./_components/DraftHistoryClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 60;

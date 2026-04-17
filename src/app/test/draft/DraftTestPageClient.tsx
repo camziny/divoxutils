@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import DraftClient from "@/app/draft/[id]/_components/DraftClient";
-import DiscordIdentityLinkCard from "@/app/draft-history/DiscordIdentityLinkCard";
+import DiscordIdentityLinkCard from "@/app/draft-history/_components/DiscordIdentityLinkCard";
 
 const DUMMY_NAMES = [
   "divox",

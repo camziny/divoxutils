@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   buildLiveBanSummaryGroups,
   splitBansForLiveSummary,
-} from "../src/app/draft/[id]/components/banSummary";
+} from "../src/app/draft/[id]/_components/banSummary";
 
 test("splitBansForLiveSummary separates captain and auto bans", () => {
   const bans = [

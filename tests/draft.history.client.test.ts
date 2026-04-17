@@ -9,7 +9,7 @@ import {
   getDiscordServerFilterOptions,
   getNormalizedFightIndex,
   parseDraftHistoryPage,
-} from "../src/app/draft-history/DraftHistoryClient";
+} from "../src/app/draft-history/_components/DraftHistoryClient";
 
 test("getNormalizedFightIndex defaults to first fight when no selected index", () => {
   assert.equal(getNormalizedFightIndex(5), 0);

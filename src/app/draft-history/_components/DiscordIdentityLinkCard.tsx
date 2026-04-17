@@ -174,7 +174,6 @@ export default function DiscordIdentityLinkCard({
     setClaimState("submitting");
     setLinkState("idle");
     setMessage("");
-    setAutoLinkConflictDiscordUserId(null);
     try {
       const res = await fetch("/api/identity/claim-discord", {
         method: "POST",
@@ -189,6 +188,7 @@ export default function DiscordIdentityLinkCard({
       }
       setClaimState("success");
       setMessage("Claim submitted. An admin will review your request.");
+      setAutoLinkConflictDiscordUserId(null);
       setDbStatus({ loading: false, linked: false, pendingClaim: true });
     } catch {
       setClaimState("error");
