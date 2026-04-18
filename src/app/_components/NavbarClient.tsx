@@ -19,6 +19,7 @@ const NAV_LINKS = [
   { href: "/realm-ranks", label: "Realm Ranks" },
   { href: "/discord", label: "Discord" },
   { href: "/about", label: "About" },
+  { href: "/ui", label: "UI" },
 ];
 
 type NavbarClientProps = {
