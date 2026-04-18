@@ -2,7 +2,7 @@
 
 import React from "react";
 import SupporterBadge from "@/components/support/SupporterBadge";
-import { SUPPORTER_TIER_PLANS } from "./_lib/supporterTierPlans";
+import { SUPPORTER_TIER_PLANS } from "../_lib/supporterTierPlans";
 
 export default function SupporterTiersShowcase() {
   return (

@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 
-const DraftTestPageClient = dynamic(() => import("./DraftTestPageClient"), {
+const DraftTestPageClient = dynamic(() => import("./_components/DraftTestPageClient"), {
   ssr: false,
 });
 
