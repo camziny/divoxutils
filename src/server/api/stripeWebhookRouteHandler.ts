@@ -2,6 +2,10 @@ import type Stripe from "stripe";
 
 type StripeUser = {
   clerkUserId: string;
+  subscriptionProvider?: "stripe" | "paypal" | null;
+  subscriptionProviderUpdatedAt?: Date | null;
+  stripeSubscriptionId?: string | null;
+  paypalSubscriptionId?: string | null;
 };
 
 type StripeWebhookDeps = {
@@ -15,8 +19,13 @@ type StripeWebhookDeps = {
   updateUserSubscription: (
     clerkUserId: string,
     data: {
+      subscriptionProvider?: "stripe" | "paypal" | null;
       stripeCustomerId?: string | null;
       stripeSubscriptionId?: string | null;
+      paypalPayerId?: string | null;
+      paypalSubscriptionId?: string | null;
+      pendingSubscriptionPriceId?: string | null;
+      subscriptionProviderUpdatedAt?: Date | null;
       subscriptionStatus?: string | null;
       subscriptionPriceId?: string | null;
       subscriptionCurrentPeriodEnd?: Date | null;
@@ -80,8 +89,24 @@ const resolveSubscriptionPeriodEndSeconds = (
   return null;
 };
 
+const isStaleStripeSubscriptionEventForPayPalSubscriber = (
+  user: StripeUser,
+  subscription: Stripe.Subscription
+): boolean => {
+  if (user.subscriptionProvider !== "paypal" && !user.paypalSubscriptionId) return false;
+  const trackedStripeSubscriptionId = user.stripeSubscriptionId ?? null;
+  if (trackedStripeSubscriptionId && trackedStripeSubscriptionId === subscription.id) return false;
+  return true;
+};
+
+const isOutOfOrderProviderEvent = (user: StripeUser, occurredAt: Date | null): boolean => {
+  if (!occurredAt || !user.subscriptionProviderUpdatedAt) return false;
+  return occurredAt.getTime() < user.subscriptionProviderUpdatedAt.getTime();
+};
+
 const syncFromSubscription = async (
   subscription: Stripe.Subscription,
+  occurredAt: Date | null,
   deps: StripeWebhookDeps
 ) => {
   const customerId = resolveCustomerId(subscription.customer);
@@ -96,14 +121,26 @@ const syncFromSubscription = async (
 
   if (!user) return;
 
+  if (isStaleStripeSubscriptionEventForPayPalSubscriber(user, subscription)) {
+    return;
+  }
+  if (isOutOfOrderProviderEvent(user, occurredAt)) {
+    return;
+  }
+
   const priceId = deps.extractRecurringPriceId(subscription);
   const tier = deps.shouldGrantSupporterBadge(subscription.status)
     ? deps.getTierFromPriceId(priceId, deps.getPriceMap())
     : 0;
 
   await deps.updateUserSubscription(user.clerkUserId, {
+    subscriptionProvider: "stripe",
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription.id,
+    paypalPayerId: null,
+    paypalSubscriptionId: null,
+    pendingSubscriptionPriceId: null,
+    subscriptionProviderUpdatedAt: occurredAt ?? new Date(),
     subscriptionStatus: subscription.status,
     subscriptionPriceId: priceId,
     subscriptionCurrentPeriodEnd: toDateFromUnixSeconds(
@@ -118,6 +155,7 @@ const syncFromSubscription = async (
 
 const syncFromCheckoutSessionCompleted = async (
   session: Stripe.Checkout.Session,
+  occurredAt: Date | null,
   deps: StripeWebhookDeps
 ) => {
   if (session.mode !== "subscription") return;
@@ -127,13 +165,21 @@ const syncFromCheckoutSessionCompleted = async (
   const customerId = resolveCustomerId(session.customer);
   const subscriptionId = resolveSubscriptionId(session.subscription);
 
-  if (!clerkUserId || !customerId) return;
+  if (!clerkUserId || !customerId || !subscriptionId) return;
   const user = await deps.findUserByClerkUserId(clerkUserId);
   if (!user) return;
+  if (isOutOfOrderProviderEvent(user, occurredAt)) {
+    return;
+  }
 
   await deps.updateUserSubscription(clerkUserId, {
+    subscriptionProvider: "stripe",
+    subscriptionProviderUpdatedAt: occurredAt ?? new Date(),
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscriptionId,
+    paypalPayerId: null,
+    paypalSubscriptionId: null,
+    pendingSubscriptionPriceId: null,
   });
 };
 
@@ -161,15 +207,20 @@ export const createStripeWebhookHandler =
     }
 
     try {
+      const occurredAt = toDateFromUnixSeconds(event.created);
       if (event.type === "checkout.session.completed") {
-        await syncFromCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session, deps);
+        await syncFromCheckoutSessionCompleted(
+          event.data.object as Stripe.Checkout.Session,
+          occurredAt,
+          deps
+        );
       } else if (
         event.type === "customer.subscription.created" ||
         event.type === "customer.subscription.updated"
       ) {
-        await syncFromSubscription(event.data.object as Stripe.Subscription, deps);
+        await syncFromSubscription(event.data.object as Stripe.Subscription, occurredAt, deps);
       } else if (event.type === "customer.subscription.deleted") {
-        await syncFromSubscription(event.data.object as Stripe.Subscription, deps);
+        await syncFromSubscription(event.data.object as Stripe.Subscription, occurredAt, deps);
       }
     } catch {
       await deps.unmarkEventProcessed(event.id);

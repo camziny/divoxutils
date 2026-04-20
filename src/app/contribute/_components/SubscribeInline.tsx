@@ -4,24 +4,34 @@ import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import SupporterBadge from "@/components/support/SupporterBadge";
+import PaymentProviderToggle, {
+  type PaymentProvider,
+} from "@/components/support/PaymentProviderToggle";
 import { SUPPORTER_TIER_PLANS } from "../_lib/supporterTierPlans";
 
 type Props = {
   activeTier: number | null;
+  paypalEnabled: boolean;
 };
 
-export default function SubscribeInline({ activeTier }: Props) {
+export default function SubscribeInline({ activeTier, paypalEnabled }: Props) {
   const { isSignedIn } = useAuth();
+  const [provider, setProvider] = useState<PaymentProvider>("stripe");
   const [loadingTier, setLoadingTier] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isSubscribed = activeTier !== null;
+  const activeProvider = paypalEnabled ? provider : "stripe";
 
   const startCheckout = async (tier: number) => {
     setError(null);
     setLoadingTier(tier);
     try {
-      const response = await fetch("/api/billing/create-checkout-session", {
+      const endpoint =
+        activeProvider === "paypal"
+          ? "/api/billing/create-paypal-subscription"
+          : "/api/billing/create-checkout-session";
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tier }),
@@ -32,7 +42,11 @@ export default function SubscribeInline({ activeTier }: Props) {
       }
       window.location.assign(payload.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to start checkout.");
+      const fallbackError =
+        activeProvider === "paypal"
+          ? "Unable to start PayPal checkout."
+          : "Unable to start checkout.";
+      setError(err instanceof Error ? err.message : fallbackError);
       setLoadingTier(null);
     }
   };
@@ -46,6 +60,19 @@ export default function SubscribeInline({ activeTier }: Props) {
       {error && (
         <div className="rounded-md border border-red-900/60 bg-red-900/20 px-4 py-2 text-sm text-red-300">
           {error}
+        </div>
+      )}
+
+      {!isSubscribed && isSignedIn && paypalEnabled && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Payment method
+          </p>
+          <PaymentProviderToggle
+            value={provider}
+            onChange={setProvider}
+            disabled={loadingTier !== null}
+          />
         </div>
       )}
 
@@ -102,22 +129,10 @@ export default function SubscribeInline({ activeTier }: Props) {
       </div>
 
       <p className="text-xs text-gray-500 text-center pt-1">
-        {isSubscribed ? (
-          <>
-            To switch tiers, go to{" "}
-            <Link href="/billing" className="text-indigo-400 hover:text-indigo-300">
-              Manage Subscription
-            </Link>{" "}
-            and select a new plan.
-          </>
-        ) : (
-          <>
-            Secure checkout powered by Stripe. Already subscribed?{" "}
-            <Link href="/billing" className="text-indigo-400 hover:text-indigo-300">
-              Manage your subscription
-            </Link>
-          </>
-        )}
+        Secure checkout powered by Stripe{paypalEnabled ? " and PayPal" : ""}. Already subscribed?{" "}
+        <Link href="/billing" className="text-indigo-400 hover:text-indigo-300">
+          Manage your subscription
+        </Link>
       </p>
     </section>
   );

@@ -8,6 +8,11 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
+enum BillingProvider {
+  stripe
+  paypal
+}
+
 model Account {
   id                 Int     @id @default(autoincrement()) @unique
   userId             Int?     @unique
@@ -34,8 +39,13 @@ model User {
   preferredCharacterListLayout String @default("table")
   stripeCustomerId String?         @unique
   stripeSubscriptionId String?     @unique
+  paypalPayerId String?            @unique
+  paypalSubscriptionId String?     @unique
+  subscriptionProvider BillingProvider?
+  subscriptionProviderUpdatedAt DateTime?
   subscriptionStatus String?
   subscriptionPriceId String?
+  pendingSubscriptionPriceId String?
   subscriptionCurrentPeriodEnd DateTime?
   subscriptionCancelAtPeriodEnd Boolean @default(false)
   account        Account?
@@ -48,6 +58,15 @@ model User {
 model StripeWebhookEvent {
   id          String   @id
   processedAt DateTime @default(now())
+}
+
+model BillingWebhookEvent {
+  id              Int             @id @default(autoincrement())
+  provider        BillingProvider
+  externalEventId String
+  processedAt     DateTime        @default(now())
+
+  @@unique([provider, externalEventId])
 }
 
 model Character {

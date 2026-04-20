@@ -9,8 +9,10 @@ const postHandler = createPortalSessionHandler({
   findCustomerIdByClerkUserId: async (clerkUserId) => {
     const user = await prisma.user.findUnique({
       where: { clerkUserId },
-      select: { stripeCustomerId: true },
+      select: { stripeCustomerId: true, subscriptionProvider: true },
     });
+    if (!user?.stripeCustomerId) return null;
+    if (user.subscriptionProvider && user.subscriptionProvider !== "stripe") return null;
     return user?.stripeCustomerId ?? null;
   },
   createPortalSession: ({ customerId, returnUrl }) =>

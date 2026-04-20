@@ -8,6 +8,9 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import SupporterBadge from "@/components/support/SupporterBadge";
 import { getWindowedImpressions, resolveCadence } from "@/components/support/supportPromptCadence";
 import { SUPPORT_PROMPT_TIER_PLANS } from "@/components/support/supportPromptTierPlans";
+import PaymentProviderToggle, {
+  type PaymentProvider,
+} from "@/components/support/PaymentProviderToggle";
 import {
   isKnownExemptActive,
   shouldClearKnownExempt,
@@ -19,6 +22,7 @@ const KNOWN_EXEMPT_UNTIL_KEY = "divoxutils_support_prompt_known_exempt_until_v1"
 const KNOWN_EXEMPT_PERSIST_UNTIL = Number.MAX_SAFE_INTEGER;
 const CLOSE_LOCK_SUFFIX = "_close_lock_until_v1";
 const PENDING_TIER_KEY = "divoxutils_support_prompt_pending_tier_v1";
+const PENDING_PROVIDER_KEY = "divoxutils_support_prompt_pending_provider_v1";
 const LOCK_ALLOWED_PATH_PREFIXES = ["/contribute", "/billing", "/sign-in", "/sign-up"];
 
 type PromptHistory = {
@@ -32,6 +36,7 @@ type SupportPromptModalProps = {
   ignorePathRules?: boolean;
   isSupporter?: boolean;
   isAdmin?: boolean;
+  paypalEnabled?: boolean;
 };
 
 function defaultHistory(): PromptHistory {
@@ -164,11 +169,36 @@ function writePendingTier(tier: 1 | 2 | 3 | null) {
   }
 }
 
+function readPendingProvider(): PaymentProvider {
+  if (typeof window === "undefined") return "stripe";
+  try {
+    const raw = window.localStorage.getItem(PENDING_PROVIDER_KEY);
+    if (raw === "paypal") return "paypal";
+    return "stripe";
+  } catch {
+    return "stripe";
+  }
+}
+
+function writePendingProvider(provider: PaymentProvider | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (!provider) {
+      window.localStorage.removeItem(PENDING_PROVIDER_KEY);
+      return;
+    }
+    window.localStorage.setItem(PENDING_PROVIDER_KEY, provider);
+  } catch {
+    return;
+  }
+}
+
 export default function SupportPromptModal({
   debug = false,
   ignorePathRules = false,
   isSupporter = false,
   isAdmin = false,
+  paypalEnabled = false,
 }: SupportPromptModalProps) {
   const checkoutErrorId = useId();
   const { isLoaded, isSignedIn } = useAuth();
@@ -182,6 +212,7 @@ export default function SupportPromptModal({
   const [closeLockUntil, setCloseLockUntil] = useState<number | null>(null);
   const [loadingTier, setLoadingTier] = useState<number | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [provider, setProvider] = useState<PaymentProvider>("stripe");
   const [history, setHistory] = useState<PromptHistory>(defaultHistory());
   const [isKnownExempt, setIsKnownExempt] = useState(false);
   const cadence = useMemo(() => resolveCadence(Boolean(isSignedIn)), [isSignedIn]);
@@ -223,7 +254,11 @@ export default function SupportPromptModal({
   });
 
   const startCheckout = useCallback(
-    async (tier: 1 | 2 | 3, source: "modal" | "sign_in_return") => {
+    async (
+      tier: 1 | 2 | 3,
+      source: "modal" | "sign_in_return",
+      selectedProvider: PaymentProvider
+    ) => {
       setCheckoutError(null);
       setLoadingTier(tier);
       const current = readHistory(cadence.storageKey);
@@ -234,9 +269,17 @@ export default function SupportPromptModal({
       };
       writeHistory(cadence.storageKey, updated);
       setHistory(updated);
-      trackSupportPromptEvent("support_modal_clicked_subscribe", { source, tier });
+      trackSupportPromptEvent("support_modal_clicked_subscribe", {
+        source,
+        tier,
+        provider: selectedProvider,
+      });
       try {
-        const response = await fetch("/api/billing/create-checkout-session", {
+        const endpoint =
+          selectedProvider === "paypal"
+            ? "/api/billing/create-paypal-subscription"
+            : "/api/billing/create-checkout-session";
+        const response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tier }),
@@ -385,14 +428,27 @@ export default function SupportPromptModal({
     if (!isLoaded || !isSignedIn) return;
     if (isSupporter || isAdmin) {
       writePendingTier(null);
+      writePendingProvider(null);
       return;
     }
     if (loadingTier !== null) return;
     const pendingTier = readPendingTier();
     if (!pendingTier) return;
+    const pendingProvider = readPendingProvider();
+    const resolvedProvider: PaymentProvider =
+      pendingProvider === "paypal" && paypalEnabled ? "paypal" : "stripe";
     writePendingTier(null);
-    void startCheckout(pendingTier, "sign_in_return");
-  }, [isLoaded, isSignedIn, isSupporter, isAdmin, loadingTier, startCheckout]);
+    writePendingProvider(null);
+    void startCheckout(pendingTier, "sign_in_return", resolvedProvider);
+  }, [
+    isLoaded,
+    isSignedIn,
+    isSupporter,
+    isAdmin,
+    loadingTier,
+    paypalEnabled,
+    startCheckout,
+  ]);
 
   useEffect(() => {
     if (isPathEligible) return;
@@ -450,13 +506,15 @@ export default function SupportPromptModal({
 
   const subscribeNow = async (tier: 1 | 2 | 3) => {
     setCheckoutError(null);
+    const selectedProvider: PaymentProvider = paypalEnabled ? provider : "stripe";
     if (!isSignedIn) {
       writePendingTier(tier);
+      writePendingProvider(selectedProvider);
       const redirectPath = pathname || "/";
       router.push(`/sign-in?redirect_url=${encodeURIComponent(redirectPath)}`);
       return;
     }
-    await startCheckout(tier, "modal");
+    await startCheckout(tier, "modal", selectedProvider);
   };
 
   const resetHistory = () => {
@@ -464,6 +522,7 @@ export default function SupportPromptModal({
     writeHistory(cadence.storageKey, fresh);
     writeCloseLockUntil(cadence.storageKey, null);
     writePendingTier(null);
+    writePendingProvider(null);
     setHistory(fresh);
     setIsOpen(false);
     setCanClose(false);
@@ -571,6 +630,23 @@ export default function SupportPromptModal({
               </div>
             </div>
           </div>
+
+          {paypalEnabled && (
+            <div className="mx-4 sm:mx-5 mt-3 space-y-1.5">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Payment method
+              </p>
+              <PaymentProviderToggle
+                value={provider}
+                onChange={setProvider}
+                disabled={loadingTier !== null}
+                size="sm"
+              />
+              <p className="text-[11px] text-gray-500">
+                Secure checkout via Stripe or PayPal. Payment details are handled by the provider and never stored by divoxutils.
+              </p>
+            </div>
+          )}
 
           <div className="mx-4 sm:mx-5 mt-3 space-y-2">
             {SUPPORT_PROMPT_TIER_PLANS.map((plan) => (
