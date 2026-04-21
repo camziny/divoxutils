@@ -128,6 +128,7 @@ export const createPayPalSubscription = async (params: {
   origin: string;
 }): Promise<PayPalSubscription> => {
   const accessToken = await getPayPalAccessToken();
+  const billingReturnSessionId = `pp_${params.clerkUserId}_${Date.now()}`;
   const response = await fetch(`${getPayPalBaseUrl()}/v1/billing/subscriptions`, {
     method: "POST",
     headers: {
@@ -141,8 +142,8 @@ export const createPayPalSubscription = async (params: {
       application_context: {
         brand_name: "divoxutils",
         user_action: "SUBSCRIBE_NOW",
-        return_url: `${params.origin}/billing?checkout=success&provider=paypal`,
-        cancel_url: `${params.origin}/billing?checkout=cancel&provider=paypal`,
+        return_url: `${params.origin}/billing?checkout=success&provider=paypal&session_id=${encodeURIComponent(billingReturnSessionId)}`,
+        cancel_url: `${params.origin}/billing?checkout=cancel&provider=paypal&session_id=${encodeURIComponent(billingReturnSessionId)}`,
       },
     }),
   });
@@ -202,6 +203,7 @@ export const cancelPayPalSubscription = async (
 export const revisePayPalSubscriptionPlan = async (params: {
   paypalSubscriptionId: string;
   planId: string;
+  origin: string;
 }): Promise<{ approveUrl: string | null }> => {
   const accessToken = await getPayPalAccessToken();
   const response = await fetch(
@@ -214,6 +216,11 @@ export const revisePayPalSubscriptionPlan = async (params: {
       },
       body: JSON.stringify({
         plan_id: params.planId,
+        application_context: {
+          brand_name: "divoxutils",
+          return_url: `${params.origin}/billing?switch=scheduled&provider=paypal`,
+          cancel_url: `${params.origin}/billing?switch=cancel&provider=paypal`,
+        },
       }),
     }
   );

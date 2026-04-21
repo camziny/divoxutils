@@ -24,8 +24,8 @@ const postHandler = changePayPalPlanHandler({
         paypalSubscriptionId: true,
       },
     }),
-  revisePayPalSubscriptionPlan: ({ paypalSubscriptionId, planId }) =>
-    revisePayPalSubscriptionPlan({ paypalSubscriptionId, planId }),
+  revisePayPalSubscriptionPlan: ({ paypalSubscriptionId, planId, origin }) =>
+    revisePayPalSubscriptionPlan({ paypalSubscriptionId, planId, origin }),
   updatePendingSubscriptionPriceId: async ({ clerkUserId, pendingSubscriptionPriceId }) => {
     await prisma.user.update({
       where: { clerkUserId },

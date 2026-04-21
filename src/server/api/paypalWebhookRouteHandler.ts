@@ -175,13 +175,22 @@ const findLinkedUser = async (
 
 const isStalePayPalEventForStripeSubscriber = (
   user: {
+    clerkUserId: string;
     subscriptionProvider?: "stripe" | "paypal" | null;
     stripeSubscriptionId?: string | null;
     paypalSubscriptionId?: string | null;
   },
-  resource: PayPalWebhookResource
+  resource: PayPalWebhookResource,
+  eventType: string | undefined
 ): boolean => {
   if (user.subscriptionProvider !== "stripe" && !user.stripeSubscriptionId) return false;
+  const eventClerkUserId =
+    typeof resource.custom_id === "string" && resource.custom_id.length > 0
+      ? resource.custom_id
+      : null;
+  if (eventType === "BILLING.SUBSCRIPTION.ACTIVATED" && eventClerkUserId === user.clerkUserId) {
+    return false;
+  }
   const eventPayPalSubscriptionId =
     typeof resource.id === "string" && resource.id.length > 0 ? resource.id : null;
   const trackedPayPalSubscriptionId = user.paypalSubscriptionId ?? null;
@@ -239,7 +248,7 @@ export const createPayPalWebhookHandler =
       if (!user) {
         return { status: 200, body: { received: true } };
       }
-      if (isStalePayPalEventForStripeSubscriber(user, resource)) {
+      if (isStalePayPalEventForStripeSubscriber(user, resource, event.event_type)) {
         return { status: 200, body: { received: true } };
       }
       if (isOutOfOrderProviderEvent(user, occurredAt)) {
@@ -249,6 +258,14 @@ export const createPayPalWebhookHandler =
       const internalStatus = toInternalStatus(resource.status);
       const isActive = isActiveSubscriptionStatus(internalStatus);
       const cancelAtPeriodEnd = internalStatus === "canceled";
+      const eventPayPalSubscriptionId =
+        typeof resource.id === "string" && resource.id.length > 0 ? resource.id : null;
+      const hasTrackedPayPalState =
+        user.subscriptionProvider === "paypal" ||
+        (Boolean(user.paypalSubscriptionId) && user.paypalSubscriptionId === eventPayPalSubscriptionId);
+      if (internalStatus === "incomplete" && !hasTrackedPayPalState) {
+        return { status: 200, body: { received: true } };
+      }
       const planId = typeof resource.plan_id === "string" ? resource.plan_id : null;
       const supporterTier =
         internalStatus && deps.shouldGrantSupporterBadge(internalStatus)

@@ -225,6 +225,7 @@ test("create paypal subscription enforces feature flag", async () => {
 
 test("create paypal subscription returns approval URL", async () => {
   let recorded: Record<string, unknown> | null = null;
+  let recordCalls = 0;
   let receivedOrigin = "";
   const handler = createPayPalSubscriptionHandler({
     getAuthUserId: async () => "user_1",
@@ -241,6 +242,7 @@ test("create paypal subscription returns approval URL", async () => {
       };
     },
     recordPayPalSubscription: async (params) => {
+      recordCalls += 1;
       recorded = params as unknown as Record<string, unknown>;
     },
   });
@@ -255,7 +257,39 @@ test("create paypal subscription returns approval URL", async () => {
   assert.equal(result.status, 200);
   assert.equal((result.body as { url: string }).url, "https://paypal.test/approve");
   assert.equal(receivedOrigin, expectedOrigin);
-  assert.equal(recorded?.["subscriptionPriceId"], "plan_2");
+  assert.equal(recordCalls, 0);
+  assert.equal(recorded, null);
+});
+
+test("create paypal subscription does not overwrite stripe grace-period state before approval", async () => {
+  let recorded: Record<string, unknown> | null = null;
+  let recordCalls = 0;
+  const handler = createPayPalSubscriptionHandler({
+    getAuthUserId: async () => "user_grace",
+    getPlanMap: () => ({ 1: "plan_1", 2: "plan_2", 3: "plan_3" }),
+    isPayPalEnabled: () => true,
+    findUserByClerkId: async () => ({ clerkUserId: "user_grace", subscriptionStatus: "canceled" }),
+    createPayPalSubscription: async () => ({
+      id: "I-SUB-PENDING",
+      status: "incomplete",
+      approveUrl: "https://paypal.test/approve",
+      payerId: "payer_grace",
+    }),
+    recordPayPalSubscription: async (params) => {
+      recordCalls += 1;
+      recorded = params as unknown as Record<string, unknown>;
+    },
+  });
+
+  const result = await handler({
+    method: "POST",
+    body: { tier: 2 },
+    headers: createHeaders(),
+  });
+  assert.equal(result.status, 200);
+  assert.equal((result.body as { url: string }).url, "https://paypal.test/approve");
+  assert.equal(recordCalls, 0);
+  assert.equal(recorded, null);
 });
 
 test("create paypal subscription blocks duplicate active subscriptions", async () => {
@@ -387,6 +421,7 @@ test("cancel paypal subscription enforces method, feature flag, and auth", async
 
 test("change paypal plan schedules pending tier and returns approval url", async () => {
   let revisedPlanId = "";
+  let revisedOrigin = "";
   let updatedPendingPlanId = "";
   const handler = changePayPalPlanHandler({
     getAuthUserId: async () => "user_1",
@@ -400,8 +435,9 @@ test("change paypal plan schedules pending tier and returns approval url", async
       pendingSubscriptionPriceId: null,
       paypalSubscriptionId: "I-SUB",
     }),
-    revisePayPalSubscriptionPlan: async ({ planId }) => {
+    revisePayPalSubscriptionPlan: async ({ planId, origin }) => {
       revisedPlanId = planId;
+      revisedOrigin = origin;
       return { approveUrl: "https://paypal.test/reapprove" };
     },
     updatePendingSubscriptionPriceId: async ({ pendingSubscriptionPriceId }) => {
@@ -416,6 +452,9 @@ test("change paypal plan schedules pending tier and returns approval url", async
   assert.equal(result.status, 200);
   assert.equal((result.body as { url: string }).url, "https://paypal.test/reapprove");
   assert.equal(revisedPlanId, "plan_3");
+  const expectedOrigin =
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "https://example.com";
+  assert.equal(revisedOrigin, expectedOrigin);
   assert.equal(updatedPendingPlanId, "plan_3");
 });
 
@@ -1044,7 +1083,7 @@ test("paypal webhook updates subscription state", async () => {
   assert.equal(updatedData?.["supporterTier"], 3);
 });
 
-test("paypal webhook does not mark approval-pending subscription as canceling", async () => {
+test("paypal webhook ignores approval-pending event for non-PayPal subscriber", async () => {
   let updatedData: Record<string, unknown> | null = null;
   const handler = createPayPalWebhookHandler({
     markEventProcessed: async () => true,
@@ -1086,8 +1125,56 @@ test("paypal webhook does not mark approval-pending subscription as canceling", 
   });
 
   assert.equal(result.status, 200);
-  assert.equal(updatedData?.["subscriptionStatus"], "incomplete");
-  assert.equal(updatedData?.["subscriptionCancelAtPeriodEnd"], false);
+  assert.equal(updatedData, null);
+});
+
+test("paypal webhook does not clobber stripe grace-period state on approval-pending event", async () => {
+  let updatedData: Record<string, unknown> | null = null;
+  const handler = createPayPalWebhookHandler({
+    markEventProcessed: async () => true,
+    unmarkEventProcessed: async () => {},
+    verifyWebhook: async () => true,
+    getPlanMap: () => ({ 1: "plan_1", 2: "plan_2", 3: "plan_3" }),
+    shouldGrantSupporterBadge: (status) => status === "active",
+    findUserByClerkUserId: async () => ({
+      clerkUserId: "user_stripe_grace",
+      subscriptionProvider: "stripe",
+      stripeSubscriptionId: "sub_grace",
+      paypalSubscriptionId: null,
+      subscriptionPriceId: "price_1",
+      pendingSubscriptionPriceId: null,
+      subscriptionCurrentPeriodEnd: new Date("2099-01-01T00:00:00Z"),
+    }),
+    findUserByPayPalSubscriptionId: async () => null,
+    findUserByPayPalPayerId: async () => null,
+    updateUserSubscription: async (_clerkUserId, data) => {
+      updatedData = data as unknown as Record<string, unknown>;
+    },
+  });
+
+  const result = await handler({
+    method: "POST",
+    headers: createHeaders({
+      "paypal-transmission-id": "id",
+      "paypal-transmission-time": "time",
+      "paypal-transmission-sig": "sig",
+      "paypal-cert-url": "https://example.com/cert",
+      "paypal-auth-algo": "algo",
+    }),
+    body: {
+      id: "evt_stripe_grace_pending",
+      event_type: "BILLING.SUBSCRIPTION.CREATED",
+      resource: {
+        id: "I-SUB-PENDING-GRACE",
+        status: "APPROVAL_PENDING",
+        custom_id: "user_stripe_grace",
+        plan_id: "plan_2",
+      },
+    },
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(updatedData, null);
 });
 
 test("paypal webhook preserves existing period end when next billing time is missing", async () => {
@@ -1186,6 +1273,57 @@ test("paypal webhook ignores stale events when user is on Stripe", async () => {
   });
   assert.equal(result.status, 200);
   assert.equal(updated, 0);
+});
+
+test("paypal webhook accepts activation for stripe user when custom_id matches", async () => {
+  let updatedData: Record<string, unknown> | null = null;
+  const handler = createPayPalWebhookHandler({
+    markEventProcessed: async () => true,
+    unmarkEventProcessed: async () => {},
+    verifyWebhook: async () => true,
+    getPlanMap: () => ({ 1: "plan_1", 2: "plan_2", 3: "plan_3" }),
+    shouldGrantSupporterBadge: (status) => status === "active",
+    findUserByClerkUserId: async () => ({
+      clerkUserId: "user_transition",
+      subscriptionProvider: "stripe",
+      stripeSubscriptionId: "sub_old",
+      paypalSubscriptionId: null,
+      subscriptionPriceId: "price_1",
+      pendingSubscriptionPriceId: null,
+    }),
+    findUserByPayPalSubscriptionId: async () => null,
+    findUserByPayPalPayerId: async () => null,
+    updateUserSubscription: async (_clerkUserId, data) => {
+      updatedData = data as unknown as Record<string, unknown>;
+    },
+  });
+
+  const result = await handler({
+    method: "POST",
+    headers: createHeaders({
+      "paypal-transmission-id": "id",
+      "paypal-transmission-time": "time",
+      "paypal-transmission-sig": "sig",
+      "paypal-cert-url": "https://example.com/cert",
+      "paypal-auth-algo": "algo",
+    }),
+    body: {
+      id: "evt_transition_activated",
+      event_type: "BILLING.SUBSCRIPTION.ACTIVATED",
+      resource: {
+        id: "I-NEW-PP",
+        status: "ACTIVE",
+        custom_id: "user_transition",
+        plan_id: "plan_2",
+      },
+    },
+  });
+
+  assert.equal(result.status, 200);
+  assert.equal(updatedData?.["subscriptionProvider"], "paypal");
+  assert.equal(updatedData?.["paypalSubscriptionId"], "I-NEW-PP");
+  assert.equal(updatedData?.["subscriptionStatus"], "active");
+  assert.equal(updatedData?.["supporterTier"], 2);
 });
 
 test("paypal webhook ordering prefers event create_time over transmission time", async () => {

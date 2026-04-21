@@ -100,6 +100,10 @@ export default function BillingClient({
   const isActive = isActiveSupportSubscriptionStatus(subscription?.status);
   const hasGraceAccess =
     Boolean(subscription?.cancelAtPeriodEnd) && isFutureDate(subscription?.currentPeriodEnd ?? null);
+  const hasManageablePayPalSubscription =
+    subscription?.provider === "paypal" &&
+    subscription?.hasPayPalSubscription &&
+    (isActive || hasGraceAccess);
   const showsAccessUntilState = isActive || hasGraceAccess;
   const shouldShowSyncHint = checkoutStatus === "success" || switchStatus === "scheduled";
   const syncRefreshKey = useMemo(() => {
@@ -149,6 +153,18 @@ export default function BillingClient({
         return;
       }
       writeTrackedCheckoutSessionIds(appendTrackedCheckoutSessionId(trackedSessionIds, checkoutSessionId));
+    } else {
+      if (typeof window !== "undefined") {
+        const fallbackTrackedKey = "divoxutils_billing_success_no_session_tracked_v1";
+        try {
+          if (window.sessionStorage.getItem(fallbackTrackedKey) === "1") {
+            hasTrackedSubscribeSuccess.current = true;
+            return;
+          }
+          window.sessionStorage.setItem(fallbackTrackedKey, "1");
+        } catch {
+        }
+      }
     }
     hasTrackedSubscribeSuccess.current = true;
     track("support_subscribe_success", {
@@ -337,7 +353,7 @@ export default function BillingClient({
         )}
       </div>
 
-      {isActive && subscription?.hasStripeCustomer ? (
+      {subscription?.provider === "stripe" && isActive && subscription?.hasStripeCustomer ? (
         <div className="space-y-2">
           <button
             type="button"
@@ -353,68 +369,70 @@ export default function BillingClient({
               : "Update payment method, switch plans, or cancel."}
           </p>
         </div>
-      ) : isActive && subscription?.provider === "paypal" && subscription?.hasPayPalSubscription ? (
+      ) : hasManageablePayPalSubscription ? (
         <div className="space-y-4">
-          <section className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Switch Plan
-              </h2>
-              <span className="text-[11px] text-gray-600">
-                Effective next billing cycle
-              </span>
-            </div>
-            <div className="space-y-2">
-              {SUPPORTER_TIER_PLANS.map((plan) => {
-                const isCurrent = isSameSupportPlan(subscription.tier, plan.tier);
-                const isPending = isSameSupportPlan(subscription.pendingTier, plan.tier);
-                const isLoading = paypalSwitchLoadingTier === plan.tier;
-                return (
-                  <div
-                    key={plan.tier}
-                    className={`flex items-center gap-3 rounded-md border px-4 py-2.5 ${
-                      isCurrent
-                        ? "border-indigo-500/30 bg-indigo-500/10"
-                        : isPending
-                          ? "border-gray-700 bg-gray-800/35"
-                          : "border-gray-800 bg-gray-800/20"
-                    }`}
-                  >
-                    <SupporterBadge tier={plan.tier} size="sm" showTooltip={false} />
-                    <div className="min-w-0 flex-1">
-                      <span className="text-sm font-semibold text-white">
-                        {plan.label}
-                      </span>
+          {isActive && (
+            <section className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Switch Plan
+                </h2>
+                <span className="text-[11px] text-gray-600">
+                  Effective next billing cycle
+                </span>
+              </div>
+              <div className="space-y-2">
+                {SUPPORTER_TIER_PLANS.map((plan) => {
+                  const isCurrent = isSameSupportPlan(subscription.tier, plan.tier);
+                  const isPending = isSameSupportPlan(subscription.pendingTier, plan.tier);
+                  const isLoading = paypalSwitchLoadingTier === plan.tier;
+                  return (
+                    <div
+                      key={plan.tier}
+                      className={`flex items-center gap-3 rounded-md border px-4 py-2.5 ${
+                        isCurrent
+                          ? "border-indigo-500/30 bg-indigo-500/10"
+                          : isPending
+                            ? "border-gray-700 bg-gray-800/35"
+                            : "border-gray-800 bg-gray-800/20"
+                      }`}
+                    >
+                      <SupporterBadge tier={plan.tier} size="sm" showTooltip={false} />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-semibold text-white">
+                          {plan.label}
+                        </span>
+                      </div>
+                      {isCurrent ? (
+                        <span className="shrink-0 rounded-md bg-indigo-500/20 px-3 py-1 text-[11px] font-medium text-indigo-300">
+                          Current
+                        </span>
+                      ) : isPending ? (
+                        <span className="shrink-0 rounded-md bg-gray-700/70 px-3 py-1 text-[11px] font-medium text-gray-200">
+                          Scheduled
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => schedulePayPalPlanChange(plan.tier)}
+                          disabled={paypalSwitchLoadingTier !== null || paypalCancelLoading}
+                          className="shrink-0 rounded-md border border-gray-700 px-3 py-1 text-[11px] font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors disabled:opacity-50"
+                        >
+                          {isLoading ? "Scheduling..." : "Switch"}
+                        </button>
+                      )}
                     </div>
-                    {isCurrent ? (
-                      <span className="shrink-0 rounded-md bg-indigo-500/20 px-3 py-1 text-[11px] font-medium text-indigo-300">
-                        Current
-                      </span>
-                    ) : isPending ? (
-                      <span className="shrink-0 rounded-md bg-gray-700/70 px-3 py-1 text-[11px] font-medium text-gray-200">
-                        Scheduled
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => schedulePayPalPlanChange(plan.tier)}
-                        disabled={paypalSwitchLoadingTier !== null || paypalCancelLoading}
-                        className="shrink-0 rounded-md border border-gray-700 px-3 py-1 text-[11px] font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors disabled:opacity-50"
-                      >
-                        {isLoading ? "Scheduling..." : "Switch"}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {subscription.pendingTierLabel && subscription.currentPeriodEnd && (
-              <p className="text-xs text-gray-300">
-                Switching to {subscription.pendingTierLabel} on{" "}
-                {formatDate(subscription.currentPeriodEnd)}.
-              </p>
-            )}
-          </section>
+                  );
+                })}
+              </div>
+              {subscription.pendingTierLabel && subscription.currentPeriodEnd && (
+                <p className="text-xs text-gray-300">
+                  Switching to {subscription.pendingTierLabel} on{" "}
+                  {formatDate(subscription.currentPeriodEnd)}.
+                </p>
+              )}
+            </section>
+          )}
 
           <section className="rounded-md border border-gray-800 bg-gray-800/20 p-3 space-y-2.5">
             <h3 className="text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -423,14 +441,16 @@ export default function BillingClient({
             <p className="text-[11px] text-gray-400">
               You can manage this subscription in your PayPal account at any time.
             </p>
-            <button
-              type="button"
-              onClick={cancelPayPal}
-              disabled={paypalCancelLoading || paypalSwitchLoadingTier !== null}
-              className="w-full rounded-md border border-gray-700 px-3 py-2 text-xs font-medium text-gray-400 hover:text-red-400 hover:border-red-900/60 transition-colors disabled:opacity-50"
-            >
-              {paypalCancelLoading ? "Cancelling..." : "Cancel at period end"}
-            </button>
+            {!subscription.cancelAtPeriodEnd && (
+              <button
+                type="button"
+                onClick={cancelPayPal}
+                disabled={paypalCancelLoading || paypalSwitchLoadingTier !== null}
+                className="w-full rounded-md border border-gray-700 px-3 py-2 text-xs font-medium text-gray-400 hover:text-red-400 hover:border-red-900/60 transition-colors disabled:opacity-50"
+              >
+                {paypalCancelLoading ? "Cancelling..." : "Cancel at period end"}
+              </button>
+            )}
             {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
               <p className="text-[11px] text-yellow-300/90">
                 Your access remains active until {formatDate(subscription.currentPeriodEnd)}.
@@ -438,7 +458,7 @@ export default function BillingClient({
             )}
           </section>
         </div>
-      ) : subscription?.hasStripeCustomer && !isActive ? (
+      ) : subscription?.provider === "stripe" && subscription?.hasStripeCustomer && !isActive ? (
         <div className="space-y-3">
           <p className="text-sm text-gray-400 text-center">
             Your subscription is no longer active. You can resubscribe anytime.

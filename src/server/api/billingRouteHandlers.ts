@@ -69,6 +69,7 @@ type PayPalChangePlanDeps = {
   revisePayPalSubscriptionPlan: (params: {
     paypalSubscriptionId: string;
     planId: string;
+    origin: string;
   }) => Promise<{ approveUrl: string | null }>;
   updatePendingSubscriptionPriceId: (params: {
     clerkUserId: string;
@@ -248,13 +249,15 @@ export const createPayPalSubscriptionHandler =
         return { status: 500, body: { error: "Unable to start PayPal checkout." } };
       }
 
-      await deps.recordPayPalSubscription({
-        clerkUserId,
-        paypalSubscriptionId: subscription.id,
-        paypalPayerId: subscription.payerId,
-        subscriptionStatus: subscription.status,
-        subscriptionPriceId: planId,
-      });
+      if (isActiveSubscriptionStatus(subscription.status)) {
+        await deps.recordPayPalSubscription({
+          clerkUserId,
+          paypalSubscriptionId: subscription.id,
+          paypalPayerId: subscription.payerId,
+          subscriptionStatus: subscription.status,
+          subscriptionPriceId: planId,
+        });
+      }
 
       return { status: 200, body: { url: subscription.approveUrl } };
     } catch (error) {
@@ -334,6 +337,7 @@ export const changePayPalPlanHandler =
       const result = await deps.revisePayPalSubscriptionPlan({
         paypalSubscriptionId: user.paypalSubscriptionId,
         planId,
+        origin: getRequestOrigin(input.headers),
       });
 
       await deps.updatePendingSubscriptionPriceId({

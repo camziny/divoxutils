@@ -590,7 +590,7 @@ export default function SupportPromptModal({
           setIsOpen(true);
         }}
       >
-        <DialogContent className="max-w-md border-gray-800 bg-gray-900 p-0 gap-0 overflow-hidden max-h-[90dvh] overflow-y-auto overscroll-contain">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg border-gray-800 bg-gray-900 p-0 gap-0 overflow-hidden max-h-[90dvh] overflow-y-auto overscroll-contain">
           <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4">
             <DialogTitle className="text-base font-semibold text-white">
               Help keep divoxutils running
@@ -602,7 +602,7 @@ export default function SupportPromptModal({
           </div>
 
           <div className="mx-4 sm:mx-5 rounded-lg border border-gray-800 bg-gray-800/20 p-3 sm:p-4 space-y-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Cost Breakdown</h3>
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Cost Breakdown</h3>
             <dl className="grid grid-cols-[1fr_auto] gap-x-3 sm:gap-x-6 gap-y-1.5 sm:gap-y-2 text-sm">
               <dt className="text-gray-300">Cloud hosting and runtime infrastructure</dt>
               <dd className="text-gray-200 tabular-nums text-right shrink-0">$20 / mo</dd>
@@ -619,7 +619,7 @@ export default function SupportPromptModal({
             </dl>
             <div className="h-px bg-gray-800" />
             <div className="space-y-2 text-sm">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total costs</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total costs</p>
               <div className="flex items-center justify-between text-gray-300">
                 <span>Monthly estimate</span>
                 <span className="text-white font-medium">~$61 - $121+</span>
@@ -632,19 +632,13 @@ export default function SupportPromptModal({
           </div>
 
           {paypalEnabled && (
-            <div className="mx-4 sm:mx-5 mt-3 space-y-1.5">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Payment method
-              </p>
+            <div className="mx-4 sm:mx-5 mt-3">
               <PaymentProviderToggle
                 value={provider}
                 onChange={setProvider}
                 disabled={loadingTier !== null}
                 size="sm"
               />
-              <p className="text-[11px] text-gray-500">
-                Secure checkout via Stripe or PayPal. Payment details are handled by the provider and never stored by divoxutils.
-              </p>
             </div>
           )}
 
@@ -687,7 +681,7 @@ export default function SupportPromptModal({
             </div>
           )}
 
-          {(!isSignedIn || debug) && (
+          {!isSignedIn && (
             <div className="mx-4 sm:mx-5 mt-2">
               <button
                 type="button"
@@ -704,7 +698,7 @@ export default function SupportPromptModal({
           )}
 
           <div className="px-4 sm:px-5 pt-3 pb-4 sm:pb-5 flex items-center justify-between gap-3">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-400">
               Any active tier removes this reminder.
             </p>
             <button

@@ -24,6 +24,7 @@ type BillingPageProps = {
   searchParams?: {
     checkout?: "success" | "cancel";
     switch?: "scheduled" | "cancel";
+    provider?: "paypal";
     session_id?: string;
   };
 };
@@ -62,6 +63,7 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
     searchParams?.switch === "scheduled" || searchParams?.switch === "cancel"
       ? searchParams.switch
       : null;
+  const switchProvider = searchParams?.provider === "paypal" ? "paypal" : null;
 
   const paypalEnabled = isPayPalSubscriptionsEnabled();
 
@@ -113,6 +115,20 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
             : user.stripeSubscriptionId || user.stripeCustomerId
               ? "stripe"
               : null);
+        if (
+          switchStatus === "cancel" &&
+          switchProvider === "paypal" &&
+          provider === "paypal" &&
+          resolvedPendingPriceId
+        ) {
+          resolvedPendingPriceId = null;
+          await prisma.user.update({
+            where: { clerkUserId: userId },
+            data: {
+              pendingSubscriptionPriceId: null,
+            },
+          });
+        }
         if (provider && user.subscriptionProvider !== provider) {
           await prisma.user.update({
             where: { clerkUserId: userId },
@@ -203,6 +219,8 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
             await prisma.user.update({
               where: { clerkUserId: userId },
               data: {
+                stripeCustomerId: null,
+                stripeSubscriptionId: null,
                 paypalSubscriptionId: remoteSubscription.id,
                 paypalPayerId: remoteSubscription.payerId,
                 subscriptionStatus: resolvedStatus,
@@ -235,8 +253,8 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
           currentPeriodEnd: resolvedPeriodEnd
             ? resolvedPeriodEnd.toISOString()
             : null,
-          hasStripeCustomer: !!user.stripeCustomerId,
-          hasPayPalSubscription: !!user.paypalSubscriptionId,
+          hasStripeCustomer: provider === "stripe" && !!user.stripeCustomerId,
+          hasPayPalSubscription: provider === "paypal" && !!user.paypalSubscriptionId,
           pendingTier: pendingTier > 0 ? pendingTier : null,
           pendingTierLabel: pendingTier > 0 ? TIER_LABELS[pendingTier] ?? null : null,
         };

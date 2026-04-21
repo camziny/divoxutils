@@ -64,10 +64,7 @@ export default function SubscribeInline({ activeTier, paypalEnabled }: Props) {
       )}
 
       {!isSubscribed && isSignedIn && paypalEnabled && (
-        <div className="space-y-1.5">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Payment method
-          </p>
+        <div>
           <PaymentProviderToggle
             value={provider}
             onChange={setProvider}

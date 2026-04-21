@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import SupportPromptModal from "@/components/support/SupportPromptModal";
+import { isPayPalSubscriptionsEnabled } from "@/server/billing/paypal";
 
 export default function SupportModalTestPage() {
   if (process.env.NODE_ENV !== "development") {
     notFound();
   }
+  const paypalEnabled = isPayPalSubscriptionsEnabled();
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-300">
@@ -15,7 +17,7 @@ export default function SupportModalTestPage() {
             Development-only preview for cadence and modal behavior.
           </p>
         </header>
-        <SupportPromptModal debug ignorePathRules />
+        <SupportPromptModal debug ignorePathRules paypalEnabled={paypalEnabled} />
       </div>
     </div>
   );
