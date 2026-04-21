@@ -50,6 +50,16 @@ const resolveRemotePeriodSeconds = (
   return null;
 };
 
+const hasFutureGraceAccess = (params: {
+  cancelAtPeriodEnd: boolean;
+  periodEnd: Date | null;
+  nowMs?: number;
+}): boolean => {
+  if (!params.cancelAtPeriodEnd || !params.periodEnd) return false;
+  const nowMs = params.nowMs ?? Date.now();
+  return params.periodEnd.getTime() > nowMs;
+};
+
 const BillingPage = async ({ searchParams }: BillingPageProps) => {
   const checkoutStatus =
     searchParams?.checkout === "success" || searchParams?.checkout === "cancel"
@@ -212,8 +222,13 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
             resolvedPeriodEnd = remoteSubscription.nextBillingTime
               ? new Date(remoteSubscription.nextBillingTime)
               : resolvedPeriodEnd;
+            const hasPayPalGraceAccess = hasFutureGraceAccess({
+              cancelAtPeriodEnd: resolvedCancelAtPeriodEnd,
+              periodEnd: resolvedPeriodEnd,
+            });
             const resolvedTierFromPayPal =
-              paypalEnabled && isActiveSubscriptionStatus(resolvedStatus)
+              paypalEnabled &&
+              (isActiveSubscriptionStatus(resolvedStatus) || hasPayPalGraceAccess)
                 ? getTierFromPriceId(resolvedPriceId, getPayPalPlanMap())
                 : 0;
             await prisma.user.update({
@@ -236,9 +251,14 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
         }
 
         const isActive = isActiveSubscriptionStatus(resolvedStatus);
+        const hasGraceAccess = hasFutureGraceAccess({
+          cancelAtPeriodEnd: resolvedCancelAtPeriodEnd,
+          periodEnd: resolvedPeriodEnd,
+        });
         const providerPriceMap =
           provider === "paypal" && paypalEnabled ? getPayPalPlanMap() : getStripePriceMap();
-        const tier = isActive ? getTierFromPriceId(resolvedPriceId, providerPriceMap) : 0;
+        const tier =
+          isActive || hasGraceAccess ? getTierFromPriceId(resolvedPriceId, providerPriceMap) : 0;
         const pendingTier =
           provider === "paypal" && paypalEnabled && resolvedPendingPriceId
             ? getTierFromPriceId(resolvedPendingPriceId, getPayPalPlanMap())

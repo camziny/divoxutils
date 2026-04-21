@@ -123,6 +123,16 @@ const toDate = (iso: string | undefined): Date | null => {
   return parsed;
 };
 
+const hasFutureGraceAccess = (params: {
+  cancelAtPeriodEnd: boolean;
+  periodEnd: Date | null;
+  now?: Date;
+}): boolean => {
+  if (!params.cancelAtPeriodEnd || !params.periodEnd) return false;
+  const now = params.now ?? new Date();
+  return params.periodEnd.getTime() > now.getTime();
+};
+
 const resolveEventOccurredAt = (
   event: PayPalWebhookEvent,
   transmissionTime: string
@@ -290,8 +300,12 @@ export const createPayPalWebhookHandler =
       const nextPendingSubscriptionPriceId =
         shouldPromotePendingPlan || !isActive ? null : user.pendingSubscriptionPriceId;
       const nextPeriodEnd = nextBillingTime ?? user.subscriptionCurrentPeriodEnd ?? null;
+      const nextHasGraceAccess = hasFutureGraceAccess({
+        cancelAtPeriodEnd,
+        periodEnd: nextPeriodEnd,
+      });
       const nextSupporterTier =
-        internalStatus && deps.shouldGrantSupporterBadge(internalStatus)
+        (internalStatus && deps.shouldGrantSupporterBadge(internalStatus)) || nextHasGraceAccess
           ? getTierFromPlanId(nextSubscriptionPriceId, deps.getPlanMap())
           : 0;
       await deps.updateUserSubscription(user.clerkUserId, {

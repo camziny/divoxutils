@@ -1179,7 +1179,7 @@ test("paypal webhook does not clobber stripe grace-period state on approval-pend
 
 test("paypal webhook preserves existing period end when next billing time is missing", async () => {
   let updatedData: Record<string, unknown> | null = null;
-  const existingPeriodEnd = new Date("2026-05-01T00:00:00Z");
+  const existingPeriodEnd = new Date("2099-05-01T00:00:00Z");
   const handler = createPayPalWebhookHandler({
     markEventProcessed: async () => true,
     unmarkEventProcessed: async () => {},
@@ -1226,6 +1226,7 @@ test("paypal webhook preserves existing period end when next billing time is mis
   assert.equal(updatedData?.["subscriptionStatus"], "canceled");
   assert.equal(updatedData?.["subscriptionCancelAtPeriodEnd"], true);
   assert.deepEqual(updatedData?.["subscriptionCurrentPeriodEnd"], existingPeriodEnd);
+  assert.equal(updatedData?.["supporterTier"], 1);
 });
 
 test("paypal webhook ignores stale events when user is on Stripe", async () => {

@@ -5,6 +5,16 @@ import { fetchPayPalSubscription, getPayPalPlanMap, isPayPalSubscriptionsEnabled
 import { extractRecurringPriceId, getStripeClient, getStripePriceMap, getTierFromPriceId, shouldGrantSupporterBadge } from "@/server/billing/stripe";
 import { isActiveSubscriptionStatus } from "@/server/billing/subscriptionStatus";
 
+const hasFutureGraceAccess = (params: {
+  cancelAtPeriodEnd: boolean;
+  periodEnd: Date | null;
+  nowMs?: number;
+}): boolean => {
+  if (!params.cancelAtPeriodEnd || !params.periodEnd) return false;
+  const nowMs = params.nowMs ?? Date.now();
+  return params.periodEnd.getTime() > nowMs;
+};
+
 const run = async (method: string, request: NextRequest) => {
   if (!hasValidCronAuthorization(request.headers.get("authorization"), process.env.CRON_SECRET)) {
     return unauthorizedCronResponse();
@@ -127,7 +137,12 @@ const run = async (method: string, request: NextRequest) => {
             ? null
             : user.pendingSubscriptionPriceId;
         const supporterTier =
-          status && isActiveSubscriptionStatus(status)
+          (status && isActiveSubscriptionStatus(status)) ||
+          hasFutureGraceAccess({
+            cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+            periodEnd,
+            nowMs: now,
+          })
             ? getTierFromPriceId(nextSubscriptionPriceId, paypalPlanMap)
             : 0;
         const changed =
