@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { track } from "@vercel/analytics/react";
 import SupporterBadge from "@/components/support/SupporterBadge";
 import {
@@ -29,6 +30,7 @@ type SubscriptionInfo = {
 
 type BillingClientProps = {
   checkoutStatus: "success" | "cancel" | null;
+  checkoutProvider: "stripe" | "paypal" | null;
   switchStatus: "scheduled" | "cancel" | null;
   checkoutSessionId: string | null;
   subscription: SubscriptionInfo | null;
@@ -39,7 +41,7 @@ const STATUS_DISPLAY: Record<string, { label: string; color: string }> = {
   active: { label: "Active", color: "text-green-400" },
   trialing: { label: "Trial", color: "text-green-400" },
   past_due: { label: "Past Due", color: "text-gray-300" },
-  canceled: { label: "Canceled", color: "text-yellow-400" },
+  canceled: { label: "Canceled", color: "text-gray-200" },
   incomplete: { label: "Incomplete", color: "text-gray-300" },
   incomplete_expired: { label: "Expired", color: "text-red-400" },
   unpaid: { label: "Unpaid", color: "text-red-400" },
@@ -86,11 +88,13 @@ function writeTrackedCheckoutSessionIds(sessionIds: string[]) {
 
 export default function BillingClient({
   checkoutStatus,
+  checkoutProvider,
   switchStatus,
   checkoutSessionId,
   subscription,
   isSignedIn,
 }: BillingClientProps) {
+  const router = useRouter();
   const [portalLoading, setPortalLoading] = useState(false);
   const [paypalCancelLoading, setPaypalCancelLoading] = useState(false);
   const [paypalSwitchLoadingTier, setPaypalSwitchLoadingTier] = useState<number | null>(null);
@@ -105,6 +109,9 @@ export default function BillingClient({
     subscription?.hasPayPalSubscription &&
     (isActive || hasGraceAccess);
   const showsAccessUntilState = isActive || hasGraceAccess;
+  const isSyncPending =
+    checkoutStatus === "success" && !showsAccessUntilState && !subscription?.hasPayPalSubscription;
+  const shouldPollForSync = isSyncPending || switchStatus === "scheduled";
   const shouldShowSyncHint = checkoutStatus === "success" || switchStatus === "scheduled";
   const syncRefreshKey = useMemo(() => {
     if (checkoutStatus === "success") {
@@ -177,17 +184,18 @@ export default function BillingClient({
   useEffect(() => {
     if (!syncRefreshKey) return;
     if (typeof window === "undefined") return;
-    try {
-      if (window.sessionStorage.getItem(syncRefreshKey) === "1") return;
-      window.sessionStorage.setItem(syncRefreshKey, "1");
-    } catch {
-      return;
-    }
-    const timeout = window.setTimeout(() => {
-      window.location.reload();
-    }, 8000);
-    return () => window.clearTimeout(timeout);
-  }, [syncRefreshKey]);
+    if (!shouldPollForSync) return;
+    let attempts = 0;
+    const maxAttempts = 6;
+    const interval = window.setInterval(() => {
+      attempts += 1;
+      router.refresh();
+      if (attempts >= maxAttempts) {
+        window.clearInterval(interval);
+      }
+    }, 3000);
+    return () => window.clearInterval(interval);
+  }, [router, shouldPollForSync, syncRefreshKey]);
 
   const openBillingPortal = async () => {
     setError(null);
@@ -288,6 +296,14 @@ export default function BillingClient({
         </div>
       )}
 
+      {isSyncPending && (
+        <div className="rounded-md border border-gray-700 bg-gray-800/40 px-4 py-3 text-sm text-gray-200">
+          {checkoutProvider === "paypal"
+            ? "Finalizing your PayPal subscription..."
+            : "Finalizing your subscription..."}
+        </div>
+      )}
+
       {error && (
         <div className="rounded-md border border-red-900/60 bg-red-900/20 px-4 py-2.5 text-sm text-red-300">
           {error}
@@ -329,7 +345,7 @@ export default function BillingClient({
           {subscription?.cancelAtPeriodEnd && showsAccessUntilState ? (
             <span className="inline-flex items-center gap-1.5 text-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500/70 shrink-0" />
-              <span className="text-yellow-300 font-medium">Cancels at period end</span>
+              <span className="text-gray-200 font-medium">Cancels at period end</span>
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 text-sm">
@@ -452,7 +468,7 @@ export default function BillingClient({
               </button>
             )}
             {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
-              <p className="text-[11px] text-yellow-300/90">
+              <p className="text-[11px] text-gray-300">
                 Your access remains active until {formatDate(subscription.currentPeriodEnd)}.
               </p>
             )}

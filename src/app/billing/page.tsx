@@ -69,6 +69,8 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
     typeof searchParams?.session_id === "string" && searchParams.session_id.length > 0
       ? searchParams.session_id
       : null;
+  const checkoutProvider =
+    checkoutStatus === null ? null : searchParams?.provider === "paypal" ? "paypal" : "stripe";
   const switchStatus =
     searchParams?.switch === "scheduled" || searchParams?.switch === "cancel"
       ? searchParams.switch
@@ -288,6 +290,7 @@ const BillingPage = async ({ searchParams }: BillingPageProps) => {
     <div className="min-h-screen bg-gray-900 text-gray-300">
       <BillingClient
         checkoutStatus={checkoutStatus}
+        checkoutProvider={checkoutProvider}
         switchStatus={switchStatus}
         checkoutSessionId={checkoutSessionId}
         subscription={subscription}
