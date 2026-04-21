@@ -1,10 +1,5 @@
 import Stripe from "stripe";
-
-export const ACTIVE_SUBSCRIPTION_STATUSES = new Set<Stripe.Subscription.Status>([
-  "active",
-  "trialing",
-  "past_due",
-]);
+import { isActiveSubscriptionStatus } from "@/server/billing/subscriptionStatus";
 
 const requiredEnv = (key: string): string => {
   const value = process.env[key];
@@ -49,10 +44,7 @@ export const getTierFromPriceId = (
 export const shouldGrantSupporterBadge = (
   subscriptionStatus: Stripe.Subscription.Status | string | null | undefined
 ): boolean => {
-  if (!subscriptionStatus) return false;
-  return ACTIVE_SUBSCRIPTION_STATUSES.has(
-    subscriptionStatus as Stripe.Subscription.Status
-  );
+  return isActiveSubscriptionStatus(subscriptionStatus);
 };
 
 export const extractRecurringPriceId = (

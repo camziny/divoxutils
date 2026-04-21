@@ -3,6 +3,9 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import prisma from "../../../prisma/prismaClient";
 import SubscribeInline from "./_components/SubscribeInline";
+import { getPayPalPlanMap, isPayPalSubscriptionsEnabled } from "@/server/billing/paypal";
+import { getTierFromPriceId, getStripePriceMap } from "@/server/billing/stripe";
+import { isActiveSubscriptionStatus } from "@/server/billing/subscriptionStatus";
 
 export const metadata: Metadata = {
   title: "Contribute - divoxutils",
@@ -60,10 +63,32 @@ const ContributePage = async () => {
     if (userId) {
       const user = await prisma.user.findUnique({
         where: { clerkUserId: userId },
-        select: { supporterTier: true },
+        select: {
+          subscriptionProvider: true,
+          subscriptionStatus: true,
+          subscriptionPriceId: true,
+          stripeSubscriptionId: true,
+          stripeCustomerId: true,
+          paypalSubscriptionId: true,
+        },
       });
-      if (user?.supporterTier && user.supporterTier > 0) {
-        activeTier = user.supporterTier;
+      const provider =
+        user?.subscriptionProvider ??
+        (user?.paypalSubscriptionId
+          ? "paypal"
+          : user?.stripeSubscriptionId || user?.stripeCustomerId
+            ? "stripe"
+            : null);
+      if (
+        provider &&
+        isActiveSubscriptionStatus(user?.subscriptionStatus)
+      ) {
+        const priceMap =
+          provider === "paypal" && isPayPalSubscriptionsEnabled()
+            ? getPayPalPlanMap()
+            : getStripePriceMap();
+        const resolvedTier = getTierFromPriceId(user?.subscriptionPriceId, priceMap);
+        activeTier = resolvedTier > 0 ? resolvedTier : null;
       }
     }
   } catch {
@@ -129,7 +154,10 @@ const ContributePage = async () => {
           </div>
         </section>
 
-        <SubscribeInline activeTier={activeTier} />
+        <SubscribeInline
+          activeTier={activeTier}
+          paypalEnabled={isPayPalSubscriptionsEnabled()}
+        />
       </div>
     </div>
   );

@@ -28,3 +28,8 @@ export function appendTrackedCheckoutSessionId(
   if (trackedSessionIds.includes(checkoutSessionId)) return trackedSessionIds;
   return [...trackedSessionIds, checkoutSessionId].slice(-50);
 }
+
+export function isSameSupportPlan(a: number | null | undefined, b: number | null | undefined) {
+  if (typeof a !== "number" || typeof b !== "number") return false;
+  return a === b;
+}

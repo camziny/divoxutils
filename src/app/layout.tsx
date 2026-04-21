@@ -12,6 +12,7 @@ import { Toaster } from "sonner";
 import SupportPromptModal from "@/components/support/SupportPromptModal";
 import SignedOutNudge from "@/components/auth/SignedOutNudge";
 import { getLayoutViewerContext } from "@/server/layoutViewerContext";
+import { isPayPalSubscriptionsEnabled } from "@/server/billing/paypal";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const { isSupporter, isAdmin } = await getLayoutViewerContext();
+  const paypalEnabled = isPayPalSubscriptionsEnabled();
 
   return (
     <html lang="en">
@@ -69,7 +71,11 @@ export default async function RootLayout({
                 Skip to main content
               </a>
               <Navbar />
-              <SupportPromptModal isSupporter={isSupporter} isAdmin={isAdmin} />
+              <SupportPromptModal
+                isSupporter={isSupporter}
+                isAdmin={isAdmin}
+                paypalEnabled={paypalEnabled}
+              />
               <SignedOutNudge />
               <main id="main-content" className="flex-1 focus:outline-none" tabIndex={-1}>
                 {children}

@@ -1,3 +1,5 @@
+import { isActiveSubscriptionStatus } from "@/server/billing/subscriptionStatus";
+
 type SupporterStatusInput = {
   supporterTier?: number | null;
   subscriptionStatus?: string | null;
@@ -11,10 +13,7 @@ export function isEffectivelySupporter(
 ) {
   if (!input) return false;
   const hasTier = (input.supporterTier ?? 0) > 0;
-  const hasActiveStatus =
-    input.subscriptionStatus === "active" ||
-    input.subscriptionStatus === "trialing" ||
-    input.subscriptionStatus === "past_due";
+  const hasActiveStatus = isActiveSubscriptionStatus(input.subscriptionStatus);
   const hasGraceAccess =
     Boolean(input.subscriptionCancelAtPeriodEnd) &&
     Boolean(input.subscriptionCurrentPeriodEnd) &&
