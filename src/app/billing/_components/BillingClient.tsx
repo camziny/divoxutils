@@ -30,6 +30,7 @@ type SubscriptionInfo = {
 
 type BillingClientProps = {
   checkoutStatus: "success" | "cancel" | null;
+  checkoutProvider: "stripe" | "paypal" | null;
   switchStatus: "scheduled" | "cancel" | null;
   checkoutSessionId: string | null;
   subscription: SubscriptionInfo | null;
@@ -87,6 +88,7 @@ function writeTrackedCheckoutSessionIds(sessionIds: string[]) {
 
 export default function BillingClient({
   checkoutStatus,
+  checkoutProvider,
   switchStatus,
   checkoutSessionId,
   subscription,
@@ -109,6 +111,7 @@ export default function BillingClient({
   const showsAccessUntilState = isActive || hasGraceAccess;
   const isSyncPending =
     checkoutStatus === "success" && !showsAccessUntilState && !subscription?.hasPayPalSubscription;
+  const shouldPollForSync = isSyncPending || switchStatus === "scheduled";
   const shouldShowSyncHint = checkoutStatus === "success" || switchStatus === "scheduled";
   const syncRefreshKey = useMemo(() => {
     if (checkoutStatus === "success") {
@@ -181,7 +184,7 @@ export default function BillingClient({
   useEffect(() => {
     if (!syncRefreshKey) return;
     if (typeof window === "undefined") return;
-    if (!isSyncPending) return;
+    if (!shouldPollForSync) return;
     let attempts = 0;
     const maxAttempts = 6;
     const interval = window.setInterval(() => {
@@ -192,7 +195,7 @@ export default function BillingClient({
       }
     }, 3000);
     return () => window.clearInterval(interval);
-  }, [isSyncPending, router, syncRefreshKey]);
+  }, [router, shouldPollForSync, syncRefreshKey]);
 
   const openBillingPortal = async () => {
     setError(null);
@@ -295,7 +298,9 @@ export default function BillingClient({
 
       {isSyncPending && (
         <div className="rounded-md border border-gray-700 bg-gray-800/40 px-4 py-3 text-sm text-gray-200">
-          Finalizing your PayPal subscription...
+          {checkoutProvider === "paypal"
+            ? "Finalizing your PayPal subscription..."
+            : "Finalizing your subscription..."}
         </div>
       )}
 
