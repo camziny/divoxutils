@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import LeaderboardWrapper from "./_components/LeaderboardWrapper";
 import LeaderboardTooltip from "./_components/LeaderboardTooltip";
+import EventScheduleBanner from "./_components/EventScheduleBanner";
 import { getLeaderboardData, type LeaderboardItem } from "@/server/leaderboard";
 
 export const metadata: Metadata = {
@@ -47,6 +48,7 @@ export default async function LeaderboardPage() {
         <div className="max-w-3xl mx-auto">
           <div className="mb-6 px-6">
             <LeaderboardTooltip />
+            <EventScheduleBanner />
           </div>
           <LeaderboardWrapper data={leaderboardData} />
         </div>
