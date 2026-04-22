@@ -1,6 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 const UPDATE_HOURS_ET = [0, 4, 8, 12, 16, 20] as const;
+const RUN_WINDOW_MINUTES = 20;
+
+type EventScheduleBannerProps = {
+  lastCompletedAt: Date | null;
+};
 
 function getETParts(now: Date): { weekday: number; hour: number; minute: number } {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -30,6 +37,17 @@ function formatHour(hour: number): string {
   const displayHour = hour % 12 || 12;
   const ampm = hour < 12 ? "AM" : "PM";
   return `${displayHour}:00 ${ampm} ET`;
+}
+
+function formatCompletedAt(date: Date | null): string {
+  if (!date) return "No completed run yet";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date) + " ET";
 }
 
 type RunDiff = {
@@ -74,23 +92,41 @@ function formatRelative(diffMin: number): string {
   return `${hours}h ${minutes}m`;
 }
 
-export default function EventScheduleBanner() {
-  const now = new Date();
+export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBannerProps) {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
   const { last, next } = getScheduleDiffs(now);
+  const sinceLastScheduled = Math.abs(last.diffMin);
+  const isRunningWindow = sinceLastScheduled <= RUN_WINDOW_MINUTES;
+  const statusLabel = isRunningWindow ? "Updating now" : "Idle";
+  const statusTone = isRunningWindow ? "text-amber-300" : "text-emerald-300";
 
   return (
-    <div className="mt-3 flex items-center justify-between gap-4 rounded-md border border-gray-800 bg-gray-900/60 px-4 py-2.5 text-[12px] text-gray-500">
-      <div className="flex items-center gap-2">
-        <span className="inline-flex h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse" />
-        <span className="text-gray-300 font-medium">Lillith Event</span>
-        <span className="hidden sm:inline">- updates every 4h</span>
+    <div className="mt-3 rounded-md border border-gray-800 bg-gray-900/60 px-4 py-2.5 text-[12px] text-gray-500">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse" />
+          <span className="text-gray-300 font-medium">Lillith Event</span>
+          <span className="hidden sm:inline">- updates every 4h</span>
+        </div>
+        <span className={`${statusTone} font-medium`}>{statusLabel}</span>
       </div>
-      <div className="flex items-center gap-4 tabular-nums">
-        <span>Updated {formatRelative(last.diffMin)} ago</span>
+      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums">
         <span>
-          Next <span className="text-gray-400">{formatHour(next.hour)}</span>{" "}
+          Last completed <span className="text-gray-300">{formatCompletedAt(lastCompletedAt)}</span>
+        </span>
+        <span>
+          Next scheduled <span className="text-gray-300">{formatHour(next.hour)}</span>{" "}
           <span className="text-gray-600">({formatRelative(next.diffMin)})</span>
         </span>
+      </div>
+      <div className="mt-1 text-[11px] text-gray-600">
+        Runs start on schedule and usually finish within a few minutes.
       </div>
     </div>
   );

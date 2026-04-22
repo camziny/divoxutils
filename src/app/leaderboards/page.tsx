@@ -41,6 +41,12 @@ async function fetchLeaderboardData(): Promise<LeaderboardItem[]> {
 
 export default async function LeaderboardPage() {
   const leaderboardData = await fetchLeaderboardData();
+  const lastCompletedAt = leaderboardData.reduce<Date | null>((latest, item) => {
+    if (!item.lastUpdated) return latest;
+    const current = new Date(item.lastUpdated);
+    if (!latest || current > latest) return current;
+    return latest;
+  }, null);
 
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
@@ -48,7 +54,7 @@ export default async function LeaderboardPage() {
         <div className="max-w-3xl mx-auto">
           <div className="mb-6 px-6">
             <LeaderboardTooltip />
-            <EventScheduleBanner />
+            <EventScheduleBanner lastCompletedAt={lastCompletedAt} />
           </div>
           <LeaderboardWrapper data={leaderboardData} />
         </div>
