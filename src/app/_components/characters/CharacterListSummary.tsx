@@ -1,11 +1,10 @@
-import React from "react";
-import { getRealmSurfaceClass } from "./characterTileTheme";
+"use client";
 
-interface PlayerKillStats {
-  kills: number;
-  death_blows: number;
-  solo_kills: number;
-}
+import React from "react";
+import Link from "next/link";
+import { getRealmSurfaceClass } from "./characterTileTheme";
+import RecentActivity from "./RecentActivity";
+import type { CharacterData } from "@/utils/character";
 
 interface RealmStats {
   kills: number;
@@ -24,22 +23,36 @@ interface AggregateStats {
   [key: string]: RealmStats;
 }
 
-interface CharacterData {
-  realm: string;
+interface LeaderboardItem {
+  userId: number;
+  clerkUserId: string;
   totalRealmPoints: number;
-  heraldRealmPoints: number;
-  heraldName: string;
   realmPointsLastWeek: number;
-  heraldTotalKills?: number;
-  heraldTotalDeathBlows?: number;
-  heraldTotalSoloKills?: number;
-  player_kills?: {
-    total: PlayerKillStats;
-    midgard?: PlayerKillStats;
-    albion?: PlayerKillStats;
-    hibernia?: PlayerKillStats;
-  };
+  realmPointsThisWeek: number;
+  totalKills: number;
+  killsLastWeek: number;
+  killsThisWeek: number;
+  totalSoloKills: number;
+  soloKillsLastWeek: number;
+  soloKillsThisWeek: number;
+  totalDeathBlows: number;
+  deathBlowsLastWeek: number;
+  deathBlowsThisWeek: number;
 }
+
+type Metric = "realmPoints" | "kills" | "soloKills" | "deathBlows";
+type Period = "total" | "lastWeek" | "thisWeek";
+
+const LEADERBOARD_ITEMS_PER_PAGE = 15;
+
+const METRIC_MAP: Record<keyof RealmStats, { metric: Metric; period: Period }> = {
+  kills: { metric: "kills", period: "total" },
+  death_blows: { metric: "deathBlows", period: "total" },
+  solo_kills: { metric: "soloKills", period: "total" },
+  realmPoints: { metric: "realmPoints", period: "total" },
+  realmPointsLastWeek: { metric: "realmPoints", period: "lastWeek" },
+  realmPointsThisWeek: { metric: "realmPoints", period: "thisWeek" },
+};
 
 const initialRealmStats = (): RealmStats => ({
   kills: 0,
@@ -57,15 +70,45 @@ const initialAggregateStats = (): AggregateStats => ({
   Total: initialRealmStats(),
 });
 
-const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
+const capitalizeFirst = (value: string) =>
+  value.charAt(0).toUpperCase() + value.slice(1);
+
+function getLeaderboardHref(metric: Metric, period: Period, rank: number) {
+  const page = Math.floor((rank - 1) / LEADERBOARD_ITEMS_PER_PAGE) + 1;
+  return `/leaderboards?metric=${metric}&period=${period}&page=${page}`;
+}
+
+function InlineRank({ rank, metric, period }: { rank: number | null; metric: Metric; period: Period }) {
+  if (!rank) return null;
+  return (
+    <Link
+      href={getLeaderboardHref(metric, period, rank)}
+      className="text-[10px] tabular-nums text-indigo-400 hover:text-indigo-300 transition-colors"
+    >
+      #{rank.toLocaleString()}
+    </Link>
+  );
+}
+
+const PRIMARY_ROWS: Array<{ label: string; key: keyof RealmStats }> = [
+  { label: "Kills", key: "kills" },
+  { label: "Death\u00A0Blows", key: "death_blows" },
+  { label: "Solo Kills", key: "solo_kills" },
+];
+
+const AggregateStatistics: React.FC<{
+  characters: CharacterData[];
+  leaderboardData: LeaderboardItem[];
+  rankClerkUserId: string | null;
+}> = ({
   characters,
+  leaderboardData,
+  rankClerkUserId,
 }) => {
   const aggregateStats: AggregateStats = initialAggregateStats();
 
   characters.forEach((character) => {
     const realm = character.realm;
-    
-    // Safe access to player_kills with fallback values
     const playerKills = character.player_kills?.total || {
       kills: character.heraldTotalKills || 0,
       death_blows: character.heraldTotalDeathBlows || 0,
@@ -95,25 +138,41 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
   });
 
   const formatNumber = (num: number | undefined) => {
-    return typeof num === "number" && !isNaN(num)
-      ? num.toLocaleString()
-      : "N/A";
+    if (typeof num !== "number" || isNaN(num)) return "N/A";
+    return num.toLocaleString();
   };
 
-  const capitalizeRealm = (str: string) => {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  };
+  const realmNames = ["Albion", "Midgard", "Hibernia"] as const;
 
-  const realms = ["Albion", "Midgard", "Hibernia", "Total"];
+  const totalRanks = React.useMemo(() => {
+    const getRank = (metric: Metric, period: Period) => {
+      if (!rankClerkUserId || leaderboardData.length === 0) {
+        return null;
+      }
+      const key =
+        period === "total"
+          ? `total${capitalizeFirst(metric)}`
+          : `${metric}${capitalizeFirst(period)}`;
+      const sorted = [...leaderboardData].sort((a, b) => {
+        const diff = (b[key as keyof LeaderboardItem] as number) - (a[key as keyof LeaderboardItem] as number);
+        if (diff !== 0) return diff;
+        return a.userId - b.userId;
+      });
+      const rankIndex = sorted.findIndex((item) => item.clerkUserId === rankClerkUserId);
+      return rankIndex >= 0 ? rankIndex + 1 : null;
+    };
 
-  const statsKeys: Record<string, keyof RealmStats> = {
-    Kills: "kills",
-    "Death Blows": "death_blows",
-    "Solo Kills": "solo_kills",
-    "Realm Points": "realmPoints",
-    "Realm Points Last Week": "realmPointsLastWeek",
-    "Realm Points This Week": "realmPointsThisWeek",
-  };
+    return {
+      kills: getRank("kills", "total"),
+      death_blows: getRank("deathBlows", "total"),
+      solo_kills: getRank("soloKills", "total"),
+      realmPoints: getRank("realmPoints", "total"),
+      realmPointsLastWeek: getRank("realmPoints", "lastWeek"),
+      realmPointsThisWeek: getRank("realmPoints", "thisWeek"),
+    } as Record<string, number | null>;
+  }, [leaderboardData, rankClerkUserId]);
+
+  const hasAnyRank = Object.values(totalRanks).some((r) => r !== null);
 
   return (
     <div className="bg-gray-900 p-2 sm:p-4 w-full">
@@ -122,8 +181,9 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
           Aggregate Statistics
         </h2>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 w-full">
-        {realms.map((realm) => (
+
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full">
+        {realmNames.map((realm) => (
           <div
             key={realm}
             className="bg-gray-900 border border-gray-800 rounded-md text-white min-w-0"
@@ -132,40 +192,37 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
               <span className="text-xs font-medium">{realm}</span>
             </div>
             <div className="divide-y divide-gray-800 px-3 sm:px-4 py-1">
-              {["Kills", "Death\u00A0Blows", "Solo Kills"].map((stat, i) => {
-                const statKey = statsKeys[stat.replace('\u00A0', ' ') as keyof typeof statsKeys];
-                return (
-                  <div
-                    key={i}
-                    className="flex justify-between items-center py-1.5 whitespace-nowrap"
-                  >
-                    <span className="text-xs text-gray-400">{stat}</span>
-                    <span className="text-xs font-semibold text-white ml-2 sm:ml-4 tabular-nums">
-                      {formatNumber(aggregateStats[realm][statKey])}
-                    </span>
-                  </div>
-                );
-              })}
-              <div className="py-1.5">
-                <div className="flex justify-between items-center whitespace-nowrap">
-                  <span className="text-xs text-gray-400">
-                    <span className="xl:hidden">RPs</span>
-                    <span className="hidden xl:inline">Realm Points</span>
+              {PRIMARY_ROWS.map((row, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 py-1.5 whitespace-nowrap hover:bg-gray-800/40 rounded-sm transition-colors"
+                >
+                  <span className="text-xs text-gray-400">{row.label}</span>
+                  <span className="text-xs font-semibold text-white ml-auto tabular-nums">
+                    {formatNumber(aggregateStats[realm][row.key])}
                   </span>
-                  <span className="text-xs font-semibold text-white ml-2 sm:ml-4 tabular-nums">
+                </div>
+              ))}
+              <div className="py-1.5 hover:bg-gray-800/40 rounded-sm transition-colors">
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                  <span className="text-xs text-gray-400">
+                    <span className="sm:hidden">RPs</span>
+                    <span className="hidden sm:inline">Realm Points</span>
+                  </span>
+                  <span className="text-xs font-semibold text-white ml-auto tabular-nums">
                     {formatNumber(aggregateStats[realm].realmPoints)}
                   </span>
                 </div>
                 <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
                     <span className="text-[11px] text-gray-500">Last Week</span>
-                    <span className="text-[11px] font-semibold text-gray-300 ml-2 sm:ml-4 tabular-nums">
+                    <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
                       {formatNumber(aggregateStats[realm].realmPointsLastWeek)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
                     <span className="text-[11px] text-gray-500">This Week</span>
-                    <span className="text-[11px] font-semibold text-gray-300 ml-2 sm:ml-4 tabular-nums">
+                    <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
                       {formatNumber(aggregateStats[realm].realmPointsThisWeek)}
                     </span>
                   </div>
@@ -175,6 +232,90 @@ const AggregateStatistics: React.FC<{ characters: CharacterData[] }> = ({
           </div>
         ))}
       </div>
+
+      <div className="mt-2 sm:mt-3">
+        <div className="bg-gray-900 border border-gray-800 rounded-md text-white">
+          <div className={`${getRealmSurfaceClass("Total")} flex items-center py-1 px-3 sm:px-4 rounded-t-md`}>
+            <span className="text-xs font-medium">Total</span>
+            {hasAnyRank && (
+              <span className="ml-auto text-[9px] uppercase tracking-wider text-gray-500">Rank</span>
+            )}
+          </div>
+          <div className="divide-y divide-gray-800 py-1">
+            {PRIMARY_ROWS.map((row, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 py-1.5 px-3 sm:px-4 whitespace-nowrap hover:bg-gray-800/40 rounded-sm transition-colors"
+              >
+                <span className="text-xs text-gray-400">{row.label}</span>
+                <span className="text-xs font-semibold text-white ml-auto tabular-nums">
+                  {formatNumber(aggregateStats.Total[row.key])}
+                </span>
+                {hasAnyRank && (
+                  <span className="w-10 text-right shrink-0">
+                    <InlineRank
+                      rank={totalRanks[row.key]}
+                      metric={METRIC_MAP[row.key].metric}
+                      period={METRIC_MAP[row.key].period}
+                    />
+                  </span>
+                )}
+              </div>
+            ))}
+            <div className="py-1.5 px-3 sm:px-4 hover:bg-gray-800/40 rounded-sm transition-colors">
+              <div className="flex items-center gap-3 whitespace-nowrap">
+                <span className="text-xs text-gray-400">Realm Points</span>
+                <span className="text-xs font-semibold text-white ml-auto tabular-nums">
+                  {formatNumber(aggregateStats.Total.realmPoints)}
+                </span>
+                {hasAnyRank && (
+                  <span className="w-10 text-right shrink-0">
+                    <InlineRank
+                      rank={totalRanks.realmPoints}
+                      metric="realmPoints"
+                      period="total"
+                    />
+                  </span>
+                )}
+              </div>
+              <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] text-gray-500">Last Week</span>
+                  <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
+                    {formatNumber(aggregateStats.Total.realmPointsLastWeek)}
+                  </span>
+                  {hasAnyRank && (
+                    <span className="w-10 text-right shrink-0">
+                      <InlineRank
+                        rank={totalRanks.realmPointsLastWeek}
+                        metric="realmPoints"
+                        period="lastWeek"
+                      />
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] text-gray-500">This Week</span>
+                  <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
+                    {formatNumber(aggregateStats.Total.realmPointsThisWeek)}
+                  </span>
+                  {hasAnyRank && (
+                    <span className="w-10 text-right shrink-0">
+                      <InlineRank
+                        rank={totalRanks.realmPointsThisWeek}
+                        metric="realmPoints"
+                        period="thisWeek"
+                      />
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <RecentActivity characters={characters} />
     </div>
   );
 };
