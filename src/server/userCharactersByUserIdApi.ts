@@ -1,4 +1,7 @@
-import { formatRealmRankWithLevel, getRealmRankForPoints } from "@/utils/character";
+import {
+  formatRealmRankWithLevel,
+  getRealmRankForPoints,
+} from "@/utils/character";
 
 type UserCharactersByUserIdDeps = {
   getUserCharactersByUserId: (clerkUserId: string) => Promise<any[]>;
