@@ -8,6 +8,9 @@ interface LeaderboardItem {
   totalRealmPoints: number;
   realmPointsLastWeek: number;
   realmPointsThisWeek: number;
+  totalKills: number;
+  killsLastWeek: number;
+  killsThisWeek: number;
   totalSoloKills: number;
   soloKillsLastWeek: number;
   soloKillsThisWeek: number;
