@@ -102,8 +102,6 @@ const mapUserCharacterToPublicPayload = (
     soloKillsLastWeek: character.soloKillsLastWeek,
     totalDeaths: character.totalDeaths,
     deathsLastWeek: character.deathsLastWeek,
-    totalDeathBlows: character.totalDeathBlows,
-    deathBlowsLastWeek: character.deathBlowsLastWeek,
     lastUpdated: character.lastUpdated,
     nameLastUpdated: character.nameLastUpdated,
     heraldCharacterWebId: character.heraldCharacterWebId,

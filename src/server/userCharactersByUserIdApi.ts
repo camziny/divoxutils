@@ -1,7 +1,4 @@
-import {
-  formatRealmRankWithLevel,
-  getRealmRankForPoints,
-} from "@/utils/character";
+import { formatRealmRankWithLevel, getRealmRankForPoints } from "@/utils/character";
 
 type UserCharactersByUserIdDeps = {
   getUserCharactersByUserId: (clerkUserId: string) => Promise<any[]>;
@@ -74,8 +71,6 @@ export async function handleUserCharactersByUserIdApi(
           soloKillsLastWeek: character.soloKillsLastWeek,
           totalDeaths: character.totalDeaths,
           deathsLastWeek: character.deathsLastWeek,
-          totalDeathBlows: character.totalDeathBlows,
-          deathBlowsLastWeek: character.deathBlowsLastWeek,
           lastUpdated: character.lastUpdated,
           nameLastUpdated: character.nameLastUpdated,
           heraldCharacterWebId: character.heraldCharacterWebId,
