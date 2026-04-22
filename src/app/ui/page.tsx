@@ -23,6 +23,33 @@ export const metadata: Metadata = {
   },
 };
 
+const CHANGELOG: {
+  version: string;
+  date: string;
+  title: string;
+  changes: string[];
+}[] = [
+  {
+    version: "v1.0.1",
+    date: "April 22, 2026",
+    title: "Patch 1.130a RP display update",
+    changes: [
+      "Fixed RP display getting cut off for players with 100M+ realm points after the 1.130a patch.",
+      "Widened the guild RP area in the community window and nudged the Merit Points controls over so nothing overlaps.",
+      "Widened the RP display on the stats/attributes window.",
+    ],
+  },
+  {
+    version: "v1.0.0",
+    date: "April 15, 2026",
+    title: "Initial release",
+    changes: [
+      "Extended the realm rank chart up to 15L0.",
+      "Fixed a stability issue that could crash the game.",
+    ],
+  },
+];
+
 export default function UiPage() {
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
@@ -32,9 +59,7 @@ export default function UiPage() {
             Ghost UI
           </h1>
           <p className="text-sm text-gray-400 max-w-lg leading-relaxed">
-            A lightly modified Ghost UI. The realm rank chart now extends to
-            15L0, and a stability issue that could crash the game has been
-            fixed.
+            A maintained Ghost UI kept up to date with DAoC patches.
           </p>
           <div className="pt-2">
             <a
@@ -46,6 +71,41 @@ export default function UiPage() {
             </a>
           </div>
         </header>
+
+        <section className="space-y-6">
+          <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">
+            Changelog
+          </p>
+          <div className="relative space-y-0">
+            {CHANGELOG.map((entry, i) => (
+              <div key={entry.version} className="relative pl-6 pb-8 last:pb-0">
+                {i < CHANGELOG.length - 1 && (
+                  <div className="absolute left-[7px] top-[10px] bottom-0 w-px bg-gray-800" />
+                )}
+                <div className="absolute left-0 top-[6px] h-[10px] w-[10px] rounded-full border-2 border-indigo-500/60 bg-gray-900" />
+                <div className="space-y-2">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-xs font-mono font-medium text-indigo-300">
+                      {entry.version}
+                    </span>
+                    <span className="text-xs text-gray-600">{entry.date}</span>
+                  </div>
+                  <p className="text-sm font-medium text-white">{entry.title}</p>
+                  <ul className="space-y-1">
+                    {entry.changes.map((change, j) => (
+                      <li
+                        key={j}
+                        className="text-sm text-gray-400 leading-relaxed pl-3 relative before:absolute before:left-0 before:top-[10px] before:h-px before:w-1.5 before:bg-gray-700"
+                      >
+                        {change}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <section className="space-y-4">
           <p className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">
