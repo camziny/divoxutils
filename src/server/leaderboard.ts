@@ -88,16 +88,31 @@ export const aggregateLeaderboardData = (
 
       processedCharacterIds.add(character.id);
 
+      const hasKillsBaseline =
+        character.totalKills > 0 ||
+        character.killsLastWeek > 0 ||
+        (character.heraldTotalKills ?? 0) === 0;
+      const effectiveTotalKills = hasKillsBaseline
+        ? character.totalKills
+        : (character.heraldTotalKills ?? 0);
+      const hasDeathBlowsBaseline =
+        character.totalDeathBlows > 0 ||
+        character.deathBlowsLastWeek > 0 ||
+        (character.heraldTotalDeathBlows ?? 0) === 0;
+      const effectiveTotalDeathBlows = hasDeathBlowsBaseline
+        ? character.totalDeathBlows
+        : (character.heraldTotalDeathBlows ?? 0);
+
       totalPoints += character.totalRealmPoints;
-      totalKills += character.totalKills;
+      totalKills += effectiveTotalKills;
       totalSoloKills += character.totalSoloKills;
       totalDeaths += character.totalDeaths;
-      totalDeathBlows += character.totalDeathBlows;
+      totalDeathBlows += effectiveTotalDeathBlows;
 
       if (character.realmPointsLastWeek !== character.totalRealmPoints) {
         realmPointsLastWeek += character.realmPointsLastWeek;
       }
-      if (character.killsLastWeek !== character.totalKills) {
+      if (character.killsLastWeek !== effectiveTotalKills) {
         killsLastWeek += character.killsLastWeek;
       }
       if (character.soloKillsLastWeek !== character.totalSoloKills) {
@@ -121,10 +136,7 @@ export const aggregateLeaderboardData = (
         accumulatedRealmPointsThisWeek +=
           character.heraldRealmPoints - character.totalRealmPoints;
       }
-      if (
-        character.heraldTotalKills !== null &&
-        character.totalKills !== null
-      ) {
+      if (character.heraldTotalKills !== null && hasKillsBaseline) {
         accumulatedKillsThisWeek +=
           character.heraldTotalKills - character.totalKills;
       }
@@ -142,10 +154,7 @@ export const aggregateLeaderboardData = (
         accumulatedSoloKillsThisWeek +=
           character.heraldTotalSoloKills - character.totalSoloKills;
       }
-      if (
-        character.heraldTotalDeathBlows !== null &&
-        character.totalDeathBlows !== null
-      ) {
+      if (character.heraldTotalDeathBlows !== null && hasDeathBlowsBaseline) {
         accumulatedDeathBlowsThisWeek +=
           character.heraldTotalDeathBlows - character.totalDeathBlows;
       }
