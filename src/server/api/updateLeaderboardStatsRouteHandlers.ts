@@ -8,7 +8,6 @@ import {
 type LeaderboardStatsCharacter = {
   webId: string;
   totalRealmPoints: number;
-  totalKills?: number;
   totalSoloKills: number;
   totalDeaths: number;
   totalDeathBlows: number;
@@ -22,8 +21,6 @@ type UpdateLeaderboardStatsDeps = {
     data: {
       totalRealmPoints: number;
       realmPointsLastWeek: number;
-      totalKills: number;
-      killsLastWeek: number;
       totalSoloKills: number;
       soloKillsLastWeek: number;
       totalDeaths: number;
@@ -74,7 +71,6 @@ export function createUpdateLeaderboardStatsRouteHandlers(
                 realm_points: number;
                 player_kills: {
                   total: {
-                    kills: number;
                     solo_kills: number;
                     deaths: number;
                     death_blows: number;
@@ -89,10 +85,6 @@ export function createUpdateLeaderboardStatsRouteHandlers(
             const realmPointsLastWeek = Math.max(
               0,
               currentStats.realm_points - character.totalRealmPoints
-            );
-            const killsLastWeek = Math.max(
-              0,
-              currentStats.player_kills.total.kills - (character.totalKills ?? 0)
             );
             const soloKillsLastWeek = Math.max(
               0,
@@ -112,8 +104,6 @@ export function createUpdateLeaderboardStatsRouteHandlers(
               data: {
                 totalRealmPoints: currentStats.realm_points,
                 realmPointsLastWeek,
-                totalKills: currentStats.player_kills.total.kills,
-                killsLastWeek,
                 totalSoloKills: currentStats.player_kills.total.solo_kills,
                 soloKillsLastWeek,
                 totalDeaths: currentStats.player_kills.total.deaths,

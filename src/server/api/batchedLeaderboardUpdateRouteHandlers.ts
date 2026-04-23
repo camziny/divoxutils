@@ -9,12 +9,10 @@ type LeaderboardCharacter = {
   id: number;
   webId: string;
   totalRealmPoints: number;
-  totalKills?: number;
   totalSoloKills: number;
   totalDeaths: number;
   totalDeathBlows: number;
   realmPointsLastWeek: number;
-  killsLastWeek?: number;
   soloKillsLastWeek: number;
   deathsLastWeek: number;
   deathBlowsLastWeek: number;
@@ -24,8 +22,6 @@ type LeaderboardCharacter = {
 type UpdateCharacterData = {
   totalRealmPoints?: number;
   realmPointsLastWeek?: number;
-  totalKills?: number;
-  killsLastWeek?: number;
   totalSoloKills?: number;
   soloKillsLastWeek?: number;
   totalDeaths?: number;
@@ -117,7 +113,6 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
                 realm_points: number;
                 player_kills: {
                   total: {
-                    kills: number;
                     solo_kills: number;
                     deaths: number;
                     death_blows: number;
@@ -133,8 +128,6 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
               const characterLastUpdated = new Date(character.lastUpdated);
               const realmPointsDiff =
                 currentStats.realm_points - character.totalRealmPoints;
-              const killsDiff =
-                currentStats.player_kills.total.kills - (character.totalKills ?? 0);
               const soloKillsDiff =
                 currentStats.player_kills.total.solo_kills - character.totalSoloKills;
               const deathsDiff =
@@ -148,11 +141,6 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
 
               if (character.totalRealmPoints !== currentStats.realm_points) {
                 updateData.totalRealmPoints = currentStats.realm_points;
-              }
-              if (
-                (character.totalKills ?? 0) !== currentStats.player_kills.total.kills
-              ) {
-                updateData.totalKills = currentStats.player_kills.total.kills;
               }
               if (
                 character.totalSoloKills !== currentStats.player_kills.total.solo_kills
@@ -171,14 +159,12 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
               }
 
               let weeklyRealmPoints = 0;
-              let weeklyKills = 0;
               let weeklySoloKills = 0;
               let weeklyDeaths = 0;
               let weeklyDeathBlows = 0;
 
               if (characterLastUpdated <= gracePeriodEndTime) {
                 weeklyRealmPoints = realmPointsDiff > 0 ? realmPointsDiff : 0;
-                weeklyKills = killsDiff > 0 ? killsDiff : 0;
                 weeklySoloKills = soloKillsDiff > 0 ? soloKillsDiff : 0;
                 weeklyDeaths = deathsDiff > 0 ? deathsDiff : 0;
                 weeklyDeathBlows = deathBlowsDiff > 0 ? deathBlowsDiff : 0;
@@ -186,9 +172,6 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
 
               if (character.realmPointsLastWeek !== weeklyRealmPoints) {
                 updateData.realmPointsLastWeek = weeklyRealmPoints;
-              }
-              if ((character.killsLastWeek ?? 0) !== weeklyKills) {
-                updateData.killsLastWeek = weeklyKills;
               }
               if (character.soloKillsLastWeek !== weeklySoloKills) {
                 updateData.soloKillsLastWeek = weeklySoloKills;

@@ -24,9 +24,6 @@ interface LeaderboardItem {
   totalRealmPoints: number;
   realmPointsLastWeek: number;
   realmPointsThisWeek: number;
-  totalKills: number;
-  killsLastWeek: number;
-  killsThisWeek: number;
   totalSoloKills: number;
   soloKillsLastWeek: number;
   soloKillsThisWeek: number;
@@ -52,7 +49,6 @@ interface LeaderboardListProps {
 const metrics = {
   realmPoints: "Realm Points",
   soloKills: "Solo Kills",
-  kills: "Kills",
   deaths: "Deaths",
   deathBlows: "Death Blows",
   irs: "IRS",
@@ -82,11 +78,7 @@ function sortLeaderboardData(
       : `${selectedMetric}${capitalize(selectedPeriod)}`;
 
   return [...leaderboardData].sort(
-    (a, b) => {
-      const diff = (b[metricKey] as number) - (a[metricKey] as number);
-      if (diff !== 0) return diff;
-      return a.userId - b.userId;
-    }
+    (a, b) => (b[metricKey] as number) - (a[metricKey] as number)
   );
 }
 
