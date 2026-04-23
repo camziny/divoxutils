@@ -4,18 +4,15 @@ import { unstable_cache } from "next/cache";
 type LeaderboardCharacter = {
   id: number;
   totalRealmPoints: number;
-  totalKills: number;
   totalSoloKills: number;
   totalDeaths: number;
   totalDeathBlows: number;
-  killsLastWeek: number;
   deathsLastWeek: number;
   deathBlowsLastWeek: number;
   realmPointsLastWeek: number;
   soloKillsLastWeek: number;
   lastUpdated: Date | null;
   heraldRealmPoints: number | null;
-  heraldTotalKills: number | null;
   heraldTotalDeaths: number | null;
   heraldTotalSoloKills: number | null;
   heraldTotalDeathBlows: number | null;
@@ -38,9 +35,6 @@ export type LeaderboardItem = {
   totalRealmPoints: number;
   realmPointsLastWeek: number;
   realmPointsThisWeek: number;
-  totalKills: number;
-  killsLastWeek: number;
-  killsThisWeek: number;
   totalSoloKills: number;
   soloKillsLastWeek: number;
   soloKillsThisWeek: number;
@@ -62,11 +56,9 @@ export const aggregateLeaderboardData = (
 ): LeaderboardItem[] => {
   const aggregated = leaderboardData.map((user) => {
     let totalPoints = 0;
-    let totalKills = 0;
     let totalSoloKills = 0;
     let totalDeaths = 0;
     let totalDeathBlows = 0;
-    let killsLastWeek = 0;
     let deathsLastWeek = 0;
     let deathBlowsLastWeek = 0;
     let realmPointsLastWeek = 0;
@@ -74,7 +66,6 @@ export const aggregateLeaderboardData = (
     let latestUpdate: Date | null = null;
 
     let accumulatedRealmPointsThisWeek = 0;
-    let accumulatedKillsThisWeek = 0;
     let accumulatedDeathsThisWeek = 0;
     let accumulatedSoloKillsThisWeek = 0;
     let accumulatedDeathBlowsThisWeek = 0;
@@ -88,32 +79,13 @@ export const aggregateLeaderboardData = (
 
       processedCharacterIds.add(character.id);
 
-      const hasKillsBaseline =
-        character.totalKills > 0 ||
-        character.killsLastWeek > 0 ||
-        (character.heraldTotalKills ?? 0) === 0;
-      const effectiveTotalKills = hasKillsBaseline
-        ? character.totalKills
-        : (character.heraldTotalKills ?? 0);
-      const hasDeathBlowsBaseline =
-        character.totalDeathBlows > 0 ||
-        character.deathBlowsLastWeek > 0 ||
-        (character.heraldTotalDeathBlows ?? 0) === 0;
-      const effectiveTotalDeathBlows = hasDeathBlowsBaseline
-        ? character.totalDeathBlows
-        : (character.heraldTotalDeathBlows ?? 0);
-
       totalPoints += character.totalRealmPoints;
-      totalKills += effectiveTotalKills;
       totalSoloKills += character.totalSoloKills;
       totalDeaths += character.totalDeaths;
-      totalDeathBlows += effectiveTotalDeathBlows;
+      totalDeathBlows += character.totalDeathBlows;
 
       if (character.realmPointsLastWeek !== character.totalRealmPoints) {
         realmPointsLastWeek += character.realmPointsLastWeek;
-      }
-      if (character.killsLastWeek !== effectiveTotalKills) {
-        killsLastWeek += character.killsLastWeek;
       }
       if (character.soloKillsLastWeek !== character.totalSoloKills) {
         soloKillsLastWeek += character.soloKillsLastWeek;
@@ -136,10 +108,6 @@ export const aggregateLeaderboardData = (
         accumulatedRealmPointsThisWeek +=
           character.heraldRealmPoints - character.totalRealmPoints;
       }
-      if (character.heraldTotalKills !== null && hasKillsBaseline) {
-        accumulatedKillsThisWeek +=
-          character.heraldTotalKills - character.totalKills;
-      }
       if (
         character.heraldTotalDeaths !== null &&
         character.totalDeaths !== null
@@ -154,14 +122,16 @@ export const aggregateLeaderboardData = (
         accumulatedSoloKillsThisWeek +=
           character.heraldTotalSoloKills - character.totalSoloKills;
       }
-      if (character.heraldTotalDeathBlows !== null && hasDeathBlowsBaseline) {
+      if (
+        character.heraldTotalDeathBlows !== null &&
+        character.totalDeathBlows !== null
+      ) {
         accumulatedDeathBlowsThisWeek +=
           character.heraldTotalDeathBlows - character.totalDeathBlows;
       }
     });
 
     const realmPointsThisWeek = Math.max(0, accumulatedRealmPointsThisWeek);
-    const killsThisWeek = Math.max(0, accumulatedKillsThisWeek);
     const deathsThisWeek = Math.max(0, accumulatedDeathsThisWeek);
     const soloKillsThisWeek = Math.max(0, accumulatedSoloKillsThisWeek);
     const deathBlowsThisWeek = Math.max(0, accumulatedDeathBlowsThisWeek);
@@ -178,8 +148,6 @@ export const aggregateLeaderboardData = (
       userName: user.name ?? "Unknown",
       supporterTier: user.supporterTier ?? 0,
       totalRealmPoints: totalPoints,
-      totalKills,
-      killsLastWeek,
       totalSoloKills,
       totalDeaths,
       totalDeathBlows,
@@ -191,7 +159,6 @@ export const aggregateLeaderboardData = (
       irsLastWeek,
       lastUpdated: latestUpdate,
       realmPointsThisWeek,
-      killsThisWeek,
       deathsThisWeek,
       soloKillsThisWeek,
       deathBlowsThisWeek,
@@ -215,18 +182,15 @@ const getLeaderboardDataUncached = async (): Promise<LeaderboardItem[]> => {
             select: {
               id: true,
               totalRealmPoints: true,
-              totalKills: true,
               totalSoloKills: true,
               totalDeaths: true,
               totalDeathBlows: true,
-              killsLastWeek: true,
               deathsLastWeek: true,
               deathBlowsLastWeek: true,
               realmPointsLastWeek: true,
               soloKillsLastWeek: true,
               lastUpdated: true,
               heraldRealmPoints: true,
-              heraldTotalKills: true,
               heraldTotalDeaths: true,
               heraldTotalSoloKills: true,
               heraldTotalDeathBlows: true,

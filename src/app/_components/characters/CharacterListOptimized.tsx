@@ -34,7 +34,6 @@ import {
   shouldApplyRealmGridRankSort,
   shouldShowSaveLayoutHint,
 } from "@/utils/characterListLayoutUi";
-import CharacterStatsSectionSkeleton from "./CharacterStatsSectionSkeleton";
 
 const CharacterTile = dynamic(() => import("./CharacterTile"), {
   loading: () => <div className="h-16 animate-pulse bg-gray-800" />,
@@ -49,7 +48,7 @@ const DesktopCharacterCard = dynamic(() => import("./DesktopCharacterCard"), {
 });
 
 const AggregateStatistics = dynamic(() => import("./CharacterListSummary"), {
-  loading: () => <CharacterStatsSectionSkeleton />,
+  loading: () => <div className="h-20 animate-pulse bg-gray-800" />,
 });
 
 type CharacterListProps = {
@@ -58,23 +57,6 @@ type CharacterListProps = {
   showDelete?: boolean;
   userId?: string;
   preferredDesktopLayout?: DesktopLayout | null;
-};
-
-type LeaderboardRankItem = {
-  userId: number;
-  clerkUserId: string;
-  totalRealmPoints: number;
-  realmPointsLastWeek: number;
-  realmPointsThisWeek: number;
-  totalKills: number;
-  killsLastWeek: number;
-  killsThisWeek: number;
-  totalSoloKills: number;
-  soloKillsLastWeek: number;
-  soloKillsThisWeek: number;
-  totalDeathBlows: number;
-  deathBlowsLastWeek: number;
-  deathBlowsThisWeek: number;
 };
 
 const DESKTOP_LAYOUTS: DesktopLayout[] = ["table", "realm-grid"];
@@ -125,7 +107,6 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   const [columnSortDir, setColumnSortDir] = useState<"asc" | "desc">(initialColumnSortDir);
   const [showFilters, setShowFilters] = useState(initialClassFilter !== "all");
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardRankItem[]>([]);
   const deleteDialogRef = useRef<HTMLDivElement | null>(null);
   const deleteCancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const deleteSubmitButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -217,42 +198,6 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     () => sortCharacters([...filteredCharacters], effectiveSortKey),
     [filteredCharacters, effectiveSortKey]
   );
-  const rankClerkUserId = useMemo(
-    () => sortedCharacters[0]?.clerkUserId ?? null,
-    [sortedCharacters]
-  );
-
-  useEffect(() => {
-    let isActive = true;
-    const controller = new AbortController();
-
-    const loadLeaderboardData = async () => {
-      try {
-        const response = await fetch("/api/leaderboard", {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          return;
-        }
-        const data = (await response.json()) as LeaderboardRankItem[];
-        if (isActive) {
-          setLeaderboardData(data);
-        }
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          return;
-        }
-      }
-    };
-
-    loadLeaderboardData();
-
-    return () => {
-      isActive = false;
-      controller.abort();
-    };
-  }, []);
 
   const handleSortChange = useCallback((option: string) => {
     if (!option) return;
@@ -706,11 +651,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       )}
 
       <div className="mt-4">
-        <AggregateStatistics
-          characters={sortedCharacters}
-          leaderboardData={leaderboardData}
-          rankClerkUserId={rankClerkUserId}
-        />
+        <AggregateStatistics characters={sortedCharacters} />
       </div>
 
       {confirmDelete && (

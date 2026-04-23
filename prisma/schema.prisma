@@ -79,8 +79,6 @@ model Character {
   users                   UserCharacter[]
   totalRealmPoints        Int    @default(0)
   realmPointsLastWeek     Int    @default(0)
-  totalKills              Int    @default(0)
-  killsLastWeek           Int    @default(0)
   totalSoloKills          Int    @default(0)
   soloKillsLastWeek       Int    @default(0)
   totalDeaths             Int    @default(0)

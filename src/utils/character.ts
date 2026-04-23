@@ -204,14 +204,10 @@ export type CharacterData = {
   realm: Realm;
   totalRealmPoints: number;
   realmPointsLastWeek: number;
-  totalKills: number;
-  killsLastWeek: number;
   totalSoloKills: number;
   soloKillsLastWeek: number;
   totalDeaths: number;
   deathsLastWeek: number;
-  totalDeathBlows: number;
-  deathBlowsLastWeek: number;
   lastUpdated: string;
   nameLastUpdated: string;
   player_kills: {
@@ -268,14 +264,10 @@ export const createCharacterDetails = (character: CharacterData) => {
     realm: character.realm,
     totalRealmPoints: character.totalRealmPoints,
     realmPointsLastWeek: character.realmPointsLastWeek,
-    totalKills: character.totalKills,
-    killsLastWeek: character.killsLastWeek,
     totalSoloKills: character.totalSoloKills,
     soloKillsLastWeek: character.soloKillsLastWeek,
     totalDeaths: character.totalDeaths,
     deathsLastWeek: character.deathsLastWeek,
-    totalDeathBlows: character.totalDeathBlows,
-    deathBlowsLastWeek: character.deathBlowsLastWeek,
     lastUpdated: character.lastUpdated,
     nameLastUpdated: character.nameLastUpdated,
     player_kills: {
