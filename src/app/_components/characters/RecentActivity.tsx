@@ -129,7 +129,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
 
   return (
     <div className="mt-2 sm:mt-3 lg:mt-0 lg:h-full">
-      <div className="bg-gray-900 border border-gray-800 rounded-md text-white flex flex-col max-h-[360px] lg:max-h-none lg:h-full overflow-hidden">
+      <div className="bg-gray-900 border border-gray-800 rounded-md text-white flex flex-col max-h-[360px] lg:max-h-full lg:h-full overflow-hidden">
         <div className="bg-gray-800/10 flex items-center py-1 px-3 sm:px-4 rounded-t-md shrink-0">
           <span className="text-xs font-medium">Recent Activity</span>
           <div className="ml-auto">

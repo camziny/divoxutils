@@ -233,8 +233,8 @@ const AggregateStatistics: React.FC<{
         ))}
       </div>
 
-      <div className="mt-2 sm:mt-3 flex flex-col lg:flex-row lg:items-stretch lg:gap-3 w-full">
-        <div className="bg-gray-900 border border-gray-800 rounded-md text-white lg:w-72 lg:shrink-0">
+      <div className="mt-2 sm:mt-3 flex flex-col lg:grid lg:grid-cols-[18rem_1fr] lg:gap-3 w-full">
+        <div className="bg-gray-900 border border-gray-800 rounded-md text-white">
           <div className={`${getRealmSurfaceClass("Total")} flex items-center py-1 px-3 sm:px-4 rounded-t-md`}>
             <span className="text-xs font-medium">Total</span>
             {hasAnyRank && (
@@ -314,7 +314,7 @@ const AggregateStatistics: React.FC<{
           </div>
         </div>
 
-        <div className="lg:flex-1 lg:min-w-0">
+        <div className="lg:min-h-0 lg:overflow-hidden">
           <RecentActivity characters={characters} />
         </div>
       </div>
