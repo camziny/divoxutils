@@ -260,10 +260,12 @@ test("batched leaderboard preserves cursor update and success payload", async ()
         id: 10,
         webId: "w10",
         totalRealmPoints: 10,
+        totalKills: 11,
         totalSoloKills: 10,
         totalDeaths: 10,
         totalDeathBlows: 10,
         realmPointsLastWeek: 0,
+        killsLastWeek: 0,
         soloKillsLastWeek: 0,
         deathsLastWeek: 0,
         deathBlowsLastWeek: 0,
@@ -281,6 +283,7 @@ test("batched leaderboard preserves cursor update and success payload", async ()
               realm_points: 15,
               player_kills: {
                 total: {
+                  kills: 16,
                   solo_kills: 12,
                   deaths: 11,
                   death_blows: 14,
@@ -612,6 +615,7 @@ test("update leaderboard stats returns success response", async () => {
             {
               webId: "w1",
               totalRealmPoints: 1,
+              totalKills: 1,
               totalSoloKills: 2,
               totalDeaths: 3,
               totalDeathBlows: 4,
@@ -626,7 +630,7 @@ test("update leaderboard stats returns success response", async () => {
             current: {
               realm_points: 2,
               player_kills: {
-                total: { solo_kills: 3, deaths: 4, death_blows: 5 },
+                total: { kills: 4, solo_kills: 3, deaths: 4, death_blows: 5 },
               },
             },
           },
@@ -650,6 +654,8 @@ test("update leaderboard stats clamps negative weekly deltas to zero", async () 
         data: {
           totalRealmPoints: number;
           realmPointsLastWeek: number;
+          totalKills: number;
+          killsLastWeek: number;
           totalSoloKills: number;
           soloKillsLastWeek: number;
           totalDeaths: number;
@@ -668,6 +674,7 @@ test("update leaderboard stats clamps negative weekly deltas to zero", async () 
             {
               webId: "w1",
               totalRealmPoints: 100,
+              totalKills: 80,
               totalSoloKills: 50,
               totalDeaths: 20,
               totalDeathBlows: 30,
@@ -684,7 +691,7 @@ test("update leaderboard stats clamps negative weekly deltas to zero", async () 
             current: {
               realm_points: 90,
               player_kills: {
-                total: { solo_kills: 40, deaths: 10, death_blows: 25 },
+                total: { kills: 75, solo_kills: 40, deaths: 10, death_blows: 25 },
               },
             },
           },
@@ -702,6 +709,8 @@ test("update leaderboard stats clamps negative weekly deltas to zero", async () 
     data: {
       totalRealmPoints: 90,
       realmPointsLastWeek: 0,
+      totalKills: 75,
+      killsLastWeek: 0,
       totalSoloKills: 40,
       soloKillsLastWeek: 0,
       totalDeaths: 10,

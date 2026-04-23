@@ -65,6 +65,8 @@ export async function handleUserCharactersByUserIdApi(
           previousCharacterName: character.previousCharacterName,
           totalRealmPoints: character.totalRealmPoints,
           realmPointsLastWeek: character.realmPointsLastWeek,
+          totalKills: character.totalKills,
+          killsLastWeek: character.killsLastWeek,
           totalSoloKills: character.totalSoloKills,
           soloKillsLastWeek: character.soloKillsLastWeek,
           totalDeaths: character.totalDeaths,

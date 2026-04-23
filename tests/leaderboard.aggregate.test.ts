@@ -13,15 +13,18 @@ test("aggregateLeaderboardData aggregates totals and sorts descending", () => {
           character: {
             id: 101,
             totalRealmPoints: 1000,
+            totalKills: 120,
             totalSoloKills: 50,
             totalDeaths: 10,
             totalDeathBlows: 20,
+            killsLastWeek: 12,
             deathsLastWeek: 2,
             deathBlowsLastWeek: 5,
             realmPointsLastWeek: 200,
             soloKillsLastWeek: 10,
             lastUpdated: null,
             heraldRealmPoints: 1200,
+            heraldTotalKills: 125,
             heraldTotalDeaths: 12,
             heraldTotalSoloKills: 55,
             heraldTotalDeathBlows: 24,
@@ -38,15 +41,18 @@ test("aggregateLeaderboardData aggregates totals and sorts descending", () => {
           character: {
             id: 201,
             totalRealmPoints: 600,
+            totalKills: 40,
             totalSoloKills: 20,
             totalDeaths: 6,
             totalDeathBlows: 12,
+            killsLastWeek: 5,
             deathsLastWeek: 1,
             deathBlowsLastWeek: 2,
             realmPointsLastWeek: 100,
             soloKillsLastWeek: 3,
             lastUpdated: null,
             heraldRealmPoints: 650,
+            heraldTotalKills: 42,
             heraldTotalDeaths: 7,
             heraldTotalSoloKills: 22,
             heraldTotalDeathBlows: 13,
@@ -60,6 +66,9 @@ test("aggregateLeaderboardData aggregates totals and sorts descending", () => {
 
   assert.equal(result[0].userName, "Alice");
   assert.equal(result[0].totalRealmPoints, 1000);
+  assert.equal(result[0].totalKills, 120);
+  assert.equal(result[0].killsLastWeek, 12);
+  assert.equal(result[0].killsThisWeek, 5);
   assert.equal(result[0].realmPointsThisWeek, 200);
   assert.equal(result[0].deathsThisWeek, 2);
   assert.equal(result[0].irs, 100);
@@ -77,15 +86,18 @@ test("aggregateLeaderboardData deduplicates repeated character ids and clamps we
           character: {
             id: 101,
             totalRealmPoints: 1000,
+            totalKills: 120,
             totalSoloKills: 50,
             totalDeaths: 10,
             totalDeathBlows: 20,
+            killsLastWeek: 12,
             deathsLastWeek: 2,
             deathBlowsLastWeek: 5,
             realmPointsLastWeek: 200,
             soloKillsLastWeek: 10,
             lastUpdated: null,
             heraldRealmPoints: 900,
+            heraldTotalKills: 110,
             heraldTotalDeaths: 9,
             heraldTotalSoloKills: 49,
             heraldTotalDeathBlows: 19,
@@ -95,15 +107,18 @@ test("aggregateLeaderboardData deduplicates repeated character ids and clamps we
           character: {
             id: 101,
             totalRealmPoints: 1000,
+            totalKills: 120,
             totalSoloKills: 50,
             totalDeaths: 10,
             totalDeathBlows: 20,
+            killsLastWeek: 12,
             deathsLastWeek: 2,
             deathBlowsLastWeek: 5,
             realmPointsLastWeek: 200,
             soloKillsLastWeek: 10,
             lastUpdated: null,
             heraldRealmPoints: 900,
+            heraldTotalKills: 110,
             heraldTotalDeaths: 9,
             heraldTotalSoloKills: 49,
             heraldTotalDeathBlows: 19,
@@ -117,6 +132,7 @@ test("aggregateLeaderboardData deduplicates repeated character ids and clamps we
 
   assert.equal(result.length, 1);
   assert.equal(result[0].totalRealmPoints, 1000);
+  assert.equal(result[0].killsThisWeek, 0);
   assert.equal(result[0].realmPointsThisWeek, 0);
   assert.equal(result[0].deathsThisWeek, 0);
   assert.equal(result[0].soloKillsThisWeek, 0);
