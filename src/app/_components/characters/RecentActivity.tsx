@@ -13,6 +13,7 @@ import { getRealmSurfaceInteractiveClass } from "./characterTileTheme";
 
 type RecentActivityProps = {
   characters: CharacterData[];
+  desktopMaxHeight?: number;
 };
 
 type ActivityPeriod = "thisWeek" | "lastWeek";
@@ -94,7 +95,7 @@ const STAT_LABELS = [
   { key: "deaths" as const, label: "Deaths" },
 ];
 
-const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
+const RecentActivity: React.FC<RecentActivityProps> = ({ characters, desktopMaxHeight }) => {
   const [period, setPeriod] = useState<ActivityPeriod>("thisWeek");
 
   const rows = useMemo<ActivityRow[]>(() => {
@@ -128,8 +129,8 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
   );
 
   return (
-    <div className="mt-2 sm:mt-3 lg:mt-0 lg:h-full">
-      <div className="bg-gray-900 border border-gray-800 rounded-md text-white flex flex-col max-h-[360px] lg:max-h-full lg:h-full overflow-hidden">
+    <div className="mt-2 sm:mt-3 lg:mt-0" style={desktopMaxHeight ? { height: desktopMaxHeight } : undefined}>
+      <div className="bg-gray-900 border border-gray-800 rounded-md text-white flex flex-col max-h-[360px] lg:max-h-none h-full overflow-hidden">
         <div className="bg-gray-800/10 flex items-center py-1 px-3 sm:px-4 rounded-t-md shrink-0">
           <span className="text-xs font-medium">Recent Activity</span>
           <div className="ml-auto">
