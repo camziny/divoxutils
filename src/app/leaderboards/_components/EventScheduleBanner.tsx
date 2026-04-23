@@ -4,10 +4,6 @@ import { useEffect, useState } from "react";
 
 const UPDATE_HOURS_ET = [0, 4, 8, 12, 16, 20] as const;
 
-type EventScheduleBannerProps = {
-  lastCompletedAt: Date | null;
-};
-
 function getETParts(now: Date): { weekday: number; hour: number; minute: number } {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
@@ -30,16 +26,6 @@ function formatHour(hour: number): string {
   const displayHour = hour % 12 || 12;
   const ampm = hour < 12 ? "AM" : "PM";
   return `${displayHour}:00 ${ampm} ET`;
-}
-
-function formatCompletedAt(date: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date) + " ET";
 }
 
 function formatScheduledAt(date: Date): string {
@@ -94,7 +80,7 @@ function getNextScheduleInfo(now: Date): { hour: number; diffMin: number } {
   return { hour: 4, diffMin: 4 * 60 };
 }
 
-export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBannerProps) {
+export default function EventScheduleBanner() {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -104,7 +90,6 @@ export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBa
 
   const nextSchedule = getNextScheduleInfo(now);
   const mostRecentScheduled = getMostRecentScheduledTime(now);
-  const isUpdating = !lastCompletedAt || lastCompletedAt < mostRecentScheduled;
 
   return (
     <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-md border border-gray-800 bg-gray-900/60 px-4 py-2.5 text-[12px] text-gray-500">
@@ -120,11 +105,6 @@ export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBa
           <span className="text-gray-600">({formatRelativeMinutes(nextSchedule.diffMin)})</span>
         </span>
       </div>
-      {isUpdating && (
-        <span className="w-full text-[11px] text-gray-500">
-          Update in progress, may take a few minutes to complete.
-        </span>
-      )}
     </div>
   );
 }
