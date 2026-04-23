@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 
 const UPDATE_HOURS_ET = [0, 4, 8, 12, 16, 20] as const;
-const RUN_WINDOW_MINUTES = 45;
 
 type EventScheduleBannerProps = {
   lastCompletedAt: Date | null;
@@ -43,6 +42,21 @@ function formatCompletedAt(date: Date): string {
   }).format(date) + " ET";
 }
 
+function formatScheduledAt(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date) + " ET";
+}
+
+function formatRelativeMinutes(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) return `${minutes}m`;
+  return `${hours}h ${minutes}m`;
+}
+
 function getMostRecentScheduledTime(now: Date): Date {
   const et = getETParts(now);
   const currentMinutes = et.hour * 60 + et.minute;
@@ -64,7 +78,7 @@ function getMostRecentScheduledTime(now: Date): Date {
   return new Date(0);
 }
 
-function getNextScheduledHour(now: Date): number {
+function getNextScheduleInfo(now: Date): { hour: number; diffMin: number } {
   const et = getETParts(now);
   const currentMinutes = et.hour * 60 + et.minute;
 
@@ -73,11 +87,11 @@ function getNextScheduledHour(now: Date): number {
     for (const hour of UPDATE_HOURS_ET) {
       if (weekday === 1 && hour === 0) continue;
       const diffMin = dayOffset * 24 * 60 + hour * 60 - currentMinutes;
-      if (diffMin > 0) return hour;
+      if (diffMin > 0) return { hour, diffMin };
     }
   }
 
-  return 4;
+  return { hour: 4, diffMin: 4 * 60 };
 }
 
 export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBannerProps) {
@@ -88,15 +102,9 @@ export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBa
     return () => clearInterval(interval);
   }, []);
 
-  const nextHour = getNextScheduledHour(now);
+  const nextSchedule = getNextScheduleInfo(now);
   const mostRecentScheduled = getMostRecentScheduledTime(now);
-  const minutesSinceMostRecentScheduled = Math.max(
-    0,
-    Math.floor((now.getTime() - mostRecentScheduled.getTime()) / 60000)
-  );
-  const isUpdating =
-    minutesSinceMostRecentScheduled <= RUN_WINDOW_MINUTES &&
-    (!lastCompletedAt || lastCompletedAt < mostRecentScheduled);
+  const isUpdating = !lastCompletedAt || lastCompletedAt < mostRecentScheduled;
 
   return (
     <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-md border border-gray-800 bg-gray-900/60 px-4 py-2.5 text-[12px] text-gray-500">
@@ -106,11 +114,10 @@ export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBa
         <span className="hidden sm:inline">- updates every 4h</span>
       </div>
       <div className="flex items-center gap-4 tabular-nums">
-        {lastCompletedAt && (
-          <span>Last completed {formatCompletedAt(lastCompletedAt)}</span>
-        )}
+        <span>Last update {formatScheduledAt(mostRecentScheduled)}</span>
         <span>
-          Next <span className="text-gray-400">{formatHour(nextHour)}</span>
+          Next <span className="text-gray-400">{formatHour(nextSchedule.hour)}</span>{" "}
+          <span className="text-gray-600">({formatRelativeMinutes(nextSchedule.diffMin)})</span>
         </span>
       </div>
       {isUpdating && (
