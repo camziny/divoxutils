@@ -19,6 +19,8 @@ test("mapUserCharactersToPublicPayload maps character rows to public payload", (
         previousCharacterName: null,
         totalRealmPoints: 1200,
         realmPointsLastWeek: 40,
+        totalKills: 6,
+        killsLastWeek: 2,
         totalSoloKills: 3,
         soloKillsLastWeek: 1,
         totalDeaths: 2,
@@ -71,6 +73,8 @@ test("mapUserCharactersToPublicPayload maps character rows to public payload", (
     payload[0].formattedHeraldRealmPoints,
     formatRealmRankWithLevel(getRealmRankForPoints(1200))
   );
+  assert.equal(payload[0].totalKills, 6);
+  assert.equal(payload[0].killsLastWeek, 2);
   assert.equal(payload[0].player_kills.total.kills, 11);
 });
 

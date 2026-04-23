@@ -9,6 +9,7 @@ const handlers = createResetLastWeekStatsRouteHandlers({
         id: { gt: lastProcessedId },
         OR: [
           { realmPointsLastWeek: { not: 0 } },
+          { killsLastWeek: { not: 0 } },
           { soloKillsLastWeek: { not: 0 } },
           { deathsLastWeek: { not: 0 } },
           { deathBlowsLastWeek: { not: 0 } },
@@ -25,6 +26,7 @@ const handlers = createResetLastWeekStatsRouteHandlers({
         },
         data: {
           realmPointsLastWeek: 0,
+          killsLastWeek: 0,
           soloKillsLastWeek: 0,
           deathsLastWeek: 0,
           deathBlowsLastWeek: 0,

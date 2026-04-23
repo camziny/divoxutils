@@ -1009,6 +1009,11 @@ test("reset last week route includes death blow weekly reset field", () => {
   );
 
   assert.equal(
+    resetRouteSource.includes("{ killsLastWeek: { not: 0 } }"),
+    true
+  );
+  assert.equal(resetRouteSource.includes("killsLastWeek: 0"), true);
+  assert.equal(
     resetRouteSource.includes("{ deathBlowsLastWeek: { not: 0 } }"),
     true
   );

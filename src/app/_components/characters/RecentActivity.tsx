@@ -2,6 +2,12 @@
 
 import React, { useMemo, useState } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { CharacterData } from "@/utils/character";
 import { getRealmSurfaceInteractiveClass } from "./characterTileTheme";
 
@@ -122,9 +128,9 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
   );
 
   return (
-    <div className="mt-2 sm:mt-3">
-      <div className="bg-gray-900 border border-gray-800 rounded-md text-white">
-        <div className="bg-gray-800/10 flex items-center py-1 px-3 sm:px-4 rounded-t-md">
+    <div className="mt-2 sm:mt-3 lg:mt-0 lg:h-full">
+      <div className="bg-gray-900 border border-gray-800 rounded-md text-white flex flex-col max-h-[360px] lg:max-h-none lg:h-full overflow-hidden">
+        <div className="bg-gray-800/10 flex items-center py-1 px-3 sm:px-4 rounded-t-md shrink-0">
           <span className="text-xs font-medium">Recent Activity</span>
           <div className="ml-auto">
             <ToggleGroup
@@ -144,8 +150,8 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
             No activity {period === "thisWeek" ? "this week" : "last week"}.
           </div>
         ) : (
-          <div className="divide-y divide-gray-800 py-1">
-            <div className="flex items-center gap-3 py-1 px-3 sm:px-4">
+          <div className="flex flex-col min-h-0 overflow-hidden">
+            <div className="flex items-center gap-3 py-1 px-3 sm:px-4 border-b border-gray-800 shrink-0">
               <span className="text-[10px] text-gray-500 tracking-wider flex-1 min-w-0">Character</span>
               {STAT_LABELS.map((col) => (
                 <span
@@ -157,36 +163,45 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
               ))}
             </div>
 
-            {activeRows.map((row) => (
-              <div
-                key={row.id}
-                className={`flex items-center gap-3 py-1.5 px-3 sm:px-4 rounded-sm transition-colors ${getRealmSurfaceInteractiveClass(row.realm)}`}
-              >
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs text-gray-200 truncate block">{row.name}</span>
-                  <span className="text-[10px] text-gray-500 block">{row.className}</span>
+            <div className="divide-y divide-gray-800 py-1 overflow-y-auto min-h-0">
+              {activeRows.map((row) => (
+                <div
+                  key={row.id}
+                  className={`flex items-center gap-3 py-1.5 px-3 sm:px-4 rounded-sm transition-colors ${getRealmSurfaceInteractiveClass(row.realm)}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-xs text-gray-200 truncate block">{row.name}</span>
+                        </TooltipTrigger>
+                        <TooltipContent>{row.name}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="text-[10px] text-gray-500 truncate block">{row.className}</span>
+                  </div>
+                  {STAT_LABELS.map((col) => {
+                    const value = row[col.key];
+                    return (
+                      <span
+                        key={col.key}
+                        className={`w-10 sm:w-14 text-right tabular-nums whitespace-nowrap shrink-0 ${
+                          col.key === "rp"
+                            ? "text-xs font-semibold text-white"
+                            : "text-xs text-gray-400"
+                        }`}
+                      >
+                        {value === null ? (
+                          <span className="text-gray-600">-</span>
+                        ) : (
+                          fmt(value)
+                        )}
+                      </span>
+                    );
+                  })}
                 </div>
-                {STAT_LABELS.map((col) => {
-                  const value = row[col.key];
-                  return (
-                    <span
-                      key={col.key}
-                      className={`w-10 sm:w-14 text-right tabular-nums whitespace-nowrap shrink-0 ${
-                        col.key === "rp"
-                          ? "text-xs font-semibold text-white"
-                          : "text-xs text-gray-400"
-                      }`}
-                    >
-                      {value === null ? (
-                        <span className="text-gray-600">-</span>
-                      ) : (
-                        fmt(value)
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>
