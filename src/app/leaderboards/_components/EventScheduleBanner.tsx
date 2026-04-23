@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 
 const UPDATE_HOURS_ET = [0, 4, 8, 12, 16, 20] as const;
-const RUN_WINDOW_MINUTES = 20;
 
 type EventScheduleBannerProps = {
   lastCompletedAt: Date | null;
@@ -22,13 +21,7 @@ function getETParts(now: Date): { weekday: number; hour: number; minute: number 
   const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
   const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
   const weekdayMap: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
   };
   return { weekday: weekdayMap[weekdayText] ?? 0, hour, minute };
 }
@@ -39,8 +32,7 @@ function formatHour(hour: number): string {
   return `${displayHour}:00 ${ampm} ET`;
 }
 
-function formatCompletedAt(date: Date | null): string {
-  if (!date) return "No completed run yet";
+function formatCompletedAt(date: Date): string {
   return new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     month: "short",
@@ -50,46 +42,41 @@ function formatCompletedAt(date: Date | null): string {
   }).format(date) + " ET";
 }
 
-type RunDiff = {
-  hour: number;
-  diffMin: number;
-};
-
-function getScheduleDiffs(now: Date): { last: RunDiff; next: RunDiff } {
+function getMostRecentScheduledTime(now: Date): Date {
   const et = getETParts(now);
   const currentMinutes = et.hour * 60 + et.minute;
-  let last: RunDiff | null = null;
-  let next: RunDiff | null = null;
 
-  for (let dayOffset = -7; dayOffset <= 7; dayOffset += 1) {
+  for (let dayOffset = 0; dayOffset >= -7; dayOffset--) {
     const weekday = (et.weekday + dayOffset + 700) % 7;
-    for (const hour of UPDATE_HOURS_ET) {
-      if (weekday === 1 && hour === 0) {
-        continue;
-      }
-
+    const hours = [...UPDATE_HOURS_ET].reverse();
+    for (const hour of hours) {
+      if (weekday === 1 && hour === 0) continue;
       const diffMin = dayOffset * 24 * 60 + hour * 60 - currentMinutes;
-      if (diffMin <= 0 && (!last || diffMin > last.diffMin)) {
-        last = { hour, diffMin };
-      }
-      if (diffMin > 0 && (!next || diffMin < next.diffMin)) {
-        next = { hour, diffMin };
+      if (diffMin <= 0) {
+        const result = new Date(now);
+        result.setMinutes(result.getMinutes() + diffMin);
+        return result;
       }
     }
   }
 
-  return {
-    last: last ?? { hour: 20, diffMin: -4 * 60 },
-    next: next ?? { hour: 4, diffMin: 4 * 60 },
-  };
+  return new Date(0);
 }
 
-function formatRelative(diffMin: number): string {
-  const total = Math.abs(diffMin);
-  const hours = Math.floor(total / 60);
-  const minutes = total % 60;
-  if (hours === 0) return `${minutes}m`;
-  return `${hours}h ${minutes}m`;
+function getNextScheduledHour(now: Date): number {
+  const et = getETParts(now);
+  const currentMinutes = et.hour * 60 + et.minute;
+
+  for (let dayOffset = 0; dayOffset <= 7; dayOffset++) {
+    const weekday = (et.weekday + dayOffset) % 7;
+    for (const hour of UPDATE_HOURS_ET) {
+      if (weekday === 1 && hour === 0) continue;
+      const diffMin = dayOffset * 24 * 60 + hour * 60 - currentMinutes;
+      if (diffMin > 0) return hour;
+    }
+  }
+
+  return 4;
 }
 
 export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBannerProps) {
@@ -100,34 +87,30 @@ export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBa
     return () => clearInterval(interval);
   }, []);
 
-  const { last, next } = getScheduleDiffs(now);
-  const sinceLastScheduled = Math.abs(last.diffMin);
-  const isRunningWindow = sinceLastScheduled <= RUN_WINDOW_MINUTES;
-  const statusLabel = isRunningWindow ? "Updating now" : "Idle";
-  const statusTone = isRunningWindow ? "text-amber-300" : "text-emerald-300";
+  const nextHour = getNextScheduledHour(now);
+  const mostRecentScheduled = getMostRecentScheduledTime(now);
+  const isUpdating = !lastCompletedAt || lastCompletedAt < mostRecentScheduled;
 
   return (
-    <div className="mt-3 rounded-md border border-gray-800 bg-gray-900/60 px-4 py-2.5 text-[12px] text-gray-500">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse" />
-          <span className="text-gray-300 font-medium">Lillith Event</span>
-          <span className="hidden sm:inline">- updates every 4h</span>
-        </div>
-        <span className={`${statusTone} font-medium`}>{statusLabel}</span>
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-md border border-gray-800 bg-gray-900/60 px-4 py-2.5 text-[12px] text-gray-500">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse" />
+        <span className="text-gray-300 font-medium">Lillith Event</span>
+        <span className="hidden sm:inline">- updates every 4h</span>
       </div>
-      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums">
+      <div className="flex items-center gap-4 tabular-nums">
+        {lastCompletedAt && (
+          <span>Updated {formatCompletedAt(lastCompletedAt)}</span>
+        )}
         <span>
-          Last completed <span className="text-gray-300">{formatCompletedAt(lastCompletedAt)}</span>
-        </span>
-        <span>
-          Next scheduled <span className="text-gray-300">{formatHour(next.hour)}</span>{" "}
-          <span className="text-gray-600">({formatRelative(next.diffMin)})</span>
+          Next <span className="text-gray-400">{formatHour(nextHour)}</span>
         </span>
       </div>
-      <div className="mt-1 text-[11px] text-gray-600">
-        Runs start on schedule and usually finish within a few minutes.
-      </div>
+      {isUpdating && (
+        <span className="w-full text-[11px] text-gray-500">
+          Update in progress, may take a few minutes to complete.
+        </span>
+      )}
     </div>
   );
 }
