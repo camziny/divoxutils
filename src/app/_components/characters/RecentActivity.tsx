@@ -28,45 +28,40 @@ function fmt(value: number) {
 }
 
 function deriveThisWeek(character: CharacterData): Omit<ActivityRow, "id" | "name" | "realm" | "className"> {
-  const deriveDelta = (
-    heraldValue: number | null | undefined,
-    storedValue: number | null | undefined,
-    lastWeekValue: number | null | undefined
-  ): number | null => {
-    if (heraldValue == null) return null;
-    const herald = heraldValue ?? 0;
-    const stored = storedValue ?? 0;
-    const lastWeek = lastWeekValue ?? 0;
-    const hasMetricBaseline = stored > 0 || lastWeek > 0 || herald === 0;
-    if (!hasMetricBaseline) return 0;
-    return Math.max(0, herald - stored);
-  };
+  const hasStoredBaseline =
+    (character.totalRealmPoints ?? 0) > 0 ||
+    (character.totalKills ?? 0) > 0 ||
+    (character.totalDeathBlows ?? 0) > 0 ||
+    (character.totalSoloKills ?? 0) > 0 ||
+    (character.totalDeaths ?? 0) > 0;
+  const hasHeraldHistory =
+    (character.heraldRealmPoints ?? 0) > 0 ||
+    (character.heraldTotalKills ?? 0) > 0 ||
+    (character.heraldTotalDeathBlows ?? 0) > 0 ||
+    (character.heraldTotalSoloKills ?? 0) > 0 ||
+    (character.heraldTotalDeaths ?? 0) > 0;
 
-  const rp = deriveDelta(
-    character.heraldRealmPoints,
-    character.totalRealmPoints,
-    character.realmPointsLastWeek
-  ) ?? 0;
-  const kills = deriveDelta(
-    character.heraldTotalKills,
-    character.totalKills,
-    character.killsLastWeek
-  );
-  const deathBlows = deriveDelta(
-    character.heraldTotalDeathBlows,
-    character.totalDeathBlows,
-    character.deathBlowsLastWeek
-  );
-  const soloKills = deriveDelta(
-    character.heraldTotalSoloKills,
-    character.totalSoloKills,
-    character.soloKillsLastWeek
-  ) ?? 0;
-  const deaths = deriveDelta(
-    character.heraldTotalDeaths,
-    character.totalDeaths,
-    character.deathsLastWeek
-  ) ?? 0;
+  if (!hasStoredBaseline && hasHeraldHistory) {
+    return { rp: 0, kills: 0, deathBlows: 0, soloKills: 0, deaths: 0 };
+  }
+
+  const rp = Math.max(0, (character.heraldRealmPoints ?? 0) - (character.totalRealmPoints ?? 0));
+  const kills =
+    character.heraldTotalKills != null
+      ? Math.max(0, character.heraldTotalKills - (character.totalKills ?? 0))
+      : null;
+  const deathBlows =
+    character.heraldTotalDeathBlows != null
+      ? Math.max(0, character.heraldTotalDeathBlows - (character.totalDeathBlows ?? 0))
+      : null;
+  const soloKills =
+    character.heraldTotalSoloKills != null
+      ? Math.max(0, character.heraldTotalSoloKills - (character.totalSoloKills ?? 0))
+      : 0;
+  const deaths =
+    character.heraldTotalDeaths != null
+      ? Math.max(0, character.heraldTotalDeaths - (character.totalDeaths ?? 0))
+      : 0;
   return { rp, kills, deathBlows, soloKills, deaths };
 }
 
