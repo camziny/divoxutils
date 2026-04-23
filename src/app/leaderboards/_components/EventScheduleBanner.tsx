@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 const UPDATE_HOURS_ET = [0, 4, 8, 12, 16, 20] as const;
+const RUN_WINDOW_MINUTES = 45;
 
 type EventScheduleBannerProps = {
   lastCompletedAt: Date | null;
@@ -89,7 +90,13 @@ export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBa
 
   const nextHour = getNextScheduledHour(now);
   const mostRecentScheduled = getMostRecentScheduledTime(now);
-  const isUpdating = !lastCompletedAt || lastCompletedAt < mostRecentScheduled;
+  const minutesSinceMostRecentScheduled = Math.max(
+    0,
+    Math.floor((now.getTime() - mostRecentScheduled.getTime()) / 60000)
+  );
+  const isUpdating =
+    minutesSinceMostRecentScheduled <= RUN_WINDOW_MINUTES &&
+    (!lastCompletedAt || lastCompletedAt < mostRecentScheduled);
 
   return (
     <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-md border border-gray-800 bg-gray-900/60 px-4 py-2.5 text-[12px] text-gray-500">
@@ -100,7 +107,7 @@ export default function EventScheduleBanner({ lastCompletedAt }: EventScheduleBa
       </div>
       <div className="flex items-center gap-4 tabular-nums">
         {lastCompletedAt && (
-          <span>Updated {formatCompletedAt(lastCompletedAt)}</span>
+          <span>Last completed {formatCompletedAt(lastCompletedAt)}</span>
         )}
         <span>
           Next <span className="text-gray-400">{formatHour(nextHour)}</span>
