@@ -86,6 +86,84 @@ function generateBanSequence(
   return sequence;
 }
 
+type BanTimingMode = "before_picks" | "after_2_picks" | "after_3_picks" | "after_4_picks";
+
+const DEFAULT_BAN_TIMING_MODE: BanTimingMode = "before_picks";
+const BAN_TIMING_SPLIT_PICK_COUNT: Record<
+  Exclude<BanTimingMode, "before_picks">,
+  number
+> = {
+  after_2_picks: 2,
+  after_3_picks: 3,
+  after_4_picks: 4,
+};
+
+function getBanTimingMode(draft: { banTimingMode?: BanTimingMode }): BanTimingMode {
+  return draft.banTimingMode ?? DEFAULT_BAN_TIMING_MODE;
+}
+
+function getTotalPickCount(teamSize: number): number {
+  return Math.max(0, (teamSize - 1) * 2);
+}
+
+function getDeferredBanTriggerPickCount(
+  mode: BanTimingMode,
+  totalPickCount: number
+): number | undefined {
+  if (mode === "before_picks") return undefined;
+  const requested = BAN_TIMING_SPLIT_PICK_COUNT[mode];
+  if (totalPickCount <= 0) return undefined;
+  return Math.min(requested, Math.max(1, totalPickCount - 1));
+}
+
+function buildBanPlan(
+  firstPickTeam: 1 | 2,
+  bansPerCaptain: number,
+  mode: BanTimingMode,
+  teamSize: number
+): {
+  initialBanSequence: (1 | 2)[];
+  deferredBanSequence: (1 | 2)[];
+  deferredBanTriggerPickCount?: number;
+} {
+  if (bansPerCaptain <= 0) {
+    return {
+      initialBanSequence: [],
+      deferredBanSequence: [],
+      deferredBanTriggerPickCount: undefined,
+    };
+  }
+  if (mode === "before_picks") {
+    return {
+      initialBanSequence: generateBanSequence(firstPickTeam, bansPerCaptain),
+      deferredBanSequence: [],
+      deferredBanTriggerPickCount: undefined,
+    };
+  }
+  const deferredBansPerCaptain = Math.max(0, bansPerCaptain - 1);
+  return {
+    initialBanSequence: generateBanSequence(firstPickTeam, 1),
+    deferredBanSequence:
+      deferredBansPerCaptain > 0
+        ? generateBanSequence(firstPickTeam, deferredBansPerCaptain)
+        : [],
+    deferredBanTriggerPickCount: getDeferredBanTriggerPickCount(
+      mode,
+      getTotalPickCount(teamSize)
+    ),
+  };
+}
+
+function canTriggerDeferredBanPhase(draft: {
+  deferredBanTriggered?: boolean;
+  deferredBanSequence?: (1 | 2)[];
+  deferredBanTriggerPickCount?: number;
+}): boolean {
+  if (draft.deferredBanTriggered) return false;
+  if (!draft.deferredBanSequence || draft.deferredBanSequence.length === 0) return false;
+  return typeof draft.deferredBanTriggerPickCount === "number";
+}
+
 function buildSetScore(team1Wins: number, team2Wins: number): string {
   return `${team1Wins}-${team2Wins}`;
 }
@@ -344,6 +422,7 @@ export const createDraft = mutation({
       teamSize: defaultTeamSize,
       pickOrderMode: "alternating",
       bansPerCaptain: getDefaultBansPerCaptain("traditional"),
+      banTimingMode: DEFAULT_BAN_TIMING_MODE,
       discordGuildId: args.discordGuildId,
       discordGuildName: args.discordGuildName,
       discordChannelId: args.discordChannelId,
@@ -451,6 +530,14 @@ export const updateSettings = mutation({
       v.union(v.literal("snake"), v.literal("alternating"))
     ),
     bansPerCaptain: v.optional(v.number()),
+    banTimingMode: v.optional(
+      v.union(
+        v.literal("before_picks"),
+        v.literal("after_2_picks"),
+        v.literal("after_3_picks"),
+        v.literal("after_4_picks")
+      )
+    ),
     token: v.string(),
   },
   handler: async (ctx, args) => {
@@ -505,6 +592,7 @@ export const updateSettings = mutation({
         (args.type !== draft.type
           ? getDefaultBansPerCaptain(args.type)
           : getBansPerCaptain(draft)),
+      banTimingMode: args.banTimingMode ?? getBanTimingMode(draft),
       safeClassNames,
     });
   },
@@ -550,6 +638,15 @@ export const startDraft = mutation({
         coinFlipChoice: undefined,
         firstPickTeam: undefined,
         firstRealmPickTeam: undefined,
+        banSequence: undefined,
+      initialBanSequence: undefined,
+        currentBanIndex: undefined,
+        activeBanPhase: undefined,
+        pickSequence: undefined,
+        currentPickIndex: undefined,
+        deferredBanSequence: undefined,
+        deferredBanTriggerPickCount: undefined,
+        deferredBanTriggered: false,
       });
       return;
     }
@@ -631,9 +728,13 @@ export const setCoinFlipChoice = mutation({
       nextStatus = "banning";
     }
 
-    const bansPerCaptain = getBansPerCaptain(draft);
-    const banSequence = generateBanSequence(firstPickTeam, bansPerCaptain);
-    const shouldSkipBans = draft.type === "pvp" && banSequence.length === 0;
+    const banPlan = buildBanPlan(
+      firstPickTeam,
+      getBansPerCaptain(draft),
+      getBanTimingMode(draft),
+      draft.teamSize
+    );
+    const shouldSkipBans = draft.type === "pvp" && banPlan.initialBanSequence.length === 0;
     const pickSequence = shouldSkipBans
       ? generatePickSequence(
           draft.teamSize,
@@ -650,8 +751,16 @@ export const setCoinFlipChoice = mutation({
       coinFlipChoice: args.choice,
       firstPickTeam,
       firstRealmPickTeam,
-      banSequence: banSequence.length > 0 ? banSequence : undefined,
-      currentBanIndex: banSequence.length > 0 ? 0 : undefined,
+      banSequence:
+        banPlan.initialBanSequence.length > 0 ? banPlan.initialBanSequence : undefined,
+      initialBanSequence:
+        banPlan.initialBanSequence.length > 0 ? banPlan.initialBanSequence : undefined,
+      currentBanIndex: banPlan.initialBanSequence.length > 0 ? 0 : undefined,
+      activeBanPhase: banPlan.initialBanSequence.length > 0 ? "initial" : undefined,
+      deferredBanSequence:
+        banPlan.deferredBanSequence.length > 0 ? banPlan.deferredBanSequence : undefined,
+      deferredBanTriggerPickCount: banPlan.deferredBanTriggerPickCount,
+      deferredBanTriggered: false,
       pickSequence,
       currentPickIndex: shouldSkipBans ? 0 : undefined,
     });
@@ -734,9 +843,16 @@ export const pickRealm = mutation({
           pickSequence,
           currentPickIndex: 0,
           currentBanIndex: undefined,
+          activeBanPhase: undefined,
         });
       } else {
-        await ctx.db.patch(args.draftId, { ...updates, status: "banning" });
+        await ctx.db.patch(args.draftId, {
+          ...updates,
+          banSequence: draft.initialBanSequence ?? draft.banSequence,
+          status: "banning",
+          currentBanIndex: 0,
+          activeBanPhase: "initial",
+        });
       }
     } else {
       await ctx.db.patch(args.draftId, updates);
@@ -959,11 +1075,23 @@ export const banClass = mutation({
       team: currentBanTeam,
       className: normalizedClassName,
       source: "captain",
+      phase: draft.activeBanPhase ?? "initial",
     });
 
     const nextBanIndex = draft.currentBanIndex! + 1;
 
     if (nextBanIndex >= draft.banSequence!.length) {
+      if (draft.activeBanPhase === "deferred") {
+        const nextPickIndex = draft.currentPickIndex ?? 0;
+        const totalPicks = draft.pickSequence?.length ?? 0;
+        await ctx.db.patch(args.draftId, {
+          status: nextPickIndex >= totalPicks ? "complete" : "drafting",
+          banSequence: draft.initialBanSequence ?? draft.banSequence,
+          currentBanIndex: nextBanIndex,
+          activeBanPhase: undefined,
+        });
+        return;
+      }
       const pickSequence = generatePickSequence(
         draft.teamSize,
         draft.firstPickTeam!,
@@ -974,6 +1102,7 @@ export const banClass = mutation({
         currentBanIndex: nextBanIndex,
         pickSequence,
         currentPickIndex: 0,
+        activeBanPhase: undefined,
       });
     } else {
       await ctx.db.patch(args.draftId, {
@@ -1024,6 +1153,20 @@ export const pickPlayer = mutation({
     });
 
     const nextPickIndex = draft.currentPickIndex! + 1;
+    if (
+      canTriggerDeferredBanPhase(draft) &&
+      nextPickIndex >= (draft.deferredBanTriggerPickCount ?? Number.MAX_SAFE_INTEGER)
+    ) {
+      await ctx.db.patch(args.draftId, {
+        status: "banning",
+        currentPickIndex: nextPickIndex,
+        banSequence: draft.deferredBanSequence,
+        currentBanIndex: 0,
+        activeBanPhase: "deferred",
+        deferredBanTriggered: true,
+      });
+      return;
+    }
 
     if (nextPickIndex >= draft.pickSequence!.length) {
       await ctx.db.patch(args.draftId, {
@@ -1446,19 +1589,36 @@ export const undoLastAction = mutation({
     }
 
     if (draft.status === "drafting") {
-      if (draft.currentPickIndex === 0) {
+      const atInitialBanBoundary = draft.currentPickIndex === 0;
+      const atDeferredBanBoundary =
+        draft.deferredBanTriggered &&
+        typeof draft.deferredBanTriggerPickCount === "number" &&
+        draft.currentPickIndex === draft.deferredBanTriggerPickCount;
+      if (atInitialBanBoundary || atDeferredBanBoundary) {
         const bans = await ctx.db
           .query("draftBans")
           .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
           .collect();
-        if (bans.length > 0) {
-          const lastBan = bans[bans.length - 1];
+        const boundaryPhase: "initial" | "deferred" = atInitialBanBoundary
+          ? "initial"
+          : "deferred";
+        const boundaryBanSequence =
+          boundaryPhase === "initial"
+            ? draft.initialBanSequence ?? draft.banSequence
+            : draft.deferredBanSequence ?? draft.banSequence;
+        const phaseCaptainBans = bans.filter(
+          (ban) => ban.source === "captain" && (ban.phase ?? "initial") === boundaryPhase
+        );
+        if (phaseCaptainBans.length > 0) {
+          const lastBan = phaseCaptainBans[phaseCaptainBans.length - 1];
           await ctx.db.delete(lastBan._id);
           await ctx.db.patch(args.draftId, {
             status: "banning",
-            currentBanIndex: draft.banSequence!.length - 1,
-            pickSequence: undefined,
-            currentPickIndex: undefined,
+            banSequence: boundaryBanSequence,
+            currentBanIndex: (boundaryBanSequence?.length ?? 1) - 1,
+            pickSequence: atInitialBanBoundary ? undefined : draft.pickSequence,
+            currentPickIndex: atInitialBanBoundary ? undefined : draft.currentPickIndex,
+            activeBanPhase: boundaryPhase,
           });
         }
         return;
@@ -1489,7 +1649,32 @@ export const undoLastAction = mutation({
         .query("draftBans")
         .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
         .collect();
-      if (bans.length === 0) {
+      if ((draft.currentBanIndex ?? 0) === 0) {
+        if (draft.activeBanPhase === "deferred") {
+          const players = await ctx.db
+            .query("draftPlayers")
+            .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+            .collect();
+          const triggeringPickIndex = draft.currentPickIndex ?? 0;
+          const triggeringPickedPlayer = players.find(
+            (p) => p.pickOrder === triggeringPickIndex
+          );
+          if (triggeringPickedPlayer) {
+            await ctx.db.patch(triggeringPickedPlayer._id, {
+              team: undefined,
+              pickOrder: undefined,
+            });
+          }
+          await ctx.db.patch(args.draftId, {
+            status: "drafting",
+            banSequence: draft.initialBanSequence ?? draft.banSequence,
+            currentPickIndex: Math.max(0, triggeringPickIndex - 1),
+            currentBanIndex: undefined,
+            activeBanPhase: undefined,
+            deferredBanTriggered: false,
+          });
+          return;
+        }
         if (draft.type === "traditional") {
           const secondRealmTeam = draft.firstRealmPickTeam === 1 ? 2 : 1;
           const realmToClear = secondRealmTeam === 1 ? "team1Realm" : "team2Realm";
@@ -1497,6 +1682,7 @@ export const undoLastAction = mutation({
             status: "realm_pick",
             [realmToClear]: undefined,
             currentBanIndex: undefined,
+            activeBanPhase: undefined,
           });
         } else {
           await ctx.db.patch(args.draftId, {
@@ -1504,12 +1690,26 @@ export const undoLastAction = mutation({
             coinFlipChoice: undefined,
             firstPickTeam: undefined,
             banSequence: undefined,
+            initialBanSequence: undefined,
             currentBanIndex: undefined,
+            activeBanPhase: undefined,
+            pickSequence: undefined,
+            currentPickIndex: undefined,
+            deferredBanSequence: undefined,
+            deferredBanTriggerPickCount: undefined,
+            deferredBanTriggered: false,
           });
         }
         return;
       }
-      const lastBan = bans[bans.length - 1];
+      const activePhase = draft.activeBanPhase ?? "initial";
+      const phaseCaptainBans = bans.filter(
+        (ban) => ban.source === "captain" && (ban.phase ?? "initial") === activePhase
+      );
+      const lastBan = phaseCaptainBans[phaseCaptainBans.length - 1];
+      if (!lastBan) {
+        throw new Error("No captain ban found for current phase");
+      }
       await ctx.db.delete(lastBan._id);
       await ctx.db.patch(args.draftId, {
         currentBanIndex: draft.currentBanIndex! - 1,
@@ -1526,7 +1726,14 @@ export const undoLastAction = mutation({
           firstPickTeam: undefined,
           firstRealmPickTeam: undefined,
           banSequence: undefined,
+          initialBanSequence: undefined,
           currentBanIndex: undefined,
+          activeBanPhase: undefined,
+          pickSequence: undefined,
+          currentPickIndex: undefined,
+          deferredBanSequence: undefined,
+          deferredBanTriggerPickCount: undefined,
+          deferredBanTriggered: false,
         });
       } else {
         const realmToClear =
