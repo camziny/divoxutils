@@ -219,6 +219,66 @@ test("undo from traditional banning with zero bans reverts only one realm pick",
   assert.equal(updated.firstPickTeam, 2);
 });
 
+test("re-picking realm after undo resets ban index before banning resumes", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "tradrepick",
+        status: "banning",
+        type: "traditional",
+        createdBy: "creator",
+        coinFlipChoice: "realm_first",
+        firstRealmPickTeam: 1,
+        firstPickTeam: 2,
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        team1Realm: "Albion",
+        team2Realm: "Midgard",
+        banSequence: [1, 2, 1, 2],
+        initialBanSequence: [1, 2, 1, 2],
+        currentBanIndex: 0,
+      },
+    ],
+    draftPlayers: [
+      { _id: "creator", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "cap1", draftId: "d1", token: "cap1-token", discordUserId: "cap1" },
+      { _id: "cap2", draftId: "d1", token: "cap2-token", discordUserId: "cap2" },
+    ],
+    draftBans: [],
+  });
+
+  await (draftFns.undoLastAction as any)._handler(ctx, {
+    draftId: "d1",
+    token: "creator-token",
+  });
+
+  let draft = await ctx.db.get("d1");
+  assert.equal(draft.status, "realm_pick");
+  assert.equal(draft.currentBanIndex, undefined);
+
+  await (draftFns.pickRealm as any)._handler(ctx, {
+    draftId: "d1",
+    token: "cap2-token",
+    realm: "Midgard",
+  });
+
+  draft = await ctx.db.get("d1");
+  assert.equal(draft.status, "banning");
+  assert.equal(draft.currentBanIndex, 0);
+  assert.equal(draft.activeBanPhase, "initial");
+  assert.deepEqual(draft.banSequence, [1, 2, 1, 2]);
+
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    token: "cap1-token",
+    className: "Healer",
+  });
+
+  draft = await ctx.db.get("d1");
+  assert.equal(draft.currentBanIndex, 1);
+});
+
 test("startDraft with correct creator token transitions to coin_flip", async () => {
   const ctx = makeCtx({
     drafts: [
@@ -739,6 +799,434 @@ test("setCoinFlipChoice respects bansPerCaptain = 1 in pvp", async () => {
   assert.equal(updated.status, "banning");
   assert.deepEqual(updated.banSequence, [2, 1]);
   assert.equal(updated.currentBanIndex, 0);
+});
+
+test("setCoinFlipChoice splits bans when ban timing is after 2 picks", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "pvpsplit2",
+        status: "coin_flip",
+        type: "pvp",
+        teamSize: 4,
+        coinFlipWinnerId: "cap1",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        createdBy: "creator",
+        bansPerCaptain: 3,
+        banTimingMode: "after_2_picks",
+      },
+    ],
+    draftPlayers: [
+      { _id: "cap1-player", draftId: "d1", token: "cap1-token", discordUserId: "cap1" },
+      { _id: "cap2-player", draftId: "d1", token: "cap2-token", discordUserId: "cap2" },
+    ],
+  });
+
+  await (draftFns.setCoinFlipChoice as any)._handler(ctx, {
+    draftId: "d1",
+    choice: "pick_first",
+    token: "cap1-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  assert.equal(updated.status, "banning");
+  assert.deepEqual(updated.banSequence, [2, 1]);
+  assert.deepEqual(updated.deferredBanSequence, [2, 1, 2, 1]);
+  assert.equal(updated.deferredBanTriggerPickCount, 2);
+  assert.equal(updated.deferredBanTriggered, false);
+  assert.equal(updated.activeBanPhase, "initial");
+});
+
+test("undo in deferred banning with zero deferred bans reverts triggering pick", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "pvpundodeferred",
+        status: "drafting",
+        type: "pvp",
+        teamSize: 4,
+        createdBy: "creator",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        firstPickTeam: 1,
+        pickSequence: [1, 2, 1, 2, 1, 2],
+        currentPickIndex: 1,
+        banSequence: [2, 1],
+        currentBanIndex: 2,
+        deferredBanSequence: [2, 1],
+        deferredBanTriggerPickCount: 2,
+        deferredBanTriggered: false,
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "creator-player",
+        draftId: "d1",
+        token: "creator-token",
+        discordUserId: "creator",
+        isCaptain: false,
+      },
+      {
+        _id: "cap1-player",
+        draftId: "d1",
+        token: "cap1-token",
+        discordUserId: "cap1",
+        isCaptain: true,
+      },
+      {
+        _id: "cap2-player",
+        draftId: "d1",
+        token: "cap2-token",
+        discordUserId: "cap2",
+        isCaptain: true,
+      },
+      {
+        _id: "picked-1",
+        draftId: "d1",
+        token: "picked-1-token",
+        discordUserId: "p1",
+        isCaptain: false,
+        team: 1,
+        pickOrder: 1,
+      },
+      {
+        _id: "picked-2",
+        draftId: "d1",
+        token: "picked-2-token",
+        discordUserId: "p2",
+        isCaptain: false,
+      },
+    ],
+    draftBans: [
+      { _id: "ban-initial-1", draftId: "d1", team: 2, className: "Bard", source: "captain" },
+      { _id: "ban-initial-2", draftId: "d1", team: 1, className: "Druid", source: "captain" },
+    ],
+  });
+
+  await (draftFns.pickPlayer as any)._handler(ctx, {
+    draftId: "d1",
+    playerId: "picked-2",
+    token: "cap2-token",
+  });
+
+  const duringDeferred = await ctx.db.get("d1");
+  assert.equal(duringDeferred.status, "banning");
+  assert.equal(duringDeferred.activeBanPhase, "deferred");
+  assert.equal(duringDeferred.currentBanIndex, 0);
+  assert.equal(duringDeferred.currentPickIndex, 2);
+
+  await (draftFns.undoLastAction as any)._handler(ctx, {
+    draftId: "d1",
+    token: "creator-token",
+  });
+
+  const updated = await ctx.db.get("d1");
+  const revertedPlayer = await ctx.db.get("picked-2");
+  assert.equal(updated.status, "drafting");
+  assert.equal(updated.currentPickIndex, 1);
+  assert.equal(updated.deferredBanTriggered, false);
+  assert.equal(updated.activeBanPhase, undefined);
+  assert.equal(revertedPlayer.team, undefined);
+  assert.equal(revertedPlayer.pickOrder, undefined);
+});
+
+test("with 2 bans per captain, flow is 1 before picks then 1 after 2 picks", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "pvp2banssplit",
+        status: "coin_flip",
+        type: "pvp",
+        teamSize: 4,
+        coinFlipWinnerId: "cap1",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        createdBy: "creator",
+        pickOrderMode: "alternating",
+        bansPerCaptain: 2,
+        banTimingMode: "after_2_picks",
+      },
+    ],
+    draftPlayers: [
+      { _id: "cap1-player", draftId: "d1", token: "cap1-token", discordUserId: "cap1", isCaptain: true },
+      { _id: "cap2-player", draftId: "d1", token: "cap2-token", discordUserId: "cap2", isCaptain: true },
+      { _id: "pick-1", draftId: "d1", token: "pick-1-token", discordUserId: "p1", isCaptain: false },
+      { _id: "pick-2", draftId: "d1", token: "pick-2-token", discordUserId: "p2", isCaptain: false },
+      { _id: "pick-3", draftId: "d1", token: "pick-3-token", discordUserId: "p3", isCaptain: false },
+      { _id: "pick-4", draftId: "d1", token: "pick-4-token", discordUserId: "p4", isCaptain: false },
+      { _id: "pick-5", draftId: "d1", token: "pick-5-token", discordUserId: "p5", isCaptain: false },
+      { _id: "pick-6", draftId: "d1", token: "pick-6-token", discordUserId: "p6", isCaptain: false },
+    ],
+  });
+
+  await (draftFns.setCoinFlipChoice as any)._handler(ctx, {
+    draftId: "d1",
+    choice: "pick_first",
+    token: "cap1-token",
+  });
+
+  let draft = await ctx.db.get("d1");
+  assert.equal(draft.status, "banning");
+  assert.deepEqual(draft.banSequence, [2, 1]);
+  assert.deepEqual(draft.deferredBanSequence, [2, 1]);
+  assert.equal(draft.currentBanIndex, 0);
+
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Bard",
+    token: "cap2-token",
+  });
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Druid",
+    token: "cap1-token",
+  });
+
+  draft = await ctx.db.get("d1");
+  assert.equal(draft.status, "drafting");
+  assert.equal(draft.currentPickIndex, 0);
+  assert.deepEqual(draft.pickSequence, [1, 2, 1, 2, 1, 2]);
+
+  await (draftFns.pickPlayer as any)._handler(ctx, {
+    draftId: "d1",
+    playerId: "pick-1",
+    token: "cap1-token",
+  });
+  await (draftFns.pickPlayer as any)._handler(ctx, {
+    draftId: "d1",
+    playerId: "pick-2",
+    token: "cap2-token",
+  });
+
+  draft = await ctx.db.get("d1");
+  assert.equal(draft.status, "banning");
+  assert.equal(draft.activeBanPhase, "deferred");
+  assert.equal(draft.currentPickIndex, 2);
+  assert.equal(draft.currentBanIndex, 0);
+
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Healer",
+    token: "cap2-token",
+  });
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Warrior",
+    token: "cap1-token",
+  });
+
+  draft = await ctx.db.get("d1");
+  assert.equal(draft.status, "drafting");
+  assert.equal(draft.currentPickIndex, 2);
+  assert.equal(draft.activeBanPhase, undefined);
+});
+
+test("split ban timing clamps trigger in small drafts", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "pvpclamp",
+        status: "coin_flip",
+        type: "pvp",
+        teamSize: 2,
+        coinFlipWinnerId: "cap1",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        createdBy: "creator",
+        pickOrderMode: "alternating",
+        bansPerCaptain: 2,
+        banTimingMode: "after_4_picks",
+      },
+    ],
+    draftPlayers: [
+      { _id: "cap1-player", draftId: "d1", token: "cap1-token", discordUserId: "cap1", isCaptain: true },
+      { _id: "cap2-player", draftId: "d1", token: "cap2-token", discordUserId: "cap2", isCaptain: true },
+      { _id: "pick-1", draftId: "d1", token: "pick-1-token", discordUserId: "p1", isCaptain: false },
+      { _id: "pick-2", draftId: "d1", token: "pick-2-token", discordUserId: "p2", isCaptain: false },
+    ],
+  });
+
+  await (draftFns.setCoinFlipChoice as any)._handler(ctx, {
+    draftId: "d1",
+    choice: "pick_first",
+    token: "cap1-token",
+  });
+
+  let draft = await ctx.db.get("d1");
+  assert.equal(draft.deferredBanTriggerPickCount, 1);
+
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Bard",
+    token: "cap2-token",
+  });
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Druid",
+    token: "cap1-token",
+  });
+
+  await (draftFns.pickPlayer as any)._handler(ctx, {
+    draftId: "d1",
+    playerId: "pick-1",
+    token: "cap1-token",
+  });
+
+  draft = await ctx.db.get("d1");
+  assert.equal(draft.status, "banning");
+  assert.equal(draft.currentPickIndex, 1);
+  assert.equal(draft.activeBanPhase, "deferred");
+});
+
+test("undo in deferred banning removes last deferred captain ban only", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "undodeferredban",
+        status: "banning",
+        type: "pvp",
+        createdBy: "creator",
+        currentBanIndex: 1,
+        activeBanPhase: "deferred",
+      },
+    ],
+    draftPlayers: [{ _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" }],
+    draftBans: [
+      {
+        _id: "initial-ban-1",
+        draftId: "d1",
+        team: 2,
+        className: "Bard",
+        source: "captain",
+        phase: "initial",
+      },
+      {
+        _id: "initial-ban-2",
+        draftId: "d1",
+        team: 1,
+        className: "Druid",
+        source: "captain",
+        phase: "initial",
+      },
+      {
+        _id: "deferred-ban-1",
+        draftId: "d1",
+        team: 2,
+        className: "Healer",
+        source: "captain",
+        phase: "deferred",
+      },
+    ],
+  });
+
+  await (draftFns.undoLastAction as any)._handler(ctx, {
+    draftId: "d1",
+    token: "creator-token",
+  });
+
+  const draft = await ctx.db.get("d1");
+  const bans = await ctx.db
+    .query("draftBans")
+    .withIndex("by_draft", (q: any) => q.eq("draftId", "d1"))
+    .collect();
+  assert.equal(draft.currentBanIndex, 0);
+  assert.equal(bans.length, 2);
+  assert.ok(bans.some((ban: any) => ban._id === "initial-ban-1"));
+  assert.ok(bans.some((ban: any) => ban._id === "initial-ban-2"));
+});
+
+test("undoing from deferred back to initial boundary restores initial ban sequence", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "restoreinitialseq",
+        status: "coin_flip",
+        type: "pvp",
+        teamSize: 4,
+        coinFlipWinnerId: "cap1",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+        createdBy: "creator",
+        pickOrderMode: "alternating",
+        bansPerCaptain: 3,
+        banTimingMode: "after_2_picks",
+      },
+    ],
+    draftPlayers: [
+      { _id: "creator-player", draftId: "d1", token: "creator-token", discordUserId: "creator", isCaptain: false },
+      { _id: "cap1-player", draftId: "d1", token: "cap1-token", discordUserId: "cap1", isCaptain: true },
+      { _id: "cap2-player", draftId: "d1", token: "cap2-token", discordUserId: "cap2", isCaptain: true },
+      { _id: "pick-1", draftId: "d1", token: "pick-1-token", discordUserId: "p1", isCaptain: false },
+      { _id: "pick-2", draftId: "d1", token: "pick-2-token", discordUserId: "p2", isCaptain: false },
+      { _id: "pick-3", draftId: "d1", token: "pick-3-token", discordUserId: "p3", isCaptain: false },
+      { _id: "pick-4", draftId: "d1", token: "pick-4-token", discordUserId: "p4", isCaptain: false },
+      { _id: "pick-5", draftId: "d1", token: "pick-5-token", discordUserId: "p5", isCaptain: false },
+      { _id: "pick-6", draftId: "d1", token: "pick-6-token", discordUserId: "p6", isCaptain: false },
+    ],
+  });
+
+  await (draftFns.setCoinFlipChoice as any)._handler(ctx, {
+    draftId: "d1",
+    choice: "pick_first",
+    token: "cap1-token",
+  });
+
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Bard",
+    token: "cap2-token",
+  });
+  await (draftFns.banClass as any)._handler(ctx, {
+    draftId: "d1",
+    className: "Druid",
+    token: "cap1-token",
+  });
+
+  await (draftFns.pickPlayer as any)._handler(ctx, {
+    draftId: "d1",
+    playerId: "pick-1",
+    token: "cap1-token",
+  });
+  await (draftFns.pickPlayer as any)._handler(ctx, {
+    draftId: "d1",
+    playerId: "pick-2",
+    token: "cap2-token",
+  });
+
+  let draft = await ctx.db.get("d1");
+  assert.deepEqual(draft.banSequence, [2, 1, 2, 1]);
+
+  await (draftFns.undoLastAction as any)._handler(ctx, {
+    draftId: "d1",
+    token: "creator-token",
+  });
+  await (draftFns.undoLastAction as any)._handler(ctx, {
+    draftId: "d1",
+    token: "creator-token",
+  });
+
+  draft = await ctx.db.get("d1");
+  assert.equal(draft.status, "drafting");
+  assert.equal(draft.currentPickIndex, 0);
+  assert.deepEqual(draft.banSequence, [2, 1]);
+
+  await (draftFns.undoLastAction as any)._handler(ctx, {
+    draftId: "d1",
+    token: "creator-token",
+  });
+
+  draft = await ctx.db.get("d1");
+  assert.equal(draft.status, "banning");
+  assert.equal(draft.activeBanPhase, "initial");
+  assert.deepEqual(draft.banSequence, [2, 1]);
+  assert.equal(draft.currentBanIndex, 1);
 });
 
 test("traditional realm pick skips banning when bansPerCaptain is 0", async () => {

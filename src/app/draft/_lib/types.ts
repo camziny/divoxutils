@@ -20,6 +20,7 @@ export interface DraftBan {
   team: 1 | 2;
   className: string;
   source?: "captain" | "auto";
+  phase?: "initial" | "deferred";
 }
 
 export interface DraftData {
@@ -46,11 +47,17 @@ export interface DraftData {
   firstRealmPickTeam?: 1 | 2;
   pickOrderMode?: "snake" | "alternating";
   bansPerCaptain?: number;
+  banTimingMode?: "before_picks" | "after_2_picks" | "after_3_picks" | "after_4_picks";
   safeClassNames?: string[];
   pickSequence?: (1 | 2)[];
   currentPickIndex?: number;
   banSequence?: (1 | 2)[];
+  initialBanSequence?: (1 | 2)[];
   currentBanIndex?: number;
+  activeBanPhase?: "initial" | "deferred";
+  deferredBanSequence?: (1 | 2)[];
+  deferredBanTriggerPickCount?: number;
+  deferredBanTriggered?: boolean;
   discordGuildId: string;
   discordGuildName?: string;
   discordChannelId: string;

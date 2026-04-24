@@ -139,6 +139,7 @@ export default function DraftTestPageClient() {
           type: modePreset === "pvp" ? "pvp" : "traditional",
           teamSize: adjustedTeamSize,
           pickOrderMode: "alternating",
+          banTimingMode: "before_picks",
           token: creatorToken,
         });
       }
@@ -265,6 +266,10 @@ export default function DraftTestPageClient() {
           </p>
           <p className="text-xs text-gray-600 mt-2">
             Ban setting is per captain (for example, 3 means each captain gets 3 bans).
+          </p>
+          <p className="text-xs text-gray-600 mt-2">
+            In draft setup, Ban schedule shows the exact order. Example: with 2 bans, choose
+            1 before picks, 1 after 2 picks to ban once, pick two players, then ban again.
           </p>
         </div>
 

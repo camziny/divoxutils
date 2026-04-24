@@ -38,11 +38,24 @@ export default defineSchema({
       v.union(v.literal("snake"), v.literal("alternating"))
     ),
     bansPerCaptain: v.optional(v.number()),
+    banTimingMode: v.optional(
+      v.union(
+        v.literal("before_picks"),
+        v.literal("after_2_picks"),
+        v.literal("after_3_picks"),
+        v.literal("after_4_picks")
+      )
+    ),
     safeClassNames: v.optional(v.array(v.string())),
     pickSequence: v.optional(v.array(teamNumber)),
     currentPickIndex: v.optional(v.number()),
     banSequence: v.optional(v.array(teamNumber)),
+    initialBanSequence: v.optional(v.array(teamNumber)),
     currentBanIndex: v.optional(v.number()),
+    activeBanPhase: v.optional(v.union(v.literal("initial"), v.literal("deferred"))),
+    deferredBanSequence: v.optional(v.array(teamNumber)),
+    deferredBanTriggerPickCount: v.optional(v.number()),
+    deferredBanTriggered: v.optional(v.boolean()),
     discordGuildId: v.string(),
     discordGuildName: v.optional(v.string()),
     discordChannelId: v.string(),
@@ -110,6 +123,7 @@ export default defineSchema({
     team: teamNumber,
     className: v.string(),
     source: v.optional(v.union(v.literal("captain"), v.literal("auto"))),
+    phase: v.optional(v.union(v.literal("initial"), v.literal("deferred"))),
   }).index("by_draft", ["draftId"]),
 
   draftFights: defineTable({

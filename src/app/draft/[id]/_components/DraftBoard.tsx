@@ -55,6 +55,7 @@ interface DraftBoardProps {
 }
 
 type PickOrderMode = "snake" | "alternating";
+type BanTimingMode = "before_picks" | "after_2_picks" | "after_3_picks" | "after_4_picks";
 type HighestRankByClassEntry = {
   rank: number;
   formattedRank: string;
@@ -143,6 +144,20 @@ export default function DraftBoard({
     [draft.bans]
   );
   const creatorAutoBans = setupPhase ? draft.bans : sourceTaggedAutoBans;
+  const initialCaptainBans = useMemo(
+    () =>
+      draft.bans.filter(
+        (ban) => ban.source === "captain" && (ban.phase ?? "initial") === "initial"
+      ),
+    [draft.bans]
+  );
+  const deferredCaptainBans = useMemo(
+    () =>
+      draft.bans.filter(
+        (ban) => ban.source === "captain" && (ban.phase ?? "initial") === "deferred"
+      ),
+    [draft.bans]
+  );
   const bannedClassNames = draft.bans.map((b) => b.className);
   const safeClassNames = draft.safeClassNames ?? [];
 
@@ -245,7 +260,8 @@ export default function DraftBoard({
       type: "traditional" | "pvp",
       teamSize: number,
       pickOrderMode: PickOrderMode,
-      bansPerCaptain: number
+      bansPerCaptain: number,
+      banTimingMode: BanTimingMode
     ) => {
       if (busy) return;
       setBusy(true);
@@ -256,6 +272,7 @@ export default function DraftBoard({
           teamSize,
           pickOrderMode,
           bansPerCaptain,
+          banTimingMode,
           token: token!,
         });
       } catch (e) {
@@ -286,7 +303,8 @@ export default function DraftBoard({
       draft.type,
       targetTeamSize,
       draft.pickOrderMode ?? "alternating",
-      draft.bansPerCaptain ?? 2
+      draft.bansPerCaptain ?? 2,
+      draft.banTimingMode ?? "before_picks"
     );
   }, [
     applySettings,
@@ -298,6 +316,7 @@ export default function DraftBoard({
     draft.type,
     draft.pickOrderMode,
     draft.bansPerCaptain,
+    draft.banTimingMode,
     isCreator,
     isSetup,
     token,
@@ -351,9 +370,17 @@ export default function DraftBoard({
     isCreator &&
     token &&
     ((isBanning && (draft.currentBanIndex ?? 0) > 0) ||
-      (isBanning && (draft.currentBanIndex ?? 0) === 0 && draft.bans.length > 0) ||
+      (isBanning &&
+        (draft.currentBanIndex ?? 0) === 0 &&
+        ((draft.activeBanPhase ?? "initial") === "deferred"
+          ? true
+          : initialCaptainBans.length > 0)) ||
       (isDrafting && (draft.currentPickIndex ?? 0) > 0) ||
-      (isDrafting && (draft.currentPickIndex ?? 0) === 0 && draft.bans.length > 0) ||
+      (isDrafting && (draft.currentPickIndex ?? 0) === 0 && initialCaptainBans.length > 0) ||
+      (isDrafting &&
+        draft.deferredBanTriggered &&
+        draft.currentPickIndex === draft.deferredBanTriggerPickCount &&
+        deferredCaptainBans.length > 0) ||
       (isComplete && !draft.gameStarted));
   const cancelPhrase = "cancel this draft";
   const canCancelDraft =
@@ -479,14 +506,16 @@ export default function DraftBoard({
                 type,
                 adjustedTeamSize,
                 draft.pickOrderMode ?? "alternating",
-                draft.bansPerCaptain ?? 2
+                draft.bansPerCaptain ?? 2,
+                draft.banTimingMode ?? "before_picks"
               );
             }
             return applySettings(
               type,
               draft.teamSize,
               draft.pickOrderMode ?? "alternating",
-              draft.bansPerCaptain ?? 2
+              draft.bansPerCaptain ?? 2,
+              draft.banTimingMode ?? "before_picks"
             );
           }}
           onUpdateSize={(teamSize) => {
@@ -495,7 +524,8 @@ export default function DraftBoard({
               draft.type,
               teamSize,
               draft.pickOrderMode ?? "alternating",
-              draft.bansPerCaptain ?? 2
+              draft.bansPerCaptain ?? 2,
+              draft.banTimingMode ?? "before_picks"
             );
           }}
           onUpdatePickOrderMode={(pickOrderMode) => {
@@ -504,7 +534,8 @@ export default function DraftBoard({
               draft.type,
               draft.teamSize,
               pickOrderMode,
-              draft.bansPerCaptain ?? 2
+              draft.bansPerCaptain ?? 2,
+              draft.banTimingMode ?? "before_picks"
             );
           }}
           onUpdateBansPerCaptain={(bansPerCaptain) => {
@@ -513,7 +544,18 @@ export default function DraftBoard({
               draft.type,
               draft.teamSize,
               draft.pickOrderMode ?? "alternating",
-              bansPerCaptain
+              bansPerCaptain,
+              bansPerCaptain <= 1 ? "before_picks" : (draft.banTimingMode ?? "before_picks")
+            );
+          }}
+          onUpdateBanTimingMode={(banTimingMode) => {
+            setSettingsFeedback(null);
+            return applySettings(
+              draft.type,
+              draft.teamSize,
+              draft.pickOrderMode ?? "alternating",
+              draft.bansPerCaptain ?? 2,
+              banTimingMode
             );
           }}
           onStart={() =>
@@ -1050,6 +1092,7 @@ function SettingsBar({
   onUpdateSize,
   onUpdatePickOrderMode,
   onUpdateBansPerCaptain,
+  onUpdateBanTimingMode,
   onStart,
   canStart,
 }: {
@@ -1061,10 +1104,45 @@ function SettingsBar({
   onUpdateSize: (size: number) => void;
   onUpdatePickOrderMode: (mode: PickOrderMode) => void;
   onUpdateBansPerCaptain: (value: number) => void;
+  onUpdateBanTimingMode: (mode: BanTimingMode) => void;
   onStart: () => void;
   canStart: boolean;
 }) {
   const needsCaptains = !hasCaptain1 || !hasCaptain2;
+  const bansPerCaptain = draft.bansPerCaptain ?? 2;
+  const banTimingMode = draft.banTimingMode ?? "before_picks";
+  const timingPickCount =
+    banTimingMode === "after_2_picks"
+      ? 2
+      : banTimingMode === "after_3_picks"
+        ? 3
+        : banTimingMode === "after_4_picks"
+          ? 4
+          : undefined;
+  const formatBanCount = (count: number) =>
+    `${count} ${count === 1 ? "ban" : "bans"}`;
+  const getBanScheduleLabel = (pickCount?: number) => {
+    if (!pickCount) return `All ${formatBanCount(bansPerCaptain)} before picks`;
+    if (bansPerCaptain <= 1) return `1 ban before picks`;
+    return `1 before picks, ${bansPerCaptain - 1} after ${pickCount} picks`;
+  };
+  const banTimingLabel = getBanScheduleLabel(timingPickCount);
+  const prePickBansPerCaptain =
+    banTimingMode === "before_picks" ? bansPerCaptain : Math.min(1, bansPerCaptain);
+  const postPickBansPerCaptain =
+    banTimingMode === "before_picks" ? 0 : Math.max(0, bansPerCaptain - 1);
+  const banTimingSummary =
+    bansPerCaptain === 0
+      ? "No captain bans in this draft."
+      : banTimingMode === "before_picks"
+        ? `Each captain bans ${bansPerCaptain} before player picks start.`
+        : postPickBansPerCaptain === 0
+          ? `Each captain bans ${prePickBansPerCaptain} before picks. There is no second ban round with this ban count.`
+          : `Each captain bans ${prePickBansPerCaptain} before picks, then ${postPickBansPerCaptain} more after ${timingPickCount} total player picks.`;
+  const laterBanDisabled = bansPerCaptain <= 1;
+  const laterBanHelpText = laterBanDisabled
+    ? "Choose 2+ bans per captain to add a later ban round."
+    : `${formatBanCount(1)} before picks, ${formatBanCount(bansPerCaptain - 1)} later.`;
   let buttonLabel = "Start Draft";
   if (!hasCaptain1) {
     buttonLabel = "Assign Captains";
@@ -1142,7 +1220,7 @@ function SettingsBar({
           </Select>
         </div>
         <Select
-          value={String(draft.bansPerCaptain ?? 2)}
+          value={String(bansPerCaptain)}
           onValueChange={(v) => onUpdateBansPerCaptain(Number(v))}
           disabled={busy}
         >
@@ -1157,7 +1235,51 @@ function SettingsBar({
             ))}
           </SelectContent>
         </Select>
+        <Select
+          value={banTimingMode}
+          onValueChange={(v) => onUpdateBanTimingMode(v as BanTimingMode)}
+          disabled={busy}
+        >
+          <SelectTrigger className="h-8 w-full min-w-0 text-xs border-gray-700 bg-gray-800/60 whitespace-nowrap sm:min-w-[250px] xl:w-[250px]">
+            <span className="truncate">{banTimingLabel}</span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="before_picks">
+              <div className="flex flex-col">
+                <span>{getBanScheduleLabel()}</span>
+                <span className="text-[10px] text-gray-500">
+                  Finish the full ban round before any player picks.
+                </span>
+              </div>
+            </SelectItem>
+            <SelectItem value="after_2_picks" disabled={laterBanDisabled}>
+              <div className="flex flex-col">
+                <span>{getBanScheduleLabel(2)}</span>
+                <span className="text-[10px] text-gray-500">
+                  {laterBanDisabled ? laterBanHelpText : `${laterBanHelpText} Pause after 2 picks.`}
+                </span>
+              </div>
+            </SelectItem>
+            <SelectItem value="after_3_picks" disabled={laterBanDisabled}>
+              <div className="flex flex-col">
+                <span>{getBanScheduleLabel(3)}</span>
+                <span className="text-[10px] text-gray-500">
+                  {laterBanDisabled ? laterBanHelpText : `${laterBanHelpText} Pause after 3 picks.`}
+                </span>
+              </div>
+            </SelectItem>
+            <SelectItem value="after_4_picks" disabled={laterBanDisabled}>
+              <div className="flex flex-col">
+                <span>{getBanScheduleLabel(4)}</span>
+                <span className="text-[10px] text-gray-500">
+                  {laterBanDisabled ? laterBanHelpText : `${laterBanHelpText} Pause after 4 picks.`}
+                </span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+      <p className="w-full text-left text-[11px] text-gray-400">{banTimingSummary}</p>
       <Button
         variant={needsCaptains ? "secondary" : "outline"}
         size="sm"
