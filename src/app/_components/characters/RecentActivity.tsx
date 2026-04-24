@@ -13,7 +13,6 @@ import { getRealmSurfaceInteractiveClass } from "./characterTileTheme";
 
 type RecentActivityProps = {
   characters: CharacterData[];
-  desktopMaxHeight?: number;
 };
 
 type ActivityPeriod = "thisWeek" | "lastWeek";
@@ -95,7 +94,7 @@ const STAT_LABELS = [
   { key: "deaths" as const, label: "Deaths" },
 ];
 
-const RecentActivity: React.FC<RecentActivityProps> = ({ characters, desktopMaxHeight }) => {
+const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
   const [period, setPeriod] = useState<ActivityPeriod>("thisWeek");
 
   const rows = useMemo<ActivityRow[]>(() => {
@@ -129,8 +128,8 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters, desktopMaxH
   );
 
   return (
-    <div className="mt-2 sm:mt-3 lg:mt-0" style={desktopMaxHeight ? { height: desktopMaxHeight } : undefined}>
-      <div className="bg-gray-900 border border-gray-800 rounded-md text-white flex flex-col max-h-[360px] lg:max-h-none h-full overflow-hidden">
+    <div className="mt-2 sm:mt-3 lg:mt-0">
+      <div className="bg-gray-900 border border-gray-800 rounded-md text-white flex flex-col max-h-[360px] lg:h-[236px] lg:max-h-[236px] overflow-hidden">
         <div className="bg-gray-800/10 flex items-center py-1 px-3 sm:px-4 rounded-t-md shrink-0">
           <span className="text-xs font-medium">Recent Activity</span>
           <div className="ml-auto">
@@ -152,7 +151,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters, desktopMaxH
           </div>
         ) : (
           <div className="flex flex-col min-h-0 overflow-hidden">
-            <div className="flex items-center gap-3 py-1 px-3 sm:px-4 border-b border-gray-800 shrink-0">
+            <div className="flex items-center gap-2 py-0.5 px-3 sm:px-4 border-b border-gray-800 shrink-0">
               <span className="text-[10px] text-gray-500 tracking-wider flex-1 min-w-0">Character</span>
               {STAT_LABELS.map((col) => (
                 <span
@@ -164,11 +163,11 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters, desktopMaxH
               ))}
             </div>
 
-            <div className="divide-y divide-gray-800 py-1 overflow-y-auto min-h-0">
+            <div className="divide-y divide-gray-800 py-0.5 overflow-y-auto min-h-0">
               {activeRows.map((row) => (
                 <div
                   key={row.id}
-                  className={`flex items-center gap-3 py-1.5 px-3 sm:px-4 rounded-sm transition-colors ${getRealmSurfaceInteractiveClass(row.realm)}`}
+                  className={`flex items-center gap-2 py-1 px-3 sm:px-4 rounded-sm transition-colors ${getRealmSurfaceInteractiveClass(row.realm)}`}
                 >
                   <div className="flex-1 min-w-0">
                     <TooltipProvider>

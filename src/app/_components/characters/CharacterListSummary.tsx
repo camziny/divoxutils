@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { getRealmSurfaceClass } from "./characterTileTheme";
 import RecentActivity from "./RecentActivity";
@@ -174,20 +174,6 @@ const AggregateStatistics: React.FC<{
 
   const hasAnyRank = Object.values(totalRanks).some((r) => r !== null);
 
-  const totalCardRef = useRef<HTMLDivElement>(null);
-  const [totalCardHeight, setTotalCardHeight] = useState<number | undefined>(undefined);
-
-  useEffect(() => {
-    if (!totalCardRef.current) return;
-    const observer = new ResizeObserver(() => {
-      if (totalCardRef.current) {
-        setTotalCardHeight(totalCardRef.current.offsetHeight);
-      }
-    });
-    observer.observe(totalCardRef.current);
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <div className="bg-gray-900 p-2 sm:p-4 w-full">
       <div className="text-center mb-2 sm:mb-3">
@@ -248,7 +234,7 @@ const AggregateStatistics: React.FC<{
       </div>
 
       <div className="mt-2 sm:mt-3 flex flex-col lg:flex-row lg:gap-3 w-full">
-        <div ref={totalCardRef} className="bg-gray-900 border border-gray-800 rounded-md text-white lg:w-72 lg:shrink-0">
+        <div className="bg-gray-900 border border-gray-800 rounded-md text-white lg:w-72 lg:shrink-0 lg:h-[236px] overflow-hidden">
           <div className={`${getRealmSurfaceClass("Total")} flex items-center py-1 px-3 sm:px-4 rounded-t-md`}>
             <span className="text-xs font-medium">Total</span>
             {hasAnyRank && (
@@ -329,7 +315,7 @@ const AggregateStatistics: React.FC<{
         </div>
 
         <div className="lg:flex-1 lg:min-w-0">
-          <RecentActivity characters={characters} desktopMaxHeight={totalCardHeight} />
+          <RecentActivity characters={characters} />
         </div>
       </div>
     </div>
