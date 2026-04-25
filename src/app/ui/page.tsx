@@ -27,8 +27,31 @@ const CHANGELOG: {
   version: string;
   date: string;
   title: string;
-  changes: string[];
+  changes: React.ReactNode[];
 }[] = [
+  {
+    version: "v1.0.3",
+    date: "April 24, 2026",
+    title: "Compact Realm Rank chart",
+    changes: ["Made the Realm Rank chart a little more compact."],
+  },
+  {
+    version: "v1.0.2",
+    date: "April 24, 2026",
+    title: "Scaled texture fixes",
+    changes: [
+      <>
+        Reduced line artifacts at scaled resolutions. Thanks to{" "}
+        <a
+          href="https://divoxutils.com/user/prondrknorr/characters"
+          className="text-indigo-300 hover:text-indigo-200"
+        >
+          prondrknorr
+        </a>{" "}
+        for reporting this and sharing the files.
+      </>,
+    ],
+  },
   {
     version: "v1.0.1",
     date: "April 22, 2026",
@@ -59,7 +82,7 @@ export default function UiPage() {
             Ghost UI
           </h1>
           <p className="text-sm text-gray-400 max-w-lg leading-relaxed">
-            A maintained Ghost UI kept up to date with DAoC patches.
+            An actively maintained Ghost UI.
           </p>
           <div className="pt-2">
             <a
