@@ -83,12 +83,15 @@ const STAT_LABELS = [
   {
     key: "rp" as const,
     label: "RPs",
-    widthClass: "w-[4.75rem] sm:w-24 pr-3 border-r border-gray-800/80",
+    cellClass: "pr-3 border-r border-gray-800/80",
   },
-  { key: "deathBlows" as const, label: "DBs", widthClass: "w-9 sm:w-12" },
-  { key: "soloKills" as const, label: "SKs", widthClass: "w-9 sm:w-12" },
-  { key: "deaths" as const, label: "Deaths", widthClass: "w-12 sm:w-14" },
+  { key: "deathBlows" as const, label: "DBs", cellClass: "" },
+  { key: "soloKills" as const, label: "SKs", cellClass: "" },
+  { key: "deaths" as const, label: "Deaths", cellClass: "" },
 ];
+
+const ACTIVITY_GRID_CLASS =
+  "grid grid-cols-[minmax(0,1fr)_5.5rem_2.75rem_2.75rem_3.25rem] sm:grid-cols-[minmax(0,1fr)_6rem_3rem_3rem_3.5rem] gap-2";
 
 const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
   const [period, setPeriod] = useState<ActivityPeriod>("thisWeek");
@@ -145,26 +148,28 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
             No activity {period === "thisWeek" ? "this week" : "last week"}.
           </div>
         ) : (
-          <div className="flex flex-col min-h-0 overflow-hidden">
-            <div className="flex items-center gap-2 py-0.5 px-3 sm:px-4 border-b border-gray-800 shrink-0">
-              <span className="text-[10px] text-gray-500 tracking-wider flex-1 min-w-0">Character</span>
+          <div className="min-h-0 overflow-y-auto">
+            <div className={`sticky top-0 z-10 items-center py-0.5 px-3 sm:px-4 border-b border-gray-800 bg-gray-900 ${ACTIVITY_GRID_CLASS}`}>
+              <span className="text-[10px] text-gray-500 tracking-wider flex-1 min-w-0">
+                Character
+              </span>
               {STAT_LABELS.map((col) => (
                 <span
                   key={col.key}
-                  className={`text-[10px] text-gray-500 tracking-wider text-right shrink-0 whitespace-nowrap ${col.widthClass}`}
+                  className={`text-[10px] text-gray-500 tracking-wider text-right whitespace-nowrap ${col.cellClass}`}
                 >
                   {col.label}
                 </span>
               ))}
             </div>
 
-            <div className="divide-y divide-gray-800 py-0.5 overflow-y-auto min-h-0">
+            <div className="divide-y divide-gray-800 py-0.5">
               {activeRows.map((row) => (
                 <div
                   key={row.id}
-                  className={`flex items-center gap-2 py-1 px-3 sm:px-4 rounded-sm transition-colors ${getRealmSurfaceInteractiveClass(row.realm)}`}
+                  className={`items-center py-1 px-3 sm:px-4 rounded-sm transition-colors ${ACTIVITY_GRID_CLASS} ${getRealmSurfaceInteractiveClass(row.realm)}`}
                 >
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -180,7 +185,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
                     return (
                       <span
                         key={col.key}
-                        className={`text-right tabular-nums whitespace-nowrap shrink-0 ${col.widthClass} ${
+                        className={`text-right tabular-nums whitespace-nowrap ${col.cellClass} ${
                           col.key === "rp"
                             ? "text-xs font-semibold text-white"
                             : "text-xs text-gray-400"
