@@ -1,22 +1,24 @@
 import { PrismaClient } from "@prisma/client";
 
 async function getLastProcessedCharacterId(
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  key = "lastProcessedCharacterId"
 ): Promise<number> {
   const state = await prisma.batchState.findUnique({
-    where: { key: "lastProcessedCharacterId" },
+    where: { key },
   });
   return state ? state.value : 0;
 }
 
 async function updateLastProcessedCharacterId(
   prisma: PrismaClient,
-  lastId: number
+  lastId: number,
+  key = "lastProcessedCharacterId"
 ): Promise<void> {
   await prisma.batchState.upsert({
-    where: { key: "lastProcessedCharacterId" },
+    where: { key },
     update: { value: lastId },
-    create: { key: "lastProcessedCharacterId", value: lastId },
+    create: { key, value: lastId },
   });
 }
 async function getLastProcessedHeraldCharacterId(

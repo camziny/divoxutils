@@ -21,13 +21,24 @@ const CharacterStatsSectionSkeleton = () => {
         <Skeleton className="h-4 w-40 mx-auto" />
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full">
+      <div className="mb-2 grid w-full grid-cols-4 gap-1 rounded-md bg-gray-800 p-0.5 sm:hidden">
+        <Skeleton className="h-6 w-full bg-gray-700" />
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-full" />
+      </div>
+
+      <div className="sm:hidden">
+        <RealmCardSkeleton />
+      </div>
+
+      <div className="hidden sm:grid sm:grid-cols-3 gap-2 sm:gap-3 w-full">
         <RealmCardSkeleton />
         <RealmCardSkeleton />
         <RealmCardSkeleton />
       </div>
 
-      <div className="mt-2 sm:mt-3">
+      <div className="mt-2 sm:mt-3 hidden sm:block">
         <div className="bg-gray-900 border border-gray-800 rounded-md">
           <div className="flex items-center py-1 px-3 sm:px-4 rounded-t-md bg-gray-800/10">
             <Skeleton className="h-3 w-12" />

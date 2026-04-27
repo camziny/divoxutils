@@ -110,6 +110,8 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
   const [currentPage, setCurrentPage] = useState<number>(
     Number.isNaN(initialPage) || initialPage < 1 ? 1 : initialPage
   );
+  const isWeeklyKillsUnavailable =
+    selectedMetric === "kills" && selectedPeriod !== "total";
 
   const processedData = useMemo(() => {
     return data.map((item) => {
@@ -204,71 +206,84 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
         </div>
       </div>
 
-      <ol className="space-y-2">
-        {paginatedData.map((item, index) => {
-          const metricKey =
-            selectedPeriod === "total"
-              ? `total${capitalize(selectedMetric)}`
-              : `${selectedMetric}${capitalize(selectedPeriod)}`;
-          const value = item[metricKey] as number | undefined;
+      {isWeeklyKillsUnavailable ? (
+        <div className="rounded-md border border-gray-800 bg-gray-900/60 px-4 py-8 text-center">
+          <p className="text-sm font-medium text-gray-300">
+            Weekly kill rankings are coming next week.
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            Total kills are available now.
+          </p>
+        </div>
+      ) : (
+        <>
+          <ol className="space-y-2">
+            {paginatedData.map((item, index) => {
+              const metricKey =
+                selectedPeriod === "total"
+                  ? `total${capitalize(selectedMetric)}`
+                  : `${selectedMetric}${capitalize(selectedPeriod)}`;
+              const value = item[metricKey] as number | undefined;
 
-          const startIndex = (currentPage - 1) * itemsPerPage;
-          const globalRank = startIndex + index + 1;
-          const isTopFive = index < 5;
-          const LinkComponent = isTopFive
-            ? HoverPrefetchLink
-            : ViewportPrefetchLink;
+              const startIndex = (currentPage - 1) * itemsPerPage;
+              const globalRank = startIndex + index + 1;
+              const isTopFive = index < 5;
+              const LinkComponent = isTopFive
+                ? HoverPrefetchLink
+                : ViewportPrefetchLink;
 
-          const rankBadge =
-            globalRank === 1
-              ? "bg-indigo-500/30 text-indigo-300"
-              : globalRank === 2
-                ? "bg-indigo-500/20 text-indigo-300"
-                : globalRank === 3
-                  ? "bg-indigo-500/10 text-indigo-400/70"
-                  : "bg-gray-800 text-gray-500";
+              const rankBadge =
+                globalRank === 1
+                  ? "bg-indigo-500/30 text-indigo-300"
+                  : globalRank === 2
+                    ? "bg-indigo-500/20 text-indigo-300"
+                    : globalRank === 3
+                      ? "bg-indigo-500/10 text-indigo-400/70"
+                      : "bg-gray-800 text-gray-500";
 
-          return (
-            <li
-              key={item.userId}
-              className={`group rounded-md border border-gray-800 hover:border-gray-700 hover:bg-gray-800/40 transition-colors duration-150 relative overflow-hidden ${supporterRowClass(item.supporterTier)}`}
-            >
-              <LinkComponent
-                href={`/user/${item.userName}/characters`}
-                className="flex justify-between items-center w-full h-full px-4 py-3"
-              >
-                <div className="flex items-center space-x-3">
-                  <div
-                    className={`flex items-center justify-center w-7 h-7 rounded-md text-xs font-semibold tabular-nums ${rankBadge}`}
+              return (
+                <li
+                  key={item.userId}
+                  className={`group rounded-md border border-gray-800 hover:border-gray-700 hover:bg-gray-800/40 transition-colors duration-150 relative overflow-hidden ${supporterRowClass(item.supporterTier)}`}
+                >
+                  <LinkComponent
+                    href={`/user/${item.userName}/characters`}
+                    className="flex justify-between items-center w-full h-full px-4 py-3"
                   >
-                    {globalRank}
-                  </div>
-                  <span
-                    className="text-sm font-medium text-gray-200 group-hover:text-indigo-400 transition-colors duration-150 inline-flex items-center gap-1"
-                    style={supporterNameStyle(item.supporterTier)}
-                  >
-                    {item.userName}
-                    {item.supporterTier > 0 && (
-                      <SupporterBadge tier={item.supporterTier} />
-                    )}
-                  </span>
-                </div>
-                <span className="text-sm font-semibold text-gray-300 tabular-nums">
-                  {formatNumber(value)}
-                </span>
-              </LinkComponent>
-            </li>
-          );
-        })}
-      </ol>
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`flex items-center justify-center w-7 h-7 rounded-md text-xs font-semibold tabular-nums ${rankBadge}`}
+                      >
+                        {globalRank}
+                      </div>
+                      <span
+                        className="text-sm font-medium text-gray-200 group-hover:text-indigo-400 transition-colors duration-150 inline-flex items-center gap-1"
+                        style={supporterNameStyle(item.supporterTier)}
+                      >
+                        {item.userName}
+                        {item.supporterTier > 0 && (
+                          <SupporterBadge tier={item.supporterTier} />
+                        )}
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-300 tabular-nums">
+                      {formatNumber(value)}
+                    </span>
+                  </LinkComponent>
+                </li>
+              );
+            })}
+          </ol>
 
-      <div className="my-8 flex justify-center">
-        <Pagination
-          total={totalPages}
-          page={currentPage}
-          onChange={handlePageChange}
-        />
-      </div>
+          <div className="my-8 flex justify-center">
+            <Pagination
+              total={totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+            />
+          </div>
+        </>
+      )}
     </section>
   );
 };

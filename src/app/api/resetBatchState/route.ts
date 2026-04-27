@@ -5,6 +5,9 @@ const handlers = createResetBatchStateRouteHandlers({
   cronSecret: process.env.CRON_SECRET,
   resetBatchState: async () => {
     await prisma.$transaction([
+      prisma.batchState.deleteMany({
+        where: { key: { startsWith: "lastProcessedCharacterId:weekly:" } },
+      }),
       prisma.batchState.upsert({
         where: { key: "lastProcessedCharacterId" },
         update: { value: 0 },

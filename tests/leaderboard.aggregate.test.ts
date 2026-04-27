@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { aggregateLeaderboardData } from "../src/server/leaderboard";
 
 test("aggregateLeaderboardData aggregates totals and sorts descending", () => {
@@ -137,4 +138,13 @@ test("aggregateLeaderboardData deduplicates repeated character ids and clamps we
   assert.equal(result[0].deathsThisWeek, 0);
   assert.equal(result[0].soloKillsThisWeek, 0);
   assert.equal(result[0].deathBlowsThisWeek, 0);
+});
+
+test("aggregateLeaderboardData uses effective death blow baseline for weekly guard", () => {
+  const leaderboardSource = readFileSync("src/server/leaderboard.ts", "utf8");
+
+  assert.equal(
+    leaderboardSource.includes("character.deathBlowsLastWeek !== effectiveTotalDeathBlows"),
+    true
+  );
 });

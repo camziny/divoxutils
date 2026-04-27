@@ -37,8 +37,8 @@ type UpdateCharacterData = {
 
 type BatchedLeaderboardUpdateDeps = {
   cronSecret: string | undefined;
-  getLastProcessedCharacterId: () => Promise<number>;
-  updateLastProcessedCharacterId: (lastId: number) => Promise<void>;
+  getLastProcessedCharacterId: (key?: string) => Promise<number>;
+  updateLastProcessedCharacterId: (lastId: number, key?: string) => Promise<void>;
   findCharacters: (args: { lastProcessedId: number; take: number; lastUpdatedLte: Date }) => Promise<LeaderboardCharacter[]>;
   updateCharacter: (args: { id: number; data: UpdateCharacterData }) => Promise<void>;
   fetchImpl: typeof fetch;
@@ -65,6 +65,11 @@ function calculateUpdateTimes(
     lastMonday.getTime() + gracePeriodHours * 60 * 60 * 1000
   );
   return { gracePeriodEndTime };
+}
+
+function getWeeklyLeaderboardCursorKey(gracePeriodEndTime: Date) {
+  const weekKey = gracePeriodEndTime.toISOString().slice(0, 10);
+  return `lastProcessedCharacterId:weekly:${weekKey}`;
 }
 
 export function createBatchedLeaderboardUpdateRouteHandlers(
@@ -98,8 +103,9 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
         updateHourUTC,
         gracePeriodHours
       );
+      const cursorKey = getWeeklyLeaderboardCursorKey(gracePeriodEndTime);
 
-      const lastProcessedId = await deps.getLastProcessedCharacterId();
+      const lastProcessedId = await deps.getLastProcessedCharacterId(cursorKey);
       const characters = await deps.findCharacters({
         lastProcessedId,
         take: batchSize,
@@ -222,7 +228,7 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
 
       if (characters.length > 0) {
         const newLastProcessedId = characters[characters.length - 1].id;
-        await deps.updateLastProcessedCharacterId(newLastProcessedId);
+        await deps.updateLastProcessedCharacterId(newLastProcessedId, cursorKey);
       }
 
       return NextResponse.json({

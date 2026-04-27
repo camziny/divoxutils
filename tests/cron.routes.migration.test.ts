@@ -248,11 +248,17 @@ test("all cron handlers enforce POST with 405 and Allow header", async () => {
 
 test("batched leaderboard preserves cursor update and success payload", async () => {
   let updatedCursor = -1;
+  let readCursorKey = "";
+  let updatedCursorKey = "";
   const updatedRows: Array<{ id: number; data: Record<string, unknown> }> = [];
   const handlers = createBatchedLeaderboardUpdateRouteHandlers({
     cronSecret: "secret",
-    getLastProcessedCharacterId: async () => 9,
-    updateLastProcessedCharacterId: async (lastId) => {
+    getLastProcessedCharacterId: async (key) => {
+      readCursorKey = key ?? "";
+      return 9;
+    },
+    updateLastProcessedCharacterId: async (lastId, key) => {
+      updatedCursorKey = key ?? "";
       updatedCursor = lastId;
     },
     findCharacters: async () => [
@@ -301,6 +307,8 @@ test("batched leaderboard preserves cursor update and success payload", async ()
   );
   assert.equal(response.status, 200);
   assert.equal(updatedCursor, 10);
+  assert.equal(readCursorKey, "lastProcessedCharacterId:weekly:2026-04-06");
+  assert.equal(updatedCursorKey, "lastProcessedCharacterId:weekly:2026-04-06");
   assert.equal(updatedRows.length, 1);
   assert.deepEqual(await response.json(), {
     message: "Batch update process completed",
@@ -1041,6 +1049,10 @@ test("reset batch state route resets leaderboard and realm cursors", () => {
   );
   assert.equal(
     resetBatchRouteSource.includes("key: \"lastProcessedRealmCharacterId\""),
+    true
+  );
+  assert.equal(
+    resetBatchRouteSource.includes("startsWith: \"lastProcessedCharacterId:weekly:\""),
     true
   );
 });

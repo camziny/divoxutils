@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { getRealmSurfaceClass } from "./characterTileTheme";
 import RecentActivity from "./RecentActivity";
 import type { CharacterData } from "@/utils/character";
@@ -42,8 +43,10 @@ interface LeaderboardItem {
 
 type Metric = "realmPoints" | "kills" | "soloKills" | "deathBlows";
 type Period = "total" | "lastWeek" | "thisWeek";
+type StatCardOption = "Total" | "Albion" | "Midgard" | "Hibernia";
 
 const LEADERBOARD_ITEMS_PER_PAGE = 15;
+const REALM_NAMES = ["Albion", "Hibernia", "Midgard"] as const;
 
 const METRIC_MAP: Record<keyof RealmStats, { metric: Metric; period: Period }> = {
   kills: { metric: "kills", period: "total" },
@@ -105,6 +108,7 @@ const AggregateStatistics: React.FC<{
   leaderboardData,
   rankClerkUserId,
 }) => {
+  const [selectedStatCard, setSelectedStatCard] = React.useState<StatCardOption>("Total");
   const aggregateStats: AggregateStats = initialAggregateStats();
 
   characters.forEach((character) => {
@@ -142,8 +146,6 @@ const AggregateStatistics: React.FC<{
     return num.toLocaleString();
   };
 
-  const realmNames = ["Albion", "Midgard", "Hibernia"] as const;
-
   const totalRanks = React.useMemo(() => {
     const getRank = (metric: Metric, period: Period) => {
       if (!rankClerkUserId || leaderboardData.length === 0) {
@@ -174,6 +176,134 @@ const AggregateStatistics: React.FC<{
 
   const hasAnyRank = Object.values(totalRanks).some((r) => r !== null);
 
+  const renderRealmCard = (realm: (typeof REALM_NAMES)[number]) => (
+    <div
+      key={realm}
+      className="bg-gray-900 border border-gray-800 rounded-md text-white min-w-0"
+    >
+      <div className={`${getRealmSurfaceClass(realm)} py-1 px-3 sm:px-4 rounded-t-md`}>
+        <span className="text-xs font-medium">{realm}</span>
+      </div>
+      <div className="divide-y divide-gray-800 px-3 sm:px-4 py-1">
+        {PRIMARY_ROWS.map((row, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-2 py-1.5 hover:bg-gray-800/40 rounded-sm transition-colors"
+          >
+            <span className="text-xs text-gray-400 min-w-0 truncate">{row.label}</span>
+            <span className="text-xs font-semibold text-white ml-auto tabular-nums text-right shrink-0">
+              {formatNumber(aggregateStats[realm][row.key])}
+            </span>
+          </div>
+        ))}
+        <div className="py-1.5 hover:bg-gray-800/40 rounded-sm transition-colors">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 min-w-0 truncate">
+              <span className="sm:hidden">RPs</span>
+              <span className="hidden sm:inline">Realm Points</span>
+            </span>
+            <span className="text-xs font-semibold text-white ml-auto tabular-nums text-right shrink-0">
+              {formatNumber(aggregateStats[realm].realmPoints)}
+            </span>
+          </div>
+          <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-gray-500 min-w-0 truncate">Last Week</span>
+              <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums text-right shrink-0">
+                {formatNumber(aggregateStats[realm].realmPointsLastWeek)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-gray-500 min-w-0 truncate">This Week</span>
+              <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums text-right shrink-0">
+                {formatNumber(aggregateStats[realm].realmPointsThisWeek)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTotalCard = (className = "") => (
+    <div className={`bg-gray-900 border border-gray-800 rounded-md text-white overflow-hidden ${className}`}>
+      <div className={`${getRealmSurfaceClass("Total")} flex items-center py-1 px-3 sm:px-4 rounded-t-md`}>
+        <span className="text-xs font-medium">Total</span>
+      </div>
+      <div className="divide-y divide-gray-800 py-1">
+        {PRIMARY_ROWS.map((row, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 py-1.5 px-3 sm:px-4 whitespace-nowrap hover:bg-gray-800/40 rounded-sm transition-colors"
+          >
+            <span className="text-xs text-gray-400">{row.label}</span>
+            <span className="text-xs font-semibold text-white ml-auto tabular-nums">
+              {formatNumber(aggregateStats.Total[row.key])}
+            </span>
+            {hasAnyRank && (
+              <span className="w-10 text-right shrink-0">
+                <InlineRank
+                  rank={totalRanks[row.key]}
+                  metric={METRIC_MAP[row.key].metric}
+                  period={METRIC_MAP[row.key].period}
+                />
+              </span>
+            )}
+          </div>
+        ))}
+        <div className="py-1.5 px-3 sm:px-4 hover:bg-gray-800/40 rounded-sm transition-colors">
+          <div className="flex items-center gap-3 whitespace-nowrap">
+            <span className="text-xs text-gray-400">Realm Points</span>
+            <span className="text-xs font-semibold text-white ml-auto tabular-nums">
+              {formatNumber(aggregateStats.Total.realmPoints)}
+            </span>
+            {hasAnyRank && (
+              <span className="w-10 text-right shrink-0">
+                <InlineRank
+                  rank={totalRanks.realmPoints}
+                  metric="realmPoints"
+                  period="total"
+                />
+              </span>
+            )}
+          </div>
+          <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-gray-500">Last Week</span>
+              <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
+                {formatNumber(aggregateStats.Total.realmPointsLastWeek)}
+              </span>
+              {hasAnyRank && (
+                <span className="w-10 text-right shrink-0">
+                  <InlineRank
+                    rank={totalRanks.realmPointsLastWeek}
+                    metric="realmPoints"
+                    period="lastWeek"
+                  />
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-gray-500">This Week</span>
+              <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
+                {formatNumber(aggregateStats.Total.realmPointsThisWeek)}
+              </span>
+              {hasAnyRank && (
+                <span className="w-10 text-right shrink-0">
+                  <InlineRank
+                    rank={totalRanks.realmPointsThisWeek}
+                    metric="realmPoints"
+                    period="thisWeek"
+                  />
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="bg-gray-900 p-2 sm:p-4 w-full">
       <div className="text-center mb-2 sm:mb-3">
@@ -182,137 +312,33 @@ const AggregateStatistics: React.FC<{
         </h2>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full">
-        {realmNames.map((realm) => (
-          <div
-            key={realm}
-            className="bg-gray-900 border border-gray-800 rounded-md text-white min-w-0"
-          >
-            <div className={`${getRealmSurfaceClass(realm)} py-1 px-3 sm:px-4 rounded-t-md`}>
-              <span className="text-xs font-medium">{realm}</span>
-            </div>
-            <div className="divide-y divide-gray-800 px-3 sm:px-4 py-1">
-              {PRIMARY_ROWS.map((row, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 py-1.5 whitespace-nowrap hover:bg-gray-800/40 rounded-sm transition-colors"
-                >
-                  <span className="text-xs text-gray-400">{row.label}</span>
-                  <span className="text-xs font-semibold text-white ml-auto tabular-nums">
-                    {formatNumber(aggregateStats[realm][row.key])}
-                  </span>
-                </div>
-              ))}
-              <div className="py-1.5 hover:bg-gray-800/40 rounded-sm transition-colors">
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <span className="text-xs text-gray-400">
-                    <span className="sm:hidden">RPs</span>
-                    <span className="hidden sm:inline">Realm Points</span>
-                  </span>
-                  <span className="text-xs font-semibold text-white ml-auto tabular-nums">
-                    {formatNumber(aggregateStats[realm].realmPoints)}
-                  </span>
-                </div>
-                <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-gray-500">Last Week</span>
-                    <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
-                      {formatNumber(aggregateStats[realm].realmPointsLastWeek)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-gray-500">This Week</span>
-                    <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
-                      {formatNumber(aggregateStats[realm].realmPointsThisWeek)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="sm:hidden">
+        <ToggleGroup
+          value={selectedStatCard}
+          onValueChange={(value) => {
+            if (value) setSelectedStatCard(value as StatCardOption);
+          }}
+          className="mb-2 grid w-full grid-cols-4"
+        >
+          {(["Total", ...REALM_NAMES] as const).map((option) => (
+            <ToggleGroupItem key={option} value={option} className="w-full px-1">
+              {option}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+        {selectedStatCard === "Total"
+          ? renderTotalCard()
+          : renderRealmCard(selectedStatCard)}
+      </div>
+
+      <div className="hidden sm:grid sm:grid-cols-3 gap-2 sm:gap-3 w-full">
+        {REALM_NAMES.map((realm) => (
+          renderRealmCard(realm)
         ))}
       </div>
 
       <div className="mt-2 sm:mt-3 flex flex-col lg:flex-row lg:gap-3 w-full">
-        <div className="bg-gray-900 border border-gray-800 rounded-md text-white lg:w-72 lg:shrink-0 lg:h-[236px] overflow-hidden">
-          <div className={`${getRealmSurfaceClass("Total")} flex items-center py-1 px-3 sm:px-4 rounded-t-md`}>
-            <span className="text-xs font-medium">Total</span>
-            {hasAnyRank && (
-              <span className="ml-auto text-[9px] uppercase tracking-wider text-gray-500">Rank</span>
-            )}
-          </div>
-          <div className="divide-y divide-gray-800 py-1">
-            {PRIMARY_ROWS.map((row, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 py-1.5 px-3 sm:px-4 whitespace-nowrap hover:bg-gray-800/40 rounded-sm transition-colors"
-              >
-                <span className="text-xs text-gray-400">{row.label}</span>
-                <span className="text-xs font-semibold text-white ml-auto tabular-nums">
-                  {formatNumber(aggregateStats.Total[row.key])}
-                </span>
-                {hasAnyRank && (
-                  <span className="w-10 text-right shrink-0">
-                    <InlineRank
-                      rank={totalRanks[row.key]}
-                      metric={METRIC_MAP[row.key].metric}
-                      period={METRIC_MAP[row.key].period}
-                    />
-                  </span>
-                )}
-              </div>
-            ))}
-            <div className="py-1.5 px-3 sm:px-4 hover:bg-gray-800/40 rounded-sm transition-colors">
-              <div className="flex items-center gap-3 whitespace-nowrap">
-                <span className="text-xs text-gray-400">Realm Points</span>
-                <span className="text-xs font-semibold text-white ml-auto tabular-nums">
-                  {formatNumber(aggregateStats.Total.realmPoints)}
-                </span>
-                {hasAnyRank && (
-                  <span className="w-10 text-right shrink-0">
-                    <InlineRank
-                      rank={totalRanks.realmPoints}
-                      metric="realmPoints"
-                      period="total"
-                    />
-                  </span>
-                )}
-              </div>
-              <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
-                <div className="flex items-center gap-3">
-                  <span className="text-[11px] text-gray-500">Last Week</span>
-                  <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
-                    {formatNumber(aggregateStats.Total.realmPointsLastWeek)}
-                  </span>
-                  {hasAnyRank && (
-                    <span className="w-10 text-right shrink-0">
-                      <InlineRank
-                        rank={totalRanks.realmPointsLastWeek}
-                        metric="realmPoints"
-                        period="lastWeek"
-                      />
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[11px] text-gray-500">This Week</span>
-                  <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
-                    {formatNumber(aggregateStats.Total.realmPointsThisWeek)}
-                  </span>
-                  {hasAnyRank && (
-                    <span className="w-10 text-right shrink-0">
-                      <InlineRank
-                        rank={totalRanks.realmPointsThisWeek}
-                        metric="realmPoints"
-                        period="thisWeek"
-                      />
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {renderTotalCard("hidden sm:block lg:w-72 lg:shrink-0")}
 
         <div className="lg:flex-1 lg:min-w-0">
           <RecentActivity characters={characters} />

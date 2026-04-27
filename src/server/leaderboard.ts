@@ -121,7 +121,7 @@ export const aggregateLeaderboardData = (
       if (character.deathsLastWeek !== character.totalDeaths) {
         deathsLastWeek += character.deathsLastWeek;
       }
-      if (character.deathBlowsLastWeek !== character.totalDeathBlows) {
+      if (character.deathBlowsLastWeek !== effectiveTotalDeathBlows) {
         deathBlowsLastWeek += character.deathBlowsLastWeek;
       }
 

@@ -23,7 +23,6 @@ type ActivityRow = {
   realm: string;
   className: string;
   rp: number;
-  kills: number | null;
   deathBlows: number | null;
   soloKills: number;
   deaths: number;
@@ -53,11 +52,6 @@ function deriveThisWeek(character: CharacterData): Omit<ActivityRow, "id" | "nam
     character.totalRealmPoints,
     character.realmPointsLastWeek
   ) ?? 0;
-  const kills = deriveDelta(
-    character.heraldTotalKills,
-    character.totalKills,
-    character.killsLastWeek
-  );
   const deathBlows = deriveDelta(
     character.heraldTotalDeathBlows,
     character.totalDeathBlows,
@@ -73,13 +67,12 @@ function deriveThisWeek(character: CharacterData): Omit<ActivityRow, "id" | "nam
     character.totalDeaths,
     character.deathsLastWeek
   ) ?? 0;
-  return { rp, kills, deathBlows, soloKills, deaths };
+  return { rp, deathBlows, soloKills, deaths };
 }
 
 function deriveLastWeek(character: CharacterData): Omit<ActivityRow, "id" | "name" | "realm" | "className"> {
   return {
     rp: Math.max(0, character.realmPointsLastWeek ?? 0),
-    kills: Math.max(0, character.killsLastWeek ?? 0),
     deathBlows: Math.max(0, character.deathBlowsLastWeek ?? 0),
     soloKills: Math.max(0, character.soloKillsLastWeek ?? 0),
     deaths: Math.max(0, character.deathsLastWeek ?? 0),
@@ -88,7 +81,6 @@ function deriveLastWeek(character: CharacterData): Omit<ActivityRow, "id" | "nam
 
 const STAT_LABELS = [
   { key: "rp" as const, label: "RPs" },
-  { key: "kills" as const, label: "Kills" },
   { key: "deathBlows" as const, label: "DBs" },
   { key: "soloKills" as const, label: "SKs" },
   { key: "deaths" as const, label: "Deaths" },
@@ -121,7 +113,6 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
   const activeRows = sortedRows.filter(
     (row) =>
       row.rp > 0 ||
-      (row.kills ?? 0) > 0 ||
       (row.deathBlows ?? 0) > 0 ||
       row.soloKills > 0 ||
       row.deaths > 0
