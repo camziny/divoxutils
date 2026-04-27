@@ -86,7 +86,7 @@ function InlineRank({ rank, metric, period }: { rank: number | null; metric: Met
   return (
     <Link
       href={getLeaderboardHref(metric, period, rank)}
-      className="text-[10px] tabular-nums text-indigo-400 hover:text-indigo-300 transition-colors"
+      className="inline-flex h-4 items-center justify-end text-[10px] leading-none tabular-nums text-indigo-400 hover:text-indigo-300 transition-colors"
     >
       #{rank.toLocaleString()}
     </Link>

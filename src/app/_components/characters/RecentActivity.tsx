@@ -127,7 +127,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
 
   return (
     <div className="mt-2 sm:mt-3 lg:mt-0">
-      <div className="bg-gray-900 border border-gray-800 rounded-md text-white flex flex-col max-h-[360px] lg:h-[236px] lg:max-h-[236px] overflow-hidden">
+      <div className="bg-gray-900 border border-gray-800 rounded-md text-white flex flex-col h-[236px] max-h-[236px] overflow-hidden">
         <div className="bg-gray-800/10 flex items-center py-1 px-3 sm:px-4 rounded-t-md shrink-0">
           <span className="text-xs font-medium">Recent Activity</span>
           <div className="ml-auto">
@@ -144,11 +144,11 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
         </div>
 
         {activeRows.length === 0 ? (
-          <div className="px-3 sm:px-4 py-6 text-center text-xs text-gray-500">
+          <div className="flex flex-1 items-center justify-center px-3 sm:px-4 py-6 text-center text-xs text-gray-500">
             No activity {period === "thisWeek" ? "this week" : "last week"}.
           </div>
         ) : (
-          <div className="min-h-0 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <div className={`sticky top-0 z-10 items-center py-0.5 px-3 sm:px-4 border-b border-gray-800 bg-gray-900 ${ACTIVITY_GRID_CLASS}`}>
               <span className="text-[10px] text-gray-500 tracking-wider flex-1 min-w-0">
                 Character
