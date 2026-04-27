@@ -80,10 +80,14 @@ function deriveLastWeek(character: CharacterData): Omit<ActivityRow, "id" | "nam
 }
 
 const STAT_LABELS = [
-  { key: "rp" as const, label: "RPs" },
-  { key: "deathBlows" as const, label: "DBs" },
-  { key: "soloKills" as const, label: "SKs" },
-  { key: "deaths" as const, label: "Deaths" },
+  {
+    key: "rp" as const,
+    label: "RPs",
+    widthClass: "w-[4.75rem] sm:w-24 pr-3 border-r border-gray-800/80",
+  },
+  { key: "deathBlows" as const, label: "DBs", widthClass: "w-9 sm:w-12" },
+  { key: "soloKills" as const, label: "SKs", widthClass: "w-9 sm:w-12" },
+  { key: "deaths" as const, label: "Deaths", widthClass: "w-12 sm:w-14" },
 ];
 
 const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
@@ -147,7 +151,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
               {STAT_LABELS.map((col) => (
                 <span
                   key={col.key}
-                  className="text-[10px] text-gray-500 tracking-wider w-10 sm:w-14 text-right shrink-0 whitespace-nowrap"
+                  className={`text-[10px] text-gray-500 tracking-wider text-right shrink-0 whitespace-nowrap ${col.widthClass}`}
                 >
                   {col.label}
                 </span>
@@ -176,7 +180,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
                     return (
                       <span
                         key={col.key}
-                        className={`w-10 sm:w-14 text-right tabular-nums whitespace-nowrap shrink-0 ${
+                        className={`text-right tabular-nums whitespace-nowrap shrink-0 ${col.widthClass} ${
                           col.key === "rp"
                             ? "text-xs font-semibold text-white"
                             : "text-xs text-gray-400"
