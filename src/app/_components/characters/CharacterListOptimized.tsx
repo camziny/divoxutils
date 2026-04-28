@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useCallback, memo, useTransition, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import CharacterTableHeader from "./CharacterTableHeader";
-import CharacterListSkeleton from "@/app/user/_components/CharacterListSkeleton";
 import { CharacterData } from "@/utils/character";
 import { sortCharacters } from "@/utils/sortCharacters";
 import { useUser } from "@clerk/nextjs";
@@ -34,6 +33,8 @@ import {
   shouldApplyRealmGridRankSort,
   shouldShowSaveLayoutHint,
 } from "@/utils/characterListLayoutUi";
+import AggregateStatistics from "./CharacterListSummary";
+import type { LeaderboardItem } from "@/server/leaderboard";
 
 const CharacterTile = dynamic(() => import("./CharacterTile"), {
   loading: () => <div className="h-16 animate-pulse bg-gray-800" />,
@@ -47,16 +48,12 @@ const DesktopCharacterCard = dynamic(() => import("./DesktopCharacterCard"), {
   loading: () => <div className="h-5 animate-pulse bg-gray-800 rounded" />,
 });
 
-const AggregateStatistics = dynamic(() => import("./CharacterListSummary"), {
-  loading: () => <div className="h-20 animate-pulse bg-gray-800" />,
-});
-
 type CharacterListProps = {
   characters: CharacterData[];
   searchParams: { [key: string]: string | string[] };
   showDelete?: boolean;
-  userId?: string;
   preferredDesktopLayout?: DesktopLayout | null;
+  initialLeaderboardData?: LeaderboardItem[];
 };
 
 const DESKTOP_LAYOUTS: DesktopLayout[] = ["table", "realm-grid"];
@@ -66,8 +63,8 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   characters,
   searchParams,
   showDelete = true,
-  userId,
   preferredDesktopLayout = null,
+  initialLeaderboardData,
 }) => {
   const { user } = useUser();
   const router = useRouter();
@@ -107,6 +104,8 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   const [columnSortDir, setColumnSortDir] = useState<"asc" | "desc">(initialColumnSortDir);
   const [showFilters, setShowFilters] = useState(initialClassFilter !== "all");
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardItem[]>(() => initialLeaderboardData ?? []);
+  const [leaderboardLoaded, setLeaderboardLoaded] = useState(() => initialLeaderboardData !== undefined);
   const deleteDialogRef = useRef<HTMLDivElement | null>(null);
   const deleteCancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const deleteSubmitButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -198,6 +197,50 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     () => sortCharacters([...filteredCharacters], effectiveSortKey),
     [filteredCharacters, effectiveSortKey]
   );
+  const rankClerkUserId = useMemo(
+    () => sortedCharacters[0]?.clerkUserId ?? null,
+    [sortedCharacters]
+  );
+
+  useEffect(() => {
+    if (initialLeaderboardData !== undefined) {
+      return;
+    }
+
+    let isActive = true;
+    const controller = new AbortController();
+
+    const loadLeaderboardData = async () => {
+      try {
+        const response = await fetch("/api/leaderboard", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          return;
+        }
+        const data = (await response.json()) as LeaderboardItem[];
+        if (isActive) {
+          setLeaderboardData(data);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+      } finally {
+        if (isActive) {
+          setLeaderboardLoaded(true);
+        }
+      }
+    };
+
+    loadLeaderboardData();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [initialLeaderboardData]);
 
   const handleSortChange = useCallback((option: string) => {
     if (!option) return;
@@ -650,8 +693,13 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         </div>
       )}
 
-      <div className="mt-4">
-        <AggregateStatistics characters={sortedCharacters} />
+      <div className="mt-4 w-full">
+        <AggregateStatistics
+          characters={sortedCharacters}
+          leaderboardData={leaderboardData}
+          rankClerkUserId={rankClerkUserId}
+          leaderboardLoaded={leaderboardLoaded}
+        />
       </div>
 
       {confirmDelete && (

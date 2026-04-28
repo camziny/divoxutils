@@ -248,11 +248,17 @@ test("all cron handlers enforce POST with 405 and Allow header", async () => {
 
 test("batched leaderboard preserves cursor update and success payload", async () => {
   let updatedCursor = -1;
+  let readCursorKey = "";
+  let updatedCursorKey = "";
   const updatedRows: Array<{ id: number; data: Record<string, unknown> }> = [];
   const handlers = createBatchedLeaderboardUpdateRouteHandlers({
     cronSecret: "secret",
-    getLastProcessedCharacterId: async () => 9,
-    updateLastProcessedCharacterId: async (lastId) => {
+    getLastProcessedCharacterId: async (key) => {
+      readCursorKey = key ?? "";
+      return 9;
+    },
+    updateLastProcessedCharacterId: async (lastId, key) => {
+      updatedCursorKey = key ?? "";
       updatedCursor = lastId;
     },
     findCharacters: async () => [
@@ -260,10 +266,12 @@ test("batched leaderboard preserves cursor update and success payload", async ()
         id: 10,
         webId: "w10",
         totalRealmPoints: 10,
+        totalKills: 11,
         totalSoloKills: 10,
         totalDeaths: 10,
         totalDeathBlows: 10,
         realmPointsLastWeek: 0,
+        killsLastWeek: 0,
         soloKillsLastWeek: 0,
         deathsLastWeek: 0,
         deathBlowsLastWeek: 0,
@@ -281,6 +289,7 @@ test("batched leaderboard preserves cursor update and success payload", async ()
               realm_points: 15,
               player_kills: {
                 total: {
+                  kills: 16,
                   solo_kills: 12,
                   deaths: 11,
                   death_blows: 14,
@@ -298,6 +307,8 @@ test("batched leaderboard preserves cursor update and success payload", async ()
   );
   assert.equal(response.status, 200);
   assert.equal(updatedCursor, 10);
+  assert.equal(readCursorKey, "lastProcessedCharacterId:weekly:2026-04-06");
+  assert.equal(updatedCursorKey, "lastProcessedCharacterId:weekly:2026-04-06");
   assert.equal(updatedRows.length, 1);
   assert.deepEqual(await response.json(), {
     message: "Batch update process completed",
@@ -612,6 +623,7 @@ test("update leaderboard stats returns success response", async () => {
             {
               webId: "w1",
               totalRealmPoints: 1,
+              totalKills: 1,
               totalSoloKills: 2,
               totalDeaths: 3,
               totalDeathBlows: 4,
@@ -626,7 +638,7 @@ test("update leaderboard stats returns success response", async () => {
             current: {
               realm_points: 2,
               player_kills: {
-                total: { solo_kills: 3, deaths: 4, death_blows: 5 },
+                total: { kills: 4, solo_kills: 3, deaths: 4, death_blows: 5 },
               },
             },
           },
@@ -650,6 +662,8 @@ test("update leaderboard stats clamps negative weekly deltas to zero", async () 
         data: {
           totalRealmPoints: number;
           realmPointsLastWeek: number;
+          totalKills: number;
+          killsLastWeek: number;
           totalSoloKills: number;
           soloKillsLastWeek: number;
           totalDeaths: number;
@@ -668,6 +682,7 @@ test("update leaderboard stats clamps negative weekly deltas to zero", async () 
             {
               webId: "w1",
               totalRealmPoints: 100,
+              totalKills: 80,
               totalSoloKills: 50,
               totalDeaths: 20,
               totalDeathBlows: 30,
@@ -684,7 +699,7 @@ test("update leaderboard stats clamps negative weekly deltas to zero", async () 
             current: {
               realm_points: 90,
               player_kills: {
-                total: { solo_kills: 40, deaths: 10, death_blows: 25 },
+                total: { kills: 75, solo_kills: 40, deaths: 10, death_blows: 25 },
               },
             },
           },
@@ -702,6 +717,8 @@ test("update leaderboard stats clamps negative weekly deltas to zero", async () 
     data: {
       totalRealmPoints: 90,
       realmPointsLastWeek: 0,
+      totalKills: 75,
+      killsLastWeek: 0,
       totalSoloKills: 40,
       soloKillsLastWeek: 0,
       totalDeaths: 10,
@@ -1000,6 +1017,11 @@ test("reset last week route includes death blow weekly reset field", () => {
   );
 
   assert.equal(
+    resetRouteSource.includes("{ killsLastWeek: { not: 0 } }"),
+    true
+  );
+  assert.equal(resetRouteSource.includes("killsLastWeek: 0"), true);
+  assert.equal(
     resetRouteSource.includes("{ deathBlowsLastWeek: { not: 0 } }"),
     true
   );
@@ -1027,6 +1049,10 @@ test("reset batch state route resets leaderboard and realm cursors", () => {
   );
   assert.equal(
     resetBatchRouteSource.includes("key: \"lastProcessedRealmCharacterId\""),
+    true
+  );
+  assert.equal(
+    resetBatchRouteSource.includes("startsWith: \"lastProcessedCharacterId:weekly:\""),
     true
   );
 });

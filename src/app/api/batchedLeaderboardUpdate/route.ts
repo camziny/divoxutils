@@ -7,9 +7,9 @@ import { createBatchedLeaderboardUpdateRouteHandlers } from "@/server/api/batche
 
 const handlers = createBatchedLeaderboardUpdateRouteHandlers({
   cronSecret: process.env.CRON_SECRET,
-  getLastProcessedCharacterId: () => getLastProcessedCharacterId(prisma),
-  updateLastProcessedCharacterId: (lastId: number) =>
-    updateLastProcessedCharacterId(prisma, lastId),
+  getLastProcessedCharacterId: (key?: string) => getLastProcessedCharacterId(prisma, key),
+  updateLastProcessedCharacterId: (lastId: number, key?: string) =>
+    updateLastProcessedCharacterId(prisma, lastId, key),
   findCharacters: ({ lastProcessedId, take, lastUpdatedLte }) =>
     prisma.character.findMany({
       where: {

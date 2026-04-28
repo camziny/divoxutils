@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mapUserCharactersToPublicPayload } from "../src/server/publicUserCharacters";
-import { formatRealmRankWithLevel, getRealmRankForPoints } from "../src/utils/character";
+import {
+  formatRealmRankWithLevel,
+  getRealmRankForPoints,
+} from "../src/utils/character";
 
 test("mapUserCharactersToPublicPayload maps character rows to public payload", () => {
   const clerkUserId = "user_abc";
@@ -16,10 +19,14 @@ test("mapUserCharactersToPublicPayload maps character rows to public payload", (
         previousCharacterName: null,
         totalRealmPoints: 1200,
         realmPointsLastWeek: 40,
+        totalKills: 6,
+        killsLastWeek: 2,
         totalSoloKills: 3,
         soloKillsLastWeek: 1,
         totalDeaths: 2,
         deathsLastWeek: 1,
+        totalDeathBlows: 2,
+        deathBlowsLastWeek: 1,
         lastUpdated: null,
         nameLastUpdated: null,
         heraldCharacterWebId: "w-5",
@@ -66,6 +73,8 @@ test("mapUserCharactersToPublicPayload maps character rows to public payload", (
     payload[0].formattedHeraldRealmPoints,
     formatRealmRankWithLevel(getRealmRankForPoints(1200))
   );
+  assert.equal(payload[0].totalKills, 6);
+  assert.equal(payload[0].killsLastWeek, 2);
   assert.equal(payload[0].player_kills.total.kills, 11);
 });
 
