@@ -13,6 +13,7 @@ import prisma from "../../../prisma/prismaClient";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import type { Metadata } from "next";
 import { isCharacterListLayout } from "@/server/characterListLayoutPreference";
+import { getLeaderboardData } from "@/server/leaderboard";
 
 export const metadata: Metadata = {
   title: "My Characters - divoxutils",
@@ -113,7 +114,7 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
     redirect("/sign-in?redirect_url=/user-characters");
   }
 
-  const [charactersResult, dbUser, identityLink] = await Promise.all([
+  const [charactersResult, dbUser, identityLink, initialLeaderboardData] = await Promise.all([
     fetchCharactersForUser(userId),
     prisma.user.findUnique({
       where: { clerkUserId: userId },
@@ -123,6 +124,7 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
       where: { clerkUserId: userId, provider: "discord", status: "linked" },
       select: { id: true },
     }),
+    getLeaderboardData(),
   ]);
 
   const supporterTier = dbUser?.supporterTier ?? 0;
@@ -159,10 +161,12 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
           <div className="mt-6">
             <Suspense fallback={<Loading />}>
               <CharacterListOptimized
+                key={userId}
                 characters={characters}
                 searchParams={resolvedSearchParams}
                 showDelete={true}
                 preferredDesktopLayout={preferredDesktopLayout}
+                initialLeaderboardData={initialLeaderboardData}
               />
             </Suspense>
           </div>

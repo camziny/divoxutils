@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useCallback, memo, useTransition, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import CharacterTableHeader from "./CharacterTableHeader";
-import CharacterListSkeleton from "@/app/user/_components/CharacterListSkeleton";
 import { CharacterData } from "@/utils/character";
 import { sortCharacters } from "@/utils/sortCharacters";
 import { useUser } from "@clerk/nextjs";
@@ -34,7 +33,8 @@ import {
   shouldApplyRealmGridRankSort,
   shouldShowSaveLayoutHint,
 } from "@/utils/characterListLayoutUi";
-import CharacterStatsSectionSkeleton from "./CharacterStatsSectionSkeleton";
+import AggregateStatistics from "./CharacterListSummary";
+import type { LeaderboardItem } from "@/server/leaderboard";
 
 const CharacterTile = dynamic(() => import("./CharacterTile"), {
   loading: () => <div className="h-16 animate-pulse bg-gray-800" />,
@@ -48,34 +48,12 @@ const DesktopCharacterCard = dynamic(() => import("./DesktopCharacterCard"), {
   loading: () => <div className="h-5 animate-pulse bg-gray-800 rounded" />,
 });
 
-const AggregateStatistics = dynamic(() => import("./CharacterListSummary"), {
-  loading: () => <CharacterStatsSectionSkeleton />,
-});
-
 type CharacterListProps = {
   characters: CharacterData[];
   searchParams: { [key: string]: string | string[] };
   showDelete?: boolean;
-  userId?: string;
   preferredDesktopLayout?: DesktopLayout | null;
-};
-
-type LeaderboardRankItem = {
-  userId: number;
-  clerkUserId: string;
-  totalRealmPoints: number;
-  realmPointsLastWeek: number;
-  realmPointsThisWeek: number;
-  totalKills: number;
-  killsLastWeek: number;
-  killsThisWeek: number;
-  totalSoloKills: number;
-  soloKillsLastWeek: number;
-  soloKillsThisWeek: number;
-  totalDeathBlows: number;
-  deathBlowsLastWeek: number;
-  deathBlowsThisWeek: number;
-  totalDeaths: number;
+  initialLeaderboardData?: LeaderboardItem[];
 };
 
 const DESKTOP_LAYOUTS: DesktopLayout[] = ["table", "realm-grid"];
@@ -85,8 +63,8 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   characters,
   searchParams,
   showDelete = true,
-  userId,
   preferredDesktopLayout = null,
+  initialLeaderboardData,
 }) => {
   const { user } = useUser();
   const router = useRouter();
@@ -126,7 +104,8 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   const [columnSortDir, setColumnSortDir] = useState<"asc" | "desc">(initialColumnSortDir);
   const [showFilters, setShowFilters] = useState(initialClassFilter !== "all");
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardRankItem[]>([]);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardItem[]>(() => initialLeaderboardData ?? []);
+  const [leaderboardLoaded, setLeaderboardLoaded] = useState(() => initialLeaderboardData !== undefined);
   const deleteDialogRef = useRef<HTMLDivElement | null>(null);
   const deleteCancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const deleteSubmitButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -224,6 +203,10 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   );
 
   useEffect(() => {
+    if (initialLeaderboardData !== undefined) {
+      return;
+    }
+
     let isActive = true;
     const controller = new AbortController();
 
@@ -236,13 +219,17 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         if (!response.ok) {
           return;
         }
-        const data = (await response.json()) as LeaderboardRankItem[];
+        const data = (await response.json()) as LeaderboardItem[];
         if (isActive) {
           setLeaderboardData(data);
         }
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           return;
+        }
+      } finally {
+        if (isActive) {
+          setLeaderboardLoaded(true);
         }
       }
     };
@@ -253,7 +240,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       isActive = false;
       controller.abort();
     };
-  }, []);
+  }, [initialLeaderboardData]);
 
   const handleSortChange = useCallback((option: string) => {
     if (!option) return;
@@ -711,6 +698,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
           characters={sortedCharacters}
           leaderboardData={leaderboardData}
           rankClerkUserId={rankClerkUserId}
+          leaderboardLoaded={leaderboardLoaded}
         />
       </div>
 

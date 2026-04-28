@@ -6,6 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { getRealmSurfaceClass } from "./characterTileTheme";
 import RecentActivity from "./RecentActivity";
 import type { CharacterData } from "@/utils/character";
+import type { LeaderboardItem } from "@/server/leaderboard";
 
 interface RealmStats {
   kills: number;
@@ -23,24 +24,6 @@ interface AggregateStats {
   Midgard: RealmStats;
   Total: RealmStats;
   [key: string]: RealmStats;
-}
-
-interface LeaderboardItem {
-  userId: number;
-  clerkUserId: string;
-  totalRealmPoints: number;
-  realmPointsLastWeek: number;
-  realmPointsThisWeek: number;
-  totalKills: number;
-  killsLastWeek: number;
-  killsThisWeek: number;
-  totalSoloKills: number;
-  soloKillsLastWeek: number;
-  soloKillsThisWeek: number;
-  totalDeathBlows: number;
-  deathBlowsLastWeek: number;
-  deathBlowsThisWeek: number;
-  totalDeaths: number;
 }
 
 type Metric = "realmPoints" | "kills" | "soloKills" | "deathBlows" | "deaths";
@@ -94,6 +77,15 @@ function InlineRank({ rank, metric, period }: { rank: number | null; metric: Met
     >
       #{rank.toLocaleString()}
     </Link>
+  );
+}
+
+function RankColumnSkeleton() {
+  return (
+    <span
+      className="inline-block h-2.5 w-7 shrink-0 animate-pulse rounded bg-gray-600/60"
+      aria-hidden="true"
+    />
   );
 }
 
@@ -169,10 +161,12 @@ const AggregateStatistics: React.FC<{
   characters: CharacterData[];
   leaderboardData: LeaderboardItem[];
   rankClerkUserId: string | null;
+  leaderboardLoaded?: boolean;
 }> = ({
   characters,
   leaderboardData,
   rankClerkUserId,
+  leaderboardLoaded = true,
 }) => {
   const [selectedStatCard, setSelectedStatCard] = React.useState<StatCardOption>("Total");
   const aggregateStats: AggregateStats = initialAggregateStats();
@@ -286,6 +280,10 @@ const AggregateStatistics: React.FC<{
 
   const hasAnyRank = Object.values(totalRanks).some((r) => r !== null);
 
+  const rankColumnPending =
+    Boolean(rankClerkUserId) && !leaderboardLoaded;
+  const showTotalRankColumn = rankColumnPending || hasAnyRank;
+
   const renderRealmCard = (realm: (typeof REALM_NAMES)[number]) => (
     <div
       key={realm}
@@ -339,13 +337,16 @@ const AggregateStatistics: React.FC<{
         className={`${getRealmSurfaceClass("Total")} ${STAT_CARD_HEADER_BAR_CLASS} w-full justify-between gap-2`}
       >
         <span className="text-xs font-medium leading-none">Total</span>
-        {hasAnyRank ? (
+        {showTotalRankColumn ? (
           <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-500 tabular-nums leading-none">
             Rank
           </span>
         ) : null}
       </div>
-      <div className={STAT_CARD_BODY_CLASS}>
+      <div
+        className={STAT_CARD_BODY_CLASS}
+        aria-busy={rankColumnPending ? true : undefined}
+      >
         {PRIMARY_ROWS.map((row) => (
           <div key={row.key} className={STAT_CARD_ROW_CLASS}>
             <span className={STAT_CARD_LABEL_CLASS}>
@@ -353,13 +354,17 @@ const AggregateStatistics: React.FC<{
             </span>
             <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
               <div className="min-w-0 shrink-0">{combatPrimaryMetricCell(row.key, aggregateStats.Total)}</div>
-              {hasAnyRank && (
-                <span className="flex w-10 shrink-0 justify-end">
-                  <InlineRank
-                    rank={totalRanks[row.key]}
-                    metric={METRIC_MAP[row.key].metric}
-                    period={METRIC_MAP[row.key].period}
-                  />
+              {showTotalRankColumn && (
+                <span className="flex h-[12px] w-10 shrink-0 items-center justify-end">
+                  {rankColumnPending ? (
+                    <RankColumnSkeleton />
+                  ) : (
+                    <InlineRank
+                      rank={totalRanks[row.key]}
+                      metric={METRIC_MAP[row.key].metric}
+                      period={METRIC_MAP[row.key].period}
+                    />
+                  )}
                 </span>
               )}
             </div>
@@ -374,13 +379,17 @@ const AggregateStatistics: React.FC<{
               <div className="shrink-0">
                 <span className={STAT_VALUE_NUM_CLASS}>{formatNumber(aggregateStats.Total.realmPoints)}</span>
               </div>
-              {hasAnyRank && (
-                <span className="flex w-10 shrink-0 justify-end">
-                  <InlineRank
-                    rank={totalRanks.realmPoints}
-                    metric="realmPoints"
-                    period="total"
-                  />
+              {showTotalRankColumn && (
+                <span className="flex h-[12px] w-10 shrink-0 items-center justify-end">
+                  {rankColumnPending ? (
+                    <RankColumnSkeleton />
+                  ) : (
+                    <InlineRank
+                      rank={totalRanks.realmPoints}
+                      metric="realmPoints"
+                      period="total"
+                    />
+                  )}
                 </span>
               )}
             </div>
@@ -392,13 +401,17 @@ const AggregateStatistics: React.FC<{
                 <span className={STAT_RP_SUBROW_VALUE_CLASS}>
                   {formatNumber(aggregateStats.Total.realmPointsLastWeek)}
                 </span>
-                {hasAnyRank && (
-                  <span className="flex w-10 shrink-0 justify-end">
-                    <InlineRank
-                      rank={totalRanks.realmPointsLastWeek}
-                      metric="realmPoints"
-                      period="lastWeek"
-                    />
+                {showTotalRankColumn && (
+                  <span className="flex h-[12px] w-10 shrink-0 items-center justify-end">
+                    {rankColumnPending ? (
+                      <RankColumnSkeleton />
+                    ) : (
+                      <InlineRank
+                        rank={totalRanks.realmPointsLastWeek}
+                        metric="realmPoints"
+                        period="lastWeek"
+                      />
+                    )}
                   </span>
                 )}
               </div>
@@ -409,13 +422,17 @@ const AggregateStatistics: React.FC<{
                 <span className={STAT_RP_SUBROW_VALUE_CLASS}>
                   {formatNumber(aggregateStats.Total.realmPointsThisWeek)}
                 </span>
-                {hasAnyRank && (
-                  <span className="flex w-10 shrink-0 justify-end">
-                    <InlineRank
-                      rank={totalRanks.realmPointsThisWeek}
-                      metric="realmPoints"
-                      period="thisWeek"
-                    />
+                {showTotalRankColumn && (
+                  <span className="flex h-[12px] w-10 shrink-0 items-center justify-end">
+                    {rankColumnPending ? (
+                      <RankColumnSkeleton />
+                    ) : (
+                      <InlineRank
+                        rank={totalRanks.realmPointsThisWeek}
+                        metric="realmPoints"
+                        period="thisWeek"
+                      />
+                    )}
                   </span>
                 )}
               </div>

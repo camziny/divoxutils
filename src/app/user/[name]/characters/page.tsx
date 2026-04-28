@@ -14,6 +14,7 @@ import {
   getPublicCharactersForUser,
   getPublicUserProfileByName,
 } from "@/server/publicUserCharacters";
+import { getLeaderboardData } from "@/server/leaderboard";
 
 const CharacterListOptimized = dynamic(
   () => import("@/app/_components/characters/CharacterListOptimized"),
@@ -87,7 +88,7 @@ const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => 
 
   const clerkUserId = user.clerkUserId;
 
-  const [characters, identityLink, preferredDesktopLayout] = await Promise.all([
+  const [characters, identityLink, preferredDesktopLayout, initialLeaderboardData] = await Promise.all([
     getPublicCharactersForUser(clerkUserId),
     prisma.userIdentityLink.findFirst({
       where: {
@@ -98,6 +99,7 @@ const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => 
       select: { id: true },
     }),
     getCurrentUserCharacterListLayoutPreference(),
+    getLeaderboardData(),
   ]);
 
   const draftProfileHref = identityLink
@@ -121,10 +123,12 @@ const CharactersPage = async ({ params, searchParams }: CharactersPageProps) => 
           <PageReload />
           <Suspense fallback={<Loading />}>
             <CharacterListOptimized
+              key={clerkUserId}
               characters={characters}
               searchParams={resolvedSearchParams}
               showDelete={false}
               preferredDesktopLayout={preferredDesktopLayout}
+              initialLeaderboardData={initialLeaderboardData}
             />
           </Suspense>
         </div>

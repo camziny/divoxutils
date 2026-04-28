@@ -7,6 +7,7 @@ import prisma from "../../../../../prisma/prismaClient";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import DraftProfileButton from "@/app/user/_components/DraftProfileButton";
 import { getCurrentUserCharacterListLayoutPreference } from "@/server/characterListLayoutPreference";
+import { getLeaderboardData } from "@/server/leaderboard";
 
 const CharacterListOptimized = dynamic(
   () => import("@/app/_components/characters/CharacterListOptimized"),
@@ -47,7 +48,7 @@ export default async function CharactersPage({
   const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as Record<string, string | string[]>;
   const userId = resolvedParams.userId as string;
 
-  const [userData, identityLink, preferredDesktopLayout] = await Promise.all([
+  const [userData, identityLink, preferredDesktopLayout, initialLeaderboardData] = await Promise.all([
     prisma.user.findUnique({
       where: { clerkUserId: userId },
       select: { name: true },
@@ -61,6 +62,7 @@ export default async function CharactersPage({
       select: { id: true },
     }),
     getCurrentUserCharacterListLayoutPreference(),
+    getLeaderboardData(),
   ]);
 
   if (!userData) {
@@ -90,10 +92,12 @@ export default async function CharactersPage({
           <PageReload />
           <Suspense fallback={<Loading />}>
             <CharacterListOptimized
+              key={userId}
               characters={characters}
               searchParams={resolvedSearchParams}
               showDelete={false}
               preferredDesktopLayout={preferredDesktopLayout}
+              initialLeaderboardData={initialLeaderboardData}
             />
           </Suspense>
         </div>
