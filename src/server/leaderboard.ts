@@ -88,25 +88,21 @@ export const aggregateLeaderboardData = (
 
       processedCharacterIds.add(character.id);
 
-      const hasKillsBaseline =
-        character.totalKills > 0 ||
-        character.killsLastWeek > 0 ||
-        (character.heraldTotalKills ?? 0) === 0;
-      const effectiveTotalKills = hasKillsBaseline
-        ? character.totalKills
-        : (character.heraldTotalKills ?? 0);
-      const hasDeathBlowsBaseline =
-        character.totalDeathBlows > 0 ||
-        character.deathBlowsLastWeek > 0 ||
-        (character.heraldTotalDeathBlows ?? 0) === 0;
-      const effectiveTotalDeathBlows = hasDeathBlowsBaseline
-        ? character.totalDeathBlows
-        : (character.heraldTotalDeathBlows ?? 0);
+      const effectiveRealmPoints =
+        character.heraldRealmPoints ?? character.totalRealmPoints;
+      const effectiveTotalKills =
+        character.heraldTotalKills ?? character.totalKills;
+      const effectiveTotalSoloKills =
+        character.heraldTotalSoloKills ?? character.totalSoloKills;
+      const effectiveTotalDeaths =
+        character.heraldTotalDeaths ?? character.totalDeaths;
+      const effectiveTotalDeathBlows =
+        character.heraldTotalDeathBlows ?? character.totalDeathBlows;
 
-      totalPoints += character.totalRealmPoints;
+      totalPoints += effectiveRealmPoints;
       totalKills += effectiveTotalKills;
-      totalSoloKills += character.totalSoloKills;
-      totalDeaths += character.totalDeaths;
+      totalSoloKills += effectiveTotalSoloKills;
+      totalDeaths += effectiveTotalDeaths;
       totalDeathBlows += effectiveTotalDeathBlows;
 
       if (character.realmPointsLastWeek !== character.totalRealmPoints) {
@@ -115,10 +111,10 @@ export const aggregateLeaderboardData = (
       if (character.killsLastWeek !== effectiveTotalKills) {
         killsLastWeek += character.killsLastWeek;
       }
-      if (character.soloKillsLastWeek !== character.totalSoloKills) {
+      if (character.soloKillsLastWeek !== effectiveTotalSoloKills) {
         soloKillsLastWeek += character.soloKillsLastWeek;
       }
-      if (character.deathsLastWeek !== character.totalDeaths) {
+      if (character.deathsLastWeek !== effectiveTotalDeaths) {
         deathsLastWeek += character.deathsLastWeek;
       }
       if (character.deathBlowsLastWeek !== effectiveTotalDeathBlows) {
@@ -136,7 +132,10 @@ export const aggregateLeaderboardData = (
         accumulatedRealmPointsThisWeek +=
           character.heraldRealmPoints - character.totalRealmPoints;
       }
-      if (character.heraldTotalKills !== null && hasKillsBaseline) {
+      if (
+        character.heraldTotalKills !== null &&
+        character.totalKills !== null
+      ) {
         accumulatedKillsThisWeek +=
           character.heraldTotalKills - character.totalKills;
       }
@@ -154,7 +153,10 @@ export const aggregateLeaderboardData = (
         accumulatedSoloKillsThisWeek +=
           character.heraldTotalSoloKills - character.totalSoloKills;
       }
-      if (character.heraldTotalDeathBlows !== null && hasDeathBlowsBaseline) {
+      if (
+        character.heraldTotalDeathBlows !== null &&
+        character.totalDeathBlows !== null
+      ) {
         accumulatedDeathBlowsThisWeek +=
           character.heraldTotalDeathBlows - character.totalDeathBlows;
       }

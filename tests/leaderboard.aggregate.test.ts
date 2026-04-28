@@ -66,8 +66,8 @@ test("aggregateLeaderboardData aggregates totals and sorts descending", () => {
   const result = aggregateLeaderboardData(data);
 
   assert.equal(result[0].userName, "Alice");
-  assert.equal(result[0].totalRealmPoints, 1000);
-  assert.equal(result[0].totalKills, 120);
+  assert.equal(result[0].totalRealmPoints, 1200);
+  assert.equal(result[0].totalKills, 125);
   assert.equal(result[0].killsLastWeek, 12);
   assert.equal(result[0].killsThisWeek, 5);
   assert.equal(result[0].realmPointsThisWeek, 200);
@@ -132,7 +132,7 @@ test("aggregateLeaderboardData deduplicates repeated character ids and clamps we
   const result = aggregateLeaderboardData(data);
 
   assert.equal(result.length, 1);
-  assert.equal(result[0].totalRealmPoints, 1000);
+  assert.equal(result[0].totalRealmPoints, 900);
   assert.equal(result[0].killsThisWeek, 0);
   assert.equal(result[0].realmPointsThisWeek, 0);
   assert.equal(result[0].deathsThisWeek, 0);
