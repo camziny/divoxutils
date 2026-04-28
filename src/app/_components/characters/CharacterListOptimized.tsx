@@ -75,6 +75,7 @@ type LeaderboardRankItem = {
   totalDeathBlows: number;
   deathBlowsLastWeek: number;
   deathBlowsThisWeek: number;
+  totalDeaths: number;
 };
 
 const DESKTOP_LAYOUTS: DesktopLayout[] = ["table", "realm-grid"];

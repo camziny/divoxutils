@@ -11,6 +11,7 @@ interface RealmStats {
   kills: number;
   death_blows: number;
   solo_kills: number;
+  deaths: number;
   realmPoints: number;
   realmPointsLastWeek: number;
   realmPointsThisWeek: number;
@@ -39,9 +40,10 @@ interface LeaderboardItem {
   totalDeathBlows: number;
   deathBlowsLastWeek: number;
   deathBlowsThisWeek: number;
+  totalDeaths: number;
 }
 
-type Metric = "realmPoints" | "kills" | "soloKills" | "deathBlows";
+type Metric = "realmPoints" | "kills" | "soloKills" | "deathBlows" | "deaths";
 type Period = "total" | "lastWeek" | "thisWeek";
 type StatCardOption = "Total" | "Albion" | "Midgard" | "Hibernia";
 
@@ -52,6 +54,7 @@ const METRIC_MAP: Record<keyof RealmStats, { metric: Metric; period: Period }> =
   kills: { metric: "kills", period: "total" },
   death_blows: { metric: "deathBlows", period: "total" },
   solo_kills: { metric: "soloKills", period: "total" },
+  deaths: { metric: "deaths", period: "total" },
   realmPoints: { metric: "realmPoints", period: "total" },
   realmPointsLastWeek: { metric: "realmPoints", period: "lastWeek" },
   realmPointsThisWeek: { metric: "realmPoints", period: "thisWeek" },
@@ -61,6 +64,7 @@ const initialRealmStats = (): RealmStats => ({
   kills: 0,
   death_blows: 0,
   solo_kills: 0,
+  deaths: 0,
   realmPoints: 0,
   realmPointsLastWeek: 0,
   realmPointsThisWeek: 0,
@@ -101,7 +105,7 @@ function formatPercentPart(numerator: number, denominator: number) {
 }
 
 type CombatPrimaryRow = {
-  key: "kills" | "death_blows" | "solo_kills";
+  key: "kills" | "death_blows" | "solo_kills" | "deaths";
   label: string;
   compactLabel?: string;
 };
@@ -110,6 +114,7 @@ const PRIMARY_ROWS: CombatPrimaryRow[] = [
   { key: "kills", label: "Kills" },
   { key: "death_blows", label: "Death\u00A0Blows", compactLabel: "DBs" },
   { key: "solo_kills", label: "Solo Kills", compactLabel: "SKs" },
+  { key: "deaths", label: "Deaths" },
 ];
 
 function CombatStatLabel({ row }: { row: CombatPrimaryRow }) {
@@ -177,7 +182,8 @@ const AggregateStatistics: React.FC<{
     const playerKills = character.player_kills?.total || {
       kills: character.heraldTotalKills || 0,
       death_blows: character.heraldTotalDeathBlows || 0,
-      solo_kills: character.heraldTotalSoloKills || 0
+      solo_kills: character.heraldTotalSoloKills || 0,
+      deaths: character.heraldTotalDeaths || 0,
     };
 
     const realmPoints = character.heraldRealmPoints || 0;
@@ -189,6 +195,7 @@ const AggregateStatistics: React.FC<{
       aggregateStats[realm].kills += playerKills.kills;
       aggregateStats[realm].death_blows += playerKills.death_blows;
       aggregateStats[realm].solo_kills += playerKills.solo_kills;
+      aggregateStats[realm].deaths += playerKills.deaths;
       aggregateStats[realm].realmPoints += realmPoints;
       aggregateStats[realm].realmPointsLastWeek += realmPointsLastWeek;
       aggregateStats[realm].realmPointsThisWeek += realmPointsThisWeek;
@@ -197,6 +204,7 @@ const AggregateStatistics: React.FC<{
     aggregateStats.Total.kills += playerKills.kills;
     aggregateStats.Total.death_blows += playerKills.death_blows;
     aggregateStats.Total.solo_kills += playerKills.solo_kills;
+    aggregateStats.Total.deaths += playerKills.deaths;
     aggregateStats.Total.realmPoints += realmPoints;
     aggregateStats.Total.realmPointsLastWeek += realmPointsLastWeek;
     aggregateStats.Total.realmPointsThisWeek += realmPointsThisWeek;
@@ -219,13 +227,15 @@ const AggregateStatistics: React.FC<{
     const screenReaderValue =
       rowKey === "kills"
         ? `${countStr} total kills`
-        : rowKey === "death_blows"
-          ? mixPct === "N/A"
-            ? `${countStr}. Share of kills unavailable.`
-            : `${countStr}. ${mixPct} of kills are death blows.`
-          : mixPct === "N/A"
-            ? `${countStr}. Share of kills unavailable.`
-            : `${countStr}. ${mixPct} of kills are solo kills.`;
+        : rowKey === "deaths"
+          ? `${countStr} total deaths`
+          : rowKey === "death_blows"
+            ? mixPct === "N/A"
+              ? `${countStr}. Share of kills unavailable.`
+              : `${countStr}. ${mixPct} of kills are death blows.`
+            : mixPct === "N/A"
+              ? `${countStr}. Share of kills unavailable.`
+              : `${countStr}. ${mixPct} of kills are solo kills.`;
 
     return (
       <>
@@ -267,6 +277,7 @@ const AggregateStatistics: React.FC<{
       kills: getRank("kills", "total"),
       death_blows: getRank("deathBlows", "total"),
       solo_kills: getRank("soloKills", "total"),
+      deaths: getRank("deaths", "total"),
       realmPoints: getRank("realmPoints", "total"),
       realmPointsLastWeek: getRank("realmPoints", "lastWeek"),
       realmPointsThisWeek: getRank("realmPoints", "thisWeek"),
@@ -284,8 +295,8 @@ const AggregateStatistics: React.FC<{
         <span className="text-xs font-medium leading-none">{realm}</span>
       </div>
       <div className={STAT_CARD_BODY_CLASS}>
-        {PRIMARY_ROWS.map((row, i) => (
-          <div key={i} className={STAT_CARD_ROW_CLASS}>
+        {PRIMARY_ROWS.map((row) => (
+          <div key={row.key} className={STAT_CARD_ROW_CLASS}>
             <span className={STAT_CARD_LABEL_CLASS}>
               <CombatStatLabel row={row} />
             </span>
@@ -335,8 +346,8 @@ const AggregateStatistics: React.FC<{
         ) : null}
       </div>
       <div className={STAT_CARD_BODY_CLASS}>
-        {PRIMARY_ROWS.map((row, i) => (
-          <div key={i} className={STAT_CARD_ROW_CLASS}>
+        {PRIMARY_ROWS.map((row) => (
+          <div key={row.key} className={STAT_CARD_ROW_CLASS}>
             <span className={STAT_CARD_LABEL_CLASS}>
               <CombatStatLabel row={row} />
             </span>
