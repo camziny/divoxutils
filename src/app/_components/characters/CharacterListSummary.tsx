@@ -136,10 +136,29 @@ function RealmPointsStatLabel() {
 }
 
 const STAT_VALUE_NUM_CLASS =
-  "shrink-0 text-right text-xs font-semibold tabular-nums tracking-tight text-white";
+  "shrink-0 text-right text-xs font-semibold tabular-nums tracking-tight text-white leading-none";
+
+const STAT_CARD_BODY_CLASS = "divide-y divide-gray-800 px-3 sm:px-4 py-1";
+
+const STAT_CARD_ROW_CLASS =
+  "flex w-full min-w-0 items-center gap-2 py-1.5 sm:gap-3 hover:bg-gray-800/40 rounded-sm transition-colors";
+
+const STAT_CARD_LABEL_CLASS = "min-w-0 flex-1 text-xs text-gray-400";
+
+const STAT_RP_BLOCK_CLASS = "py-1.5 hover:bg-gray-800/40 rounded-sm transition-colors";
+
+const STAT_RP_NESTED_BLOCK_CLASS = "mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800";
+
+const STAT_RP_SUBROW_LABEL_CLASS = "text-[11px] text-gray-500 min-w-0 truncate";
+
+const STAT_RP_SUBROW_VALUE_CLASS =
+  "text-[11px] font-semibold text-gray-300 tabular-nums text-right shrink-0 leading-none";
 
 const STAT_COMBAT_VISUAL_VALUES_CLASS =
   "flex shrink-0 items-baseline justify-end gap-x-0.5 tabular-nums leading-none";
+
+const STAT_CARD_HEADER_BAR_CLASS =
+  "flex min-h-9 items-center px-3 py-1.5 sm:px-4 rounded-t-md";
 
 const AggregateStatistics: React.FC<{
   characters: CharacterData[];
@@ -261,24 +280,21 @@ const AggregateStatistics: React.FC<{
       key={realm}
       className="bg-gray-900 border border-gray-800 rounded-md text-white min-w-0"
     >
-      <div className={`${getRealmSurfaceClass(realm)} py-1 px-3 sm:px-4 rounded-t-md`}>
-        <span className="text-xs font-medium">{realm}</span>
+      <div className={`${getRealmSurfaceClass(realm)} ${STAT_CARD_HEADER_BAR_CLASS}`}>
+        <span className="text-xs font-medium leading-none">{realm}</span>
       </div>
-      <div className="divide-y divide-gray-800 px-3 sm:px-4 py-1">
+      <div className={STAT_CARD_BODY_CLASS}>
         {PRIMARY_ROWS.map((row, i) => (
-          <div
-            key={i}
-            className="flex w-full min-w-0 items-center gap-2 py-1.5 hover:bg-gray-800/40 rounded-sm transition-colors"
-          >
-            <span className="min-w-0 flex-1 text-xs text-gray-400">
+          <div key={i} className={STAT_CARD_ROW_CLASS}>
+            <span className={STAT_CARD_LABEL_CLASS}>
               <CombatStatLabel row={row} />
             </span>
             <div className="shrink-0">{combatPrimaryMetricCell(row.key, aggregateStats[realm])}</div>
           </div>
         ))}
-        <div className="py-1.5 hover:bg-gray-800/40 rounded-sm transition-colors">
+        <div className={STAT_RP_BLOCK_CLASS}>
           <div className="flex w-full min-w-0 items-center gap-2">
-            <span className="min-w-0 flex-1 text-xs text-gray-400">
+            <span className={STAT_CARD_LABEL_CLASS}>
               <RealmPointsStatLabel />
             </span>
             <div className="shrink-0">
@@ -287,16 +303,16 @@ const AggregateStatistics: React.FC<{
               </span>
             </div>
           </div>
-          <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
+          <div className={STAT_RP_NESTED_BLOCK_CLASS}>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-gray-500 min-w-0 truncate">Last Week</span>
-              <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums text-right shrink-0">
+              <span className={STAT_RP_SUBROW_LABEL_CLASS}>Last Week</span>
+              <span className={`${STAT_RP_SUBROW_VALUE_CLASS} ml-auto`}>
                 {formatNumber(aggregateStats[realm].realmPointsLastWeek)}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-gray-500 min-w-0 truncate">This Week</span>
-              <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums text-right shrink-0">
+              <span className={STAT_RP_SUBROW_LABEL_CLASS}>This Week</span>
+              <span className={`${STAT_RP_SUBROW_VALUE_CLASS} ml-auto`}>
                 {formatNumber(aggregateStats[realm].realmPointsThisWeek)}
               </span>
             </div>
@@ -308,16 +324,20 @@ const AggregateStatistics: React.FC<{
 
   const renderTotalCard = (className = "") => (
     <div className={`bg-gray-900 border border-gray-800 rounded-md text-white overflow-hidden ${className}`}>
-      <div className={`${getRealmSurfaceClass("Total")} flex items-center py-1 px-3 sm:px-4 rounded-t-md`}>
-        <span className="text-xs font-medium">Total</span>
+      <div
+        className={`${getRealmSurfaceClass("Total")} ${STAT_CARD_HEADER_BAR_CLASS} w-full justify-between gap-2`}
+      >
+        <span className="text-xs font-medium leading-none">Total</span>
+        {hasAnyRank ? (
+          <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-500 tabular-nums leading-none">
+            Rank
+          </span>
+        ) : null}
       </div>
-      <div className="divide-y divide-gray-800 py-1">
+      <div className={STAT_CARD_BODY_CLASS}>
         {PRIMARY_ROWS.map((row, i) => (
-          <div
-            key={i}
-            className="flex w-full min-w-0 items-center gap-2 py-1.5 px-3 sm:px-4 hover:bg-gray-800/40 rounded-sm transition-colors sm:gap-3"
-          >
-            <span className="min-w-0 shrink-0 whitespace-nowrap text-xs text-gray-400">
+          <div key={i} className={STAT_CARD_ROW_CLASS}>
+            <span className={STAT_CARD_LABEL_CLASS}>
               <CombatStatLabel row={row} />
             </span>
             <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
@@ -334,15 +354,15 @@ const AggregateStatistics: React.FC<{
             </div>
           </div>
         ))}
-        <div className="py-1.5 px-3 sm:px-4 hover:bg-gray-800/40 rounded-sm transition-colors">
-          <div className="flex w-full min-w-0 items-center gap-2 sm:gap-3">
-            <span className="min-w-0 shrink-0 whitespace-nowrap text-xs text-gray-400">
+        <div className={STAT_RP_BLOCK_CLASS}>
+          <div className="flex w-full min-w-0 items-center gap-2">
+            <span className={STAT_CARD_LABEL_CLASS}>
               <RealmPointsStatLabel />
             </span>
-            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 tabular-nums sm:gap-1.5">
-              <span className="text-right text-xs font-semibold text-white tabular-nums leading-none">
-                {formatNumber(aggregateStats.Total.realmPoints)}
-              </span>
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+              <div className="shrink-0">
+                <span className={STAT_VALUE_NUM_CLASS}>{formatNumber(aggregateStats.Total.realmPoints)}</span>
+              </div>
               {hasAnyRank && (
                 <span className="flex w-10 shrink-0 justify-end">
                   <InlineRank
@@ -354,11 +374,11 @@ const AggregateStatistics: React.FC<{
               )}
             </div>
           </div>
-          <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
-            <div className="flex items-center gap-3">
-              <span className="shrink-0 text-[11px] text-gray-500">Last Week</span>
-              <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 tabular-nums">
-                <span className="text-right text-[11px] font-semibold text-gray-300 leading-none">
+          <div className={STAT_RP_NESTED_BLOCK_CLASS}>
+            <div className="flex items-center gap-2">
+              <span className={STAT_RP_SUBROW_LABEL_CLASS}>Last Week</span>
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+                <span className={STAT_RP_SUBROW_VALUE_CLASS}>
                   {formatNumber(aggregateStats.Total.realmPointsLastWeek)}
                 </span>
                 {hasAnyRank && (
@@ -372,10 +392,10 @@ const AggregateStatistics: React.FC<{
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="shrink-0 text-[11px] text-gray-500">This Week</span>
-              <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 tabular-nums">
-                <span className="text-right text-[11px] font-semibold text-gray-300 leading-none">
+            <div className="flex items-center gap-2">
+              <span className={STAT_RP_SUBROW_LABEL_CLASS}>This Week</span>
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+                <span className={STAT_RP_SUBROW_VALUE_CLASS}>
                   {formatNumber(aggregateStats.Total.realmPointsThisWeek)}
                 </span>
                 {hasAnyRank && (
