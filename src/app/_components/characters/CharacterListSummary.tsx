@@ -86,18 +86,60 @@ function InlineRank({ rank, metric, period }: { rank: number | null; metric: Met
   return (
     <Link
       href={getLeaderboardHref(metric, period, rank)}
-      className="inline-flex h-4 items-center justify-end text-[10px] leading-none tabular-nums text-indigo-400 hover:text-indigo-300 transition-colors"
+      className="text-[10px] leading-none tabular-nums text-indigo-400 hover:text-indigo-300 transition-colors"
     >
       #{rank.toLocaleString()}
     </Link>
   );
 }
 
-const PRIMARY_ROWS: Array<{ label: string; key: keyof RealmStats }> = [
-  { label: "Kills", key: "kills" },
-  { label: "Death\u00A0Blows", key: "death_blows" },
-  { label: "Solo Kills", key: "solo_kills" },
+function formatPercentPart(numerator: number, denominator: number) {
+  if (denominator <= 0 || Number.isNaN(numerator) || Number.isNaN(denominator)) {
+    return "N/A";
+  }
+  return `${((numerator / denominator) * 100).toFixed(2)}%`;
+}
+
+type CombatPrimaryRow = {
+  key: "kills" | "death_blows" | "solo_kills";
+  label: string;
+  compactLabel?: string;
+};
+
+const PRIMARY_ROWS: CombatPrimaryRow[] = [
+  { key: "kills", label: "Kills" },
+  { key: "death_blows", label: "Death\u00A0Blows", compactLabel: "DBs" },
+  { key: "solo_kills", label: "Solo Kills", compactLabel: "SKs" },
 ];
+
+function CombatStatLabel({ row }: { row: CombatPrimaryRow }) {
+  if (row.compactLabel) {
+    return (
+      <>
+        <span className="inline sm:hidden">{row.label}</span>
+        <span className="hidden md:inline">{row.label}</span>
+        <span className="hidden whitespace-nowrap sm:inline md:hidden">{row.compactLabel}</span>
+      </>
+    );
+  }
+  return <span>{row.label}</span>;
+}
+
+function RealmPointsStatLabel() {
+  return (
+    <>
+      <span className="inline sm:hidden">Realm Points</span>
+      <span className="hidden md:inline">Realm Points</span>
+      <span className="hidden whitespace-nowrap sm:inline md:hidden">RPs</span>
+    </>
+  );
+}
+
+const STAT_VALUE_NUM_CLASS =
+  "shrink-0 text-right text-xs font-semibold tabular-nums tracking-tight text-white";
+
+const STAT_COMBAT_VISUAL_VALUES_CLASS =
+  "flex shrink-0 items-baseline justify-end gap-x-0.5 tabular-nums leading-none";
 
 const AggregateStatistics: React.FC<{
   characters: CharacterData[];
@@ -146,6 +188,44 @@ const AggregateStatistics: React.FC<{
     return num.toLocaleString();
   };
 
+  const combatPrimaryMetricCell = (rowKey: keyof RealmStats, stats: RealmStats) => {
+    const mixPct =
+      rowKey === "death_blows"
+        ? formatPercentPart(stats.death_blows, stats.kills)
+        : rowKey === "solo_kills"
+          ? formatPercentPart(stats.solo_kills, stats.kills)
+          : null;
+
+    const countStr = formatNumber(stats[rowKey]);
+    const screenReaderValue =
+      rowKey === "kills"
+        ? `${countStr} total kills`
+        : rowKey === "death_blows"
+          ? mixPct === "N/A"
+            ? `${countStr}. Share of kills unavailable.`
+            : `${countStr}. ${mixPct} of kills are death blows.`
+          : mixPct === "N/A"
+            ? `${countStr}. Share of kills unavailable.`
+            : `${countStr}. ${mixPct} of kills are solo kills.`;
+
+    return (
+      <>
+        <span className="sr-only">{screenReaderValue}</span>
+        <div className={STAT_COMBAT_VISUAL_VALUES_CLASS} aria-hidden="true">
+          {mixPct ? (
+            <>
+              <span className="select-none whitespace-nowrap pr-[1px] text-right text-[11px] font-medium tabular-nums tracking-tighter text-gray-500">
+                {mixPct}
+              </span>
+              <span className="mx-px h-3 w-px shrink-0 self-center bg-white/[0.08]" />
+            </>
+          ) : null}
+          <span className={STAT_VALUE_NUM_CLASS}>{countStr}</span>
+        </div>
+      </>
+    );
+  };
+
   const totalRanks = React.useMemo(() => {
     const getRank = (metric: Metric, period: Period) => {
       if (!rankClerkUserId || leaderboardData.length === 0) {
@@ -188,23 +268,24 @@ const AggregateStatistics: React.FC<{
         {PRIMARY_ROWS.map((row, i) => (
           <div
             key={i}
-            className="flex items-center gap-2 py-1.5 hover:bg-gray-800/40 rounded-sm transition-colors"
+            className="flex w-full min-w-0 items-center gap-2 py-1.5 hover:bg-gray-800/40 rounded-sm transition-colors"
           >
-            <span className="text-xs text-gray-400 min-w-0 truncate">{row.label}</span>
-            <span className="text-xs font-semibold text-white ml-auto tabular-nums text-right shrink-0">
-              {formatNumber(aggregateStats[realm][row.key])}
+            <span className="min-w-0 flex-1 text-xs text-gray-400">
+              <CombatStatLabel row={row} />
             </span>
+            <div className="shrink-0">{combatPrimaryMetricCell(row.key, aggregateStats[realm])}</div>
           </div>
         ))}
         <div className="py-1.5 hover:bg-gray-800/40 rounded-sm transition-colors">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400 min-w-0 truncate">
-              <span className="sm:hidden">RPs</span>
-              <span className="hidden sm:inline">Realm Points</span>
+          <div className="flex w-full min-w-0 items-center gap-2">
+            <span className="min-w-0 flex-1 text-xs text-gray-400">
+              <RealmPointsStatLabel />
             </span>
-            <span className="text-xs font-semibold text-white ml-auto tabular-nums text-right shrink-0">
-              {formatNumber(aggregateStats[realm].realmPoints)}
-            </span>
+            <div className="shrink-0">
+              <span className={STAT_VALUE_NUM_CLASS}>
+                {formatNumber(aggregateStats[realm].realmPoints)}
+              </span>
+            </div>
           </div>
           <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
             <div className="flex items-center gap-2">
@@ -234,69 +315,79 @@ const AggregateStatistics: React.FC<{
         {PRIMARY_ROWS.map((row, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 py-1.5 px-3 sm:px-4 whitespace-nowrap hover:bg-gray-800/40 rounded-sm transition-colors"
+            className="flex w-full min-w-0 items-center gap-2 py-1.5 px-3 sm:px-4 hover:bg-gray-800/40 rounded-sm transition-colors sm:gap-3"
           >
-            <span className="text-xs text-gray-400">{row.label}</span>
-            <span className="text-xs font-semibold text-white ml-auto tabular-nums">
-              {formatNumber(aggregateStats.Total[row.key])}
+            <span className="min-w-0 shrink-0 whitespace-nowrap text-xs text-gray-400">
+              <CombatStatLabel row={row} />
             </span>
-            {hasAnyRank && (
-              <span className="w-10 text-right shrink-0">
-                <InlineRank
-                  rank={totalRanks[row.key]}
-                  metric={METRIC_MAP[row.key].metric}
-                  period={METRIC_MAP[row.key].period}
-                />
-              </span>
-            )}
-          </div>
-        ))}
-        <div className="py-1.5 px-3 sm:px-4 hover:bg-gray-800/40 rounded-sm transition-colors">
-          <div className="flex items-center gap-3 whitespace-nowrap">
-            <span className="text-xs text-gray-400">Realm Points</span>
-            <span className="text-xs font-semibold text-white ml-auto tabular-nums">
-              {formatNumber(aggregateStats.Total.realmPoints)}
-            </span>
-            {hasAnyRank && (
-              <span className="w-10 text-right shrink-0">
-                <InlineRank
-                  rank={totalRanks.realmPoints}
-                  metric="realmPoints"
-                  period="total"
-                />
-              </span>
-            )}
-          </div>
-          <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] text-gray-500">Last Week</span>
-              <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
-                {formatNumber(aggregateStats.Total.realmPointsLastWeek)}
-              </span>
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+              <div className="min-w-0 shrink-0">{combatPrimaryMetricCell(row.key, aggregateStats.Total)}</div>
               {hasAnyRank && (
-                <span className="w-10 text-right shrink-0">
+                <span className="flex w-10 shrink-0 justify-end">
                   <InlineRank
-                    rank={totalRanks.realmPointsLastWeek}
-                    metric="realmPoints"
-                    period="lastWeek"
+                    rank={totalRanks[row.key]}
+                    metric={METRIC_MAP[row.key].metric}
+                    period={METRIC_MAP[row.key].period}
                   />
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] text-gray-500">This Week</span>
-              <span className="text-[11px] font-semibold text-gray-300 ml-auto tabular-nums">
-                {formatNumber(aggregateStats.Total.realmPointsThisWeek)}
+          </div>
+        ))}
+        <div className="py-1.5 px-3 sm:px-4 hover:bg-gray-800/40 rounded-sm transition-colors">
+          <div className="flex w-full min-w-0 items-center gap-2 sm:gap-3">
+            <span className="min-w-0 shrink-0 whitespace-nowrap text-xs text-gray-400">
+              <RealmPointsStatLabel />
+            </span>
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 tabular-nums sm:gap-1.5">
+              <span className="text-right text-xs font-semibold text-white tabular-nums leading-none">
+                {formatNumber(aggregateStats.Total.realmPoints)}
               </span>
               {hasAnyRank && (
-                <span className="w-10 text-right shrink-0">
+                <span className="flex w-10 shrink-0 justify-end">
                   <InlineRank
-                    rank={totalRanks.realmPointsThisWeek}
+                    rank={totalRanks.realmPoints}
                     metric="realmPoints"
-                    period="thisWeek"
+                    period="total"
                   />
                 </span>
               )}
+            </div>
+          </div>
+          <div className="mt-1.5 space-y-1 pl-2 sm:pl-3 border-l border-gray-800">
+            <div className="flex items-center gap-3">
+              <span className="shrink-0 text-[11px] text-gray-500">Last Week</span>
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 tabular-nums">
+                <span className="text-right text-[11px] font-semibold text-gray-300 leading-none">
+                  {formatNumber(aggregateStats.Total.realmPointsLastWeek)}
+                </span>
+                {hasAnyRank && (
+                  <span className="flex w-10 shrink-0 justify-end">
+                    <InlineRank
+                      rank={totalRanks.realmPointsLastWeek}
+                      metric="realmPoints"
+                      period="lastWeek"
+                    />
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="shrink-0 text-[11px] text-gray-500">This Week</span>
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 tabular-nums">
+                <span className="text-right text-[11px] font-semibold text-gray-300 leading-none">
+                  {formatNumber(aggregateStats.Total.realmPointsThisWeek)}
+                </span>
+                {hasAnyRank && (
+                  <span className="flex w-10 shrink-0 justify-end">
+                    <InlineRank
+                      rank={totalRanks.realmPointsThisWeek}
+                      metric="realmPoints"
+                      period="thisWeek"
+                    />
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -338,7 +429,9 @@ const AggregateStatistics: React.FC<{
       </div>
 
       <div className="mt-2 sm:mt-3 flex flex-col lg:flex-row lg:gap-3 w-full">
-        {renderTotalCard("hidden sm:block lg:w-72 lg:shrink-0")}
+        {renderTotalCard(
+          "hidden sm:block lg:shrink-0 lg:flex-[0_0_calc((100%-1.5rem)/3)] lg:min-w-0 lg:max-w-[calc((100%-1.5rem)/3)]"
+        )}
 
         <div className="lg:flex-1 lg:min-w-0">
           <RecentActivity characters={characters} />
