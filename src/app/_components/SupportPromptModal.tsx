@@ -11,15 +11,10 @@ import { SUPPORT_PROMPT_TIER_PLANS } from "@/components/support/supportPromptTie
 import PaymentProviderToggle, {
   type PaymentProvider,
 } from "@/components/support/PaymentProviderToggle";
-import {
-  isKnownExemptActive,
-  shouldClearKnownExempt,
-  isSupportPromptEligible,
-} from "@/components/support/supportPromptRules";
+import { isSupportPromptEligible } from "@/components/support/supportPromptRules";
 
 const CLOSE_DELAY_SECONDS = 10;
-const KNOWN_EXEMPT_UNTIL_KEY = "divoxutils_support_prompt_known_exempt_until_v1";
-const KNOWN_EXEMPT_PERSIST_UNTIL = Number.MAX_SAFE_INTEGER;
+const LEGACY_KNOWN_EXEMPT_UNTIL_KEY = "divoxutils_support_prompt_known_exempt_until_v1";
 const CLOSE_LOCK_SUFFIX = "_close_lock_until_v1";
 const PENDING_TIER_KEY = "divoxutils_support_prompt_pending_tier_v1";
 const PENDING_PROVIDER_KEY = "divoxutils_support_prompt_pending_provider_v1";
@@ -36,6 +31,7 @@ type SupportPromptModalProps = {
   ignorePathRules?: boolean;
   isSupporter?: boolean;
   isAdmin?: boolean;
+  hasSupporterDeviceGrace?: boolean;
   paypalEnabled?: boolean;
 };
 
@@ -76,27 +72,10 @@ function writeHistory(storageKey: string, history: PromptHistory) {
   window.localStorage.setItem(storageKey, JSON.stringify(history));
 }
 
-function readKnownExemptUntil() {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(KNOWN_EXEMPT_UNTIL_KEY);
-    if (!raw) return null;
-    const parsed = Number(raw);
-    if (!Number.isFinite(parsed)) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function writeKnownExemptUntil(timestamp: number | null) {
+function clearLegacyKnownExempt() {
   if (typeof window === "undefined") return;
   try {
-    if (!timestamp) {
-      window.localStorage.removeItem(KNOWN_EXEMPT_UNTIL_KEY);
-      return;
-    }
-    window.localStorage.setItem(KNOWN_EXEMPT_UNTIL_KEY, String(timestamp));
+    window.localStorage.removeItem(LEGACY_KNOWN_EXEMPT_UNTIL_KEY);
   } catch {
     return;
   }
@@ -198,6 +177,7 @@ export default function SupportPromptModal({
   ignorePathRules = false,
   isSupporter = false,
   isAdmin = false,
+  hasSupporterDeviceGrace = false,
   paypalEnabled = false,
 }: SupportPromptModalProps) {
   const checkoutErrorId = useId();
@@ -214,7 +194,6 @@ export default function SupportPromptModal({
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [provider, setProvider] = useState<PaymentProvider>("stripe");
   const [history, setHistory] = useState<PromptHistory>(defaultHistory());
-  const [isKnownExempt, setIsKnownExempt] = useState(false);
   const cadence = useMemo(() => resolveCadence(Boolean(isSignedIn)), [isSignedIn]);
   const authState = isSignedIn ? "signed_in" : "signed_out";
 
@@ -248,7 +227,7 @@ export default function SupportPromptModal({
     isLoaded,
     isSupporter,
     isAdmin,
-    isKnownExempt,
+    hasSupporterDeviceGrace,
     ignorePathRules,
     pathname,
   });
@@ -342,39 +321,12 @@ export default function SupportPromptModal({
 
   useEffect(() => {
     if (!isLoaded) return;
-    const nowTimestamp = Date.now();
-    const knownExemptUntil = readKnownExemptUntil();
-    if (isKnownExemptActive(knownExemptUntil, nowTimestamp)) {
-      setIsKnownExempt(true);
-      return;
-    }
-    writeKnownExemptUntil(null);
-    setIsKnownExempt(false);
-  }, [isLoaded]);
-
-  useEffect(() => {
-    if (!isLoaded) return;
-    if (isSupporter || isAdmin) {
-      writeKnownExemptUntil(KNOWN_EXEMPT_PERSIST_UNTIL);
-      setIsKnownExempt(true);
-      return;
-    }
-    if (
-      shouldClearKnownExempt({
-        isSignedIn: Boolean(isSignedIn),
-        isSupporter,
-        isAdmin,
-      })
-    ) {
-      writeKnownExemptUntil(null);
-      setIsKnownExempt(false);
-      return;
-    }
-    const knownExemptUntil = readKnownExemptUntil();
-    if (!isKnownExemptActive(knownExemptUntil, Date.now())) {
-      writeKnownExemptUntil(null);
-      setIsKnownExempt(false);
-    }
+    clearLegacyKnownExempt();
+    if (!isSignedIn) return;
+    void fetch("/api/supporter-device", {
+      method: "POST",
+      credentials: "same-origin",
+    }).catch(() => undefined);
   }, [isLoaded, isSignedIn, isSupporter, isAdmin]);
 
   useEffect(() => {

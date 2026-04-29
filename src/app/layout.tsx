@@ -44,7 +44,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isSupporter, isAdmin } = await getLayoutViewerContext();
+  const { isSupporter, isAdmin, hasSupporterDeviceGrace } = await getLayoutViewerContext();
   const paypalEnabled = isPayPalSubscriptionsEnabled();
 
   return (
@@ -74,9 +74,10 @@ export default async function RootLayout({
               <SupportPromptModal
                 isSupporter={isSupporter}
                 isAdmin={isAdmin}
+                hasSupporterDeviceGrace={hasSupporterDeviceGrace}
                 paypalEnabled={paypalEnabled}
               />
-              <SignedOutNudge />
+              <SignedOutNudge hasSupporterDeviceGrace={hasSupporterDeviceGrace} />
               <main id="main-content" className="flex-1 focus:outline-none" tabIndex={-1}>
                 {children}
               </main>

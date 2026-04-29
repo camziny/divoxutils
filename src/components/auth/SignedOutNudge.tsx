@@ -13,7 +13,13 @@ const DISMISS_MS = 24 * 60 * 60 * 1000;
 const isAuthPage = (pathname: string | null) =>
   pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up");
 
-export default function SignedOutNudge() {
+type SignedOutNudgeProps = {
+  hasSupporterDeviceGrace?: boolean;
+};
+
+export default function SignedOutNudge({
+  hasSupporterDeviceGrace = false,
+}: SignedOutNudgeProps) {
   const { isSignedIn } = useAuth();
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
@@ -44,9 +50,10 @@ export default function SignedOutNudge() {
     const dismissedUntilRaw = window.localStorage.getItem(DISMISSED_UNTIL_KEY);
     const dismissedUntil = dismissedUntilRaw ? Number(dismissedUntilRaw) : 0;
     const now = Date.now();
+    const canShowForDevice = hasSupporterDeviceGrace || hadSession || isLocalhost;
 
     if (
-      (!hadSession && !isLocalhost) ||
+      !canShowForDevice ||
       Number.isNaN(dismissedUntil) ||
       (!isLocalhost && now < dismissedUntil)
     ) {
@@ -55,7 +62,7 @@ export default function SignedOutNudge() {
     }
 
     setVisible(true);
-  }, [isSignedIn, pathname]);
+  }, [isSignedIn, pathname, hasSupporterDeviceGrace]);
 
   const signInHref = useMemo(() => {
     const redirect = pathname || "/";
@@ -74,7 +81,7 @@ export default function SignedOutNudge() {
     <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 sm:left-auto sm:right-5 sm:w-auto sm:translate-x-0">
       <div className="flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-800 py-2.5 pl-4 pr-2 shadow-xl">
         <p className="min-w-0 text-[13px] leading-snug text-gray-300">
-          Signed out &mdash; your preferences and supporter perks won&rsquo;t apply
+          Signed out &mdash; sign in to keep your preferences and account status active
         </p>
         <Link
           href={signInHref}

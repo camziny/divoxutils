@@ -15,6 +15,16 @@ test("shared components are not sourced from app components", () => {
   assert.equal(signedOutNudgeSource.includes("@/app/components/"), false);
 });
 
+test("supporter device grace is wired through layout and signed-out nudge", () => {
+  const layoutSource = readFileSync("src/app/layout.tsx", "utf8");
+  const modalSource = readFileSync("src/app/_components/SupportPromptModal.tsx", "utf8");
+  const signedOutNudgeSource = readFileSync("src/components/auth/SignedOutNudge.tsx", "utf8");
+
+  assert.equal(layoutSource.includes("hasSupporterDeviceGrace={hasSupporterDeviceGrace}"), true);
+  assert.equal(modalSource.includes("hasSupporterDeviceGrace"), true);
+  assert.equal(signedOutNudgeSource.includes("hasSupporterDeviceGrace"), true);
+});
+
 test("legacy app component wrappers are removed", () => {
   assert.equal(existsSync("src/app/components/SupporterBadge.tsx"), false);
   assert.equal(existsSync("src/app/components/SignedOutNudge.tsx"), false);
