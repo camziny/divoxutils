@@ -1,8 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  isKnownExemptActive,
-  shouldClearKnownExempt,
   isSupportPromptEligible,
   isSupportPromptExcludedPath,
 } from "../src/components/support/supportPromptRules";
@@ -30,7 +28,7 @@ test("isSupportPromptEligible blocks non-eligible states", () => {
       isLoaded: false,
       isSupporter: false,
       isAdmin: false,
-      isKnownExempt: false,
+      hasSupporterDeviceGrace: false,
       ignorePathRules: false,
       pathname: "/user/cameron/characters",
     }),
@@ -41,7 +39,7 @@ test("isSupportPromptEligible blocks non-eligible states", () => {
       isLoaded: true,
       isSupporter: true,
       isAdmin: false,
-      isKnownExempt: false,
+      hasSupporterDeviceGrace: false,
       ignorePathRules: false,
       pathname: "/user/cameron/characters",
     }),
@@ -52,7 +50,7 @@ test("isSupportPromptEligible blocks non-eligible states", () => {
       isLoaded: true,
       isSupporter: false,
       isAdmin: true,
-      isKnownExempt: false,
+      hasSupporterDeviceGrace: false,
       ignorePathRules: false,
       pathname: "/user/cameron/characters",
     }),
@@ -63,7 +61,7 @@ test("isSupportPromptEligible blocks non-eligible states", () => {
       isLoaded: true,
       isSupporter: false,
       isAdmin: false,
-      isKnownExempt: true,
+      hasSupporterDeviceGrace: true,
       ignorePathRules: false,
       pathname: "/user/cameron/characters",
     }),
@@ -74,7 +72,7 @@ test("isSupportPromptEligible blocks non-eligible states", () => {
       isLoaded: true,
       isSupporter: false,
       isAdmin: false,
-      isKnownExempt: false,
+      hasSupporterDeviceGrace: false,
       ignorePathRules: false,
       pathname: "/contribute",
     }),
@@ -88,7 +86,7 @@ test("isSupportPromptEligible allows normal path and ignorePathRules override", 
       isLoaded: true,
       isSupporter: false,
       isAdmin: false,
-      isKnownExempt: false,
+      hasSupporterDeviceGrace: false,
       ignorePathRules: false,
       pathname: "/user/cameron/characters",
     }),
@@ -99,54 +97,10 @@ test("isSupportPromptEligible allows normal path and ignorePathRules override", 
       isLoaded: true,
       isSupporter: false,
       isAdmin: false,
-      isKnownExempt: false,
+      hasSupporterDeviceGrace: false,
       ignorePathRules: true,
       pathname: "/contribute",
     }),
     true
-  );
-});
-
-test("isKnownExemptActive validates timestamps safely", () => {
-  const now = Date.UTC(2026, 2, 28, 0, 0, 0);
-  assert.equal(isKnownExemptActive(now + 1, now), true);
-  assert.equal(isKnownExemptActive(now, now), false);
-  assert.equal(isKnownExemptActive(now - 1, now), false);
-  assert.equal(isKnownExemptActive(null, now), false);
-  assert.equal(isKnownExemptActive(Number.NaN, now), false);
-});
-
-test("shouldClearKnownExempt clears immediately for signed-in non-supporters", () => {
-  assert.equal(
-    shouldClearKnownExempt({
-      isSignedIn: true,
-      isSupporter: false,
-      isAdmin: false,
-    }),
-    true
-  );
-  assert.equal(
-    shouldClearKnownExempt({
-      isSignedIn: false,
-      isSupporter: false,
-      isAdmin: false,
-    }),
-    false
-  );
-  assert.equal(
-    shouldClearKnownExempt({
-      isSignedIn: true,
-      isSupporter: true,
-      isAdmin: false,
-    }),
-    false
-  );
-  assert.equal(
-    shouldClearKnownExempt({
-      isSignedIn: true,
-      isSupporter: false,
-      isAdmin: true,
-    }),
-    false
   );
 });

@@ -14,46 +14,21 @@ export function isSupportPromptEligible({
   isLoaded,
   isSupporter,
   isAdmin,
-  isKnownExempt,
+  hasSupporterDeviceGrace,
   ignorePathRules,
   pathname,
 }: {
   isLoaded: boolean;
   isSupporter: boolean;
   isAdmin: boolean;
-  isKnownExempt: boolean;
+  hasSupporterDeviceGrace: boolean;
   ignorePathRules: boolean;
   pathname: string | null;
 }) {
   if (!isLoaded) return false;
   if (isSupporter) return false;
   if (isAdmin) return false;
-  if (isKnownExempt) return false;
+  if (hasSupporterDeviceGrace) return false;
   if (ignorePathRules) return true;
   return !isSupportPromptExcludedPath(pathname);
-}
-
-export function isKnownExemptActive(
-  knownExemptUntil: number | null,
-  now: number
-) {
-  if (
-    typeof knownExemptUntil !== "number" ||
-    !Number.isFinite(knownExemptUntil)
-  ) {
-    return false;
-  }
-  return knownExemptUntil > now;
-}
-
-export function shouldClearKnownExempt({
-  isSignedIn,
-  isSupporter,
-  isAdmin,
-}: {
-  isSignedIn: boolean;
-  isSupporter: boolean;
-  isAdmin: boolean;
-}) {
-  return isSignedIn && !isSupporter && !isAdmin;
 }

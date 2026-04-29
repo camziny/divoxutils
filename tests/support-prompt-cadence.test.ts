@@ -8,16 +8,16 @@ import {
 test("resolveCadence returns unified cadence config for signed-in users", () => {
   const cadence = resolveCadence(true);
   assert.equal(cadence.windowDays, 7);
-  assert.equal(cadence.maxImpressions, 5);
-  assert.equal(cadence.minIntervalMs, 24 * 60 * 60 * 1000);
+  assert.equal(cadence.maxImpressions, 6);
+  assert.equal(cadence.minIntervalMs, 20 * 60 * 60 * 1000);
   assert.equal(cadence.storageKey, "divoxutils_support_prompt_v2_non_supporter_device");
 });
 
 test("resolveCadence returns unified cadence config for signed-out users", () => {
   const cadence = resolveCadence(false);
   assert.equal(cadence.windowDays, 7);
-  assert.equal(cadence.maxImpressions, 5);
-  assert.equal(cadence.minIntervalMs, 24 * 60 * 60 * 1000);
+  assert.equal(cadence.maxImpressions, 6);
+  assert.equal(cadence.minIntervalMs, 20 * 60 * 60 * 1000);
   assert.equal(cadence.storageKey, "divoxutils_support_prompt_v2_non_supporter_device");
 });
 
