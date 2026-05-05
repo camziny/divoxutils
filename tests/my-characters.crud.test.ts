@@ -176,11 +176,11 @@ test("add handler returns 500 when upstream fetch fails", async () => {
 test("mapCharacterData keeps total kill baseline in sync", () => {
   const payload = mapCharacterData({
     character_web_id: "w1",
-    name: "Dwaloha",
-    class_name: "Warlock",
+    name: "Baseline Test",
+    class_name: "Healer",
     realm: 2,
     server_name: "Ywain",
-    race: "Frostalf",
+    race: "Norseman",
     level: 50,
     guild_info: { guild_name: "Guild" },
     realm_war_stats: {
