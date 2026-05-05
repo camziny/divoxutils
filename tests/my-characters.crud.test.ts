@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createMyCharactersAddRouteHandlers } from "../src/server/api/myCharactersAddRouteHandlers";
+import {
+  createMyCharactersAddRouteHandlers,
+  mapCharacterData,
+} from "../src/server/api/myCharactersAddRouteHandlers";
 import { createUserCharactersByUserIdHandler } from "../src/server/userCharactersByUserIdPagesHandler";
 import { createUserCharacterHandler } from "../src/server/userCharacterPagesHandler";
 
@@ -168,6 +171,41 @@ test("add handler returns 500 when upstream fetch fails", async () => {
     String((await response.json() as { details: string }).details),
     /upstream boom/i
   );
+});
+
+test("mapCharacterData keeps total kill baseline in sync", () => {
+  const payload = mapCharacterData({
+    character_web_id: "w1",
+    name: "Baseline Test",
+    class_name: "Healer",
+    realm: 2,
+    server_name: "Ywain",
+    race: "Norseman",
+    level: 50,
+    guild_info: { guild_name: "Guild" },
+    realm_war_stats: {
+      current: {
+        realm_points: 5_632_599,
+        bounty_points: 100,
+        player_kills: {
+          total: {
+            kills: 47_054,
+            deaths: 1_001,
+            death_blows: 8_468,
+            solo_kills: 123,
+          },
+        },
+      },
+    },
+    master_level: { level: 10 },
+  });
+
+  assert.equal(payload.heraldTotalKills, 47_054);
+  assert.equal(payload.totalKills, 47_054);
+  assert.equal(payload.totalRealmPoints, 5_632_599);
+  assert.equal(payload.totalDeathBlows, 8_468);
+  assert.equal(payload.totalSoloKills, 123);
+  assert.equal(payload.totalDeaths, 1_001);
 });
 
 test("userCharactersByUserId handler returns 400 for invalid userId", async () => {

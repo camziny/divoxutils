@@ -40,6 +40,7 @@ export function mapCharacterData(char: any) {
     heraldTotalSoloKills:
       char.realm_war_stats.current.player_kills.total.solo_kills,
     totalRealmPoints: char.realm_war_stats.current.realm_points,
+    totalKills: char.realm_war_stats.current.player_kills.total.kills,
     totalSoloKills: char.realm_war_stats.current.player_kills.total.solo_kills,
     totalDeaths: char.realm_war_stats.current.player_kills.total.deaths,
     totalDeathBlows: char.realm_war_stats.current.player_kills.total.death_blows,
