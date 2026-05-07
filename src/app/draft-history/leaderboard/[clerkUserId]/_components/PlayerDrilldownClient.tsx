@@ -791,17 +791,19 @@ export default function PlayerDrilldownClient({
                         {row.opponentName}
                       </span>
                     </span>
-                    <div className="flex items-center gap-3 text-sm tabular-nums">
-                      <span className="text-gray-300 font-medium">
-                        {row.wins}-{row.losses}
-                      </span>
-                      <span className="text-gray-600 w-12 text-right text-xs">
-                        {formatWinRate(row.winRate)}%
-                      </span>
+                    <span className="text-sm tabular-nums text-gray-300 font-medium text-right">
+                      {row.wins}-{row.losses}
+                    </span>
+                    <span className="text-xs tabular-nums text-gray-600 text-right">
+                      {formatWinRate(row.winRate)}%
+                    </span>
+                    <span className="flex items-center justify-end">
                       {row.opponentIsVerified ? (
                         <ChevronRight className="w-3 h-3 text-gray-700 group-hover:text-gray-500 transition-colors duration-100" />
-                      ) : null}
-                    </div>
+                      ) : (
+                        <span className="w-3" />
+                      )}
+                    </span>
                   </>
                 );
 
@@ -809,7 +811,7 @@ export default function PlayerDrilldownClient({
                   return (
                     <div
                       key={row.opponentClerkUserId}
-                      className="flex items-center justify-between px-4 py-2.5"
+                      className="grid grid-cols-[1fr_3.5rem_3rem_1rem] items-center gap-x-3 px-4 py-2.5"
                     >
                       {rowContent}
                     </div>
@@ -823,7 +825,7 @@ export default function PlayerDrilldownClient({
                       row.opponentClerkUserId,
                       row.opponentName
                     )}
-                    className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
+                    className="group grid grid-cols-[1fr_3.5rem_3rem_1rem] items-center gap-x-3 px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
                   >
                     {rowContent}
                   </Link>
@@ -938,17 +940,19 @@ export default function PlayerDrilldownClient({
                           {row.teammateName}
                         </span>
                       </span>
-                      <div className="flex items-center gap-3 text-sm tabular-nums">
-                        <span className="text-gray-300 font-medium">
-                          {row.wins}-{row.losses}
-                        </span>
-                        <span className="text-gray-600 w-12 text-right text-xs">
-                          {formatWinRate(row.winRate)}%
-                        </span>
+                      <span className="text-sm tabular-nums text-gray-300 font-medium text-right">
+                        {row.wins}-{row.losses}
+                      </span>
+                      <span className="text-xs tabular-nums text-gray-600 text-right">
+                        {formatWinRate(row.winRate)}%
+                      </span>
+                      <span className="flex items-center justify-end">
                         {row.teammateIsVerified ? (
                           <ChevronRight className="w-3 h-3 text-gray-700 group-hover:text-gray-500 transition-colors duration-100" />
-                        ) : null}
-                      </div>
+                        ) : (
+                          <span className="w-3" />
+                        )}
+                      </span>
                     </>
                   );
 
@@ -956,7 +960,7 @@ export default function PlayerDrilldownClient({
                     return (
                       <div
                         key={row.teammateClerkUserId}
-                        className="flex items-center justify-between px-4 py-2.5"
+                        className="grid grid-cols-[1fr_3.5rem_3rem_1rem] items-center gap-x-3 px-4 py-2.5"
                       >
                         {rowContent}
                       </div>
@@ -970,7 +974,7 @@ export default function PlayerDrilldownClient({
                         row.teammateClerkUserId,
                         row.teammateName
                       )}
-                      className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
+                      className="group grid grid-cols-[1fr_3.5rem_3rem_1rem] items-center gap-x-3 px-4 py-2.5 hover:bg-gray-800/20 transition-colors duration-100"
                     >
                       {rowContent}
                     </Link>
@@ -1004,38 +1008,38 @@ export default function PlayerDrilldownClient({
               {drilldown.recentGames.map((game, i) => (
                 <div
                   key={`${game.shortId}-${i}`}
-                  className="flex items-center justify-between px-4 py-2.5"
+                  className="grid grid-cols-[1fr_auto] items-center gap-x-3 px-4 py-2.5"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span
-                      className={`text-xs font-semibold w-4 text-center ${
+                      className={`text-xs font-semibold w-4 shrink-0 text-center ${
                         game.didWin ? "text-gray-200" : "text-gray-600"
                       }`}
                     >
                       {game.didWin ? "W" : "L"}
                     </span>
-                    <span className="text-sm text-gray-400">
+                    <span className="min-w-0 flex-1 truncate text-sm text-gray-400">
                       {game.team1CaptainName}
                       <span className="text-gray-600 mx-1.5">vs</span>
                       {game.team2CaptainName}
                     </span>
                     {game.wasCaptain && (
-                      <span className="text-[10px] text-gray-600 font-medium uppercase tracking-wider">
+                      <span className="text-[10px] text-gray-600 font-medium uppercase tracking-wider shrink-0">
                         C
                       </span>
                     )}
                     {game.playerRealm && (
-                      <span className="text-[10px] text-gray-600 font-medium tracking-wider">
+                      <span className="text-[10px] text-gray-600 font-medium tracking-wider shrink-0">
                         {game.playerRealm}
                       </span>
                     )}
                     {game.draftType === "pvp" && (
-                      <span className="text-[10px] text-gray-600 font-medium tracking-wider">
+                      <span className="text-[10px] text-gray-600 font-medium tracking-wider shrink-0">
                         PvP
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-gray-600">
+                  <span className="text-xs text-gray-600 whitespace-nowrap shrink-0">
                     {new Date(game.createdAtMs).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
