@@ -45,24 +45,106 @@ type BatchedLeaderboardUpdateDeps = {
   now: () => Date;
 };
 
-function calculateUpdateTimes(
-  now: Date,
-  updateHourUTC: number,
-  gracePeriodHours: number
+const weeklyLeaderboardTimeZone = "America/New_York";
+
+function getTimeZoneParts(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+  const parts = formatter.formatToParts(date);
+  const getPart = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "0";
+  const weekdayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+
+  return {
+    weekday: weekdayMap[getPart("weekday")] ?? 0,
+    year: Number(getPart("year")),
+    month: Number(getPart("month")),
+    day: Number(getPart("day")),
+    hour: Number(getPart("hour")),
+    minute: Number(getPart("minute")),
+    second: Number(getPart("second")),
+  };
+}
+
+function getTimeZoneOffsetMs(date: Date, timeZone: string) {
+  const parts = getTimeZoneParts(date, timeZone);
+  const asUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second
+  );
+  return asUtc - date.getTime();
+}
+
+function getUtcForTimeZoneDate(
+  parts: {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+  },
+  timeZone: string
 ) {
-  const mondayAtUpdateHour = new Date(now);
-  mondayAtUpdateHour.setUTCHours(updateHourUTC, 0, 0, 0);
-  mondayAtUpdateHour.setUTCDate(
-    mondayAtUpdateHour.getUTCDate() - ((mondayAtUpdateHour.getUTCDay() + 6) % 7)
+  const utcGuess = new Date(
+    Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second
+    )
+  );
+  const offset = getTimeZoneOffsetMs(utcGuess, timeZone);
+  const utcDate = new Date(utcGuess.getTime() - offset);
+  const adjustedOffset = getTimeZoneOffsetMs(utcDate, timeZone);
+  return adjustedOffset === offset
+    ? utcDate
+    : new Date(utcGuess.getTime() - adjustedOffset);
+}
+
+function calculateUpdateTimes(now: Date, gracePeriodHours: number) {
+  const nowParts = getTimeZoneParts(now, weeklyLeaderboardTimeZone);
+  const daysSinceMonday = (nowParts.weekday + 6) % 7;
+  const mondayDate = new Date(
+    Date.UTC(nowParts.year, nowParts.month - 1, nowParts.day - daysSinceMonday)
+  );
+  const mondayStart = getUtcForTimeZoneDate(
+    {
+      year: mondayDate.getUTCFullYear(),
+      month: mondayDate.getUTCMonth() + 1,
+      day: mondayDate.getUTCDate(),
+      hour: 0,
+      minute: 0,
+      second: 0,
+    },
+    weeklyLeaderboardTimeZone
   );
 
-  const lastMonday = new Date(mondayAtUpdateHour.getTime());
-  if (now.getTime() < mondayAtUpdateHour.getTime()) {
-    lastMonday.setUTCDate(lastMonday.getUTCDate() - 7);
-  }
-
   const gracePeriodEndTime = new Date(
-    lastMonday.getTime() + gracePeriodHours * 60 * 60 * 1000
+    mondayStart.getTime() + gracePeriodHours * 60 * 60 * 1000
   );
   return { gracePeriodEndTime };
 }
@@ -96,11 +178,9 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
       let failedCount = 0;
 
       const gracePeriodHours = 0.5;
-      const updateHourUTC = 5;
 
       const { gracePeriodEndTime } = calculateUpdateTimes(
         deps.now(),
-        updateHourUTC,
         gracePeriodHours
       );
       const cursorKey = getWeeklyLeaderboardCursorKey(gracePeriodEndTime);
@@ -137,10 +217,15 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
             const currentStats = data.realm_war_stats.current;
             if (character.lastUpdated) {
               const characterLastUpdated = new Date(character.lastUpdated);
+              const currentTotalKills = currentStats.player_kills.total.kills;
+              const storedTotalKills = character.totalKills ?? 0;
+              const hasMissingKillBaseline =
+                storedTotalKills === 0 && currentTotalKills > 0;
               const realmPointsDiff =
                 currentStats.realm_points - character.totalRealmPoints;
-              const killsDiff =
-                currentStats.player_kills.total.kills - (character.totalKills ?? 0);
+              const killsDiff = hasMissingKillBaseline
+                ? 0
+                : currentTotalKills - storedTotalKills;
               const soloKillsDiff =
                 currentStats.player_kills.total.solo_kills - character.totalSoloKills;
               const deathsDiff =
@@ -155,10 +240,8 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
               if (character.totalRealmPoints !== currentStats.realm_points) {
                 updateData.totalRealmPoints = currentStats.realm_points;
               }
-              if (
-                (character.totalKills ?? 0) !== currentStats.player_kills.total.kills
-              ) {
-                updateData.totalKills = currentStats.player_kills.total.kills;
+              if (storedTotalKills !== currentTotalKills) {
+                updateData.totalKills = currentTotalKills;
               }
               if (
                 character.totalSoloKills !== currentStats.player_kills.total.solo_kills
@@ -193,7 +276,10 @@ export function createBatchedLeaderboardUpdateRouteHandlers(
               if (character.realmPointsLastWeek !== weeklyRealmPoints) {
                 updateData.realmPointsLastWeek = weeklyRealmPoints;
               }
-              if ((character.killsLastWeek ?? 0) !== weeklyKills) {
+              if (
+                (character.killsLastWeek ?? 0) !== weeklyKills ||
+                hasMissingKillBaseline
+              ) {
                 updateData.killsLastWeek = weeklyKills;
               }
               if (character.soloKillsLastWeek !== weeklySoloKills) {

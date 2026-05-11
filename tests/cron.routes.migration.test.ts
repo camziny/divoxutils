@@ -310,6 +310,22 @@ test("batched leaderboard preserves cursor update and success payload", async ()
   assert.equal(readCursorKey, "lastProcessedCharacterId:weekly:2026-04-06");
   assert.equal(updatedCursorKey, "lastProcessedCharacterId:weekly:2026-04-06");
   assert.equal(updatedRows.length, 1);
+  assert.deepEqual(updatedRows[0], {
+    id: 10,
+    data: {
+      totalRealmPoints: 15,
+      realmPointsLastWeek: 5,
+      totalKills: 16,
+      killsLastWeek: 5,
+      totalSoloKills: 12,
+      soloKillsLastWeek: 2,
+      totalDeaths: 11,
+      deathsLastWeek: 1,
+      totalDeathBlows: 14,
+      deathBlowsLastWeek: 4,
+      lastUpdated: new Date("2026-04-06T05:10:00.000Z"),
+    },
+  });
   assert.deepEqual(await response.json(), {
     message: "Batch update process completed",
     checkedCharacters: 1,
@@ -318,11 +334,76 @@ test("batched leaderboard preserves cursor update and success payload", async ()
   });
 });
 
-test("batched leaderboard uses previous Monday window before update hour", async () => {
-  let capturedCutoffIso: string | null = null;
+test("batched leaderboard repairs missing kill baseline without weekly kill credit", async () => {
+  const updatedRows: Array<{ id: number; data: Record<string, unknown> }> = [];
   const handlers = createBatchedLeaderboardUpdateRouteHandlers({
     cronSecret: "secret",
     getLastProcessedCharacterId: async () => 0,
+    updateLastProcessedCharacterId: async () => undefined,
+    findCharacters: async () => [
+      {
+        id: 11,
+        webId: "w11",
+        totalRealmPoints: 1000,
+        totalKills: 0,
+        totalSoloKills: 10,
+        totalDeaths: 5,
+        totalDeathBlows: 20,
+        realmPointsLastWeek: 0,
+        killsLastWeek: 0,
+        soloKillsLastWeek: 0,
+        deathsLastWeek: 0,
+        deathBlowsLastWeek: 0,
+        lastUpdated: new Date("2026-03-30T05:00:00.000Z"),
+      },
+    ],
+    updateCharacter: async ({ id, data }) => {
+      updatedRows.push({ id, data: data as unknown as Record<string, unknown> });
+    },
+    fetchImpl: (async () =>
+      new Response(
+        JSON.stringify({
+          realm_war_stats: {
+            current: {
+              realm_points: 1500,
+              player_kills: {
+                total: {
+                  kills: 259,
+                  solo_kills: 12,
+                  deaths: 6,
+                  death_blows: 25,
+                },
+              },
+            },
+          },
+        })
+      )) as typeof fetch,
+    now: () => new Date("2026-04-06T05:10:00.000Z"),
+  });
+
+  const response = await handlers.POST(
+    authorizedRequest("http://localhost/api/batchedLeaderboardUpdate", "POST")
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(updatedRows.length, 1);
+  assert.equal(updatedRows[0].data.totalKills, 259);
+  assert.equal(updatedRows[0].data.killsLastWeek, 0);
+  assert.equal(updatedRows[0].data.realmPointsLastWeek, 500);
+  assert.equal(updatedRows[0].data.deathBlowsLastWeek, 5);
+  assert.equal(updatedRows[0].data.soloKillsLastWeek, 2);
+  assert.equal(updatedRows[0].data.deathsLastWeek, 1);
+});
+
+test("batched leaderboard uses Monday midnight ET cutoff during daylight time", async () => {
+  let capturedCutoffIso: string | null = null;
+  let readCursorKey = "";
+  const handlers = createBatchedLeaderboardUpdateRouteHandlers({
+    cronSecret: "secret",
+    getLastProcessedCharacterId: async (key) => {
+      readCursorKey = key ?? "";
+      return 0;
+    },
     updateLastProcessedCharacterId: async () => undefined,
     findCharacters: async ({ lastUpdatedLte }) => {
       capturedCutoffIso = lastUpdatedLte.toISOString();
@@ -338,13 +419,42 @@ test("batched leaderboard uses previous Monday window before update hour", async
   );
 
   assert.equal(response.status, 200);
-  assert.equal(capturedCutoffIso, "2026-03-30T05:30:00.000Z");
+  assert.equal(capturedCutoffIso, "2026-04-06T04:30:00.000Z");
+  assert.equal(readCursorKey, "lastProcessedCharacterId:weekly:2026-04-06");
   assert.deepEqual(await response.json(), {
     message: "Batch update process completed",
     checkedCharacters: 0,
     updatedCharacters: 0,
     failedUpdates: 0,
   });
+});
+
+test("batched leaderboard uses Monday midnight ET cutoff during standard time", async () => {
+  let capturedCutoffIso: string | null = null;
+  let readCursorKey = "";
+  const handlers = createBatchedLeaderboardUpdateRouteHandlers({
+    cronSecret: "secret",
+    getLastProcessedCharacterId: async (key) => {
+      readCursorKey = key ?? "";
+      return 0;
+    },
+    updateLastProcessedCharacterId: async () => undefined,
+    findCharacters: async ({ lastUpdatedLte }) => {
+      capturedCutoffIso = lastUpdatedLte.toISOString();
+      return [];
+    },
+    updateCharacter: async () => undefined,
+    fetchImpl: (async () => new Response("{}")) as typeof fetch,
+    now: () => new Date("2026-01-05T05:35:00.000Z"),
+  });
+
+  const response = await handlers.POST(
+    authorizedRequest("http://localhost/api/batchedLeaderboardUpdate", "POST")
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(capturedCutoffIso, "2026-01-05T05:30:00.000Z");
+  assert.equal(readCursorKey, "lastProcessedCharacterId:weekly:2026-01-05");
 });
 
 test("batched leaderboard returns 500 on initialization failure", async () => {

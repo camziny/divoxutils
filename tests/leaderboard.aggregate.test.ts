@@ -140,6 +140,47 @@ test("aggregateLeaderboardData deduplicates repeated character ids and clamps we
   assert.equal(result[0].deathBlowsThisWeek, 0);
 });
 
+test("aggregateLeaderboardData ignores missing kill baseline for this week", () => {
+  const data = [
+    {
+      id: 1,
+      name: "Alice",
+      clerkUserId: "u_1",
+      characters: [
+        {
+          character: {
+            id: 101,
+            totalRealmPoints: 1000,
+            totalKills: 0,
+            totalSoloKills: 10,
+            totalDeaths: 5,
+            totalDeathBlows: 20,
+            killsLastWeek: 0,
+            deathsLastWeek: 0,
+            deathBlowsLastWeek: 0,
+            realmPointsLastWeek: 0,
+            soloKillsLastWeek: 0,
+            lastUpdated: null,
+            heraldRealmPoints: 1200,
+            heraldTotalKills: 259,
+            heraldTotalDeaths: 6,
+            heraldTotalSoloKills: 12,
+            heraldTotalDeathBlows: 25,
+          },
+        },
+      ],
+    },
+  ];
+
+  const result = aggregateLeaderboardData(data);
+
+  assert.equal(result[0].killsThisWeek, 0);
+  assert.equal(result[0].realmPointsThisWeek, 200);
+  assert.equal(result[0].deathBlowsThisWeek, 5);
+  assert.equal(result[0].soloKillsThisWeek, 2);
+  assert.equal(result[0].deathsThisWeek, 1);
+});
+
 test("aggregateLeaderboardData uses effective death blow baseline for weekly guard", () => {
   const leaderboardSource = readFileSync("src/server/leaderboard.ts", "utf8");
 
