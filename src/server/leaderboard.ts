@@ -136,8 +136,14 @@ export const aggregateLeaderboardData = (
         character.heraldTotalKills !== null &&
         character.totalKills !== null
       ) {
-        accumulatedKillsThisWeek +=
-          character.heraldTotalKills - character.totalKills;
+        const hasMissingKillBaseline =
+          character.totalKills === 0 &&
+          character.heraldTotalKills > 0 &&
+          character.killsLastWeek === 0;
+        if (!hasMissingKillBaseline) {
+          accumulatedKillsThisWeek +=
+            character.heraldTotalKills - character.totalKills;
+        }
       }
       if (
         character.heraldTotalDeaths !== null &&
