@@ -23,6 +23,7 @@ type ActivityRow = {
   realm: string;
   className: string;
   rp: number;
+  kills: number;
   deathBlows: number | null;
   soloKills: number;
   deaths: number;
@@ -57,6 +58,11 @@ function deriveThisWeek(character: CharacterData): Omit<ActivityRow, "id" | "nam
     character.totalDeathBlows,
     character.deathBlowsLastWeek
   );
+  const kills = deriveDelta(
+    character.heraldTotalKills,
+    character.totalKills,
+    character.killsLastWeek
+  ) ?? 0;
   const soloKills = deriveDelta(
     character.heraldTotalSoloKills,
     character.totalSoloKills,
@@ -67,12 +73,13 @@ function deriveThisWeek(character: CharacterData): Omit<ActivityRow, "id" | "nam
     character.totalDeaths,
     character.deathsLastWeek
   ) ?? 0;
-  return { rp, deathBlows, soloKills, deaths };
+  return { rp, kills, deathBlows, soloKills, deaths };
 }
 
 function deriveLastWeek(character: CharacterData): Omit<ActivityRow, "id" | "name" | "realm" | "className"> {
   return {
     rp: Math.max(0, character.realmPointsLastWeek ?? 0),
+    kills: Math.max(0, character.killsLastWeek ?? 0),
     deathBlows: Math.max(0, character.deathBlowsLastWeek ?? 0),
     soloKills: Math.max(0, character.soloKillsLastWeek ?? 0),
     deaths: Math.max(0, character.deathsLastWeek ?? 0),
@@ -85,13 +92,14 @@ const STAT_LABELS = [
     label: "RPs",
     cellClass: "pr-3 border-r border-gray-800/80",
   },
+  { key: "kills" as const, label: "Kills", cellClass: "" },
   { key: "deathBlows" as const, label: "DBs", cellClass: "" },
   { key: "soloKills" as const, label: "SKs", cellClass: "" },
   { key: "deaths" as const, label: "Deaths", cellClass: "" },
 ];
 
 const ACTIVITY_GRID_CLASS =
-  "grid grid-cols-[minmax(0,1fr)_5.5rem_2.75rem_2.75rem_3.25rem] sm:grid-cols-[minmax(0,1fr)_6rem_3rem_3rem_3.5rem] gap-2";
+  "grid grid-cols-[minmax(0,1fr)_5.25rem_3rem_2.75rem_2.75rem_3.25rem] sm:grid-cols-[minmax(0,1fr)_6rem_3.25rem_3rem_3rem_3.5rem] gap-2";
 
 const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
   const [period, setPeriod] = useState<ActivityPeriod>("thisWeek");
@@ -120,6 +128,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ characters }) => {
   const activeRows = sortedRows.filter(
     (row) =>
       row.rp > 0 ||
+      row.kills > 0 ||
       (row.deathBlows ?? 0) > 0 ||
       row.soloKills > 0 ||
       row.deaths > 0
