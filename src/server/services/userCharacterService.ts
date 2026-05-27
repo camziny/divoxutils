@@ -23,23 +23,15 @@ export const createUserCharacter = async (data: any) => {
   }
 };
 
-export const getUserCharacters = async (clerkUserId?: string) => {
-  if (clerkUserId) {
-    return await prisma.userCharacter.findMany({
-      where: {
-        clerkUserId: clerkUserId,
-      },
-      include: {
-        character: true,
-      },
-    });
-  } else {
-    return await prisma.userCharacter.findMany({
-      include: {
-        character: true,
-      },
-    });
-  }
+export const getUserCharacters = async (clerkUserId: string) => {
+  return await prisma.userCharacter.findMany({
+    where: {
+      clerkUserId,
+    },
+    include: {
+      character: true,
+    },
+  });
 };
 
 export const getUserCharacterById = async (ids: {

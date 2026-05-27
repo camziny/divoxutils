@@ -13,7 +13,8 @@ const handlers = createCharactersCollectionRouteHandlers({
     prisma.user.findUnique({
       where: { id },
     }),
-  getCharacters: () => characterController.getCharacters(),
+  getCharacters: (clerkUserId) =>
+    characterController.getCharactersForUser(clerkUserId),
   addCharactersToUserList: (characters, userId) =>
     characterController.addCharactersToUserList(
       characters as string[],

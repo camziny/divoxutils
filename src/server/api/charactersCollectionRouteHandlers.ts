@@ -6,7 +6,7 @@ export type CharactersCollectionDeps = {
     clerkUserId: string
   ) => Promise<{ id: number } | null>;
   findUserById: (id: number) => Promise<unknown | null>;
-  getCharacters: () => Promise<unknown>;
+  getCharacters: (clerkUserId: string) => Promise<unknown>;
   addCharactersToUserList: (
     characters: unknown[],
     userId: number
@@ -51,7 +51,7 @@ export function createCharactersCollectionRouteHandlers(
       }
 
       try {
-        const characters = await deps.getCharacters();
+        const characters = await deps.getCharacters(clerkUserId);
         return NextResponse.json(characters);
       } catch (error) {
         return handleError(error);

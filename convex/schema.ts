@@ -102,7 +102,10 @@ export default defineSchema({
     reviewNotificationSentAt: v.optional(v.number()),
   })
     .index("by_shortId", ["shortId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_status_resultStatus", ["status", "resultStatus"])
+    .index("by_status_gameStarted", ["status", "gameStarted"])
+    .index("by_status_cancelledAt", ["status", "cancelledAt"]),
 
   draftPlayers: defineTable({
     draftId: v.id("drafts"),
