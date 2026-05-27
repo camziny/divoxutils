@@ -13,6 +13,13 @@ import SupportPromptModal from "@/components/support/SupportPromptModal";
 import SignedOutNudge from "@/components/auth/SignedOutNudge";
 import { getLayoutViewerContext } from "@/server/layoutViewerContext";
 import { isPayPalSubscriptionsEnabled } from "@/server/billing/paypal";
+import JsonLd from "@/components/seo/JsonLd";
+import {
+  DEFAULT_DESCRIPTION,
+  OG_IMAGE_PATH,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/seo";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,21 +29,45 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://divoxutils.com'),
-  title: "divoxutils",
-  description:
-    "divoxutils is a hub for Dark Age of Camelot players. Join us to track your progress, share your milestones, and shape the future of this evolving platform",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "divoxutils — Dark Age of Camelot (DAoC) tools",
+    template: "%s | divoxutils",
+  },
+  description: DEFAULT_DESCRIPTION,
   openGraph: {
-    title: "divoxutils",
-    description: "divoxutils is a hub for Dark Age of Camelot players. Join us to track your progress, share your milestones, and shape the future of this evolving platform",
-    images: ["/wh-big.png"],
-    url: "https://divoxutils.com",
+    title: "divoxutils — Dark Age of Camelot (DAoC) tools",
+    description: DEFAULT_DESCRIPTION,
+    images: [OG_IMAGE_PATH],
+    url: SITE_URL,
     type: "website",
+    siteName: SITE_NAME,
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/wh-big.png"],
+    images: [OG_IMAGE_PATH],
   },
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: DEFAULT_DESCRIPTION,
+  about: {
+    "@type": "VideoGame",
+    name: "Dark Age of Camelot",
+    alternateName: ["DAoC"],
+  },
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: DEFAULT_DESCRIPTION,
 };
 
 export default async function RootLayout({
@@ -50,6 +81,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
+        <JsonLd data={[websiteJsonLd, organizationJsonLd]} />
         <ClerkProvider
           appearance={{
             variables: {

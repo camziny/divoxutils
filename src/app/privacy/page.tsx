@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - divoxutils",
+  title: "Privacy Policy",
   description:
     "Read the divoxutils privacy policy covering account data, Stripe billing metadata, and service operations.",
   alternates: {
     canonical: "https://divoxutils.com/privacy",
   },
   openGraph: {
-    title: "Privacy Policy - divoxutils",
+    title: "Privacy Policy",
     description:
       "Read how divoxutils handles account and subscription-related data.",
     url: "https://divoxutils.com/privacy",
     type: "website",
-    images: ["/wh-big.png"],
+    images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Privacy Policy - divoxutils",
+    title: "Privacy Policy",
     description: "Read how divoxutils handles account and subscription-related data.",
-    images: ["/wh-big.png"],
+    images: ["/opengraph-image"],
   },
 };
 

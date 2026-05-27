@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { FaTwitch, FaDiscord, FaCoffee } from "react-icons/fa";
 
 export const metadata: Metadata = {
-  title: "About - divoxutils",
+  title: "About",
   description:
     "Learn the story behind divoxutils, why it was built for the DAoC community, and where to follow or support the project.",
   alternates: {
@@ -16,14 +16,14 @@ export const metadata: Metadata = {
       "Learn the story behind divoxutils and how to follow, support, and help shape the project.",
     url: "https://divoxutils.com/about",
     type: "website",
-    images: ["/wh-big.png"],
+    images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
     title: "About divoxutils",
     description:
       "Learn the story behind divoxutils and how to follow, support, and help shape the project.",
-    images: ["/wh-big.png"],
+    images: ["/opengraph-image"],
   },
 };
 

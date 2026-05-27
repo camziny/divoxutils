@@ -1,8 +1,10 @@
 import { SignIn } from "@clerk/nextjs";
 import type { Metadata } from "next";
+import { NOINDEX_METADATA } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Sign In - divoxutils",
+  title: "Sign In",
+  ...NOINDEX_METADATA,
 };
 
 const SignInPage = () => {

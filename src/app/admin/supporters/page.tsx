@@ -3,7 +3,7 @@ import { isAdminClerkUserId } from "@/server/adminAuth";
 import AdminSupportersClient from "./_components/AdminSupportersClient";
 
 export const metadata = {
-  title: "Admin Supporters - divoxutils",
+  title: "Admin Supporters",
 };
 
 export default async function AdminSupportersPage() {

@@ -8,7 +8,7 @@ import { getTierFromPriceId, getStripePriceMap } from "@/server/billing/stripe";
 import { isActiveSubscriptionStatus } from "@/server/billing/subscriptionStatus";
 
 export const metadata: Metadata = {
-  title: "Contribute - divoxutils",
+  title: "Contribute",
   description:
     "Support the project and help keep divoxutils online.",
   alternates: {
@@ -19,13 +19,13 @@ export const metadata: Metadata = {
     description: "Support the project and help keep divoxutils online.",
     url: "https://divoxutils.com/contribute",
     type: "website",
-    images: ["/wh-big.png"],
+    images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Contribute to divoxutils",
     description: "Support the project and help keep divoxutils online.",
-    images: ["/wh-big.png"],
+    images: ["/opengraph-image"],
   },
 };
 

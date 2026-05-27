@@ -1,5 +1,7 @@
 import React from "react";
+import type { Metadata } from "next";
 import { OFFICIAL_REALM_RANK_MAX, getRealmRanks } from "@/utils/character";
+import { buildPageMetadata } from "@/lib/seo";
 
 function formatRankKey(numeric: number): string {
   const s = numeric.toString();
@@ -11,9 +13,13 @@ function parseRankToNumeric(key: string): number {
   return parseInt(major, 10) * 10 + parseInt(minor, 10);
 }
 
-export const metadata = {
-  title: "Realm Ranks - divoxutils",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "Realm rank chart",
+  description:
+    "Dark Age of Camelot (DAoC) realm rank and realm points reference chart. Look up official realm rank thresholds on divoxutils.",
+  path: "/realm-ranks",
+  openGraphTitle: "DAoC realm rank chart — divoxutils",
+});
 
 export default function RealmRanksPage() {
   const realmRanksMap = getRealmRanks();

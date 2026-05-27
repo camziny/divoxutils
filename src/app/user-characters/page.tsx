@@ -14,29 +14,11 @@ import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import type { Metadata } from "next";
 import { isCharacterListLayout } from "@/server/characterListLayoutPreference";
 import { getLeaderboardData } from "@/server/leaderboard";
+import { NOINDEX_METADATA } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "My Characters - divoxutils",
-  description:
-    "Manage your Dark Age of Camelot characters on divoxutils.",
-  alternates: {
-    canonical: "https://divoxutils.com/user-characters",
-  },
-  openGraph: {
-    title: "My Characters - divoxutils",
-    description:
-      "Manage your Dark Age of Camelot characters on divoxutils.",
-    url: "https://divoxutils.com/user-characters",
-    type: "website",
-    images: ["/wh-big.png"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "My Characters - divoxutils",
-    description:
-      "Manage your Dark Age of Camelot characters on divoxutils.",
-    images: ["/wh-big.png"],
-  },
+  title: "My Characters",
+  ...NOINDEX_METADATA,
 };
 
 const CharacterListOptimized = dynamic(

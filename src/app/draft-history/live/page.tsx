@@ -1,14 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { User } from "lucide-react";
+import type { Metadata } from "next";
 import { getLiveDraftRows } from "@/server/draftLive";
 import LiveDraftsAutoRefresh from "./_components/LiveDraftsAutoRefresh";
+import { buildPageMetadata } from "@/lib/seo";
 
 export const revalidate = 15;
 
-export const metadata = {
-  title: "Live Drafts - divoxutils",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "Live drafts",
+  description:
+    "Watch live Dark Age of Camelot (DAoC) community drafts on divoxutils as they happen.",
+  path: "/draft-history/live",
+  openGraphTitle: "Live DAoC drafts — divoxutils",
+});
 
 const STATUS_LABEL: Record<string, string> = {
   setup: "Setup",

@@ -1,4 +1,14 @@
-"use client";
+import React from "react";
+import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Drafts",
+  description:
+    "Dark Age of Camelot (DAoC) community drafts on divoxutils. Start drafts in Discord or browse draft history and leaderboards.",
+  path: "/draft",
+  openGraphTitle: "DAoC drafts — divoxutils",
+});
 
 export default function DraftPage() {
   return (

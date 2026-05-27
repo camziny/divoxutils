@@ -1,15 +1,14 @@
-import React from "react";
+import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "Search Characters - divoxutils",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "Character search",
+  description:
+    "Search Dark Age of Camelot (DAoC) players and browse public character rosters on divoxutils.",
+  path: "/character-search",
+});
 
-const CharacterSearchPage = () => {
-  return (
-    <div className="bg-gray-900 min-h-screen">
-      {/* <CharacterNameSearch /> */}
-    </div>
-  );
-};
-
-export default CharacterSearchPage;
+export default function CharacterSearchPage() {
+  redirect("/search");
+}

@@ -1,25 +1,25 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service - divoxutils",
+  title: "Terms of Service",
   description:
     "Review the divoxutils terms of service, including account responsibilities and subscription terms.",
   alternates: {
     canonical: "https://divoxutils.com/terms",
   },
   openGraph: {
-    title: "Terms of Service - divoxutils",
+    title: "Terms of Service",
     description:
       "Review divoxutils terms for account usage and supporter subscriptions.",
     url: "https://divoxutils.com/terms",
     type: "website",
-    images: ["/wh-big.png"],
+    images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Terms of Service - divoxutils",
+    title: "Terms of Service",
     description: "Review divoxutils terms for account usage and supporter subscriptions.",
-    images: ["/wh-big.png"],
+    images: ["/opengraph-image"],
   },
 };
 

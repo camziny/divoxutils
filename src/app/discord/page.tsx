@@ -1,30 +1,15 @@
 import { FaDiscord } from "react-icons/fa";
 import Image from "next/image";
 import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Discord Bot - divoxutils",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Discord bot",
   description:
-    "Explore divoxutils Discord bot commands for character lookups, stat comparisons, and draft tools in your server.",
-  alternates: {
-    canonical: "https://divoxutils.com/discord",
-  },
-  openGraph: {
-    title: "Discord Bot - divoxutils",
-    description:
-      "Use the divoxutils Discord bot for character lookups, comparisons, and draft workflows.",
-    url: "https://divoxutils.com/discord",
-    type: "website",
-    images: ["/wh-big.png"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Discord Bot - divoxutils",
-    description:
-      "Use the divoxutils Discord bot for character lookups, comparisons, and draft workflows.",
-    images: ["/wh-big.png"],
-  },
-};
+    "divoxutils Discord bot commands for Dark Age of Camelot (DAoC): character lookups, stat comparisons, user stats, and live drafts.",
+  path: "/discord",
+  openGraphTitle: "DAoC Discord bot — divoxutils",
+});
 
 const COMMANDS = [
   { id: "draft", label: "/draft" },

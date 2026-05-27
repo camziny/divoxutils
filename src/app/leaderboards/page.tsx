@@ -4,29 +4,15 @@ import LeaderboardWrapper from "./_components/LeaderboardWrapper";
 import LeaderboardTooltip from "./_components/LeaderboardTooltip";
 import EventScheduleBanner from "./_components/EventScheduleBanner";
 import { getLeaderboardData, type LeaderboardItem } from "@/server/leaderboard";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Leaderboards - divoxutils",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Leaderboards",
   description:
-    "Browse divoxutils leaderboards to see top players, rankings, and progress across the DAoC community.",
-  alternates: {
-    canonical: "https://divoxutils.com/leaderboards",
-  },
-  openGraph: {
-    title: "Leaderboards - divoxutils",
-    description:
-      "See top players and rankings on the divoxutils leaderboards.",
-    url: "https://divoxutils.com/leaderboards",
-    type: "website",
-    images: ["/wh-big.png"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Leaderboards - divoxutils",
-    description: "See top players and rankings on the divoxutils leaderboards.",
-    images: ["/wh-big.png"],
-  },
-};
+    "Dark Age of Camelot (DAoC) community leaderboards on divoxutils. Compare realm points, rankings, and character progress across tracked players.",
+  path: "/leaderboards",
+  openGraphTitle: "DAoC leaderboards — divoxutils",
+});
 
 export const revalidate = 60;
 
