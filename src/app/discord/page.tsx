@@ -6,7 +6,7 @@ import { buildPageMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildPageMetadata({
   title: "Discord bot",
   description:
-    "divoxutils Discord bot commands for Dark Age of Camelot (DAoC): character lookups, stat comparisons, user stats, and live drafts.",
+    "The divoxutils Discord bot for Dark Age of Camelot (DAoC): live drafts, character lookups, stat comparisons, user stats, and more.",
   path: "/discord",
   openGraphTitle: "DAoC Discord bot — divoxutils",
 });

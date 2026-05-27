@@ -5,6 +5,7 @@ import { NOINDEX_METADATA } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Sign Up",
+  description: "Create a divoxutils account for DAoC character tracking, leaderboards, and drafts.",
   ...NOINDEX_METADATA,
 };
 

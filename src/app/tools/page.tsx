@@ -16,7 +16,7 @@ import { buildPageMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildPageMetadata({
   title: "DAoC tools",
   description:
-    "Browse Dark Age of Camelot (DAoC) tools on divoxutils: character tracking, player search, leaderboards, realm ranks, draft history, Discord bot, and Ghost UI.",
+    "Browse divoxutils, a web application for the Dark Age of Camelot community: character tracking, user and character search, leaderboards, realm ranks, live drafts, a full Discord bot, and maintained Ghost UI.",
   path: "/tools",
   openGraphTitle: "Dark Age of Camelot tools on divoxutils",
 });

@@ -33,6 +33,7 @@ type SupportPromptModalProps = {
   isAdmin?: boolean;
   hasSupporterDeviceGrace?: boolean;
   paypalEnabled?: boolean;
+  suppressAutoOpen?: boolean;
 };
 
 function defaultHistory(): PromptHistory {
@@ -179,6 +180,7 @@ export default function SupportPromptModal({
   isAdmin = false,
   hasSupporterDeviceGrace = false,
   paypalEnabled = false,
+  suppressAutoOpen = false,
 }: SupportPromptModalProps) {
   const checkoutErrorId = useId();
   const { isLoaded, isSignedIn } = useAuth();
@@ -347,6 +349,7 @@ export default function SupportPromptModal({
 
   useEffect(() => {
     if (!isLoaded) return;
+    if (suppressAutoOpen) return;
     if (initializedStorageKey.current !== cadence.storageKey) return;
     if (!pathname) return;
     if (lastPathname.current === pathname) return;
@@ -374,7 +377,14 @@ export default function SupportPromptModal({
     }
     if (!isPathEligible) return;
     openPrompt(false);
-  }, [isLoaded, pathname, isPathEligible, cadence.storageKey, openPrompt]);
+  }, [
+    isLoaded,
+    pathname,
+    isPathEligible,
+    cadence.storageKey,
+    openPrompt,
+    suppressAutoOpen,
+  ]);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -542,7 +552,11 @@ export default function SupportPromptModal({
           setIsOpen(true);
         }}
       >
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg border-gray-800 bg-gray-900 p-0 gap-0 overflow-hidden max-h-[90dvh] overflow-y-auto overscroll-contain">
+        {isOpen ? (
+        <DialogContent
+          data-nosnippet
+          className="max-w-[calc(100vw-2rem)] sm:max-w-lg border-gray-800 bg-gray-900 p-0 gap-0 overflow-hidden max-h-[90dvh] overflow-y-auto overscroll-contain"
+        >
           <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4">
             <DialogTitle className="text-base font-semibold text-white">
               Help keep divoxutils running
@@ -663,6 +677,7 @@ export default function SupportPromptModal({
             </button>
           </div>
         </DialogContent>
+        ) : null}
       </Dialog>
     </>
   );
