@@ -2,12 +2,11 @@ import React from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import HomeCarousel from "./_components/HomeCarousel";
-import { buildPageMetadata } from "@/lib/seo";
+import { buildPageMetadata, DEFAULT_DESCRIPTION } from "@/lib/seo";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Home",
-  description:
-    "divoxutils is a Dark Age of Camelot (DAoC) community tools site for character tracking, leaderboards, realm rank reference, draft history, Discord bot commands, and Ghost UI.",
+  description: DEFAULT_DESCRIPTION,
   path: "/",
   openGraphTitle: "divoxutils — Dark Age of Camelot (DAoC) tools",
 });

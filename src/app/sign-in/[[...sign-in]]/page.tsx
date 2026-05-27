@@ -4,6 +4,7 @@ import { NOINDEX_METADATA } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Sign In",
+  description: "Sign in to divoxutils to access your DAoC character tracking and account.",
   ...NOINDEX_METADATA,
 };
 

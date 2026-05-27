@@ -1,6 +1,7 @@
 import React from "react";
 import "./globals.css";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Inter } from "next/font/google";
 import Navbar from "./_components/navbar";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -14,6 +15,7 @@ import SignedOutNudge from "@/components/auth/SignedOutNudge";
 import { getLayoutViewerContext } from "@/server/layoutViewerContext";
 import { isPayPalSubscriptionsEnabled } from "@/server/billing/paypal";
 import JsonLd from "@/components/seo/JsonLd";
+import { isSearchEngineCrawler } from "@/lib/crawler";
 import {
   DEFAULT_DESCRIPTION,
   OG_IMAGE_PATH,
@@ -77,6 +79,8 @@ export default async function RootLayout({
 }) {
   const { isSupporter, isAdmin, hasSupporterDeviceGrace } = await getLayoutViewerContext();
   const paypalEnabled = isPayPalSubscriptionsEnabled();
+  const userAgent = (await headers()).get("user-agent");
+  const suppressSupportPromptAutoOpen = isSearchEngineCrawler(userAgent);
 
   return (
     <html lang="en">
@@ -108,6 +112,7 @@ export default async function RootLayout({
                 isAdmin={isAdmin}
                 hasSupporterDeviceGrace={hasSupporterDeviceGrace}
                 paypalEnabled={paypalEnabled}
+                suppressAutoOpen={suppressSupportPromptAutoOpen}
               />
               <SignedOutNudge hasSupporterDeviceGrace={hasSupporterDeviceGrace} />
               <main id="main-content" className="flex-1 focus:outline-none" tabIndex={-1}>

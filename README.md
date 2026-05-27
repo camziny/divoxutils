@@ -1,6 +1,6 @@
 ## divoxutils
 
-`divoxutils` is a web application for the Dark Age of Camelot community. It includes community tools for character tracking, player search, leaderboards, realm ranks, draft history, Discord bot workflows, and Ghost UI.
+`divoxutils` is a web application for the Dark Age of Camelot community: character tracking, user and character search, leaderboards, realm ranks, live drafts, and a full Discord bot (plus maintained Ghost UI).
 
 https://divoxutils.com
 

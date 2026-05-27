@@ -6,7 +6,7 @@ export const OG_IMAGE_PATH = "/opengraph-image";
 
 export const DEFAULT_TITLE = "divoxutils — Dark Age of Camelot (DAoC) tools";
 export const DEFAULT_DESCRIPTION =
-  "divoxutils is a Dark Age of Camelot (DAoC) community hub for character tracking, leaderboards, realm rank reference, draft history, Discord bot commands, and Ghost UI.";
+  "divoxutils is a web application for the Dark Age of Camelot community: character tracking, user and character search, leaderboards, realm ranks, live drafts, and a full Discord bot (plus maintained Ghost UI).";
 
 export const NOINDEX_METADATA: Pick<Metadata, "robots"> = {
   robots: {

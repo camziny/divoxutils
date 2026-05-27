@@ -114,7 +114,7 @@ export default function PaymentProviderToggle({
   const paypalMarkH = isSmall ? "h-4" : "h-[18px]";
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" data-nosnippet>
       <div className="flex items-center gap-1.5">
         <Lock
           size={isSmall ? 10 : 11}

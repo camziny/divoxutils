@@ -5,7 +5,7 @@ import { buildPageMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildPageMetadata({
   title: "Drafts",
   description:
-    "Dark Age of Camelot (DAoC) community drafts on divoxutils. Start drafts in Discord or browse draft history and leaderboards.",
+    "Dark Age of Camelot (DAoC) live drafts on divoxutils. Run drafts in Discord, track outcomes, and browse history and leaderboards.",
   path: "/draft",
   openGraphTitle: "DAoC drafts — divoxutils",
 });
