@@ -1,25 +1,35 @@
 import React from "react";
 import type { Metadata } from "next";
 import { HiArrowDownTray } from "react-icons/hi2";
+import { buildPageMetadata, SITE_URL } from "@/lib/seo";
+import JsonLd from "@/components/seo/JsonLd";
 
-export const metadata: Metadata = {
-  title: "Ghost UI - divoxutils",
-  description: "Download Ghost UI for Dark Age of Camelot.",
-  alternates: {
-    canonical: "https://divoxutils.com/ui",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Ghost UI",
+  description:
+    "Download Ghost UI for Dark Age of Camelot (DAoC) — a custom in-game overlay for realm rank charts and related player info on divoxutils.",
+  path: "/ui",
+  openGraphTitle: "Ghost UI for DAoC — divoxutils",
+});
+
+const ghostUiJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Ghost UI",
+  applicationCategory: "GameApplication",
+  operatingSystem: "Windows",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
   },
-  openGraph: {
-    title: "Ghost UI - divoxutils",
-    description: "Download Ghost UI for Dark Age of Camelot.",
-    url: "https://divoxutils.com/ui",
-    type: "website",
-    images: ["/wh-big.png"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Ghost UI - divoxutils",
-    description: "Download Ghost UI for Dark Age of Camelot.",
-    images: ["/wh-big.png"],
+  description:
+    "Custom Dark Age of Camelot UI overlay distributed by divoxutils for realm rank and related in-game information.",
+  url: `${SITE_URL}/ui`,
+  publisher: {
+    "@type": "Organization",
+    name: "divoxutils",
+    url: SITE_URL,
   },
 };
 
@@ -76,6 +86,7 @@ const CHANGELOG: {
 export default function UiPage() {
   return (
     <div className="bg-gray-900 min-h-screen text-gray-300">
+      <JsonLd data={ghostUiJsonLd} />
       <div className="mx-auto max-w-3xl px-4 py-16 space-y-16">
         <header className="space-y-4">
           <h1 className="text-2xl font-bold text-white tracking-tight">

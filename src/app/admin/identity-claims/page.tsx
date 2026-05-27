@@ -3,7 +3,7 @@ import AdminIdentityClaimsClient from "./_components/AdminIdentityClaimsClient";
 import { isAdminClerkUserId } from "@/server/adminAuth";
 
 export const metadata = {
-  title: "Admin Identity Claims - divoxutils",
+  title: "Admin Identity Claims",
 };
 
 export default async function AdminIdentityClaimsPage() {

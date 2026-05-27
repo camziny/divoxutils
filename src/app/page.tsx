@@ -2,30 +2,15 @@ import React from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import HomeCarousel from "./_components/HomeCarousel";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Home - divoxutils",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Home",
   description:
-    "divoxutils helps Dark Age of Camelot players track characters, compare stats, and stay connected to progress and milestones.",
-  alternates: {
-    canonical: "https://divoxutils.com",
-  },
-  openGraph: {
-    title: "divoxutils",
-    description:
-      "Track characters, compare progress, and follow Dark Age of Camelot leaderboards on divoxutils.",
-    url: "https://divoxutils.com",
-    type: "website",
-    images: ["/wh-big.png"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "divoxutils",
-    description:
-      "Track characters, compare progress, and follow Dark Age of Camelot leaderboards on divoxutils.",
-    images: ["/wh-big.png"],
-  },
-};
+    "divoxutils is a Dark Age of Camelot (DAoC) community tools site for character tracking, leaderboards, realm rank reference, draft history, Discord bot commands, and Ghost UI.",
+  path: "/",
+  openGraphTitle: "divoxutils — Dark Age of Camelot (DAoC) tools",
+});
 
 export default function HomePage() {
   return (

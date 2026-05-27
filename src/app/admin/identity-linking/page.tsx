@@ -3,7 +3,7 @@ import { isAdminClerkUserId } from "@/server/adminAuth";
 import AdminIdentityLinkingClient from "./_components/AdminIdentityLinkingClient";
 
 export const metadata = {
-  title: "Admin Identity Linking - divoxutils",
+  title: "Admin Identity Linking",
 };
 
 export default async function AdminIdentityLinkingPage() {

@@ -1,7 +1,7 @@
 import DraftClient from "./_components/DraftClient";
 
 export const metadata = {
-  title: "Draft - divoxutils",
+  title: "Draft",
 };
 
 export default function DraftPage({

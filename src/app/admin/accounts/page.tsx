@@ -3,7 +3,7 @@ import { isAdminClerkUserId } from "@/server/adminAuth";
 import AdminAccountsClient from "./_components/AdminAccountsClient";
 
 export const metadata = {
-  title: "Admin Account Removal - divoxutils",
+  title: "Admin Account Removal",
 };
 
 export default async function AdminAccountRemovalPage() {

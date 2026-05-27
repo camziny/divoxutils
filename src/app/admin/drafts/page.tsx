@@ -3,7 +3,7 @@ import { isAdminClerkUserId } from "@/server/adminAuth";
 import AdminDraftModerationClient from "./_components/AdminDraftModerationClient";
 
 export const metadata = {
-  title: "Admin Draft Moderation - divoxutils",
+  title: "Admin Draft Moderation",
 };
 
 export default async function AdminDraftModerationPage() {

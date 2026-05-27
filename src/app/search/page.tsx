@@ -6,29 +6,15 @@ import SearchUserListToggle from "./_components/SearchUserListToggle";
 import UserListSkeleton from "./_components/UserListSkeleton";
 import { SearchProvider } from "./_lib/SearchContext";
 import { shouldHideUserListForQuery } from "./_lib/urlState";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Search Users - divoxutils",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Player search",
   description:
-    "Search for players and characters on divoxutils to quickly find profiles, progress, and related stats.",
-  alternates: {
-    canonical: "https://divoxutils.com/search",
-  },
-  openGraph: {
-    title: "Search Users - divoxutils",
-    description:
-      "Search players and characters on divoxutils.",
-    url: "https://divoxutils.com/search",
-    type: "website",
-    images: ["/wh-big.png"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Search Users - divoxutils",
-    description: "Search players and characters on divoxutils.",
-    images: ["/wh-big.png"],
-  },
-};
+    "Search Dark Age of Camelot (DAoC) players and characters on divoxutils. Find public character rosters, realm points, and progress.",
+  path: "/search",
+  openGraphTitle: "DAoC player search — divoxutils",
+});
 
 interface SearchPageProps {
   searchParams?: Record<string, string | string[] | undefined>;

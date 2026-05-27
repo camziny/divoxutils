@@ -40,7 +40,7 @@ export async function generateMetadata(
 
   if (!user) {
     return {
-      title: "User Not Found - divoxutils",
+      title: "User Not Found",
       description: "This profile could not be found on divoxutils.",
     };
   }
@@ -49,25 +49,26 @@ export async function generateMetadata(
   const pathSegment =
     typeof resolvedParams.name === "string" ? resolvedParams.name : displayName;
   const profileUrl = `https://divoxutils.com/user/${encodeURIComponent(pathSegment)}/characters`;
+  const description = `Track ${displayName}'s Dark Age of Camelot (DAoC) characters on divoxutils — realm points, realm ranks, realms, and progress across their roster.`;
 
   return {
-    title: `${displayName}'s characters - divoxutils`,
-    description: `See ${displayName}'s characters on divoxutils.`,
+    title: `${displayName}'s DAoC characters`,
+    description,
     alternates: {
       canonical: profileUrl,
     },
     openGraph: {
-      title: `${displayName}'s characters`,
-      description: `See ${displayName}'s characters on divoxutils.`,
+      title: `${displayName}'s DAoC characters`,
+      description,
       url: profileUrl,
-      type: "website",
-      images: ["/wh-big.png"],
+      type: "profile",
+      images: ["/opengraph-image"],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${displayName}'s characters`,
-      description: `See ${displayName}'s characters on divoxutils.`,
-      images: ["/wh-big.png"],
+      title: `${displayName}'s DAoC characters`,
+      description,
+      images: ["/opengraph-image"],
     },
   };
 }

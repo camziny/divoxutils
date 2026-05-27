@@ -17,7 +17,7 @@ import { isActiveSubscriptionStatus } from "@/server/billing/subscriptionStatus"
 import BillingClient from "./_components/BillingClient";
 
 export const metadata = {
-  title: "Billing - divoxutils",
+  title: "Billing",
 };
 
 type BillingPageProps = {

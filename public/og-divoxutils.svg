@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="divoxutils Dark Age of Camelot tools">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <text x="72" y="120" fill="#a5b4fc" font-family="system-ui,sans-serif" font-size="28" letter-spacing="4">DARK AGE OF CAMELOT</text>
+  <text x="72" y="240" font-family="system-ui,sans-serif" font-size="88" font-weight="800"><tspan fill="#818cf8">divox</tspan><tspan fill="#f9fafb">utils</tspan></text>
+  <text x="72" y="320" fill="#d1d5db" font-family="system-ui,sans-serif" font-size="32">Character tracking, leaderboards, drafts, Discord bot</text>
+</svg>

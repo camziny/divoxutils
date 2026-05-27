@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { isAdminClerkUserId } from "@/server/adminAuth";
 
 export const metadata = {
-  title: "Admin - divoxutils",
+  title: "Admin",
 };
 
 export default async function AdminPage() {

@@ -1,6 +1,8 @@
 ## divoxutils
 
-`divoxutils` is a web app for the Dark Age of Camelot community focused on character tracking, draft workflows, stats, and moderation tooling.
+`divoxutils` is a web application for the Dark Age of Camelot community. It includes community tools for character tracking, player search, leaderboards, realm ranks, draft history, Discord bot workflows, and Ghost UI.
+
+https://divoxutils.com
 
 ## Features
 
@@ -11,7 +13,7 @@
 - Draft history analytics, class leaderboards, and player drilldowns
 - Discord identity linking and claim/moderation workflows
 - Admin tools for drafts, accounts, identity backfills, and supporter management
-- Supporter billing flows with Stripe
+- Supporter billing flows with Stripe and PayPal
 
 ## Tech Stack
 
@@ -19,5 +21,5 @@
 - Clerk authentication (including Discord sign-in)
 - Convex for real-time draft/data workflows
 - Prisma + PostgreSQL
-- Stripe for billing
+- Stripe and PayPal for billing
 - Vercel deployment

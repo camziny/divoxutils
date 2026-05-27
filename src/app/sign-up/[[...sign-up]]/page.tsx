@@ -1,9 +1,11 @@
 import { SignUp } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import React from "react";
+import { NOINDEX_METADATA } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Sign Up - divoxutils",
+  title: "Sign Up",
+  ...NOINDEX_METADATA,
 };
 
 const SignUpPage = () => {
