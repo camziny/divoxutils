@@ -26,18 +26,47 @@ class MockDb {
   query(table: TableName) {
     const rows = this.tables[table];
     return {
-      withIndex: (_index: string, builder: (q: { eq: (field: string, value: any) => any }) => any) => {
+      withIndex: (
+        _index: string,
+        builder: (q: {
+          eq: (field: string, value: any) => any;
+          gte: (field: string, value: any) => any;
+          lt: (field: string, value: any) => any;
+        }) => any
+      ) => {
         const conditions: Array<{ field: string; value: any }> = [];
+        const rangeConditions: Array<{
+          field: string;
+          op: "gte" | "lt";
+          value: any;
+        }> = [];
         const chain = {
           eq(field: string, value: any) {
             conditions.push({ field, value });
             return chain;
           },
+          gte(field: string, value: any) {
+            rangeConditions.push({ field, op: "gte", value });
+            return chain;
+          },
+          lt(field: string, value: any) {
+            rangeConditions.push({ field, op: "lt", value });
+            return chain;
+          },
         };
         builder(chain);
-        const filtered = rows.filter((row) =>
-          conditions.every((condition) => row[condition.field] === condition.value)
-        );
+        const filtered = rows.filter((row) => {
+          const matchesEq = conditions.every(
+            (condition) => row[condition.field] === condition.value
+          );
+          if (!matchesEq) return false;
+          return rangeConditions.every((condition) => {
+            const rowValue = row[condition.field];
+            if (rowValue === undefined) return condition.op === "lt";
+            if (condition.op === "gte") return rowValue >= condition.value;
+            return rowValue < condition.value;
+          });
+        });
         return {
           unique: async () => {
             if (filtered.length > 1) throw new Error("Unique query returned multiple rows");
@@ -2768,10 +2797,42 @@ test("purgeExpiredCancelledDrafts deletes cancelled draft and related rows beyon
         _creationTime: now - 24 * 60 * 60 * 1000,
         cancelledAt: now - 24 * 60 * 60 * 1000,
       },
+      {
+        _id: "d-legacy-old",
+        shortId: "legacy-old",
+        status: "cancelled",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+        _creationTime: oldTs,
+      },
+      {
+        _id: "d-legacy-new",
+        shortId: "legacy-new",
+        status: "cancelled",
+        teamSize: 5,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+        _creationTime: now - 24 * 60 * 60 * 1000,
+      },
     ],
     draftPlayers: [
       { _id: "p-old", draftId: "d-old", token: "t1", discordUserId: "u1" },
       { _id: "p-new", draftId: "d-new", token: "t2", discordUserId: "u2" },
+      {
+        _id: "p-legacy-old",
+        draftId: "d-legacy-old",
+        token: "t3",
+        discordUserId: "u3",
+      },
+      {
+        _id: "p-legacy-new",
+        draftId: "d-legacy-new",
+        token: "t4",
+        discordUserId: "u4",
+      },
     ],
     draftBans: [
       { _id: "b-old", draftId: "d-old", className: "Cleric", bannedByTeam: 1 },
@@ -2792,7 +2853,7 @@ test("purgeExpiredCancelledDrafts deletes cancelled draft and related rows beyon
     ctx,
     { retentionDays: 90 }
   );
-  assert.equal(result.deletedDrafts, 1);
+  assert.equal(result.deletedDrafts, 2);
 
   const remainingDrafts = await ctx.db.query("drafts").collect();
   const remainingPlayers = await ctx.db.query("draftPlayers").collect();
@@ -2801,11 +2862,11 @@ test("purgeExpiredCancelledDrafts deletes cancelled draft and related rows beyon
 
   assert.deepEqual(
     remainingDrafts.map((d: any) => d.shortId),
-    ["new"]
+    ["new", "legacy-new"]
   );
   assert.deepEqual(
     remainingPlayers.map((p: any) => p._id),
-    ["p-new"]
+    ["p-new", "p-legacy-new"]
   );
   assert.equal(remainingBans.length, 0);
   assert.equal(remainingFights.length, 0);

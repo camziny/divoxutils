@@ -43,7 +43,10 @@ test("characters GET returns character list", async () => {
     getClerkUserId: async () => "user_1",
     findUserByClerkId: async () => ({ id: 9 }),
     findUserById: async () => ({ id: 9 }),
-    getCharacters: async () => [{ id: 1, webId: "w" }],
+    getCharacters: async (clerkUserId) => {
+      assert.equal(clerkUserId, "user_1");
+      return [{ id: 1, webId: "w" }];
+    },
     addCharactersToUserList: async () => [],
   });
 

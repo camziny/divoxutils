@@ -1,4 +1,5 @@
 import { ConvexHttpClient } from "convex/browser";
+import { unstable_cache } from "next/cache";
 import prisma from "../../prisma/prismaClient";
 import {
   aggregateDraftLeaderboardRows,
@@ -823,7 +824,16 @@ export function aggregatePlayerDrilldown(
   };
 }
 
-async function loadDraftIdentityContext(): Promise<DraftIdentityContext> {
+type DraftIdentityCachePayload = {
+  drafts: DraftLeaderboardDraft[];
+  identityLinks: Array<{
+    providerUserId: string;
+    clerkUserId: string;
+    userName: string;
+  }>;
+};
+
+async function loadDraftIdentityCachePayload(): Promise<DraftIdentityCachePayload> {
   const convex = getConvexClient();
   const drafts = (await convex.query(
     "drafts:getVerifiedDraftResults" as any,
@@ -846,22 +856,46 @@ async function loadDraftIdentityContext(): Promise<DraftIdentityContext> {
     },
   });
 
+  return {
+    drafts,
+    identityLinks: identityLinks.map((link) => ({
+      providerUserId: link.providerUserId,
+      clerkUserId: link.clerkUserId,
+      userName:
+        link.user.name && link.user.name.trim()
+          ? link.user.name
+          : link.clerkUserId,
+    })),
+  };
+}
+
+const loadDraftIdentityCachePayloadCached = unstable_cache(
+  loadDraftIdentityCachePayload,
+  ["draft-identity-context"],
+  { revalidate: 60 }
+);
+
+function buildDraftIdentityContext(
+  payload: DraftIdentityCachePayload
+): DraftIdentityContext {
   const clerkByDiscordUserId = new Map<string, string>();
   const userNameByClerkUserId = new Map<string, string>();
 
-  for (const link of identityLinks) {
+  for (const link of payload.identityLinks) {
     clerkByDiscordUserId.set(link.providerUserId, link.clerkUserId);
-    userNameByClerkUserId.set(
-      link.clerkUserId,
-      link.user.name && link.user.name.trim() ? link.user.name : link.clerkUserId
-    );
+    userNameByClerkUserId.set(link.clerkUserId, link.userName);
   }
 
   return {
-    drafts,
+    drafts: payload.drafts,
     clerkByDiscordUserId,
     userNameByClerkUserId,
   };
+}
+
+async function loadDraftIdentityContext(): Promise<DraftIdentityContext> {
+  const payload = await loadDraftIdentityCachePayloadCached();
+  return buildDraftIdentityContext(payload);
 }
 
 export async function getOverallDraftStats(filters: DraftStatsFilters) {

@@ -53,6 +53,8 @@ model User {
   groupUsers     GroupUser[]
   identityLinks  UserIdentityLink[]
   identityClaims UserIdentityClaim[]
+
+  @@index([supporterTier])
 }
 
 model StripeWebhookEvent {
@@ -116,6 +118,10 @@ model Character {
   heraldHiberniaDeathBlows Int?
   heraldHiberniaSoloKills Int?
   heraldMasterLevel       String?
+
+  @@index([characterName])
+  @@index([lastUpdated, id])
+  @@index([nameLastUpdated, id])
 }
 
 
@@ -173,6 +179,7 @@ model UserIdentityLink {
   @@unique([provider, providerUserId])
   @@unique([clerkUserId, provider])
   @@index([clerkUserId])
+  @@index([provider, status])
 }
 
 model UserIdentityClaim {
@@ -189,6 +196,8 @@ model UserIdentityClaim {
 
   @@index([clerkUserId, provider])
   @@index([provider, providerUserId])
+  @@index([status, createdAt])
+  @@index([clerkUserId, provider, providerUserId, status])
 }
 
 

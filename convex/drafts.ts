@@ -1979,16 +1979,30 @@ export const adminReplaceDraftFights = mutation({
 export const getDraftsForModeration = query({
   args: {},
   handler: async (ctx) => {
-    const completedDrafts = await ctx.db
+    const unverifiedDrafts = await ctx.db
       .query("drafts")
-      .withIndex("by_status", (q) => q.eq("status", "complete"))
+      .withIndex("by_status_resultStatus", (q) =>
+        q.eq("status", "complete").eq("resultStatus", "unverified")
+      )
       .collect();
 
-    const pending = completedDrafts.filter(
+    const legacyUnverified = (
+      await ctx.db
+        .query("drafts")
+        .withIndex("by_status", (q) => q.eq("status", "complete"))
+        .collect()
+    ).filter(
       (draft) =>
-        draft.winnerTeam !== undefined &&
-        (draft.resultStatus === undefined || draft.resultStatus === "unverified")
+        draft.winnerTeam !== undefined && draft.resultStatus === undefined
     );
+
+    const pendingById = new Map<string, (typeof unverifiedDrafts)[number]>();
+    for (const draft of [...unverifiedDrafts, ...legacyUnverified]) {
+      if (draft.winnerTeam !== undefined) {
+        pendingById.set(draft._id, draft);
+      }
+    }
+    const pending = Array.from(pendingById.values());
 
     const results = [];
     for (const draft of pending) {
@@ -2045,16 +2059,23 @@ export const getDraftsForModeration = query({
 export const getReviewedDraftsForModeration = query({
   args: {},
   handler: async (ctx) => {
-    const completedDrafts = await ctx.db
+    const verifiedDrafts = await ctx.db
       .query("drafts")
-      .withIndex("by_status", (q) => q.eq("status", "complete"))
+      .withIndex("by_status_resultStatus", (q) =>
+        q.eq("status", "complete").eq("resultStatus", "verified")
+      )
+      .collect();
+    const voidedDrafts = await ctx.db
+      .query("drafts")
+      .withIndex("by_status_resultStatus", (q) =>
+        q.eq("status", "complete").eq("resultStatus", "voided")
+      )
       .collect();
 
-    const reviewed = completedDrafts.filter(
-      (draft) =>
-        draft.winnerTeam !== undefined &&
-        (draft.resultStatus === "verified" || draft.resultStatus === "voided")
-    );
+    const reviewed = [...verifiedDrafts, ...voidedDrafts]
+      .filter((draft) => draft.winnerTeam !== undefined)
+      .sort((a, b) => b._creationTime - a._creationTime)
+      .slice(0, 50);
 
     const results = [];
     for (const draft of reviewed) {
@@ -2106,21 +2127,21 @@ export const getReviewedDraftsForModeration = query({
       });
     }
 
-    return results.sort((a, b) => b._creationTime - a._creationTime).slice(0, 50);
+    return results;
   },
 });
 
 export const getVerifiedDraftResults = query({
   args: {},
   handler: async (ctx) => {
-    const completedDrafts = await ctx.db
-      .query("drafts")
-      .withIndex("by_status", (q) => q.eq("status", "complete"))
-      .collect();
-
-    const verified = completedDrafts.filter(
-      (draft) => draft.winnerTeam !== undefined && draft.resultStatus === "verified"
-    );
+    const verified = (
+      await ctx.db
+        .query("drafts")
+        .withIndex("by_status_resultStatus", (q) =>
+          q.eq("status", "complete").eq("resultStatus", "verified")
+        )
+        .collect()
+    ).filter((draft) => draft.winnerTeam !== undefined);
 
     const results = [];
     for (const draft of verified) {
@@ -2729,10 +2750,27 @@ export const getCancelledDraftsForAdmin = query({
   handler: async (ctx) => {
     const CANCELLED_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
     const cutoff = Date.now() - CANCELLED_RETENTION_MS;
-    const drafts = await ctx.db
-      .query("drafts")
-      .withIndex("by_status", (q) => q.eq("status", "cancelled"))
-      .collect();
+    const draftsWithCancelledAt = (
+      await ctx.db
+        .query("drafts")
+        .withIndex("by_status_cancelledAt", (q) =>
+          q.eq("status", "cancelled").gte("cancelledAt", cutoff)
+        )
+        .collect()
+    ).filter(
+      (draft) =>
+        typeof draft.cancelledAt === "number" && draft.cancelledAt >= cutoff
+    );
+    const legacyDrafts = (
+      await ctx.db
+        .query("drafts")
+        .withIndex("by_status", (q) => q.eq("status", "cancelled"))
+        .collect()
+    ).filter(
+      (draft) =>
+        draft.cancelledAt === undefined && draft._creationTime >= cutoff
+    );
+    const drafts = [...draftsWithCancelledAt, ...legacyDrafts];
 
     const results = [];
     for (const draft of drafts) {
@@ -2752,9 +2790,6 @@ export const getCancelledDraftsForAdmin = query({
       ).length;
 
       const cancelledAt = draft.cancelledAt ?? draft._creationTime;
-      if (cancelledAt < cutoff) {
-        continue;
-      }
 
       results.push({
         _id: draft._id,
@@ -2825,17 +2860,37 @@ export const purgeExpiredCancelledDrafts = mutation({
         : 90;
     const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
 
-    const cancelledDrafts = await ctx.db
-      .query("drafts")
-      .withIndex("by_status", (q) => q.eq("status", "cancelled"))
-      .collect();
+    const expiredWithCancelledAt = (
+      await ctx.db
+        .query("drafts")
+        .withIndex("by_status_cancelledAt", (q) =>
+          q.eq("status", "cancelled").lt("cancelledAt", cutoff)
+        )
+        .collect()
+    ).filter(
+      (draft) =>
+        typeof draft.cancelledAt === "number" && draft.cancelledAt < cutoff
+    );
+    const expiredLegacy = (
+      await ctx.db
+        .query("drafts")
+        .withIndex("by_status", (q) => q.eq("status", "cancelled"))
+        .collect()
+    ).filter(
+      (draft) =>
+        draft.cancelledAt === undefined && draft._creationTime < cutoff
+    );
+    const cancelledDraftsById = new Map<
+      string,
+      (typeof expiredWithCancelledAt)[number]
+    >();
+    for (const draft of [...expiredWithCancelledAt, ...expiredLegacy]) {
+      cancelledDraftsById.set(draft._id, draft);
+    }
+    const cancelledDrafts = Array.from(cancelledDraftsById.values());
 
     let deletedDrafts = 0;
     for (const draft of cancelledDrafts) {
-      const cancelledAt = draft.cancelledAt ?? draft._creationTime;
-      if (cancelledAt >= cutoff) {
-        continue;
-      }
 
       const players = await ctx.db
         .query("draftPlayers")
@@ -3376,13 +3431,19 @@ export const getActiveDrafts = query({
         .collect();
       active.push(...drafts);
     }
-    const completedNotStarted = (
+    const completedNotStartedFalse = await ctx.db
+      .query("drafts")
+      .withIndex("by_status_gameStarted", (q) =>
+        q.eq("status", "complete").eq("gameStarted", false)
+      )
+      .collect();
+    const completedNotStartedUnset = (
       await ctx.db
         .query("drafts")
         .withIndex("by_status", (q) => q.eq("status", "complete"))
         .collect()
-    ).filter((d) => !d.gameStarted);
-    active.push(...completedNotStarted);
+    ).filter((d) => d.gameStarted === undefined);
+    active.push(...completedNotStartedFalse, ...completedNotStartedUnset);
 
     const results = [];
     for (const draft of active) {

@@ -161,8 +161,12 @@ export const addCharactersToUserList = async (
   }
 };
 
-export const getCharacters = async () => {
-  return await prisma.character.findMany();
+export const getCharactersForUser = async (clerkUserId: string) => {
+  const userCharacters = await prisma.userCharacter.findMany({
+    where: { clerkUserId },
+    include: { character: true },
+  });
+  return userCharacters.map((uc) => uc.character);
 };
 
 export const getCharacterById = async (id: number) => {
