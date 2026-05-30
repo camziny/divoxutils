@@ -68,7 +68,9 @@ export default function LeaderboardTooltip() {
                     </tbody>
                   </table>
                   <p className="text-[11px] text-gray-500">
-                    New users and characters count fully after one week.
+                    New users or characters added during the week will be fully
+                    reflected in the leaderboard calculations from the second week
+                    of their registration.
                   </p>
                 </div>
               </ModalBody>
