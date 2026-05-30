@@ -47,23 +47,31 @@ export default function LeaderboardTooltip() {
                 </button>
               </ModalHeader>
               <ModalBody className="px-4 py-4">
-                <div className="divide-y divide-gray-800 text-gray-400">
-                  <div className="pb-3">
-                    <p className="text-xs font-medium text-gray-300 mb-1">Weekly Leaderboard (Total & Last Week):</p>
-                    <p className="text-xs">Updates every Monday at 12:00 AM EST</p>
+                <div className="space-y-4">
+                  <div className="rounded-md border border-gray-800 bg-gray-800/20 px-3.5 py-2.5 text-xs text-gray-400">
+                    Refreshes every 4 hours — 12a, 4a, 8a, 12p, 4p, 8p ET.
                   </div>
-                  <div className="py-3">
-                    <p className="text-xs font-medium text-gray-300 mb-1">This Week Section:</p>
-                    <p className="text-xs">Daily updates Tuesday-Sunday at 12:00 AM EST</p>
-                    <p className="text-xs">Monday updates at 12:00 PM EST</p>
-                  </div>
-                  <div className="pt-3">
-                    <p className="text-[11px] text-gray-500">
-                      New users or characters added during the week will be fully
-                      reflected in the leaderboard calculations from the second week
-                      of their registration.
-                    </p>
-                  </div>
+                  <table className="w-full text-xs">
+                    <tbody className="divide-y divide-gray-800/60">
+                      <tr>
+                        <td className="py-2 pr-4 text-gray-300 font-medium whitespace-nowrap align-top">Total</td>
+                        <td className="py-2 text-gray-400">All-time</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 pr-4 text-gray-300 font-medium whitespace-nowrap align-top">Last Week</td>
+                        <td className="py-2 text-gray-400">Resets Monday 12 AM ET.</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 pr-4 text-gray-300 font-medium whitespace-nowrap align-top">This Week</td>
+                        <td className="py-2 text-gray-400">Current week since Monday</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <p className="text-[11px] text-gray-500">
+                    New users or characters added during the week will be fully
+                    reflected in the leaderboard calculations from the second week
+                    of their registration.
+                  </p>
                 </div>
               </ModalBody>
             </>

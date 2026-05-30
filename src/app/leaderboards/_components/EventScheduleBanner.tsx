@@ -92,18 +92,15 @@ export default function EventScheduleBanner() {
   const mostRecentScheduled = getMostRecentScheduledTime(now);
 
   return (
-    <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-md border border-gray-800 bg-gray-900/60 px-4 py-2.5 text-[12px] text-gray-500">
+    <div className="mt-3 flex items-center justify-between rounded-md border border-gray-800 bg-gray-900/60 px-5 py-3 text-[12px] text-gray-500 tabular-nums">
       <div className="flex items-center gap-2">
-        <span className="inline-flex h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse" />
-        <span className="text-gray-300 font-medium">Lillith Event</span>
-        <span className="hidden sm:inline">- updates every 4h</span>
+        <span className="text-gray-400">Last update</span>
+        <span className="text-gray-300">{formatScheduledAt(mostRecentScheduled)}</span>
       </div>
-      <div className="flex items-center gap-4 tabular-nums">
-        <span>Last update {formatScheduledAt(mostRecentScheduled)}</span>
-        <span>
-          Next <span className="text-gray-400">{formatHour(nextSchedule.hour)}</span>{" "}
-          <span className="text-gray-600">({formatRelativeMinutes(nextSchedule.diffMin)})</span>
-        </span>
+      <div className="flex items-center gap-2">
+        <span className="text-gray-400">Next</span>
+        <span className="text-gray-300">{formatHour(nextSchedule.hour)}</span>
+        <span className="text-gray-600">({formatRelativeMinutes(nextSchedule.diffMin)})</span>
       </div>
     </div>
   );
