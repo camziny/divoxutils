@@ -92,15 +92,15 @@ export default function EventScheduleBanner() {
   const mostRecentScheduled = getMostRecentScheduledTime(now);
 
   return (
-    <div className="mt-3 flex items-center justify-between rounded-md border border-gray-800 bg-gray-900/60 px-5 py-3 text-[12px] text-gray-500 tabular-nums">
-      <div className="flex items-center gap-2">
+    <div className="mt-3 flex items-center justify-between rounded-md border border-gray-800 bg-gray-900/60 px-3 py-2.5 text-[11px] tabular-nums text-gray-500 sm:px-5 sm:py-3 sm:text-[12px]">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <span className="text-gray-400">Last update</span>
         <span className="text-gray-300">{formatScheduledAt(mostRecentScheduled)}</span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <span className="text-gray-400">Next</span>
         <span className="text-gray-300">{formatHour(nextSchedule.hour)}</span>
-        <span className="text-gray-600">({formatRelativeMinutes(nextSchedule.diffMin)})</span>
+        <span className="hidden text-gray-600 sm:inline">({formatRelativeMinutes(nextSchedule.diffMin)})</span>
       </div>
     </div>
   );
