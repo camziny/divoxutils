@@ -4,7 +4,11 @@ import {
   filterCharactersByClass,
   getEffectiveCharacterSortKey,
   getNextColumnSortState,
+  getStatSortLabel,
+  isStatSort,
   normalizeClassFilter,
+  normalizeSearchParam,
+  parseCharacterListSearchParams,
   type ClassFilter,
 } from "../src/utils/characterListControls";
 import type { CharacterData } from "../src/utils/character";
@@ -143,4 +147,85 @@ test("all class filters are supported by normalizer", () => {
   for (const value of values) {
     assert.equal(normalizeClassFilter(value), value);
   }
+});
+
+test("normalizeSearchParam handles arrays and empty values", () => {
+  assert.equal(normalizeSearchParam("kills"), "kills");
+  assert.equal(normalizeSearchParam(["deaths"]), "deaths");
+  assert.equal(normalizeSearchParam(""), undefined);
+  assert.equal(normalizeSearchParam(undefined), undefined);
+  assert.equal(normalizeSearchParam(null), undefined);
+});
+
+test("isStatSort and getStatSortLabel recognize stat sort keys", () => {
+  assert.equal(isStatSort("kills"), true);
+  assert.equal(isStatSort("deathblows"), true);
+  assert.equal(isStatSort("solokills"), true);
+  assert.equal(isStatSort("deaths"), true);
+  assert.equal(isStatSort("realm"), false);
+  assert.equal(isStatSort("invalid"), false);
+  assert.equal(getStatSortLabel("kills"), "Kills");
+  assert.equal(getStatSortLabel("solokills"), "Solo Kills");
+  assert.equal(getStatSortLabel("invalid"), null);
+});
+
+test("parseCharacterListSearchParams returns defaults for empty params", () => {
+  assert.deepEqual(parseCharacterListSearchParams({}), {
+    sortOption: "realm",
+    columnSort: null,
+    columnSortDir: "asc",
+    classFilter: "all",
+    statSort: null,
+    statSortDir: "desc",
+    showFilters: false,
+    showStatSorts: false,
+  });
+});
+
+test("parseCharacterListSearchParams parses stat sort and class filter from URL", () => {
+  assert.deepEqual(
+    parseCharacterListSearchParams({
+      statSort: "kills",
+      statSortDir: "asc",
+      classFilter: "tank",
+    }),
+    {
+      sortOption: "realm",
+      columnSort: null,
+      columnSortDir: "asc",
+      classFilter: "tank",
+      statSort: "kills",
+      statSortDir: "asc",
+      showFilters: true,
+      showStatSorts: true,
+    }
+  );
+});
+
+test("parseCharacterListSearchParams ignores invalid stat sort values", () => {
+  assert.deepEqual(
+    parseCharacterListSearchParams({
+      statSort: "invalid-stat",
+      sortOption: "rank-high-to-low",
+      columnSort: "name",
+      columnSortDir: "desc",
+    }),
+    {
+      sortOption: "rank-high-to-low",
+      columnSort: "name",
+      columnSortDir: "desc",
+      classFilter: "all",
+      statSort: null,
+      statSortDir: "desc",
+      showFilters: false,
+      showStatSorts: false,
+    }
+  );
+});
+
+test("parseCharacterListSearchParams falls back to realm for invalid sortOption", () => {
+  assert.equal(
+    parseCharacterListSearchParams({ sortOption: "not-a-sort" }).sortOption,
+    "realm"
+  );
 });

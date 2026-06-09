@@ -108,3 +108,60 @@ test("sortCharacters supports server asc/desc", () => {
   assert.deepEqual(asc, ["Gaheris", "Ywain1", "Ywain10"]);
   assert.deepEqual(desc, ["Ywain10", "Ywain1", "Gaheris"]);
 });
+
+const statFixture = [
+  makeCharacter(1, {
+    heraldName: "Low",
+    heraldClassName: "Wizard",
+    heraldServerName: "Gaheris",
+    heraldLevel: 50,
+    heraldRealmPoints: 1000,
+    realm: "Albion",
+  }),
+  makeCharacter(2, {
+    heraldName: "High",
+    heraldClassName: "Armsman",
+    heraldServerName: "Gaheris",
+    heraldLevel: 50,
+    heraldRealmPoints: 2000,
+    realm: "Midgard",
+  }),
+].map((character, index) => ({
+  ...character,
+  heraldTotalKills: index === 0 ? 10 : 50,
+  heraldTotalDeaths: index === 0 ? 5 : 20,
+  heraldTotalDeathBlows: index === 0 ? 2 : 15,
+  heraldTotalSoloKills: index === 0 ? 1 : 8,
+}));
+
+test("sortCharacters supports kills asc/desc", () => {
+  const asc = sortCharacters([...statFixture], "kills-asc").map((c) => c.heraldName);
+  const desc = sortCharacters([...statFixture], "kills-desc").map((c) => c.heraldName);
+  assert.deepEqual(asc, ["Low", "High"]);
+  assert.deepEqual(desc, ["High", "Low"]);
+});
+
+test("sortCharacters supports deaths asc/desc", () => {
+  const asc = sortCharacters([...statFixture], "deaths-asc").map((c) => c.heraldName);
+  const desc = sortCharacters([...statFixture], "deaths-desc").map((c) => c.heraldName);
+  assert.deepEqual(asc, ["Low", "High"]);
+  assert.deepEqual(desc, ["High", "Low"]);
+});
+
+test("sortCharacters supports deathblows asc/desc", () => {
+  const asc = sortCharacters([...statFixture], "deathblows-asc").map((c) => c.heraldName);
+  const desc = sortCharacters([...statFixture], "deathblows-desc").map(
+    (c) => c.heraldName
+  );
+  assert.deepEqual(asc, ["Low", "High"]);
+  assert.deepEqual(desc, ["High", "Low"]);
+});
+
+test("sortCharacters supports solokills asc/desc", () => {
+  const asc = sortCharacters([...statFixture], "solokills-asc").map((c) => c.heraldName);
+  const desc = sortCharacters([...statFixture], "solokills-desc").map(
+    (c) => c.heraldName
+  );
+  assert.deepEqual(asc, ["Low", "High"]);
+  assert.deepEqual(desc, ["High", "Low"]);
+});
