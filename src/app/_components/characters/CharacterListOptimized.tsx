@@ -105,6 +105,10 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   const deleteSubmitButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusedElementRef = useRef<HTMLElement | null>(null);
   const preservePanelVisibilityRef = useRef(false);
+  const prevUrlPanelStateRef = useRef({
+    classFilter: initialListState.classFilter,
+    statSort: initialListState.statSort,
+  });
 
   useEffect(() => {
     const params = Object.fromEntries(activeSearchParams.entries());
@@ -118,9 +122,23 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     if (preservePanelVisibilityRef.current) {
       preservePanelVisibilityRef.current = false;
     } else {
-      setShowFilters(parsed.showFilters);
-      setShowStatSorts(parsed.showStatSorts);
+      if (parsed.showFilters) {
+        setShowFilters(true);
+      } else if (prevUrlPanelStateRef.current.classFilter !== "all") {
+        setShowFilters(false);
+      }
+
+      if (parsed.showStatSorts) {
+        setShowStatSorts(true);
+      } else if (prevUrlPanelStateRef.current.statSort !== null) {
+        setShowStatSorts(false);
+      }
     }
+
+    prevUrlPanelStateRef.current = {
+      classFilter: parsed.classFilter,
+      statSort: parsed.statSort,
+    };
 
     const layoutRaw = normalizeSearchParam(params.layout);
     if (layoutRaw === "table" || layoutRaw === "realm-grid") {
