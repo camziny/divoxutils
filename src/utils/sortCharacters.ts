@@ -79,6 +79,46 @@ export const sortCharacters = (
         (b.heraldServerName || "").localeCompare(a.heraldServerName || "")
       );
 
+    case "kills-desc":
+      return characters.sort(
+        (a, b) => (b.heraldTotalKills ?? 0) - (a.heraldTotalKills ?? 0)
+      );
+    case "kills-asc":
+      return characters.sort(
+        (a, b) => (a.heraldTotalKills ?? 0) - (b.heraldTotalKills ?? 0)
+      );
+
+    case "deaths-desc":
+      return characters.sort(
+        (a, b) => (b.heraldTotalDeaths ?? 0) - (a.heraldTotalDeaths ?? 0)
+      );
+    case "deaths-asc":
+      return characters.sort(
+        (a, b) => (a.heraldTotalDeaths ?? 0) - (b.heraldTotalDeaths ?? 0)
+      );
+
+    case "deathblows-desc":
+      return characters.sort(
+        (a, b) =>
+          (b.heraldTotalDeathBlows ?? 0) - (a.heraldTotalDeathBlows ?? 0)
+      );
+    case "deathblows-asc":
+      return characters.sort(
+        (a, b) =>
+          (a.heraldTotalDeathBlows ?? 0) - (b.heraldTotalDeathBlows ?? 0)
+      );
+
+    case "solokills-desc":
+      return characters.sort(
+        (a, b) =>
+          (b.heraldTotalSoloKills ?? 0) - (a.heraldTotalSoloKills ?? 0)
+      );
+    case "solokills-asc":
+      return characters.sort(
+        (a, b) =>
+          (a.heraldTotalSoloKills ?? 0) - (b.heraldTotalSoloKills ?? 0)
+      );
+
     default:
       return characters;
   }

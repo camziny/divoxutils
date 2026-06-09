@@ -6,7 +6,7 @@ import { CharacterData } from "@/utils/character";
 import { sortCharacters } from "@/utils/sortCharacters";
 import { useUser } from "@clerk/nextjs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Loader2, AlertTriangle, LayoutGrid, List, ArrowDownWideNarrow, ArrowUpNarrowWide, Layers, SlidersHorizontal, Pin } from "lucide-react";
+import { Loader2, AlertTriangle, LayoutGrid, List, ArrowDownWideNarrow, ArrowUpNarrowWide, Layers, SlidersHorizontal, Pin, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import {
   TableContainer,
@@ -22,7 +22,9 @@ import {
   filterCharactersByClass,
   getEffectiveCharacterSortKey,
   getNextColumnSortState,
-  normalizeClassFilter,
+  normalizeSearchParam,
+  parseCharacterListSearchParams,
+  STAT_SORT_OPTIONS,
 } from "@/utils/characterListControls";
 import {
   resolveInitialDesktopLayout,
@@ -74,35 +76,27 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   const [deletingCharacterId, setDeletingCharacterId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<{ id: number; name: string } | null>(null);
-  const initialSortOption = (searchParams?.sortOption || "realm") as string;
-  const initialColumnSort = (() => {
-    const value = searchParams?.columnSort;
-    const normalized = Array.isArray(value) ? value[0] : value;
-    return normalized || null;
-  })();
-  const initialColumnSortDir = (() => {
-    const value = searchParams?.columnSortDir;
-    const normalized = Array.isArray(value) ? value[0] : value;
-    return normalized === "desc" ? "desc" : "asc";
-  })();
-  const initialLayout = (() => {
-    return resolveInitialDesktopLayout({
-      searchParams,
-      preferredDesktopLayout,
-    });
-  })();
-  const [sortOption, setSortOption] = useState(initialSortOption);
+  const initialListState = parseCharacterListSearchParams(searchParams);
+  const initialLayout = resolveInitialDesktopLayout({
+    searchParams,
+    preferredDesktopLayout,
+  });
+  const [sortOption, setSortOption] = useState(initialListState.sortOption);
   const [desktopLayout, setDesktopLayout] = useState<DesktopLayout>(initialLayout);
   const [savedPreference, setSavedPreference] = useState<DesktopLayout>(
     preferredDesktopLayout && DESKTOP_LAYOUTS.includes(preferredDesktopLayout)
       ? preferredDesktopLayout
       : "table"
   );
-  const initialClassFilter = normalizeClassFilter(searchParams?.classFilter);
-  const [classFilter, setClassFilter] = useState<ClassFilter>(initialClassFilter);
-  const [columnSort, setColumnSort] = useState<string | null>(initialColumnSort);
-  const [columnSortDir, setColumnSortDir] = useState<"asc" | "desc">(initialColumnSortDir);
-  const [showFilters, setShowFilters] = useState(initialClassFilter !== "all");
+  const [classFilter, setClassFilter] = useState<ClassFilter>(initialListState.classFilter);
+  const [columnSort, setColumnSort] = useState<string | null>(initialListState.columnSort);
+  const [columnSortDir, setColumnSortDir] = useState<"asc" | "desc">(
+    initialListState.columnSortDir
+  );
+  const [showFilters, setShowFilters] = useState(initialListState.showFilters);
+  const [statSort, setStatSort] = useState<string | null>(initialListState.statSort);
+  const [statSortDir, setStatSortDir] = useState<"asc" | "desc">(initialListState.statSortDir);
+  const [showStatSorts, setShowStatSorts] = useState(initialListState.showStatSorts);
   const [isDesktopViewport, setIsDesktopViewport] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardItem[]>(() => initialLeaderboardData ?? []);
   const [leaderboardLoaded, setLeaderboardLoaded] = useState(() => initialLeaderboardData !== undefined);
@@ -110,6 +104,47 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
   const deleteCancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const deleteSubmitButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusedElementRef = useRef<HTMLElement | null>(null);
+  const preservePanelVisibilityRef = useRef(false);
+  const prevUrlPanelStateRef = useRef({
+    classFilter: initialListState.classFilter,
+    statSort: initialListState.statSort,
+  });
+
+  useEffect(() => {
+    const params = Object.fromEntries(activeSearchParams.entries());
+    const parsed = parseCharacterListSearchParams(params);
+    setSortOption(parsed.sortOption);
+    setColumnSort(parsed.columnSort);
+    setColumnSortDir(parsed.columnSortDir);
+    setClassFilter(parsed.classFilter);
+    setStatSort(parsed.statSort);
+    setStatSortDir(parsed.statSortDir);
+    if (preservePanelVisibilityRef.current) {
+      preservePanelVisibilityRef.current = false;
+    } else {
+      if (parsed.showFilters) {
+        setShowFilters(true);
+      } else if (prevUrlPanelStateRef.current.classFilter !== "all") {
+        setShowFilters(false);
+      }
+
+      if (parsed.showStatSorts) {
+        setShowStatSorts(true);
+      } else if (prevUrlPanelStateRef.current.statSort !== null) {
+        setShowStatSorts(false);
+      }
+    }
+
+    prevUrlPanelStateRef.current = {
+      classFilter: parsed.classFilter,
+      statSort: parsed.statSort,
+    };
+
+    const layoutRaw = normalizeSearchParam(params.layout);
+    if (layoutRaw === "table" || layoutRaw === "realm-grid") {
+      setDesktopLayout(layoutRaw);
+    }
+  }, [activeSearchParams]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 640px)");
@@ -180,18 +215,19 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     [characters, classFilter]
   );
 
-  const effectiveSortKey = useMemo(
-    () =>
+  const effectiveSortKey = useMemo(() => {
+    if (statSort) return `${statSort}-${statSortDir}`;
+    if (
       shouldApplyRealmGridRankSort({
         isDesktopViewport,
         desktopLayout,
         sortOption,
         columnSort,
       })
-        ? "rank-high-to-low"
-        : getEffectiveCharacterSortKey(sortOption, columnSort, columnSortDir),
-    [isDesktopViewport, desktopLayout, sortOption, columnSort, columnSortDir]
-  );
+    )
+      return "rank-high-to-low";
+    return getEffectiveCharacterSortKey(sortOption, columnSort, columnSortDir);
+  }, [isDesktopViewport, desktopLayout, sortOption, columnSort, columnSortDir, statSort, statSortDir]);
 
   const sortedCharacters = useMemo(
     () => sortCharacters([...filteredCharacters], effectiveSortKey),
@@ -247,10 +283,13 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     setSortOption(option);
     setColumnSort(null);
     setColumnSortDir("asc");
+    setStatSort(null);
     const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
     nextParams.set("sortOption", option);
     nextParams.delete("columnSort");
     nextParams.delete("columnSortDir");
+    nextParams.delete("statSort");
+    nextParams.delete("statSortDir");
     router.replace(`${pathname}?${nextParams.toString()}`);
   }, [activeSearchParams, pathname, router]);
 
@@ -294,6 +333,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
       if (next === "all") {
         nextParams.delete("classFilter");
+        preservePanelVisibilityRef.current = true;
       } else {
         nextParams.set("classFilter", next);
       }
@@ -307,6 +347,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
       const nextState = getNextColumnSortState(columnSort, columnSortDir, column);
       setColumnSort(nextState.columnSort);
       setColumnSortDir(nextState.columnSortDir);
+      setStatSort(null);
       const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
       if (nextState.columnSort) {
         nextParams.set("columnSort", nextState.columnSort);
@@ -315,9 +356,48 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         nextParams.delete("columnSort");
         nextParams.delete("columnSortDir");
       }
+      nextParams.delete("statSort");
+      nextParams.delete("statSortDir");
       router.replace(`${pathname}?${nextParams.toString()}`);
     },
     [activeSearchParams, columnSort, columnSortDir, pathname, router]
+  );
+
+  const handleStatSortSelect = useCallback(
+    (key: string) => {
+      if (!key) return;
+      const nextParams = new URLSearchParams(activeSearchParams?.toString() || "");
+
+      if (key === "default") {
+        setStatSort(null);
+        setStatSortDir("desc");
+        setSortOption("realm");
+        setColumnSort(null);
+        setColumnSortDir("asc");
+        nextParams.delete("statSort");
+        nextParams.delete("statSortDir");
+        nextParams.set("sortOption", "realm");
+        nextParams.delete("columnSort");
+        nextParams.delete("columnSortDir");
+        preservePanelVisibilityRef.current = true;
+      } else {
+        const isSame = statSort === key;
+        const nextDir = isSame ? (statSortDir === "desc" ? "asc" : "desc") : "desc";
+        setStatSort(key);
+        setStatSortDir(nextDir);
+        setSortOption("");
+        setColumnSort(null);
+        setColumnSortDir("asc");
+        nextParams.set("statSort", key);
+        nextParams.set("statSortDir", nextDir);
+        nextParams.delete("sortOption");
+        nextParams.delete("columnSort");
+        nextParams.delete("columnSortDir");
+      }
+
+      router.replace(`${pathname}?${nextParams.toString()}`);
+    },
+    [activeSearchParams, pathname, router, statSort, statSortDir]
   );
 
   const charactersByRealm = useMemo(() => {
@@ -415,34 +495,33 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
     []
   );
 
-  const toolbarSortValue = columnSort ? "" : sortOption;
+  const toolbarSortValue = (columnSort || statSort) ? "" : sortOption;
+
+  const statSortValue = statSort ?? "default";
 
   const toolbar = (
     <div className="mb-4 flex flex-col items-center gap-1.5">
       <div className="inline-flex items-center rounded-lg bg-gray-800/60 p-0.5 gap-0.5">
         <div className="hidden sm:flex overflow-hidden">
-          <div className="flex items-center gap-0.5 pr-0.5">
-            <ToggleGroup value={toolbarSortValue} onValueChange={handleSortChange}>
-              {desktopLayout === "table" && (
-                <ToggleGroupItem value="realm" className="gap-1">
-                  <Layers size={11} />
-                  Realm
-                </ToggleGroupItem>
-              )}
-              <ToggleGroupItem value="rank-high-to-low" className="gap-1">
-                <ArrowDownWideNarrow size={11} />
-                Rank
+          <ToggleGroup value={toolbarSortValue} onValueChange={handleSortChange}>
+            {desktopLayout === "table" && (
+              <ToggleGroupItem value="realm" className="gap-1">
+                <Layers size={11} />
+                Realm
               </ToggleGroupItem>
-              <ToggleGroupItem value="rank-low-to-high" className="gap-1">
-                <ArrowUpNarrowWide size={11} />
-                Rank
-              </ToggleGroupItem>
-            </ToggleGroup>
-            <div className="w-px h-4 bg-gray-700/60 mx-0.5" />
-          </div>
+            )}
+            <ToggleGroupItem value="rank-high-to-low" className="gap-1">
+              <ArrowDownWideNarrow size={11} />
+              Rank
+            </ToggleGroupItem>
+            <ToggleGroupItem value="rank-low-to-high" className="gap-1">
+              <ArrowUpNarrowWide size={11} />
+              Rank
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
 
-        <div className="flex sm:hidden items-center">
+        <div className="flex sm:hidden overflow-hidden">
           <ToggleGroup value={toolbarSortValue} onValueChange={handleSortChange}>
             <ToggleGroupItem value="realm" className="gap-1">
               <Layers size={11} />
@@ -460,6 +539,7 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
         </div>
 
         <div className="hidden sm:flex items-center">
+          <div className="w-px h-4 bg-gray-700/60 mx-0.5" />
           <ToggleGroup value={desktopLayout} onValueChange={handleLayoutChange}>
             <ToggleGroupItem value="table" className="gap-1">
               <List size={11} />
@@ -490,9 +570,55 @@ const CharacterListOptimized: React.FC<CharacterListProps> = ({
             <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-indigo-400" aria-hidden="true" />
           )}
         </button>
+
+        <button
+          type="button"
+          onClick={() => setShowStatSorts((prev) => !prev)}
+          aria-label="Toggle stat sorting"
+          aria-expanded={showStatSorts}
+          aria-controls="character-stat-sorts"
+          className={`relative flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors duration-150 ${
+            showStatSorts ? "bg-gray-700/80 text-gray-200" : "text-gray-400 hover:text-gray-200 hover:bg-gray-700/40"
+          }`}
+        >
+          <BarChart3 size={11} aria-hidden="true" />
+          Stats
+          {statSort && (
+            <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-indigo-400" aria-hidden="true" />
+          )}
+        </button>
       </div>
 
       <AnimatePresence initial={false}>
+        {showStatSorts && (
+          <motion.div
+            key="stat-sorts"
+            id="character-stat-sorts"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <div className="inline-flex items-center rounded-lg bg-gray-800/60 p-0.5">
+              <ToggleGroup value={statSortValue} onValueChange={handleStatSortSelect}>
+                <ToggleGroupItem value="default">Default</ToggleGroupItem>
+                {STAT_SORT_OPTIONS.map((opt) => (
+                  <ToggleGroupItem key={opt.key} value={opt.key} className="gap-1">
+                    {opt.label}
+                    {statSort === opt.key && (
+                      statSortDir === "desc" ? (
+                        <ArrowDownWideNarrow size={10} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpNarrowWide size={10} className="text-indigo-400" />
+                      )
+                    )}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+          </motion.div>
+        )}
         {showFilters && (
           <motion.div
             key="class-filters"
