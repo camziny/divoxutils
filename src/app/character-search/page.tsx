@@ -5,7 +5,7 @@ import { buildPageMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildPageMetadata({
   title: "Character search",
   description:
-    "Search Dark Age of Camelot (DAoC) players and browse public character rosters on divoxutils.",
+    "Search Dark Age of Camelot (DAoC) players and characters on divoxutils, or browse public profiles.",
   path: "/character-search",
 });
 
