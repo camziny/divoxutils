@@ -6,10 +6,9 @@ import JsonLd from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Ghost UI",
-  description:
-    "Download Ghost UI for Dark Age of Camelot (DAoC) — a custom in-game overlay for realm rank charts and related player info on divoxutils.",
+  description: "An actively maintained Ghost UI for Dark Age of Camelot (DAoC) on divoxutils.",
   path: "/ui",
-  openGraphTitle: "Ghost UI for DAoC — divoxutils",
+  openGraphTitle: "Ghost UI — divoxutils",
 });
 
 const ghostUiJsonLd = {
@@ -23,8 +22,7 @@ const ghostUiJsonLd = {
     price: "0",
     priceCurrency: "USD",
   },
-  description:
-    "Custom Dark Age of Camelot UI overlay distributed by divoxutils for realm rank and related in-game information.",
+  description: "An actively maintained Ghost UI for Dark Age of Camelot, distributed by divoxutils.",
   url: `${SITE_URL}/ui`,
   publisher: {
     "@type": "Organization",

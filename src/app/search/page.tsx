@@ -11,7 +11,7 @@ import { buildPageMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildPageMetadata({
   title: "Player search",
   description:
-    "Search Dark Age of Camelot (DAoC) players and characters on divoxutils. Find public character rosters, realm points, and progress.",
+    "Search Dark Age of Camelot (DAoC) players and characters on divoxutils, or browse public profiles.",
   path: "/search",
   openGraphTitle: "DAoC player search — divoxutils",
 });

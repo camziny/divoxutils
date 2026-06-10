@@ -49,16 +49,17 @@ export async function generateMetadata(
   const pathSegment =
     typeof resolvedParams.name === "string" ? resolvedParams.name : displayName;
   const profileUrl = `https://divoxutils.com/user/${encodeURIComponent(pathSegment)}/characters`;
-  const description = `Track ${displayName}'s Dark Age of Camelot (DAoC) characters on divoxutils — realm points, realm ranks, realms, and progress across their roster.`;
+  const description = `${displayName}'s Dark Age of Camelot characters on divoxutils, with aggregate stats and recent activity.`;
+  const title = `${displayName}'s characters`;
 
   return {
-    title: `${displayName}'s DAoC characters`,
+    title,
     description,
     alternates: {
       canonical: profileUrl,
     },
     openGraph: {
-      title: `${displayName}'s DAoC characters`,
+      title,
       description,
       url: profileUrl,
       type: "profile",
@@ -66,7 +67,7 @@ export async function generateMetadata(
     },
     twitter: {
       card: "summary_large_image",
-      title: `${displayName}'s DAoC characters`,
+      title,
       description,
       images: ["/opengraph-image"],
     },
