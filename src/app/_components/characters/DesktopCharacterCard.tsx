@@ -12,6 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import ClassChampionCrown from "./ClassChampionCrown";
 
 interface DesktopCharacterCardProps {
   character: CharacterData;
@@ -70,15 +71,27 @@ const DesktopCharacterCard: React.FC<DesktopCharacterCardProps> = ({
         className={`flex cursor-pointer items-center ${getRealmSurfaceInteractiveClass(realm.name)} transition-colors duration-100 rounded px-2 py-[3px] gap-1.5 group [@media(min-height:900px)]:px-2.5 [@media(min-height:900px)]:py-1 [@media(min-height:900px)]:gap-2`}
         onClick={() => setOpen((prev) => !prev)}
       >
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="truncate text-[11px] font-medium text-white min-w-0 flex-1 [@media(min-height:900px)]:text-xs">
+        <TooltipProvider delayDuration={300}>
+          <span className="truncate text-[11px] font-medium text-white min-w-0 flex-1 inline-flex items-center gap-1 [@media(min-height:900px)]:text-xs">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="truncate">
+                  {characterDetails.heraldName || "Unknown"}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top">
                 {characterDetails.heraldName || "Unknown"}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>{characterDetails.heraldName || "Unknown"}</TooltipContent>
-          </Tooltip>
+              </TooltipContent>
+            </Tooltip>
+            <ClassChampionCrown
+              isClassChampion={characterDetails.isClassChampion}
+              heraldClassName={characterDetails.heraldClassName}
+              heraldServerName={characterDetails.heraldServerName}
+              realm={characterDetails.realm}
+              size={11}
+              className="flex-shrink-0"
+            />
+          </span>
         </TooltipProvider>
         <span className="text-[10px] text-gray-400 flex-shrink-0 w-[70px] truncate [@media(min-height:900px)]:text-[11px] [@media(min-height:900px)]:w-[84px]">
           {characterDetails.heraldClassName || "-"}

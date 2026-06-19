@@ -5,6 +5,7 @@ import {
 
 type UserCharactersByUserIdDeps = {
   getUserCharactersByUserId: (clerkUserId: string) => Promise<any[]>;
+  getClassChampionWebIds?: (webIds: string[]) => Promise<Set<string>>;
 };
 
 type UserCharactersByUserIdInput = {
@@ -42,6 +43,14 @@ export async function handleUserCharactersByUserIdApi(
     if (!userCharacters || userCharacters.length === 0) {
       return { status: 200, headers, body: [], bodyType: "json" };
     }
+
+    const webIds = userCharacters
+      .map((userCharacter) => userCharacter.character?.webId)
+      .filter((webId): webId is string => typeof webId === "string");
+
+    const championWebIds = deps.getClassChampionWebIds
+      ? await deps.getClassChampionWebIds(webIds)
+      : new Set<string>();
 
     const charactersWithDetails = userCharacters
       .map((userCharacter) => {
@@ -107,6 +116,7 @@ export async function handleUserCharactersByUserIdApi(
           heraldHiberniaSoloKills: character.heraldHiberniaSoloKills,
           clerkUserId: resolvedClerkUserId,
           formattedHeraldRealmPoints,
+          isClassChampion: championWebIds.has(character.webId),
           initialCharacter: {
             id: character.id,
             userId: resolvedClerkUserId,

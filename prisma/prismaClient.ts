@@ -1,24 +1,35 @@
-import { PrismaClient, Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+
+function createPrismaClient() {
+  const url =
+    process.env.NODE_ENV === "production"
+      ? process.env.POSTGRES_PRISMA_URL
+      : process.env.POSTGRES_URL_NON_POOLING;
+
+  return new PrismaClient({
+    datasources: {
+      db: {
+        url,
+      },
+    },
+  });
+}
+
+function isStalePrismaClient(client: PrismaClient | undefined): client is undefined {
+  if (!client) {
+    return true;
+  }
+
+  return typeof client.classChampion?.findMany !== "function";
+}
 
 let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === "production") {
-  prisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: process.env.POSTGRES_PRISMA_URL,
-      },
-    },
-  });
+  prisma = createPrismaClient();
 } else {
-  if (!global.prisma) {
-    global.prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: process.env.POSTGRES_URL_NON_POOLING,
-        },
-      },
-    });
+  if (isStalePrismaClient(global.prisma)) {
+    global.prisma = createPrismaClient();
   }
   prisma = global.prisma;
 }

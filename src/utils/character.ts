@@ -249,6 +249,7 @@ export type CharacterData = {
   heraldMasterLevel: string;
   clerkUserId: string;
   formattedHeraldRealmPoints: string;
+  isClassChampion?: boolean;
   userId?: string;
 };
 
@@ -297,6 +298,7 @@ export const createCharacterDetails = (character: CharacterData) => {
     heraldMasterLevel: character.heraldMasterLevel,
     clerkUserId: character.clerkUserId,
     formattedHeraldRealmPoints: character.formattedHeraldRealmPoints,
+    isClassChampion: character.isClassChampion,
   };
 };
 

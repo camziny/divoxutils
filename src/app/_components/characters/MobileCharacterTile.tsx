@@ -11,6 +11,8 @@ import {
 import MobileCharacterTileSkeleton from "./MobileCharacterTileSkeleton";
 import { CharacterData } from "@/utils/character";
 import { getRealmSurfaceInteractiveClass } from "./characterTileTheme";
+import ClassChampionCrown from "./ClassChampionCrown";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface MobileCharacterTileProps {
   character: CharacterData;
@@ -102,9 +104,21 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-2">
-                <h4 className="text-white font-medium text-sm leading-tight truncate">
-                  {characterDetails.heraldName || "Unknown"}
-                </h4>
+                <TooltipProvider delayDuration={300}>
+                  <h4 className="text-white font-medium text-sm leading-tight truncate inline-flex items-center gap-1">
+                    <span className="truncate">
+                      {characterDetails.heraldName || "Unknown"}
+                    </span>
+                    <ClassChampionCrown
+                      isClassChampion={characterDetails.isClassChampion}
+                      heraldClassName={characterDetails.heraldClassName}
+                      heraldServerName={characterDetails.heraldServerName}
+                      realm={characterDetails.realm}
+                      size={12}
+                      className="flex-shrink-0"
+                    />
+                  </h4>
+                </TooltipProvider>
                 <p className="text-gray-300 text-xs">
                   {characterDetails.heraldClassName || "Unknown"}
                 </p>
