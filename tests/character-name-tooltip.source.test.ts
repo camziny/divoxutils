@@ -11,9 +11,12 @@ const readComponent = (fileName: string) =>
 test("CharacterTile uses shadcn tooltip for name hover", () => {
   const source = readComponent("CharacterTile.tsx");
   assert.match(source, /from\s+"@\/components\/ui\/tooltip"/);
-  assert.match(source, /<TooltipProvider>/);
+  assert.match(source, /<TooltipProvider[^>]*>/);
   assert.match(source, /<TooltipTrigger asChild>/);
-  assert.match(source, /<TooltipContent>\{characterDetails\.heraldName\}<\/TooltipContent>/);
+  assert.match(
+    source,
+    /<TooltipContent[^>]*>\s*\{characterDetails\.heraldName\}\s*<\/TooltipContent>/
+  );
   assert.doesNotMatch(source, /from\s+"@mui\/material".*Tooltip/);
   assert.doesNotMatch(source, /styled\(\(\{ className, \.\.\.props \}\)\s*=>\s*\(\s*<Tooltip/);
 });
@@ -21,10 +24,10 @@ test("CharacterTile uses shadcn tooltip for name hover", () => {
 test("DesktopCharacterCard uses shadcn tooltip for truncated name", () => {
   const source = readComponent("DesktopCharacterCard.tsx");
   assert.match(source, /from\s+"@\/components\/ui\/tooltip"/);
-  assert.match(source, /<TooltipProvider>/);
+  assert.match(source, /<TooltipProvider[^>]*>/);
   assert.match(source, /<TooltipTrigger asChild>/);
   assert.match(
     source,
-    /<TooltipContent>\{characterDetails\.heraldName \|\| "Unknown"\}<\/TooltipContent>/
+    /<TooltipContent[^>]*>\s*\{characterDetails\.heraldName \|\| "Unknown"\}\s*<\/TooltipContent>/
   );
 });
