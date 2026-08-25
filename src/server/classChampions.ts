@@ -3,7 +3,6 @@ import {
   getClassChampionClusterName,
   getRealmForChampionClass,
   isChampionRealm,
-  isYwainServer,
   normalizeChampionClassName,
   YWAIN_CLUSTER_NAME,
 } from "@/utils/championClassName";
@@ -138,11 +137,9 @@ const EXCIDIO_CLASS_IDS: Record<string, number> = {
   Warrior: 22,
 };
 
-const REALM_TO_EXCIDIO_ID: Record<string, number> = {
-  Albion: 1,
-  Midgard: 2,
-  Hibernia: 3,
-};
+const REALM_TO_EXCIDIO_ID: Record<string, number> = Object.fromEntries(
+  Object.entries(realmMapping).map(([id, name]) => [name, Number(id)]),
+);
 
 const MAULER_EXCIDIO_CLASS_IDS_BY_REALM: Record<string, number> = {
   Albion: 60,
@@ -282,7 +279,7 @@ export function validateClassChampionSourceRow(
     );
   }
 
-  if (!clusterName || !isYwainServer(heraldPayload.server_name)) {
+  if (!clusterName) {
     return invalidChampionResult(
       sourceBase,
       "Herald character is not on Ywain",

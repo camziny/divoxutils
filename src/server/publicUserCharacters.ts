@@ -63,10 +63,7 @@ export const getPublicCharactersForUserUncached = async (
   try {
     const lookupChampionWebIds =
       deps.getClassChampionWebIds ?? getClassChampionWebIdsForCharacters;
-    championWebIds = await lookupChampionWebIds(
-      prisma,
-      webIds.map((webId) => ({ webId }))
-    );
+    championWebIds = await lookupChampionWebIds(prisma, webIds);
   } catch (error) {
     console.error(
       "Error fetching class champion status for public profile:",

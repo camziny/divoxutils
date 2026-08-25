@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import {
   CLASS_CHAMPION_SOURCE,
+  type ClassChampionBucket,
   type ClassChampionSourceResult,
   getClassChampionBuckets,
   getExcidioClassChampionApiUrl,
@@ -17,9 +18,8 @@ const HERALD_CHARACTER_INFO_URL =
 
 export async function getClassChampionWebIdsForCharacters(
   prisma: PrismaClient,
-  characters: Array<{ webId: string }>,
+  webIds: string[],
 ): Promise<Set<string>> {
-  const webIds = characters.map((character) => character.webId);
   if (webIds.length === 0) {
     return new Set();
   }
@@ -71,14 +71,12 @@ export async function syncClassChampionsFromSources(
       );
 
       if (!sourceRow) {
-        const result = staleResultForBucket(
-          bucket.canonicalClassName,
-          bucket.realm,
-          bucket.sourceUrl,
+        await recordUnresolvedBucket(
+          prisma,
+          bucket,
+          results,
           "Could not parse Excidio top character API response",
         );
-        await upsertUnresolvedChampion(prisma, result);
-        results.push(result);
         failed += 1;
         continue;
       }
@@ -110,14 +108,12 @@ export async function syncClassChampionsFromSources(
         invalid += 1;
       }
     } catch (error) {
-      const result = staleResultForBucket(
-        bucket.canonicalClassName,
-        bucket.realm,
-        bucket.sourceUrl,
+      await recordUnresolvedBucket(
+        prisma,
+        bucket,
+        results,
         error instanceof Error ? error.message : "Unknown sync error",
       );
-      await upsertUnresolvedChampion(prisma, result);
-      results.push(result);
       failed += 1;
     }
   }
@@ -194,6 +190,30 @@ function staleResultForBucket(
     validationStatus: "stale",
     validationError,
   };
+}
+
+async function recordUnresolvedBucket(
+  prisma: PrismaClient,
+  bucket: Pick<ClassChampionBucket, "canonicalClassName" | "realm" | "sourceUrl">,
+  results: ClassChampionSourceResult[],
+  message: string,
+): Promise<void> {
+  const result = staleResultForBucket(
+    bucket.canonicalClassName,
+    bucket.realm,
+    bucket.sourceUrl,
+    message,
+  );
+  results.push(result);
+
+  try {
+    await upsertUnresolvedChampion(prisma, result);
+  } catch (writeError) {
+    console.error(
+      `Failed to persist stale class champion result for ${bucket.canonicalClassName}/${bucket.realm}:`,
+      writeError,
+    );
+  }
 }
 
 async function upsertUnresolvedChampion(

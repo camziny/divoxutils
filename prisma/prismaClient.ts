@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 function createPrismaClient() {
   const url =
@@ -20,7 +20,12 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
     return true;
   }
 
-  return typeof client.classChampion?.findMany !== "function";
+  const clientRecord = client as unknown as Record<string, unknown>;
+  return Prisma.dmmf.datamodel.models.some((model) => {
+    const delegateName =
+      model.name.charAt(0).toLowerCase() + model.name.slice(1);
+    return typeof clientRecord[delegateName] !== "object";
+  });
 }
 
 let prisma: PrismaClient;

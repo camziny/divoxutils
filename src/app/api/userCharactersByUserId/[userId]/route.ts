@@ -9,7 +9,7 @@ const handlers = createUserCharactersByUserIdRouteHandlers({
   deps: {
     getUserCharactersByUserId,
     getClassChampionWebIds: (webIds) =>
-      getClassChampionWebIdsForCharacters(prisma, webIds.map((webId) => ({ webId }))),
+      getClassChampionWebIdsForCharacters(prisma, webIds),
   },
   getAuthUserId: getClerkAuthUserId,
   isAdminClerkUserId,
