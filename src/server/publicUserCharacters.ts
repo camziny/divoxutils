@@ -4,6 +4,7 @@ import {
   formatRealmRankWithLevel,
   getRealmRankForPoints,
 } from "@/utils/character";
+import { getClassChampionWebIdsForCharacters } from "@/server/classChampionStore";
 
 type PublicUserProfile = {
   clerkUserId: string;
@@ -43,13 +44,39 @@ export const getPublicUserProfileByName = async (
   return getPublicUserProfileByNameCached(name);
 };
 
-const getPublicCharactersForUserUncached = async (clerkUserId: string) => {
+export const getPublicCharactersForUserUncached = async (
+  clerkUserId: string,
+  deps: {
+    getClassChampionWebIds?: typeof getClassChampionWebIdsForCharacters;
+  } = {}
+) => {
   const userCharacters = await prisma.userCharacter.findMany({
     where: { clerkUserId },
     include: { character: true },
   });
 
-  return mapUserCharactersToPublicPayload(userCharacters, clerkUserId);
+  const webIds = userCharacters
+    .map((userCharacter) => userCharacter.character?.webId)
+    .filter((webId): webId is string => typeof webId === "string");
+
+  let championWebIds: Set<string>;
+  try {
+    const lookupChampionWebIds =
+      deps.getClassChampionWebIds ?? getClassChampionWebIdsForCharacters;
+    championWebIds = await lookupChampionWebIds(prisma, webIds);
+  } catch (error) {
+    console.error(
+      "Error fetching class champion status for public profile:",
+      error
+    );
+    championWebIds = new Set<string>();
+  }
+
+  return mapUserCharactersToPublicPayload(
+    userCharacters,
+    clerkUserId,
+    championWebIds
+  );
 };
 
 const getPublicCharactersForUserCached = unstable_cache(
@@ -60,11 +87,12 @@ const getPublicCharactersForUserCached = unstable_cache(
 
 export const mapUserCharactersToPublicPayload = (
   userCharacters: UserCharacterRecord[],
-  clerkUserId: string
+  clerkUserId: string,
+  championWebIds: Set<string> = new Set()
 ): Exclude<ReturnType<typeof mapUserCharacterToPublicPayload>, null>[] =>
   userCharacters
     .map((userCharacter) =>
-      mapUserCharacterToPublicPayload(userCharacter, clerkUserId)
+      mapUserCharacterToPublicPayload(userCharacter, clerkUserId, championWebIds)
     )
     .filter(
       (
@@ -77,7 +105,8 @@ export const mapUserCharactersToPublicPayload = (
 
 const mapUserCharacterToPublicPayload = (
   userCharacter: UserCharacterRecord,
-  clerkUserId: string
+  clerkUserId: string,
+  championWebIds: Set<string> = new Set()
 ) => {
   if (!userCharacter.character) {
     return null;
@@ -137,6 +166,7 @@ const mapUserCharacterToPublicPayload = (
     heraldHiberniaSoloKills: character.heraldHiberniaSoloKills,
     clerkUserId,
     formattedHeraldRealmPoints,
+    isClassChampion: championWebIds.has(character.webId),
     initialCharacter: {
       id: character.id,
       userId: clerkUserId,

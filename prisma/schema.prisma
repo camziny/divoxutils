@@ -167,6 +167,28 @@ model HeraldBatchState {
   lastProcessedCharacterId  Int
 }
 
+model ClassChampion {
+  id                 Int       @id @default(autoincrement())
+  heraldServerName   String
+  canonicalClassName String
+  realm              String
+  webId              String
+  heraldName         String
+  heraldRealmPoints  Int
+  source             String
+  sourceUrl          String
+  sourceRank         Int
+  sourceFetchedAt    DateTime
+  validatedAt        DateTime?
+  validationStatus   String
+  validationError    String?
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([heraldServerName, canonicalClassName, realm])
+  @@index([webId])
+  @@index([validationStatus, validatedAt])
+}
+
 model UserIdentityLink {
   id              Int      @id @default(autoincrement())
   clerkUserId     String

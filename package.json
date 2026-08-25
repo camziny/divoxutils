@@ -18,6 +18,7 @@
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test:feature && pnpm run build",
     "seed:from-prod": "node scripts/seedFromProduction.js",
     "seed:draft-history:dev": "tsx scripts/seedDraftHistoryDev.ts",
+    "sync:class-champions": "tsx scripts/sync-class-champions.ts",
     "test:draft": "tsx --test tests/draft.feature.test.ts",
     "test:feature": "tsx --test $(find tests -type f -name '*.test.ts' | sort)",
     "test:my-characters:api": "node --import tsx --test tests/my-characters.crud.test.ts",

@@ -18,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import ClassChampionCrown from "./ClassChampionCrown";
 
 type KillStats = {
   kills: number;
@@ -204,13 +205,24 @@ const CharacterTile: React.FC<{
           }}
           className="!text-white text-xs font-semibold truncate"
         >
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span>{characterDetails.heraldName}</span>
-              </TooltipTrigger>
-              <TooltipContent>{characterDetails.heraldName}</TooltipContent>
-            </Tooltip>
+          <TooltipProvider delayDuration={300}>
+            <span className="flex items-center gap-1 min-w-0 w-full">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="truncate min-w-0">{characterDetails.heraldName}</span>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {characterDetails.heraldName}
+                </TooltipContent>
+              </Tooltip>
+              <ClassChampionCrown
+                isClassChampion={characterDetails.isClassChampion}
+                heraldClassName={characterDetails.heraldClassName}
+                realm={characterDetails.realm}
+                size={12}
+                className="flex-shrink-0"
+              />
+            </span>
           </TooltipProvider>
         </TableCell>
         <TableCell

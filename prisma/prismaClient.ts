@@ -1,26 +1,43 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 
-let prisma: PrismaClient;
+function createPrismaClient() {
+  const url =
+    process.env.NODE_ENV === "production"
+      ? process.env.POSTGRES_PRISMA_URL
+      : process.env.POSTGRES_URL_NON_POOLING;
 
-if (process.env.NODE_ENV === "production") {
-  prisma = new PrismaClient({
+  return new PrismaClient({
     datasources: {
       db: {
-        url: process.env.POSTGRES_PRISMA_URL,
+        url,
       },
     },
   });
-} else {
-  if (!global.prisma) {
-    global.prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: process.env.POSTGRES_URL_NON_POOLING,
-        },
-      },
-    });
+}
+
+function isStalePrismaClient(client: PrismaClient | undefined): boolean {
+  if (!client) {
+    return true;
   }
-  prisma = global.prisma;
+
+  const clientRecord = client as unknown as Record<string, unknown>;
+  return Prisma.dmmf.datamodel.models.some((model) => {
+    const delegateName =
+      model.name.charAt(0).toLowerCase() + model.name.slice(1);
+    return typeof clientRecord[delegateName] !== "object";
+  });
+}
+
+let prisma: PrismaClient;
+
+if (process.env.NODE_ENV === "production") {
+  prisma = createPrismaClient();
+} else {
+  if (isStalePrismaClient(global.prisma)) {
+    global.prisma?.$disconnect().catch(() => {});
+    global.prisma = createPrismaClient();
+  }
+  prisma = global.prisma!;
 }
 
 prisma.$use(async (params, next) => {

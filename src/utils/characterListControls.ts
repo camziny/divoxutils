@@ -1,5 +1,6 @@
 import { CLASS_CATEGORIES } from "@/app/draft/_lib/constants";
 import { CharacterData } from "@/utils/character";
+import { normalizeChampionClassName } from "@/utils/championClassName";
 
 export type ClassFilter = "all" | "tank" | "caster" | "support" | "stealth";
 export type ColumnSortDir = "asc" | "desc";
@@ -34,18 +35,8 @@ export const normalizeSearchParam = (
   return normalized || undefined;
 };
 
-const CLASS_NAME_ALIASES: Record<string, string> = {
-  armswoman: "armsman",
-  heroine: "hero",
-  sorceress: "sorcerer",
-  enchantress: "enchanter",
-  huntress: "hunter",
-};
-
-const normalizeClassName = (className: string | undefined): string => {
-  const normalized = (className ?? "").trim().toLowerCase();
-  return CLASS_NAME_ALIASES[normalized] ?? normalized;
-};
+const normalizeClassName = (className: string | undefined): string =>
+  normalizeChampionClassName(className).toLowerCase();
 
 const CLASS_FILTER_MAP: Record<Exclude<ClassFilter, "all">, Set<string>> = {
   tank: new Set(
