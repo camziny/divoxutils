@@ -7,12 +7,8 @@ import {
   normalizeChampionClassName,
   YWAIN_CLUSTER_NAME,
 } from "@/utils/championClassName";
-import { getRealmRankThreshold } from "@/utils/character";
 import { realmMapping } from "@/server/services/characterService";
 
-export const CLASS_CHAMPION_MIN_RANK = 130;
-export const CLASS_CHAMPION_MIN_REALM_POINTS =
-  getRealmRankThreshold(CLASS_CHAMPION_MIN_RANK) ?? 66_181_501;
 export const CLASS_CHAMPION_SOURCE = "excidio-class-leaderboard";
 export const CLASS_CHAMPION_FRESHNESS_DAYS = 7;
 
@@ -77,9 +73,22 @@ export type InvalidClassChampionSourceResult = {
   validationError: string;
 };
 
+export type StaleClassChampionSourceResult = {
+  heraldServerName: string;
+  canonicalClassName: string;
+  realm: string;
+  source: string;
+  sourceUrl: string;
+  sourceRank: number;
+  sourceFetchedAt: Date;
+  validationStatus: "stale";
+  validationError: string;
+};
+
 export type ClassChampionSourceResult =
   | ValidatedClassChampion
-  | InvalidClassChampionSourceResult;
+  | InvalidClassChampionSourceResult
+  | StaleClassChampionSourceResult;
 
 const EXCIDIO_CLASS_IDS: Record<string, number> = {
   Armsman: 2,
@@ -333,7 +342,11 @@ export function isFreshClassChampion(
   champion: { validationStatus: string; validatedAt: Date | null },
   now = new Date(),
 ): boolean {
-  if (champion.validationStatus !== "valid" || !champion.validatedAt) {
+  if (
+    (champion.validationStatus !== "valid" &&
+      champion.validationStatus !== "stale") ||
+    !champion.validatedAt
+  ) {
     return false;
   }
 

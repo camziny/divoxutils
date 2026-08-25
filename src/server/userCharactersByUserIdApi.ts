@@ -48,9 +48,14 @@ export async function handleUserCharactersByUserIdApi(
       .map((userCharacter) => userCharacter.character?.webId)
       .filter((webId): webId is string => typeof webId === "string");
 
-    const championWebIds = deps.getClassChampionWebIds
-      ? await deps.getClassChampionWebIds(webIds)
-      : new Set<string>();
+    let championWebIds = new Set<string>();
+    if (deps.getClassChampionWebIds) {
+      try {
+        championWebIds = await deps.getClassChampionWebIds(webIds);
+      } catch (error) {
+        console.error("Error fetching class champion status:", error);
+      }
+    }
 
     const charactersWithDetails = userCharacters
       .map((userCharacter) => {

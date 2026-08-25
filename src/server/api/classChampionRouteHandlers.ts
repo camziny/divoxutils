@@ -4,16 +4,13 @@ import {
   postMethodNotAllowedResponse,
   unauthorizedCronResponse,
 } from "@/server/api/cronAuth";
+import type { syncClassChampionsFromSources } from "@/server/classChampionStore";
 
 type UpdateClassChampionsDeps = {
   cronSecret: string | undefined;
-  syncClassChampions: () => Promise<{
-    checked: number;
-    synced: number;
-    invalid: number;
-    failed: number;
-    results: unknown[];
-  }>;
+  syncClassChampions: () => Promise<
+    Awaited<ReturnType<typeof syncClassChampionsFromSources>>
+  >;
 };
 
 export function createUpdateClassChampionsRouteHandlers(

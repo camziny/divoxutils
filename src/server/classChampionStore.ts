@@ -58,6 +58,11 @@ export async function syncClassChampionsFromSources(
           headers: { "User-Agent": "divoxutils/1.0" },
         },
       );
+      if (!sourceResponse.ok) {
+        throw new Error(
+          `Excidio API call failed with status ${sourceResponse.status}: ${sourceResponse.statusText}`,
+        );
+      }
       const sourcePayload =
         (await sourceResponse.json()) as ExcidioClassChampionApiResponse;
       const sourceRow = parseExcidioClassChampionApiTopCharacter(
@@ -66,15 +71,15 @@ export async function syncClassChampionsFromSources(
       );
 
       if (!sourceRow) {
-        const result = invalidResultForBucket(
+        const result = staleResultForBucket(
           bucket.canonicalClassName,
           bucket.realm,
           bucket.sourceUrl,
           "Could not parse Excidio top character API response",
         );
-        await upsertInvalidChampion(prisma, result);
+        await upsertUnresolvedChampion(prisma, result);
         results.push(result);
-        invalid += 1;
+        failed += 1;
         continue;
       }
 
@@ -84,6 +89,11 @@ export async function syncClassChampionsFromSources(
           headers: { "User-Agent": "divoxutils/1.0" },
         },
       );
+      if (!heraldResponse.ok) {
+        throw new Error(
+          `Herald API call failed with status ${heraldResponse.status}: ${heraldResponse.statusText}`,
+        );
+      }
       const heraldPayload =
         (await heraldResponse.json()) as HeraldChampionValidationPayload;
       const result = validateClassChampionSourceRow(
@@ -100,13 +110,13 @@ export async function syncClassChampionsFromSources(
         invalid += 1;
       }
     } catch (error) {
-      const result = invalidResultForBucket(
+      const result = staleResultForBucket(
         bucket.canonicalClassName,
         bucket.realm,
         bucket.sourceUrl,
         error instanceof Error ? error.message : "Unknown sync error",
       );
-      await upsertInvalidChampion(prisma, result);
+      await upsertUnresolvedChampion(prisma, result);
       results.push(result);
       failed += 1;
     }
@@ -164,15 +174,15 @@ async function upsertChampionSourceResult(
     return;
   }
 
-  await upsertInvalidChampion(prisma, result);
+  await upsertUnresolvedChampion(prisma, result);
 }
 
-function invalidResultForBucket(
+function staleResultForBucket(
   canonicalClassName: string,
   realm: string,
   sourceUrl: string,
   validationError: string,
-): Extract<ClassChampionSourceResult, { validationStatus: "invalid" }> {
+): Extract<ClassChampionSourceResult, { validationStatus: "stale" }> {
   return {
     heraldServerName: YWAIN_CLUSTER_NAME,
     canonicalClassName,
@@ -181,16 +191,19 @@ function invalidResultForBucket(
     sourceUrl,
     sourceRank: 1,
     sourceFetchedAt: new Date(),
-    validationStatus: "invalid",
+    validationStatus: "stale",
     validationError,
   };
 }
 
-async function upsertInvalidChampion(
+async function upsertUnresolvedChampion(
   prisma: PrismaClient,
-  result: Extract<ClassChampionSourceResult, { validationStatus: "invalid" }>,
+  result: Extract<
+    ClassChampionSourceResult,
+    { validationStatus: "invalid" | "stale" }
+  >,
 ) {
-  const existing = await prisma.classChampion.findUnique({
+  await prisma.classChampion.upsert({
     where: {
       heraldServerName_canonicalClassName_realm: {
         heraldServerName: result.heraldServerName,
@@ -198,31 +211,21 @@ async function upsertInvalidChampion(
         realm: result.realm,
       },
     },
-  });
-
-  if (existing) {
-    await prisma.classChampion.update({
-      where: { id: existing.id },
-      data: {
-        source: result.source,
-        sourceUrl: result.sourceUrl,
-        sourceRank: result.sourceRank,
-        sourceFetchedAt: result.sourceFetchedAt,
-        validationStatus: result.validationStatus,
-        validationError: result.validationError,
-      },
-    });
-    return;
-  }
-
-  await prisma.classChampion.create({
-    data: {
+    create: {
       heraldServerName: result.heraldServerName,
       canonicalClassName: result.canonicalClassName,
       realm: result.realm,
       webId: "",
       heraldName: "",
       heraldRealmPoints: 0,
+      source: result.source,
+      sourceUrl: result.sourceUrl,
+      sourceRank: result.sourceRank,
+      sourceFetchedAt: result.sourceFetchedAt,
+      validationStatus: result.validationStatus,
+      validationError: result.validationError,
+    },
+    update: {
       source: result.source,
       sourceUrl: result.sourceUrl,
       sourceRank: result.sourceRank,

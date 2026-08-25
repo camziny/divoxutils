@@ -13,7 +13,6 @@ import {
 type ClassChampionCrownProps = {
   isClassChampion?: boolean;
   heraldClassName?: string | null;
-  heraldServerName?: string | null;
   realm?: string | null;
   size?: number;
   className?: string;

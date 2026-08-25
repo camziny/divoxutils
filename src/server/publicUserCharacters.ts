@@ -42,7 +42,12 @@ export const getPublicUserProfileByName = async (
   return getPublicUserProfileByNameCached(name);
 };
 
-const getPublicCharactersForUserUncached = async (clerkUserId: string) => {
+export const getPublicCharactersForUserUncached = async (
+  clerkUserId: string,
+  deps: {
+    getClassChampionWebIds?: typeof getClassChampionWebIdsForCharacters;
+  } = {}
+) => {
   const userCharacters = await prisma.userCharacter.findMany({
     where: { clerkUserId },
     include: { character: true },
@@ -51,10 +56,22 @@ const getPublicCharactersForUserUncached = async (clerkUserId: string) => {
   const webIds = userCharacters
     .map((userCharacter) => userCharacter.character?.webId)
     .filter((webId): webId is string => typeof webId === "string");
-  const championWebIds = await getClassChampionWebIdsForCharacters(
-    prisma,
-    webIds.map((webId) => ({ webId }))
-  );
+
+  let championWebIds: Set<string>;
+  try {
+    const lookupChampionWebIds =
+      deps.getClassChampionWebIds ?? getClassChampionWebIdsForCharacters;
+    championWebIds = await lookupChampionWebIds(
+      prisma,
+      webIds.map((webId) => ({ webId }))
+    );
+  } catch (error) {
+    console.error(
+      "Error fetching class champion status for public profile:",
+      error
+    );
+    championWebIds = new Set<string>();
+  }
 
   return mapUserCharactersToPublicPayload(
     userCharacters,

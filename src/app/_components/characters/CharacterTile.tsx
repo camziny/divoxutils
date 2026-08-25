@@ -206,10 +206,10 @@ const CharacterTile: React.FC<{
           className="!text-white text-xs font-semibold truncate"
         >
           <TooltipProvider delayDuration={300}>
-            <span className="inline-flex items-center gap-1 min-w-0">
+            <span className="flex items-center gap-1 min-w-0 w-full">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="truncate">{characterDetails.heraldName}</span>
+                  <span className="truncate min-w-0">{characterDetails.heraldName}</span>
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   {characterDetails.heraldName}
@@ -218,7 +218,6 @@ const CharacterTile: React.FC<{
               <ClassChampionCrown
                 isClassChampion={characterDetails.isClassChampion}
                 heraldClassName={characterDetails.heraldClassName}
-                heraldServerName={characterDetails.heraldServerName}
                 realm={characterDetails.realm}
                 size={12}
                 className="flex-shrink-0"

@@ -15,7 +15,7 @@ function createPrismaClient() {
   });
 }
 
-function isStalePrismaClient(client: PrismaClient | undefined): client is undefined {
+function isStalePrismaClient(client: PrismaClient | undefined): boolean {
   if (!client) {
     return true;
   }
@@ -29,9 +29,10 @@ if (process.env.NODE_ENV === "production") {
   prisma = createPrismaClient();
 } else {
   if (isStalePrismaClient(global.prisma)) {
+    global.prisma?.$disconnect().catch(() => {});
     global.prisma = createPrismaClient();
   }
-  prisma = global.prisma;
+  prisma = global.prisma!;
 }
 
 prisma.$use(async (params, next) => {

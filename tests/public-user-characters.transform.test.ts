@@ -1,10 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mapUserCharactersToPublicPayload } from "../src/server/publicUserCharacters";
+import {
+  mapUserCharactersToPublicPayload,
+  getPublicCharactersForUserUncached,
+} from "../src/server/publicUserCharacters";
 import {
   formatRealmRankWithLevel,
   getRealmRankForPoints,
 } from "../src/utils/character";
+import prisma from "../prisma/prismaClient";
 
 test("mapUserCharactersToPublicPayload maps character rows to public payload", () => {
   const clerkUserId = "user_abc";
@@ -84,4 +88,24 @@ test("mapUserCharactersToPublicPayload filters null character rows", () => {
     "user_abc"
   );
   assert.deepEqual(payload, []);
+});
+
+test("getPublicCharactersForUserUncached degrades to no crowns instead of failing the page when the champion lookup throws", async () => {
+  const originalFindMany = prisma.userCharacter.findMany;
+  (prisma.userCharacter as any).findMany = async () => [
+    { character: { id: 5, webId: "w-5", characterName: "Divoxy" } },
+  ];
+
+  try {
+    const payload = await getPublicCharactersForUserUncached("user_abc", {
+      getClassChampionWebIds: async () => {
+        throw new Error("class champion lookup unavailable");
+      },
+    });
+
+    assert.equal(payload.length, 1);
+    assert.equal(payload[0].isClassChampion, false);
+  } finally {
+    (prisma.userCharacter as any).findMany = originalFindMany;
+  }
 });

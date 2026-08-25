@@ -75,7 +75,7 @@ const DesktopCharacterCard: React.FC<DesktopCharacterCardProps> = ({
           <span className="truncate text-[11px] font-medium text-white min-w-0 flex-1 inline-flex items-center gap-1 [@media(min-height:900px)]:text-xs">
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="truncate">
+                <span className="truncate min-w-0">
                   {characterDetails.heraldName || "Unknown"}
                 </span>
               </TooltipTrigger>
@@ -86,7 +86,6 @@ const DesktopCharacterCard: React.FC<DesktopCharacterCardProps> = ({
             <ClassChampionCrown
               isClassChampion={characterDetails.isClassChampion}
               heraldClassName={characterDetails.heraldClassName}
-              heraldServerName={characterDetails.heraldServerName}
               realm={characterDetails.realm}
               size={11}
               className="flex-shrink-0"

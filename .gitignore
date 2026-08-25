@@ -50,3 +50,6 @@ scripts/seedFromProduction.js
 
 # compiled script output (see scripts/*.ts)
 /dist/
+
+# personal claude skills
+.claude/skills/

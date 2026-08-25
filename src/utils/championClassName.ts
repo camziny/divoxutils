@@ -1,12 +1,5 @@
 import { classesByRealm } from "@/app/draft/_lib/constants";
-
-const CLASS_NAME_ALIASES: Record<string, string> = {
-  armswoman: "Armsman",
-  heroine: "Hero",
-  sorceress: "Sorcerer",
-  enchantress: "Enchanter",
-  huntress: "Hunter",
-};
+import { DAOC_GENDERED_CLASS_ALIASES } from "@/utils/classNameAliases";
 
 const CLASS_TO_REALM: Record<string, string> = Object.fromEntries(
   Object.entries(classesByRealm).flatMap(([realm, classNames]) =>
@@ -33,12 +26,12 @@ export function normalizeChampionClassName(className: string | undefined): strin
     return "";
   }
 
-  const alias = CLASS_NAME_ALIASES[trimmed.toLowerCase()];
+  const alias = DAOC_GENDERED_CLASS_ALIASES[trimmed.toLowerCase()];
   if (alias) {
     return alias;
   }
 
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 }
 
 export const YWAIN_CLUSTER_NAME = "Ywain";
@@ -51,14 +44,6 @@ export function getClassChampionClusterName(
   }
 
   return YWAIN_CLUSTER_NAME;
-}
-
-export function getClassChampionBucketKey(
-  className: string,
-  realm: string,
-  clusterName: string = YWAIN_CLUSTER_NAME
-): string {
-  return `${clusterName}|${normalizeChampionClassName(className)}|${realm}`;
 }
 
 export function isYwainServer(serverName: string | null | undefined): boolean {

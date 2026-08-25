@@ -105,14 +105,13 @@ const MobileCharacterTile: React.FC<MobileCharacterTileProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-2">
                 <TooltipProvider delayDuration={300}>
-                  <h4 className="text-white font-medium text-sm leading-tight truncate inline-flex items-center gap-1">
-                    <span className="truncate">
+                  <h4 className="text-white font-medium text-sm leading-tight flex items-center gap-1 min-w-0 w-full">
+                    <span className="truncate min-w-0">
                       {characterDetails.heraldName || "Unknown"}
                     </span>
                     <ClassChampionCrown
                       isClassChampion={characterDetails.isClassChampion}
                       heraldClassName={characterDetails.heraldClassName}
-                      heraldServerName={characterDetails.heraldServerName}
                       realm={characterDetails.realm}
                       size={12}
                       className="flex-shrink-0"

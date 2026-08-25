@@ -248,6 +248,41 @@ test("isFreshClassChampion requires valid recent validation", () => {
   );
 });
 
+test("isFreshClassChampion treats a stale champion as fresh within the grace window", () => {
+  const now = new Date("2026-06-19T12:00:00Z");
+
+  assert.equal(
+    isFreshClassChampion(
+      {
+        validationStatus: "stale",
+        validatedAt: new Date("2026-06-18T12:00:00Z"),
+      },
+      now,
+    ),
+    true,
+  );
+  assert.equal(
+    isFreshClassChampion(
+      {
+        validationStatus: "stale",
+        validatedAt: new Date("2026-06-01T12:00:00Z"),
+      },
+      now,
+    ),
+    false,
+  );
+  assert.equal(
+    isFreshClassChampion(
+      {
+        validationStatus: "stale",
+        validatedAt: null,
+      },
+      now,
+    ),
+    false,
+  );
+});
+
 test("getClassChampionTooltip uses merged ywain cluster name", () => {
   assert.equal(
     getClassChampionTooltip("Mauler", "Midgard"),
