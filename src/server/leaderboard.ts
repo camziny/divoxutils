@@ -1,5 +1,6 @@
 import prisma from "../../prisma/prismaClient";
 import { unstable_cache } from "next/cache";
+import type { Prisma } from "@prisma/client";
 
 type LeaderboardCharacter = {
   id: number;
@@ -210,8 +211,13 @@ export const aggregateLeaderboardData = (
   return aggregated.sort((a, b) => b.totalRealmPoints - a.totalRealmPoints);
 };
 
-const getLeaderboardDataUncached = async (): Promise<LeaderboardItem[]> => {
-  const users = await prisma.user.findMany({
+export type FindUsersForLeaderboard = (
+  where: Prisma.UserWhereInput
+) => Promise<LeaderboardUserInput[]>;
+
+const findUsersForLeaderboard: FindUsersForLeaderboard = (where) =>
+  prisma.user.findMany({
+    where,
     select: {
       id: true,
       name: true,
@@ -245,11 +251,15 @@ const getLeaderboardDataUncached = async (): Promise<LeaderboardItem[]> => {
     },
   });
 
+export const getLeaderboardDataUncached = async (
+  findUsers: FindUsersForLeaderboard = findUsersForLeaderboard
+): Promise<LeaderboardItem[]> => {
+  const users = await findUsers({ hideProfile: false });
   return aggregateLeaderboardData(users);
 };
 
 const getCachedLeaderboardData = unstable_cache(
-  getLeaderboardDataUncached,
+  () => getLeaderboardDataUncached(),
   ["leaderboard-data"],
   { revalidate: 60 }
 );

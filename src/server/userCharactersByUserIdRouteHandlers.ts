@@ -3,9 +3,12 @@ import {
   type UserCharactersByUserIdDeps,
   handleUserCharactersByUserIdApi,
 } from "@/server/userCharactersByUserIdApi";
+import { resolveViewer } from "@/server/viewerAuthorization";
 
 type RouteDeps = {
   deps: UserCharactersByUserIdDeps;
+  getAuthUserId: () => Promise<string | null>;
+  isAdminClerkUserId: (clerkUserId: string | null) => boolean;
 };
 
 export function createUserCharactersByUserIdRouteHandlers(routeDeps: RouteDeps) {
@@ -16,10 +19,16 @@ export function createUserCharactersByUserIdRouteHandlers(routeDeps: RouteDeps) 
     ) => {
       const params = await context.params;
       const userId = typeof params.userId === "string" ? params.userId : null;
+      const { viewerClerkUserId, viewerIsAdmin } = await resolveViewer(
+        routeDeps.getAuthUserId,
+        routeDeps.isAdminClerkUserId
+      );
       const result = await handleUserCharactersByUserIdApi(
         {
           method: "GET",
           userId,
+          viewerClerkUserId,
+          viewerIsAdmin,
         },
         routeDeps.deps
       );
@@ -52,6 +61,8 @@ export function createUserCharactersByUserIdRouteHandlers(routeDeps: RouteDeps) 
         {
           method: "POST",
           userId,
+          viewerClerkUserId: null,
+          viewerIsAdmin: false,
         },
         routeDeps.deps
       );

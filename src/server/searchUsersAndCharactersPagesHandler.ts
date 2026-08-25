@@ -12,6 +12,7 @@ export function createSearchUsersAndCharactersHandler(
       {
         method: req.method ?? "",
         nameQuery: req.query.name,
+        viewerClerkUserId: null,
       },
       deps
     );

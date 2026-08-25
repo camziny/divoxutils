@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { EyeOff } from "lucide-react";
 import useDebounce from "./useDebounce";
 import Loading from "@/app/loading";
 import { buildSearchUrl, shouldHideUserListForQuery } from "../_lib/urlState";
@@ -28,6 +29,7 @@ type User = {
   clerkUserId: string;
   name: string;
   supporterTier: number;
+  isOwnHiddenProfile: boolean;
   characters: Character[];
 };
 
@@ -186,6 +188,16 @@ export default function CharacterNameSearch() {
                         {user.characters.length} character{user.characters.length !== 1 ? "s" : ""}
                       </span>
                     </div>
+
+                    {user.isOwnHiddenProfile && (
+                      <div
+                        className="flex items-center gap-1 text-[11px] text-gray-500 mb-2"
+                        title="Your character list is hidden from other players, but you can still see it here."
+                      >
+                        <EyeOff size={11} strokeWidth={2} />
+                        Only visible to you &mdash; your profile is hidden from other players
+                      </div>
+                    )}
 
                     {user.characters.length > 0 && (
                       <div className="divide-y divide-gray-800">

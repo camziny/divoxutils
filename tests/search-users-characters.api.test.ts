@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createSearchUsersAndCharactersHandler } from "../src/server/searchUsersAndCharactersPagesHandler";
+import { handleSearchUsersAndCharactersApi } from "../src/server/searchUsersAndCharactersApi";
 
 function createMockResponse() {
   const res: any = {
@@ -119,6 +120,7 @@ test("search users and characters ranks exact, prefix, then contains", async () 
         clerkUserId: "u_exact_character",
         name: "alpha",
         supporterTier: 0,
+        hideProfile: false,
         characters: [
           { character: makeCharacter({ heraldName: "xkenx", characterName: "XKenX" }) },
           { character: makeCharacter({ heraldName: "ken", characterName: "Ken" }) },
@@ -131,6 +133,7 @@ test("search users and characters ranks exact, prefix, then contains", async () 
         clerkUserId: "u_prefix_user",
         name: "kennyUser",
         supporterTier: 0,
+        hideProfile: false,
         characters: [],
       },
       {
@@ -138,6 +141,7 @@ test("search users and characters ranks exact, prefix, then contains", async () 
         clerkUserId: "u_contains_user",
         name: "xkenxUser",
         supporterTier: 0,
+        hideProfile: false,
         characters: [],
       },
       {
@@ -145,6 +149,7 @@ test("search users and characters ranks exact, prefix, then contains", async () 
         clerkUserId: "u_filtered_out",
         name: "nomatch",
         supporterTier: 0,
+        hideProfile: false,
         characters: [{ character: makeCharacter({ heraldName: null }) }],
       },
     ],
@@ -175,6 +180,7 @@ test("search users and characters supports user-name-only match with zero charac
         clerkUserId: "u_k3nco",
         name: "k3nco",
         supporterTier: 0,
+        hideProfile: false,
         characters: [{ character: makeCharacter({ heraldName: null, characterName: "kenco" }) }],
       },
     ],
@@ -192,7 +198,81 @@ test("search users and characters supports user-name-only match with zero charac
         clerkUserId: "u_k3nco",
         name: "k3nco",
         supporterTier: 0,
+        isOwnHiddenProfile: false,
         characters: [],
+      },
+    ],
+  });
+});
+
+test("search users and characters omits character details for a hidden profile but still matches by name", async () => {
+  const handler = createSearchUsersAndCharactersHandler({
+    findUsers: async () => [
+      {
+        id: 70,
+        clerkUserId: "u_hidden",
+        name: "kenhidden",
+        supporterTier: 0,
+        hideProfile: true,
+        characters: [{ character: makeCharacter({ heraldName: "ken", characterName: "Ken" }) }],
+      },
+    ],
+  });
+  const req = createMockRequest({ query: { name: "ken" } });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body, {
+    users: [
+      {
+        id: 70,
+        clerkUserId: "u_hidden",
+        name: "kenhidden",
+        supporterTier: 0,
+        isOwnHiddenProfile: false,
+        characters: [],
+      },
+    ],
+  });
+});
+
+test("search users and characters shows characters for the viewer's own hidden profile with a marker", async () => {
+  const result = await handleSearchUsersAndCharactersApi(
+    { method: "GET", nameQuery: "ken", viewerClerkUserId: "u_hidden" },
+    {
+      findUsers: async () => [
+        {
+          id: 70,
+          clerkUserId: "u_hidden",
+          name: "kenhidden",
+          supporterTier: 0,
+          hideProfile: true,
+          characters: [{ character: makeCharacter({ heraldName: "ken", characterName: "Ken" }) }],
+        },
+      ],
+    }
+  );
+
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body, {
+    users: [
+      {
+        id: 70,
+        clerkUserId: "u_hidden",
+        name: "kenhidden",
+        supporterTier: 0,
+        isOwnHiddenProfile: true,
+        characters: [
+          {
+            characterName: "Ken",
+            heraldName: "ken",
+            className: "Armsman",
+            totalRealmPoints: 1,
+            heraldClassName: "Armsman",
+          },
+        ],
       },
     ],
   });
@@ -206,6 +286,7 @@ test("search users and characters prefers earlier match position in tie", async 
         clerkUserId: "u_late_match",
         name: "zzzkenco",
         supporterTier: 0,
+        hideProfile: false,
         characters: [],
       },
       {
@@ -213,6 +294,7 @@ test("search users and characters prefers earlier match position in tie", async 
         clerkUserId: "u_early_match",
         name: "kencozzz",
         supporterTier: 0,
+        hideProfile: false,
         characters: [],
       },
       {
@@ -220,6 +302,7 @@ test("search users and characters prefers earlier match position in tie", async 
         clerkUserId: "u_middle_match",
         name: "zzkencoz",
         supporterTier: 0,
+        hideProfile: false,
         characters: [],
       },
     ],

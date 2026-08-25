@@ -228,6 +228,7 @@ test("userCharactersByUserId handler returns 400 for invalid userId", async () =
 test("userCharactersByUserId handler returns [] and no-store cache header", async () => {
   const handler = createUserCharactersByUserIdHandler({
     getUserCharactersByUserId: async () => [],
+    getAuthUserId: () => "user_123",
   });
 
   const req = createMockRequest({
@@ -248,6 +249,7 @@ test("userCharactersByUserId handler returns [] and no-store cache header", asyn
 
 test("userCharactersByUserId handler maps character payload", async () => {
   const handler = createUserCharactersByUserIdHandler({
+    getAuthUserId: () => "user_123",
     getUserCharactersByUserId: async () => [
       {
         user: { clerkUserId: "user_123" },
@@ -320,6 +322,7 @@ test("userCharactersByUserId handler maps character payload", async () => {
 
 test("userCharactersByUserId handler falls back to query userId when user is missing", async () => {
   const handler = createUserCharactersByUserIdHandler({
+    getAuthUserId: () => "user_fallback",
     getUserCharactersByUserId: async () => [
       {
         user: null,
@@ -387,6 +390,23 @@ test("userCharactersByUserId handler falls back to query userId when user is mis
     userId: "user_fallback",
     webId: "xyz",
   });
+});
+
+test("userCharactersByUserId handler returns 403 for a different user", async () => {
+  const handler = createUserCharactersByUserIdHandler({
+    getUserCharactersByUserId: async () => [],
+    getAuthUserId: () => "someone_else",
+  });
+
+  const req = createMockRequest({
+    method: "GET",
+    query: { userId: "user_123" },
+  });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 403);
 });
 
 test("userCharactersByUserId handler rejects unsupported methods", async () => {

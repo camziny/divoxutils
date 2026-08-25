@@ -2,6 +2,7 @@ import {
   formatRealmRankWithLevel,
   getRealmRankForPoints,
 } from "@/utils/character";
+import { isForbiddenViewer } from "@/server/viewerAuthorization";
 
 type UserCharactersByUserIdDeps = {
   getUserCharactersByUserId: (clerkUserId: string) => Promise<any[]>;
@@ -10,6 +11,8 @@ type UserCharactersByUserIdDeps = {
 type UserCharactersByUserIdInput = {
   method: string;
   userId: string | null;
+  viewerClerkUserId: string | null;
+  viewerIsAdmin: boolean;
 };
 
 type UserCharactersByUserIdApiResult =
@@ -31,6 +34,10 @@ export async function handleUserCharactersByUserIdApi(
       body: `Method ${input.method} Not Allowed`,
       bodyType: "text",
     };
+  }
+
+  if (isForbiddenViewer(input.viewerClerkUserId, input.userId, input.viewerIsAdmin)) {
+    return { status: 403, body: { error: "Forbidden" }, bodyType: "json" };
   }
 
   try {

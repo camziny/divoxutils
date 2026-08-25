@@ -4,16 +4,24 @@ import {
   handleUserCharactersByUserIdApi,
 } from "@/server/userCharactersByUserIdApi";
 
+type UserCharactersByUserIdHandlerDeps = UserCharactersByUserIdDeps & {
+  getAuthUserId?: (req: NextApiRequest) => string | null;
+  isAdminClerkUserId?: (clerkUserId: string | null) => boolean;
+};
+
 export const createUserCharactersByUserIdHandler =
-  (deps: UserCharactersByUserIdDeps) =>
+  (deps: UserCharactersByUserIdHandlerDeps) =>
   async (req: NextApiRequest, res: NextApiResponse) => {
     const userId =
       typeof req.query.userId === "string" ? req.query.userId : null;
+    const viewerClerkUserId = deps.getAuthUserId?.(req) ?? null;
 
     const result = await handleUserCharactersByUserIdApi(
       {
         method: req.method ?? "",
         userId,
+        viewerClerkUserId,
+        viewerIsAdmin: deps.isAdminClerkUserId?.(viewerClerkUserId) ?? false,
       },
       deps
     );

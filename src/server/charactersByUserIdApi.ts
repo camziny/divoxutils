@@ -1,3 +1,5 @@
+import { isForbiddenViewer } from "@/server/viewerAuthorization";
+
 type CharactersByUserIdDeps = {
   getUserCharactersByUserId: (userId: string) => Promise<unknown[]>;
 };
@@ -5,6 +7,8 @@ type CharactersByUserIdDeps = {
 type CharactersByUserIdInput = {
   method: string;
   userId: string | null;
+  viewerClerkUserId: string | null;
+  viewerIsAdmin: boolean;
 };
 
 type CharactersByUserIdApiResult =
@@ -26,6 +30,10 @@ export async function handleCharactersByUserIdApi(
       body: `Method ${input.method} Not Allowed`,
       bodyType: "text",
     };
+  }
+
+  if (isForbiddenViewer(input.viewerClerkUserId, input.userId, input.viewerIsAdmin)) {
+    return { status: 403, body: { message: "Forbidden" }, bodyType: "json" };
   }
 
   try {
