@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { aggregateLeaderboardData } from "../src/server/leaderboard";
+import { aggregateLeaderboardData, getLeaderboardDataUncached } from "../src/server/leaderboard";
 
 test("aggregateLeaderboardData aggregates totals and sorts descending", () => {
   const data = [
@@ -188,4 +188,46 @@ test("aggregateLeaderboardData uses effective death blow baseline for weekly gua
     leaderboardSource.includes("character.deathBlowsLastWeek !== effectiveTotalDeathBlows"),
     true
   );
+});
+
+test("getLeaderboardDataUncached queries with hideProfile: false and aggregates the result", async () => {
+  let capturedWhere: unknown;
+  const result = await getLeaderboardDataUncached(async (where) => {
+    capturedWhere = where;
+    return [
+      {
+        id: 1,
+        name: "Alice",
+        clerkUserId: "u_1",
+        characters: [
+          {
+            character: {
+              id: 101,
+              totalRealmPoints: 1000,
+              totalKills: 100,
+              totalSoloKills: 10,
+              totalDeaths: 5,
+              totalDeathBlows: 5,
+              killsLastWeek: 0,
+              deathsLastWeek: 0,
+              deathBlowsLastWeek: 0,
+              realmPointsLastWeek: 0,
+              soloKillsLastWeek: 0,
+              lastUpdated: null,
+              heraldRealmPoints: 1000,
+              heraldTotalKills: 100,
+              heraldTotalDeaths: 5,
+              heraldTotalSoloKills: 10,
+              heraldTotalDeathBlows: 5,
+            },
+          },
+        ],
+      },
+    ];
+  });
+
+  assert.deepEqual(capturedWhere, { hideProfile: false });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].userName, "Alice");
+  assert.equal(result[0].totalRealmPoints, 1000);
 });

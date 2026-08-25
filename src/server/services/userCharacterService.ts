@@ -154,8 +154,8 @@ export const deleteUserCharacterByWebId = async (
 };
 
 export async function getUserCharactersByUserName(userName: string) {
-  const user = await prisma.user.findUnique({
-    where: { name: userName },
+  const user = await prisma.user.findFirst({
+    where: { name: userName, hideProfile: false },
     include: {
       characters: {
         select: {

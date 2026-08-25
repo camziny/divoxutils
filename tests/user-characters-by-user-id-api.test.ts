@@ -32,7 +32,12 @@ function userCharacterRow(webId: string) {
 
 test("handleUserCharactersByUserIdApi marks champion webIds returned by the lookup", async () => {
   const result = await handleUserCharactersByUserIdApi(
-    { method: "GET", userId: "user_1" },
+    {
+      method: "GET",
+      userId: "user_1",
+      viewerClerkUserId: "user_1",
+      viewerIsAdmin: false,
+    },
     {
       getUserCharactersByUserId: async () => [userCharacterRow("w-1")],
       getClassChampionWebIds: async () => new Set(["w-1"]),
@@ -47,7 +52,12 @@ test("handleUserCharactersByUserIdApi marks champion webIds returned by the look
 
 test("handleUserCharactersByUserIdApi degrades to no crowns instead of failing the request when the champion lookup throws", async () => {
   const result = await handleUserCharactersByUserIdApi(
-    { method: "GET", userId: "user_1" },
+    {
+      method: "GET",
+      userId: "user_1",
+      viewerClerkUserId: "user_1",
+      viewerIsAdmin: false,
+    },
     {
       getUserCharactersByUserId: async () => [userCharacterRow("w-1")],
       getClassChampionWebIds: async () => {

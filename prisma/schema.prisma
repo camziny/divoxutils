@@ -37,6 +37,7 @@ model User {
   supporterTier    Int             @default(0)
   supporterAmount  Float           @default(0)
   preferredCharacterListLayout String @default("table")
+  hideProfile      Boolean         @default(false)
   stripeCustomerId String?         @unique
   stripeSubscriptionId String?     @unique
   paypalPayerId String?            @unique

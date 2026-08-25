@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import Loading from "../loading";
 import ShareProfileButton from "../user/_components/ShareProfileButton";
 import DraftProfileButton from "../user/_components/DraftProfileButton";
+import HideProfileToggle from "./_components/HideProfileToggle";
 import SupporterBadge from "@/components/support/SupporterBadge";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -51,8 +52,10 @@ function getApiBaseUrl() {
 
 async function fetchCharactersForUser(userId: string) {
   const apiUrl = `${getApiBaseUrl()}/api/userCharactersByUserId/${userId}`;
+  const cookie = headers().get("cookie");
   try {
     const response = await fetch(apiUrl, {
+      headers: cookie ? { cookie } : undefined,
       next: {
         revalidate: 0,
         tags: [`user-characters-${userId}`],
@@ -100,7 +103,12 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
     fetchCharactersForUser(userId),
     prisma.user.findUnique({
       where: { clerkUserId: userId },
-      select: { supporterTier: true, name: true, preferredCharacterListLayout: true },
+      select: {
+        supporterTier: true,
+        name: true,
+        preferredCharacterListLayout: true,
+        hideProfile: true,
+      },
     }),
     prisma.userIdentityLink.findFirst({
       where: { clerkUserId: userId, provider: "discord", status: "linked" },
@@ -129,9 +137,12 @@ const UserCharactersPage = async ({ searchParams }: UserCharactersPageProps) => 
               My Characters
               {supporterTier > 0 && <SupporterBadge tier={supporterTier} size="md" />}
             </h1>
-            <div className="flex items-center gap-1.5">
-              {draftProfileHref && <DraftProfileButton href={draftProfileHref} />}
-              <ShareProfileButton username={shareUsername} />
+            <div className="flex items-center gap-2">
+              <HideProfileToggle initialHideProfile={dbUser?.hideProfile ?? false} />
+              <div className="flex items-center gap-1.5">
+                {draftProfileHref && <DraftProfileButton href={draftProfileHref} />}
+                <ShareProfileButton username={shareUsername} />
+              </div>
             </div>
           </div>
           <CharacterSearchAndAdd />

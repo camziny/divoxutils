@@ -2,6 +2,8 @@ import { createUserCharactersByUserIdRouteHandlers } from "@/server/api/userChar
 import { getClassChampionWebIdsForCharacters } from "@/server/classChampionStore";
 import { getUserCharactersByUserId } from "@/server/services/userCharacterService";
 import prisma from "../../../../../prisma/prismaClient";
+import { isAdminClerkUserId } from "@/server/adminAuth";
+import { getClerkAuthUserId } from "@/server/clerkAuth";
 
 const handlers = createUserCharactersByUserIdRouteHandlers({
   deps: {
@@ -9,6 +11,8 @@ const handlers = createUserCharactersByUserIdRouteHandlers({
     getClassChampionWebIds: (webIds) =>
       getClassChampionWebIdsForCharacters(prisma, webIds.map((webId) => ({ webId }))),
   },
+  getAuthUserId: getClerkAuthUserId,
+  isAdminClerkUserId,
 });
 
 export const GET = handlers.GET;

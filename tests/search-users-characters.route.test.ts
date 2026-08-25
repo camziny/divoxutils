@@ -4,6 +4,7 @@ import { createSearchUsersAndCharactersRouteHandlers } from "../src/server/searc
 
 test("search users and characters route GET returns users", async () => {
   const handlers = createSearchUsersAndCharactersRouteHandlers({
+    getAuthUserId: async () => null,
     deps: {
       findUsers: async ({ normalizedQuery }) => [
         {
@@ -11,6 +12,7 @@ test("search users and characters route GET returns users", async () => {
           clerkUserId: "u_7",
           name: normalizedQuery,
           supporterTier: 1,
+          hideProfile: false,
           characters: [],
         },
       ],
@@ -29,14 +31,42 @@ test("search users and characters route GET returns users", async () => {
         clerkUserId: "u_7",
         name: "kenco",
         supporterTier: 1,
+        isOwnHiddenProfile: false,
         characters: [],
       },
     ],
   });
 });
 
+test("search users and characters route marks the viewer's own hidden profile", async () => {
+  const handlers = createSearchUsersAndCharactersRouteHandlers({
+    getAuthUserId: async () => "u_7",
+    deps: {
+      findUsers: async ({ normalizedQuery }) => [
+        {
+          id: 7,
+          clerkUserId: "u_7",
+          name: normalizedQuery,
+          supporterTier: 1,
+          hideProfile: true,
+          characters: [],
+        },
+      ],
+    },
+  });
+
+  const response = await handlers.GET(
+    new Request("http://localhost/api/searchUsersAndCharacters?name=Kenco") as any
+  );
+
+  assert.equal(response.status, 200);
+  const body = (await response.json()) as { users: Array<{ isOwnHiddenProfile: boolean }> };
+  assert.equal(body.users[0].isOwnHiddenProfile, true);
+});
+
 test("search users and characters route POST returns 405 and Allow header", async () => {
   const handlers = createSearchUsersAndCharactersRouteHandlers({
+    getAuthUserId: async () => null,
     deps: {
       findUsers: async () => [],
     },

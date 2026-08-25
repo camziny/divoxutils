@@ -3,7 +3,21 @@ import assert from "node:assert/strict";
 import { createUserCharactersByUserIdRouteHandlers } from "../src/server/userCharactersByUserIdRouteHandlers";
 import { createUserCharacterRouteHandlers } from "../src/server/userCharacterRouteHandlers";
 
-test("userCharactersByUserId route GET returns mapped payload", async () => {
+test("userCharactersByUserId route GET returns 403 for a different user", async () => {
+  const handlers = createUserCharactersByUserIdRouteHandlers({
+    deps: { getUserCharactersByUserId: async () => [] },
+    getAuthUserId: async () => "user_2",
+    isAdminClerkUserId: () => false,
+  });
+
+  const response = await handlers.GET(new Request("http://localhost") as any, {
+    params: { userId: "user_1" },
+  });
+
+  assert.equal(response.status, 403);
+});
+
+test("userCharactersByUserId route GET returns mapped payload for the owner", async () => {
   const handlers = createUserCharactersByUserIdRouteHandlers({
     deps: {
       getUserCharactersByUserId: async () => [
@@ -55,6 +69,8 @@ test("userCharactersByUserId route GET returns mapped payload", async () => {
         },
       ],
     },
+    getAuthUserId: async () => "user_1",
+    isAdminClerkUserId: () => false,
   });
 
   const response = await handlers.GET(new Request("http://localhost") as any, {
@@ -74,6 +90,8 @@ test("userCharactersByUserId route GET returns mapped payload", async () => {
 test("userCharactersByUserId route POST returns 405", async () => {
   const handlers = createUserCharactersByUserIdRouteHandlers({
     deps: { getUserCharactersByUserId: async () => [] },
+    getAuthUserId: async () => "user_1",
+    isAdminClerkUserId: () => false,
   });
 
   const response = await handlers.POST(new Request("http://localhost") as any, {

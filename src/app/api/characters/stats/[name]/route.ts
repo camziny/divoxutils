@@ -11,6 +11,7 @@ const handlers = createCharacterStatsByNameRouteHandlers({
             equals: name,
             mode: "insensitive",
           },
+          users: { none: { user: { hideProfile: true } } },
         },
         select: {
           id: true,

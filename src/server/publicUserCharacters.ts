@@ -10,6 +10,7 @@ type PublicUserProfile = {
   clerkUserId: string;
   name: string | null;
   supporterTier: number;
+  hideProfile: boolean;
 };
 
 type UserCharacterRecord = {
@@ -25,6 +26,7 @@ const getPublicUserProfileByNameUncached = async (
       clerkUserId: true,
       name: true,
       supporterTier: true,
+      hideProfile: true,
     },
   });
 };
