@@ -6,6 +6,7 @@ import {
 
 type SearchUsersAndCharactersRouteDeps = {
   deps: SearchUsersAndCharactersDeps;
+  getAuthUserId: () => Promise<string | null>;
 };
 
 export function createSearchUsersAndCharactersRouteHandlers(
@@ -13,10 +14,12 @@ export function createSearchUsersAndCharactersRouteHandlers(
 ) {
   async function run(method: string, request: NextRequest) {
     const nameQuery = new URL(request.url).searchParams.get("name");
+    const viewerClerkUserId = await routeDeps.getAuthUserId();
     const result = await handleSearchUsersAndCharactersApi(
       {
         method,
         nameQuery,
+        viewerClerkUserId,
       },
       routeDeps.deps
     );

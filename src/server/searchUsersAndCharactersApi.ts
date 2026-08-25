@@ -11,6 +11,7 @@ type UserWithCharacters = {
   clerkUserId: string;
   name: string | null;
   supporterTier: number;
+  hideProfile: boolean;
   characters: { character: Character }[];
 };
 
@@ -23,6 +24,7 @@ export type SearchUsersAndCharactersDeps = {
 export type SearchUsersAndCharactersApiInput = {
   method: string;
   nameQuery: unknown;
+  viewerClerkUserId: string | null;
 };
 
 type SearchUsersAndCharactersApiResult =
@@ -94,27 +96,31 @@ export async function handleSearchUsersAndCharactersApi(
 
     const userResults = users
       .map((user) => {
-        const rankedCharacters = user.characters
-          .map((uc) => {
-            const heraldName = uc.character.heraldName;
-            const score = getMatchScore(heraldName, normalizedQuery);
-            const position = getMatchPosition(heraldName, normalizedQuery);
-            return {
-              score,
-              position,
-              characterName: uc.character.characterName,
-              heraldName: heraldName ?? "",
-              className: uc.character.className,
-              totalRealmPoints: uc.character.totalRealmPoints,
-              heraldClassName: uc.character.heraldClassName,
-            };
-          })
-          .filter((character) => character.score > 0)
-          .sort((a, b) => {
-            if (b.score !== a.score) return b.score - a.score;
-            if (a.position !== b.position) return a.position - b.position;
-            return a.heraldName.localeCompare(b.heraldName);
-          });
+        const isOwnHiddenProfile =
+          user.hideProfile && user.clerkUserId === input.viewerClerkUserId;
+        const rankedCharacters = user.hideProfile && !isOwnHiddenProfile
+          ? []
+          : user.characters
+              .map((uc) => {
+                const heraldName = uc.character.heraldName;
+                const score = getMatchScore(heraldName, normalizedQuery);
+                const position = getMatchPosition(heraldName, normalizedQuery);
+                return {
+                  score,
+                  position,
+                  characterName: uc.character.characterName,
+                  heraldName: heraldName ?? "",
+                  className: uc.character.className,
+                  totalRealmPoints: uc.character.totalRealmPoints,
+                  heraldClassName: uc.character.heraldClassName,
+                };
+              })
+              .filter((character) => character.score > 0)
+              .sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                if (a.position !== b.position) return a.position - b.position;
+                return a.heraldName.localeCompare(b.heraldName);
+              });
 
         const bestCharacterScore = rankedCharacters[0]?.score ?? 0;
         const bestCharacterPosition =
@@ -129,6 +135,7 @@ export async function handleSearchUsersAndCharactersApi(
           clerkUserId: user.clerkUserId,
           name: user.name,
           supporterTier: user.supporterTier ?? 0,
+          isOwnHiddenProfile,
           score: bestScore,
           userNameScore,
           userNamePosition,

@@ -7,9 +7,10 @@ const handlers = createUsersStatsByNameRouteHandlers({
   deps: {
     getAllUserNames,
     getUserStatsByName: async (name: string) =>
-      prisma.user.findUnique({
+      prisma.user.findFirst({
         where: {
           name,
+          hideProfile: false,
         },
         select: {
           id: true,

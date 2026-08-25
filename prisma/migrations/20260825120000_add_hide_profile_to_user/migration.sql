@@ -1,0 +1,2 @@
+ALTER TABLE "User"
+ADD COLUMN "hideProfile" BOOLEAN NOT NULL DEFAULT false;

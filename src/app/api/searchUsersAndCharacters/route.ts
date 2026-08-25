@@ -1,7 +1,9 @@
 import prisma from "../../../../prisma/prismaClient";
 import { createSearchUsersAndCharactersRouteHandlers } from "@/server/searchUsersAndCharactersRouteHandlers";
+import { getClerkAuthUserId } from "@/server/clerkAuth";
 
 const handlers = createSearchUsersAndCharactersRouteHandlers({
+  getAuthUserId: getClerkAuthUserId,
   deps: {
     findUsers: ({ normalizedQuery }) =>
       prisma.user.findMany({
