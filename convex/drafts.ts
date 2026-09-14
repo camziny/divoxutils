@@ -8,6 +8,7 @@ import {
 } from "./constants";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import { sanitizeAvatarUrl } from "./avatarHosts";
 
 function generateShortId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -429,7 +430,7 @@ export const createDraft = mutation({
       discordTextChannelId: args.discordTextChannelId,
       createdBy: args.createdBy,
       createdByDisplayName: args.createdByDisplayName,
-      createdByAvatarUrl: args.createdByAvatarUrl,
+      createdByAvatarUrl: sanitizeAvatarUrl(args.createdByAvatarUrl),
     });
 
     const playerTokens: { discordUserId: string; token: string }[] = [];
@@ -440,7 +441,7 @@ export const createDraft = mutation({
         draftId,
         discordUserId: player.discordUserId,
         displayName: player.displayName,
-        avatarUrl: player.avatarUrl,
+        avatarUrl: sanitizeAvatarUrl(player.avatarUrl),
         isCaptain: false,
         token,
       });
@@ -1915,7 +1916,8 @@ export const adminReplaceDraftFights = mutation({
             substituteMode === "known" || substituteMode === "manual"
               ? substituteDisplayName
               : undefined,
-          substituteAvatarUrl: substituteMode === "known" ? substituteAvatarUrl : undefined,
+          substituteAvatarUrl:
+            substituteMode === "known" ? sanitizeAvatarUrl(substituteAvatarUrl) : undefined,
         });
       }
 
@@ -2975,7 +2977,7 @@ export const seedVerifiedDraft = mutation({
       discordChannelId: "seed-channel",
       createdBy: args.createdBy,
       createdByDisplayName: args.createdByDisplayName,
-      createdByAvatarUrl: args.createdByAvatarUrl,
+      createdByAvatarUrl: sanitizeAvatarUrl(args.createdByAvatarUrl),
       winnerTeam: args.winnerTeam,
       pendingWinnerTeam: args.winnerTeam,
       setFinalizedAt: Date.now(),
@@ -2999,7 +3001,7 @@ export const seedVerifiedDraft = mutation({
         draftId,
         discordUserId: player.discordUserId,
         displayName: player.displayName,
-        avatarUrl: player.avatarUrl,
+        avatarUrl: sanitizeAvatarUrl(player.avatarUrl),
         team: player.team,
         isCaptain: player.isCaptain,
         token: `seed-${args.shortId}-${player.discordUserId}`,
@@ -3173,7 +3175,7 @@ export const seedTrackingDemoDraft = mutation({
         draftId,
         discordUserId: player.discordUserId,
         displayName: player.displayName,
-        avatarUrl: player.avatarUrl,
+        avatarUrl: sanitizeAvatarUrl(player.avatarUrl),
         team: 1,
         isCaptain: i === 0,
         token,
@@ -3196,7 +3198,7 @@ export const seedTrackingDemoDraft = mutation({
         draftId,
         discordUserId: player.discordUserId,
         displayName: player.displayName,
-        avatarUrl: player.avatarUrl,
+        avatarUrl: sanitizeAvatarUrl(player.avatarUrl),
         team: 2,
         isCaptain: i === 0,
         token,

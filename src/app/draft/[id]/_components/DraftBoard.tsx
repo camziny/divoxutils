@@ -40,7 +40,7 @@ import {
 } from "./settingsUtils";
 import { splitBansForLiveSummary } from "./banSummary";
 import { Ban, Check, ChevronLeft, ChevronRight, ExternalLink, ShieldCheck } from "lucide-react";
-import PlayerAvatar from "./PlayerAvatar";
+import { Avatar } from "@/components/ui/avatar";
 import {
   getRealmChipBackground,
   REALM_CLASS_COLORS,
@@ -1355,8 +1355,8 @@ function CoinFlipSection({
         <div className="flex items-center gap-8">
           <div className="text-center w-24">
             <div className="flex flex-col items-center gap-1">
-              <PlayerAvatar
-                url={team1Captain?.avatarUrl}
+              <Avatar
+                src={team1Captain?.avatarUrl}
                 name={team1Captain?.displayName}
                 size={26}
               />
@@ -1412,8 +1412,8 @@ function CoinFlipSection({
 
           <div className="text-center w-24">
             <div className="flex flex-col items-center gap-1">
-              <PlayerAvatar
-                url={team2Captain?.avatarUrl}
+              <Avatar
+                src={team2Captain?.avatarUrl}
                 name={team2Captain?.displayName}
                 size={26}
               />
@@ -1464,8 +1464,8 @@ function CoinFlipSection({
             >
               <div className="flex items-center gap-2 text-sm">
                 <span className="inline-flex items-center gap-2 font-medium text-white leading-none">
-                  <PlayerAvatar
-                    url={winner?.avatarUrl}
+                  <Avatar
+                    src={winner?.avatarUrl}
                     name={winner?.displayName}
                     size={20}
                   />
@@ -2328,8 +2328,8 @@ function TeamPanel({
           )}
         >
           <div className="flex items-center gap-2">
-            <PlayerAvatar
-              url={captain.avatarUrl}
+            <Avatar
+              src={captain.avatarUrl}
               name={captain.displayName}
               size={18}
             />
@@ -2366,7 +2366,7 @@ function TeamPanel({
             )}
           >
             <div className="flex items-center gap-2">
-              <PlayerAvatar url={p.avatarUrl} name={p.displayName} size={16} />
+              <Avatar src={p.avatarUrl} name={p.displayName} size={16} />
               <span>{p.displayName}</span>
             </div>
             <div className="flex items-center gap-2">
@@ -2520,7 +2520,7 @@ function PlayerPool({
                   : "bg-gray-800/40 border border-gray-700/40 text-gray-600"
               )}
             >
-              <PlayerAvatar url={p.avatarUrl} name={p.displayName} size={18} />
+              <Avatar src={p.avatarUrl} name={p.displayName} size={18} />
               <span>{p.displayName}</span>
             </motion.button>
           ))}
@@ -2817,8 +2817,8 @@ function FightClassSetup({
                 )}
                 disabled={canEditClasses && editableTeam !== null && editableTeam !== team}
               >
-                <PlayerAvatar
-                  url={player.avatarUrl}
+                <Avatar
+                  src={player.avatarUrl}
                   name={player.displayName}
                   size={16}
                 />
@@ -2874,8 +2874,8 @@ function FightClassSetup({
           </span>
           {activePlayer ? (
             <>
-              <PlayerAvatar
-                url={activePlayer.avatarUrl}
+              <Avatar
+                src={activePlayer.avatarUrl}
                 name={activePlayer.displayName}
                 size={16}
               />

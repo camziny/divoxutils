@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { Avatar } from "@/components/ui/avatar";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import {
   CLASS_CATEGORIES,
@@ -545,9 +545,12 @@ export default function AdminDraftModerationClient() {
                 <span className="font-mono text-gray-400">({draft.discordGuildId})</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <AvatarChip
+                <Avatar
                   name={draft.createdByDisplayName ?? draft.createdBy}
-                  avatarUrl={draft.createdByAvatarUrl}
+                  src={draft.createdByAvatarUrl}
+                  size={16}
+                  fallback="initial"
+                  bordered
                 />
                 <span>
                   Created by {draft.createdByDisplayName ? `${draft.createdByDisplayName} ` : ""}
@@ -810,7 +813,7 @@ export default function AdminDraftModerationClient() {
                               }`}
                               disabled={isActive}
                             >
-                              <AvatarChip name={player.displayName} avatarUrl={player.avatarUrl} />
+                              <Avatar name={player.displayName} src={player.avatarUrl} size={16} fallback="initial" bordered />
                               <span className="truncate text-xs text-gray-300">
                                 {substitute?.displayName ? (
                                   <>
@@ -1669,7 +1672,7 @@ function TeamPreview({
         {players.map((player) => (
           <div key={player.discordUserId} className="text-xs text-gray-300">
             <span className="inline-flex items-center gap-1.5">
-              <AvatarChip name={player.displayName} avatarUrl={player.avatarUrl} />
+              <Avatar name={player.displayName} src={player.avatarUrl} size={16} fallback="initial" bordered />
               <span>
                 {player.displayName}
                 {player.isCaptain ? " (C)" : ""}
@@ -1680,25 +1683,5 @@ function TeamPreview({
         {players.length === 0 && <div className="text-xs text-gray-600">No players</div>}
       </div>
     </div>
-  );
-}
-
-function AvatarChip({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
-  if (avatarUrl) {
-    return (
-      <Image
-        src={avatarUrl}
-        alt={name}
-        width={16}
-        height={16}
-        className="h-4 w-4 rounded-full border border-gray-700 object-cover"
-      />
-    );
-  }
-  const initial = name.trim().charAt(0).toUpperCase() || "?";
-  return (
-    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-700 bg-gray-800 text-[9px] text-gray-300">
-      {initial}
-    </span>
   );
 }

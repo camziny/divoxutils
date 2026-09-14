@@ -1,6 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
-import { User } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
 import type { Metadata } from "next";
 import { getLiveDraftRows } from "@/server/draftLive";
 import LiveDraftsAutoRefresh from "./_components/LiveDraftsAutoRefresh";
@@ -55,18 +54,18 @@ export default async function LiveDraftsPage() {
               <div className="flex items-center justify-between gap-3">
                 <p className="min-w-0 text-sm text-gray-200 truncate flex items-center gap-1.5">
                   <span className="inline-flex items-center gap-1.5 min-w-0">
-                    <InlineAvatar
+                    <Avatar
                       name={row.team1CaptainName}
-                      avatarUrl={row.team1CaptainAvatarUrl}
+                      src={row.team1CaptainAvatarUrl}
                       size={18}
                     />
                     <span className="font-medium truncate">{row.team1CaptainName}</span>
                   </span>
                   <span className="text-gray-600 mx-1.5">vs</span>
                   <span className="inline-flex items-center gap-1.5 min-w-0">
-                    <InlineAvatar
+                    <Avatar
                       name={row.team2CaptainName}
-                      avatarUrl={row.team2CaptainAvatarUrl}
+                      src={row.team2CaptainAvatarUrl}
                       size={18}
                     />
                     <span className="font-medium truncate">{row.team2CaptainName}</span>
@@ -90,36 +89,5 @@ export default async function LiveDraftsPage() {
         </div>
       )}
     </>
-  );
-}
-
-function InlineAvatar({
-  name,
-  avatarUrl,
-  size,
-}: {
-  name: string;
-  avatarUrl?: string;
-  size: number;
-}) {
-  const style = { width: size, height: size };
-  if (avatarUrl) {
-    return (
-      <Image
-        src={avatarUrl}
-        alt={name}
-        width={size}
-        height={size}
-        className="rounded-full object-cover"
-      />
-    );
-  }
-  return (
-    <span
-      className="rounded-full bg-gray-800/80 text-gray-400 inline-flex items-center justify-center"
-      style={style}
-    >
-      <User className="w-[65%] h-[65%]" />
-    </span>
   );
 }

@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { Avatar } from "@/components/ui/avatar";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
 import { Pagination } from "@/components/ui/pagination";
-import { CheckCircle2, ChevronRight, User, X } from "lucide-react";
+import { CheckCircle2, ChevronRight, X } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { DraftLeaderboardRow } from "@/server/draftLeaderboard";
 import {
@@ -186,7 +186,7 @@ export default function LeaderboardClient({
                   <div className="flex-1 min-w-0">
                     <div className={`flex items-center justify-between gap-3${sortBy === "winRate" ? " mb-1.5" : ""}`}>
                       <span className="inline-flex items-center gap-2 min-w-0">
-                        <AvatarChip name={row.userName} avatarUrl={row.avatarUrl} />
+                        <Avatar name={row.userName} src={row.avatarUrl} size={20} />
                         <span className="text-sm font-medium text-gray-200 group-hover:text-white truncate transition-colors duration-100">
                           {row.userName}
                         </span>
@@ -314,25 +314,6 @@ function WinRateExplainerDialog() {
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function AvatarChip({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
-  if (avatarUrl) {
-    return (
-      <Image
-        src={avatarUrl}
-        alt={name}
-        width={20}
-        height={20}
-        className="h-5 w-5 rounded-full object-cover"
-      />
-    );
-  }
-  return (
-    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-gray-400">
-      <User className="h-3 w-3" />
-    </span>
   );
 }
 

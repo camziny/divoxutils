@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { Avatar } from "@/components/ui/avatar";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
@@ -453,9 +453,9 @@ export default function DraftHistoryClient({
                         <div className="min-w-0">
                           <p className="text-sm text-gray-200 truncate flex items-center gap-1.5">
                             <span className="inline-flex items-center gap-1.5 min-w-0">
-                              <InlineAvatar
+                              <Avatar
                                 name={cap1?.displayName ?? "Team 1"}
-                                avatarUrl={cap1?.avatarUrl}
+                                src={cap1?.avatarUrl}
                                 size={18}
                               />
                               <span className="font-medium truncate">
@@ -464,9 +464,9 @@ export default function DraftHistoryClient({
                             </span>
                             <span className="text-gray-600 mx-1.5">vs</span>
                             <span className="inline-flex items-center gap-1.5 min-w-0">
-                              <InlineAvatar
+                              <Avatar
                                 name={cap2?.displayName ?? "Team 2"}
-                                avatarUrl={cap2?.avatarUrl}
+                                src={cap2?.avatarUrl}
                                 size={18}
                               />
                               <span className="font-medium truncate">
@@ -762,9 +762,9 @@ function TeamPanel({
                 key={`${p.discordUserId}-${p._id ?? "no-id"}`}
                 className="grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm text-gray-300"
               >
-                <InlineAvatar
+                <Avatar
                   name={resolvedName}
-                  avatarUrl={resolvedAvatarUrl}
+                  src={resolvedAvatarUrl}
                   size={18}
                 />
                 <Link
@@ -809,36 +809,5 @@ function TeamPanel({
         </div>
       )}
     </div>
-  );
-}
-
-function InlineAvatar({
-  name,
-  avatarUrl,
-  size,
-}: {
-  name: string;
-  avatarUrl?: string;
-  size: number;
-}) {
-  const style = { width: size, height: size };
-  if (avatarUrl) {
-    return (
-      <Image
-        src={avatarUrl}
-        alt={name}
-        width={size}
-        height={size}
-        className="rounded-full object-cover"
-      />
-    );
-  }
-  return (
-    <span
-      className="rounded-full bg-gray-800/80 text-gray-400 inline-flex items-center justify-center"
-      style={style}
-    >
-      <User className="w-[65%] h-[65%]" />
-    </span>
   );
 }
