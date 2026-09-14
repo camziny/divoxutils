@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getLeaderboardProfileHref } from "@/lib/draftHistoryLeaderboardPath";
-import Image from "next/image";
+import { Avatar } from "@/components/ui/avatar";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ResponsiveContainer,
@@ -14,7 +14,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, User, Share, Check, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Share, Check, X } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { toast } from "sonner";
 import {
@@ -362,7 +362,7 @@ export default function PlayerDrilldownClient({
       <BackNav />
 
       <div className="mb-8 flex items-center gap-3">
-        <PlayerAvatar name={drilldown.playerName} avatarUrl={drilldown.avatarUrl} />
+        <Avatar name={drilldown.playerName} src={drilldown.avatarUrl} size={40} />
         <div>
           {drilldown.profileName ? (
             <div className="inline-flex items-center gap-1.5">
@@ -605,9 +605,10 @@ export default function PlayerDrilldownClient({
                                 <span className="w-7 text-right text-[11px] tabular-nums text-gray-500">
                                   #{row.rank}
                                 </span>
-                                <InlineMiniAvatar
+                                <Avatar
                                   name={row.userName}
-                                  avatarUrl={row.avatarUrl}
+                                  src={row.avatarUrl}
+                                  size={16}
                                 />
                                 {row.isVerified ? (
                                   <Link
@@ -719,9 +720,10 @@ export default function PlayerDrilldownClient({
                     className="grid grid-cols-[160px_1fr_44px] items-center gap-2"
                   >
                     <span className="inline-flex min-w-0 items-center gap-2">
-                      <InlineMiniAvatar
+                      <Avatar
                         name={row.opponentName}
-                        avatarUrl={row.opponentAvatarUrl}
+                        src={row.opponentAvatarUrl}
+                        size={16}
                       />
                       {row.opponentIsVerified ? (
                         <Link
@@ -783,9 +785,10 @@ export default function PlayerDrilldownClient({
                 const rowContent = (
                   <>
                     <span className="inline-flex min-w-0 items-center gap-2">
-                      <InlineMiniAvatar
+                      <Avatar
                         name={row.opponentName}
-                        avatarUrl={row.opponentAvatarUrl}
+                        src={row.opponentAvatarUrl}
+                        size={16}
                       />
                       <span className="truncate text-sm text-gray-300 group-hover:text-white transition-colors duration-100">
                         {row.opponentName}
@@ -871,9 +874,10 @@ export default function PlayerDrilldownClient({
                         className="grid grid-cols-[160px_1fr_44px] items-center gap-2"
                       >
                         <span className="inline-flex min-w-0 items-center gap-2">
-                          <InlineMiniAvatar
+                          <Avatar
                             name={row.teammateName}
-                            avatarUrl={row.teammateAvatarUrl}
+                            src={row.teammateAvatarUrl}
+                            size={16}
                           />
                           {row.teammateIsVerified ? (
                             <Link
@@ -932,9 +936,10 @@ export default function PlayerDrilldownClient({
                   const rowContent = (
                     <>
                       <span className="inline-flex min-w-0 items-center gap-2">
-                        <InlineMiniAvatar
+                        <Avatar
                           name={row.teammateName}
-                          avatarUrl={row.teammateAvatarUrl}
+                          src={row.teammateAvatarUrl}
+                          size={16}
                         />
                         <span className="truncate text-sm text-gray-300 group-hover:text-white transition-colors duration-100">
                           {row.teammateName}
@@ -1067,50 +1072,6 @@ function BackNav() {
         Leaderboard
       </Link>
     </div>
-  );
-}
-
-function PlayerAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
-  if (avatarUrl) {
-    return (
-      <Image
-        src={avatarUrl}
-        alt={name}
-        width={40}
-        height={40}
-        className="h-10 w-10 rounded-full object-cover"
-      />
-    );
-  }
-  return (
-    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-gray-400">
-      <User className="h-5 w-5" />
-    </span>
-  );
-}
-
-function InlineMiniAvatar({
-  name,
-  avatarUrl,
-}: {
-  name: string;
-  avatarUrl?: string;
-}) {
-  if (avatarUrl) {
-    return (
-      <Image
-        src={avatarUrl}
-        alt={name}
-        width={16}
-        height={16}
-        className="h-4 w-4 rounded-full object-cover"
-      />
-    );
-  }
-  return (
-    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-800 text-gray-500">
-      <User className="h-2.5 w-2.5" />
-    </span>
   );
 }
 
