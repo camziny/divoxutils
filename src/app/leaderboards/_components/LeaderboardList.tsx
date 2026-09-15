@@ -248,13 +248,13 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                   >
                     {globalRank}
                   </div>
-                  <span
-                    className="text-sm font-medium text-gray-200 group-hover:text-indigo-400 transition-colors duration-150 truncate min-w-[28px]"
-                    style={supporterNameStyle(item.supporterTier)}
-                  >
-                    {item.userName}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
+                  <span className="inline-flex items-center gap-1 min-w-0">
+                    <span
+                      className="text-sm font-medium text-gray-200 group-hover:text-indigo-400 transition-colors duration-150 truncate min-w-[28px]"
+                      style={supporterNameStyle(item.supporterTier)}
+                    >
+                      {item.userName}
+                    </span>
                     {item.supporterTier > 0 && (
                       <SupporterBadge tier={item.supporterTier} />
                     )}
