@@ -1,6 +1,8 @@
 import prisma from "../../prisma/prismaClient";
 import { unstable_cache } from "next/cache";
 import type { Prisma } from "@prisma/client";
+import { getClassChampionWebIdsForCharacters } from "@/server/classChampionStore";
+import { normalizeChampionClassName } from "@/utils/championClassName";
 
 type LeaderboardCharacter = {
   id: number;
@@ -20,6 +22,14 @@ type LeaderboardCharacter = {
   heraldTotalDeaths: number | null;
   heraldTotalSoloKills: number | null;
   heraldTotalDeathBlows: number | null;
+  webId: string;
+  heraldClassName: string | null;
+  realm: string;
+};
+
+export type LeaderboardChampionClass = {
+  className: string;
+  realm: string;
 };
 
 type LeaderboardUserInput = {
@@ -56,10 +66,12 @@ export type LeaderboardItem = {
   irsThisWeek: number;
   lastUpdated: Date | null;
   supporterTier: number;
+  championClasses: LeaderboardChampionClass[];
 };
 
 export const aggregateLeaderboardData = (
-  leaderboardData: LeaderboardUserInput[]
+  leaderboardData: LeaderboardUserInput[],
+  championWebIds: Set<string> = new Set()
 ): LeaderboardItem[] => {
   const aggregated = leaderboardData.map((user) => {
     let totalPoints = 0;
@@ -81,6 +93,8 @@ export const aggregateLeaderboardData = (
     let accumulatedDeathBlowsThisWeek = 0;
 
     const processedCharacterIds = new Set<number>();
+    const championClassKeys = new Set<string>();
+    const championClasses: LeaderboardChampionClass[] = [];
 
     user.characters.forEach(({ character }) => {
       if (processedCharacterIds.has(character.id)) {
@@ -88,6 +102,17 @@ export const aggregateLeaderboardData = (
       }
 
       processedCharacterIds.add(character.id);
+
+      if (championWebIds.has(character.webId)) {
+        const className = normalizeChampionClassName(
+          character.heraldClassName ?? undefined
+        );
+        const key = `${className}|${character.realm}`;
+        if (className && !championClassKeys.has(key)) {
+          championClassKeys.add(key);
+          championClasses.push({ className, realm: character.realm });
+        }
+      }
 
       const effectiveRealmPoints =
         character.heraldRealmPoints ?? character.totalRealmPoints;
@@ -186,6 +211,7 @@ export const aggregateLeaderboardData = (
       clerkUserId: user.clerkUserId,
       userName: user.name ?? "Unknown",
       supporterTier: user.supporterTier ?? 0,
+      championClasses,
       totalRealmPoints: totalPoints,
       totalKills,
       killsLastWeek,
@@ -244,6 +270,9 @@ const findUsersForLeaderboard: FindUsersForLeaderboard = (where) =>
               heraldTotalDeaths: true,
               heraldTotalSoloKills: true,
               heraldTotalDeathBlows: true,
+              webId: true,
+              heraldClassName: true,
+              realm: true,
             },
           },
         },
@@ -251,11 +280,26 @@ const findUsersForLeaderboard: FindUsersForLeaderboard = (where) =>
     },
   });
 
+export type FindClassChampionWebIds = (webIds: string[]) => Promise<Set<string>>;
+
+const findClassChampionWebIds: FindClassChampionWebIds = (webIds) =>
+  getClassChampionWebIdsForCharacters(prisma, webIds);
+
 export const getLeaderboardDataUncached = async (
-  findUsers: FindUsersForLeaderboard = findUsersForLeaderboard
+  findUsers: FindUsersForLeaderboard = findUsersForLeaderboard,
+  findChampionWebIds: FindClassChampionWebIds = findClassChampionWebIds
 ): Promise<LeaderboardItem[]> => {
   const users = await findUsers({ hideProfile: false });
-  return aggregateLeaderboardData(users);
+
+  const webIds = users.flatMap((user) =>
+    user.characters.map(({ character }) => character.webId)
+  );
+  const championWebIds = await findChampionWebIds(webIds).catch((error) => {
+    console.error("Failed to fetch class champion webIds:", error);
+    return new Set<string>();
+  });
+
+  return aggregateLeaderboardData(users, championWebIds);
 };
 
 const getCachedLeaderboardData = unstable_cache(

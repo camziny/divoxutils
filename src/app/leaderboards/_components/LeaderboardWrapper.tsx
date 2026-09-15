@@ -1,4 +1,5 @@
 import React from "react";
+import type { LeaderboardChampionClass } from "@/server/leaderboard";
 import LeaderboardList from "./LeaderboardList";
 
 interface LeaderboardItem {
@@ -25,6 +26,7 @@ interface LeaderboardItem {
   irsThisWeek: number;
   lastUpdated: Date | null;
   supporterTier: number;
+  championClasses: LeaderboardChampionClass[];
 }
 
 interface LeaderboardWrapperProps {
