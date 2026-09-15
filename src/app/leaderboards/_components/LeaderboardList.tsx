@@ -12,10 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import type { LeaderboardChampionClass } from "@/server/leaderboard";
 import SupporterBadge, {
   supporterRowClass,
   supporterNameStyle,
 } from "@/components/support/SupporterBadge";
+import LeaderboardChampionBadge from "./LeaderboardChampionBadge";
 
 interface LeaderboardItem {
   userId: number;
@@ -41,8 +44,9 @@ interface LeaderboardItem {
   irsThisWeek: number;
   lastUpdated: Date | null;
   supporterTier: number;
+  championClasses: LeaderboardChampionClass[];
   totalIrs?: number;
-  [key: string]: number | string | Date | null | undefined;
+  [key: string]: number | string | Date | null | undefined | LeaderboardChampionClass[];
 }
 
 interface LeaderboardListProps {
@@ -205,6 +209,7 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
       </div>
 
       <ol className="space-y-2">
+        <TooltipProvider delayDuration={200}>
         {paginatedData.map((item, index) => {
           const metricKey =
             selectedPeriod === "total"
@@ -237,29 +242,33 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                 href={`/user/${item.userName}/characters`}
                 className="flex justify-between items-center w-full h-full px-4 py-3"
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 min-w-0">
                   <div
-                    className={`flex items-center justify-center w-7 h-7 rounded-md text-xs font-semibold tabular-nums ${rankBadge}`}
+                    className={`flex items-center justify-center w-7 h-7 rounded-md text-xs font-semibold tabular-nums flex-shrink-0 ${rankBadge}`}
                   >
                     {globalRank}
                   </div>
                   <span
-                    className="text-sm font-medium text-gray-200 group-hover:text-indigo-400 transition-colors duration-150 inline-flex items-center gap-1"
+                    className="text-sm font-medium text-gray-200 group-hover:text-indigo-400 transition-colors duration-150 truncate min-w-[28px]"
                     style={supporterNameStyle(item.supporterTier)}
                   >
                     {item.userName}
-                    {item.supporterTier > 0 && (
-                      <SupporterBadge tier={item.supporterTier} />
-                    )}
                   </span>
+                  {item.supporterTier > 0 && (
+                    <SupporterBadge tier={item.supporterTier} />
+                  )}
+                  <LeaderboardChampionBadge
+                    championClasses={item.championClasses}
+                  />
                 </div>
-                <span className="text-sm font-semibold text-gray-300 tabular-nums">
+                <span className="text-sm font-semibold text-gray-300 tabular-nums flex-shrink-0">
                   {formatNumber(value)}
                 </span>
               </LinkComponent>
             </li>
           );
         })}
+        </TooltipProvider>
       </ol>
 
       <div className="my-8 flex justify-center">

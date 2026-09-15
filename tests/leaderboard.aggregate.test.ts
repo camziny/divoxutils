@@ -3,6 +3,75 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { aggregateLeaderboardData, getLeaderboardDataUncached } from "../src/server/leaderboard";
 
+test("aggregateLeaderboardData attaches deduplicated champion classes for champion webIds", () => {
+  const data = [
+    {
+      id: 1,
+      name: "Alice",
+      clerkUserId: "u_1",
+      characters: [
+        {
+          character: {
+            id: 101,
+            totalRealmPoints: 1000,
+            totalKills: 100,
+            totalSoloKills: 10,
+            totalDeaths: 5,
+            totalDeathBlows: 5,
+            killsLastWeek: 0,
+            deathsLastWeek: 0,
+            deathBlowsLastWeek: 0,
+            realmPointsLastWeek: 0,
+            soloKillsLastWeek: 0,
+            lastUpdated: null,
+            heraldRealmPoints: 1000,
+            heraldTotalKills: 100,
+            heraldTotalDeaths: 5,
+            heraldTotalSoloKills: 10,
+            heraldTotalDeathBlows: 5,
+            webId: "web-champion-cabalist",
+            heraldClassName: "Cabalist",
+            realm: "Albion",
+          },
+        },
+        {
+          character: {
+            id: 102,
+            totalRealmPoints: 500,
+            totalKills: 50,
+            totalSoloKills: 5,
+            totalDeaths: 5,
+            totalDeathBlows: 2,
+            killsLastWeek: 0,
+            deathsLastWeek: 0,
+            deathBlowsLastWeek: 0,
+            realmPointsLastWeek: 0,
+            soloKillsLastWeek: 0,
+            lastUpdated: null,
+            heraldRealmPoints: 500,
+            heraldTotalKills: 50,
+            heraldTotalDeaths: 5,
+            heraldTotalSoloKills: 5,
+            heraldTotalDeathBlows: 2,
+            webId: "web-not-champion",
+            heraldClassName: "Friar",
+            realm: "Albion",
+          },
+        },
+      ],
+    },
+  ];
+
+  const result = aggregateLeaderboardData(
+    data,
+    new Set(["web-champion-cabalist"])
+  );
+
+  assert.deepEqual(result[0].championClasses, [
+    { className: "Cabalist", realm: "Albion" },
+  ]);
+});
+
 test("aggregateLeaderboardData aggregates totals and sorts descending", () => {
   const data = [
     {
@@ -29,6 +98,9 @@ test("aggregateLeaderboardData aggregates totals and sorts descending", () => {
             heraldTotalDeaths: 12,
             heraldTotalSoloKills: 55,
             heraldTotalDeathBlows: 24,
+            webId: "web-101",
+            heraldClassName: "Cabalist",
+            realm: "Albion",
           },
         },
       ],
@@ -57,6 +129,9 @@ test("aggregateLeaderboardData aggregates totals and sorts descending", () => {
             heraldTotalDeaths: 7,
             heraldTotalSoloKills: 22,
             heraldTotalDeathBlows: 13,
+            webId: "web-201",
+            heraldClassName: "Friar",
+            realm: "Albion",
           },
         },
       ],
@@ -102,6 +177,9 @@ test("aggregateLeaderboardData deduplicates repeated character ids and clamps we
             heraldTotalDeaths: 9,
             heraldTotalSoloKills: 49,
             heraldTotalDeathBlows: 19,
+            webId: "web-101",
+            heraldClassName: "Cabalist",
+            realm: "Albion",
           },
         },
         {
@@ -123,6 +201,9 @@ test("aggregateLeaderboardData deduplicates repeated character ids and clamps we
             heraldTotalDeaths: 9,
             heraldTotalSoloKills: 49,
             heraldTotalDeathBlows: 19,
+            webId: "web-101",
+            heraldClassName: "Cabalist",
+            realm: "Albion",
           },
         },
       ],
@@ -166,6 +247,9 @@ test("aggregateLeaderboardData ignores missing kill baseline for this week", () 
             heraldTotalDeaths: 6,
             heraldTotalSoloKills: 12,
             heraldTotalDeathBlows: 25,
+            webId: "web-101",
+            heraldClassName: "Cabalist",
+            realm: "Albion",
           },
         },
       ],
@@ -192,9 +276,58 @@ test("aggregateLeaderboardData uses effective death blow baseline for weekly gua
 
 test("getLeaderboardDataUncached queries with hideProfile: false and aggregates the result", async () => {
   let capturedWhere: unknown;
-  const result = await getLeaderboardDataUncached(async (where) => {
-    capturedWhere = where;
-    return [
+  const result = await getLeaderboardDataUncached(
+    async (where) => {
+      capturedWhere = where;
+      return [
+        {
+          id: 1,
+          name: "Alice",
+          clerkUserId: "u_1",
+          characters: [
+            {
+              character: {
+                id: 101,
+                totalRealmPoints: 1000,
+                totalKills: 100,
+                totalSoloKills: 10,
+                totalDeaths: 5,
+                totalDeathBlows: 5,
+                killsLastWeek: 0,
+                deathsLastWeek: 0,
+                deathBlowsLastWeek: 0,
+                realmPointsLastWeek: 0,
+                soloKillsLastWeek: 0,
+                lastUpdated: null,
+                heraldRealmPoints: 1000,
+                heraldTotalKills: 100,
+                heraldTotalDeaths: 5,
+                heraldTotalSoloKills: 10,
+                heraldTotalDeathBlows: 5,
+                webId: "web-101",
+                heraldClassName: "Cabalist",
+                realm: "Albion",
+              },
+            },
+          ],
+        },
+      ];
+    },
+    async () => new Set(["web-101"])
+  );
+
+  assert.deepEqual(capturedWhere, { hideProfile: false });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].userName, "Alice");
+  assert.equal(result[0].totalRealmPoints, 1000);
+  assert.deepEqual(result[0].championClasses, [
+    { className: "Cabalist", realm: "Albion" },
+  ]);
+});
+
+test("getLeaderboardDataUncached degrades to no champion classes instead of throwing when the champion lookup fails", async () => {
+  const result = await getLeaderboardDataUncached(
+    async () => [
       {
         id: 1,
         name: "Alice",
@@ -219,15 +352,20 @@ test("getLeaderboardDataUncached queries with hideProfile: false and aggregates 
               heraldTotalDeaths: 5,
               heraldTotalSoloKills: 10,
               heraldTotalDeathBlows: 5,
+              webId: "web-101",
+              heraldClassName: "Cabalist",
+              realm: "Albion",
             },
           },
         ],
       },
-    ];
-  });
+    ],
+    async () => {
+      throw new Error("classChampion query timed out");
+    }
+  );
 
-  assert.deepEqual(capturedWhere, { hideProfile: false });
   assert.equal(result.length, 1);
   assert.equal(result[0].userName, "Alice");
-  assert.equal(result[0].totalRealmPoints, 1000);
+  assert.deepEqual(result[0].championClasses, []);
 });
