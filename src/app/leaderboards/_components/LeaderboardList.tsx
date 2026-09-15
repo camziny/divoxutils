@@ -254,12 +254,14 @@ const LeaderboardList: React.FC<LeaderboardListProps> = ({ data }) => {
                   >
                     {item.userName}
                   </span>
-                  {item.supporterTier > 0 && (
-                    <SupporterBadge tier={item.supporterTier} />
-                  )}
-                  <LeaderboardChampionBadge
-                    championClasses={item.championClasses}
-                  />
+                  <span className="inline-flex items-center gap-1">
+                    {item.supporterTier > 0 && (
+                      <SupporterBadge tier={item.supporterTier} />
+                    )}
+                    <LeaderboardChampionBadge
+                      championClasses={item.championClasses}
+                    />
+                  </span>
                 </div>
                 <span className="text-sm font-semibold text-gray-300 tabular-nums flex-shrink-0">
                   {formatNumber(value)}
