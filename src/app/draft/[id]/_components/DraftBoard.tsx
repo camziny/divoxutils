@@ -13,6 +13,7 @@ import {
   CLASS_CATEGORIES,
   ClassCategory,
   toCanonicalDraftClassName,
+  resolvePvpClassKey,
 } from "../../_lib/constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -806,6 +807,7 @@ export default function DraftBoard({
             linkedProfiles={linkedProfiles}
             classOptions={allClasses}
             bannedClassNames={bannedClassNames}
+            isPvp={draft.type === "pvp"}
             canEditClasses={editableTeam !== null}
             editableTeam={editableTeam}
             canRecordWinner={isCreatorView}
@@ -1800,16 +1802,7 @@ function ClassRulesGrid({
                       )}
                     >
                       {realmClasses.map((className) => {
-                        const realmTag =
-                          realm === "Albion"
-                            ? "Alb"
-                            : realm === "Midgard"
-                              ? "Mid"
-                              : "Hib";
-                        const classKey =
-                          isPvp && className === "Mauler"
-                            ? `Mauler (${realmTag})`
-                            : className;
+                        const classKey = resolvePvpClassKey(isPvp, className, realm);
                         const isBanned = bannedSet.has(classKey);
                         const isSafe = safeClassSet.has(classKey);
 
@@ -2079,16 +2072,11 @@ function BanSection({
                         )}
                       >
                         {realmClasses.map((cls) => {
-                          const realmTag =
-                            realm === "Albion"
-                              ? "Alb"
-                              : realm === "Midgard"
-                                ? "Mid"
-                                : "Hib";
-                          const banKey =
-                            cls === "Mauler"
-                              ? `Mauler (${realmTag})`
-                              : cls;
+                          const banKey = resolvePvpClassKey(
+                            draft.type === "pvp",
+                            cls,
+                            realm
+                          );
                           const isBanned =
                             bannedClassNames.includes(banKey);
                           const isSafe = safeClassSet.has(banKey);
@@ -2559,6 +2547,7 @@ function FightClassSetup({
   editableTeam,
   canRecordWinner,
   busy,
+  isPvp,
   onSetPlayerClass,
   onSetFightPlayerClass,
   canRecordFight,
@@ -2577,6 +2566,7 @@ function FightClassSetup({
   allPlayers: DraftData["players"];
   linkedProfiles: Record<string, LinkedProfileSummary>;
   classOptions: string[];
+  isPvp: boolean;
   bannedClassNames: string[];
   canEditClasses: boolean;
   editableTeam: 1 | 2 | null;
@@ -2935,8 +2925,9 @@ function FightClassSetup({
                           )}
                         >
                           {realmClasses.map((className) => {
-                            const isBanned = bannedSet.has(className);
-                            const isSelected = activePlayerDisplayedClass === className;
+                            const classKey = resolvePvpClassKey(isPvp, className, realm);
+                            const isBanned = bannedSet.has(classKey);
+                            const isSelected = activePlayerDisplayedClass === classKey;
                             const classAppearsInMultipleRealms = realmsForClass(className).length > 1;
                             const realmAwareMeta =
                               activePlayerOwnedClassesByRealm[
@@ -2953,7 +2944,7 @@ function FightClassSetup({
                                 disabled={!canPickClass || isBanned}
                                 onClick={() =>
                                   activePlayer &&
-                                  setClassAndAdvance(activePlayer._id, className)
+                                  setClassAndAdvance(activePlayer._id, classKey)
                                 }
                                 className={cn(
                                   "rounded px-1.5 py-0.5 text-[10px] font-medium transition-all",

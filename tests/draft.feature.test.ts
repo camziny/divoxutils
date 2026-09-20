@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as draftFns from "../convex/drafts";
+import { resolvePvpClassKey } from "../src/app/draft/_lib/constants";
 
 type TableName =
   | "drafts"
@@ -1547,6 +1548,53 @@ test("setPlayerClass accepts realm-tagged Mauler in pvp", async () => {
   assert.equal(player.selectedClass, "Mauler (Alb)");
 });
 
+test("live-fight picker's resolvePvpClassKey output is what setPlayerClass accepts for pvp Mauler", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d-pvp-mauler-picker",
+        shortId: "pvp-mauler-picker",
+        status: "drafting",
+        type: "pvp",
+        createdBy: "creator",
+        team1CaptainId: "cap1",
+        team2CaptainId: "cap2",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p-cap1",
+        draftId: "d-pvp-mauler-picker",
+        token: "cap1-token",
+        discordUserId: "cap1",
+        displayName: "Cap 1",
+        team: 1,
+        isCaptain: true,
+      },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.setPlayerClass as any)._handler(ctx, {
+      draftId: "d-pvp-mauler-picker",
+      playerId: "p-cap1",
+      className: resolvePvpClassKey(false, "Mauler", "Albion"),
+      token: "cap1-token",
+    }),
+    /Invalid class/
+  );
+
+  await (draftFns.setPlayerClass as any)._handler(ctx, {
+    draftId: "d-pvp-mauler-picker",
+    playerId: "p-cap1",
+    className: resolvePvpClassKey(true, "Mauler", "Albion"),
+    token: "cap1-token",
+  });
+
+  const player = await ctx.db.get("p-cap1");
+  assert.equal(player.selectedClass, "Mauler (Alb)");
+});
+
 test("banClass rejects classes already auto-banned and stores captain source", async () => {
   const rejectCtx = makeCtx({
     drafts: [
@@ -1998,6 +2046,77 @@ test("adminReplaceDraftFights persists known substitute metadata", async () => {
   assert.equal(p1Class.substituteDiscordUserId, "d5");
   assert.equal(p1Class.substituteDisplayName, "SubFive");
   assert.equal(p1Class.substituteAvatarUrl, "https://cdn.discordapp.com/avatars/d5/subfive.png");
+});
+
+test("adminReplaceDraftFights accepts realm-tagged Mauler and rejects bare Mauler for pvp drafts", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "pvpmauler",
+        status: "complete",
+        type: "pvp",
+        teamSize: 1,
+        createdBy: "creator",
+        discordGuildId: "g1",
+        discordChannelId: "c1",
+      },
+    ],
+    draftPlayers: [
+      {
+        _id: "p1",
+        draftId: "d1",
+        discordUserId: "d1",
+        displayName: "Alice",
+        token: "t1",
+        team: 1,
+        isCaptain: true,
+      },
+      {
+        _id: "p2",
+        draftId: "d1",
+        discordUserId: "d2",
+        displayName: "Bob",
+        token: "t2",
+        team: 2,
+        isCaptain: true,
+      },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.adminReplaceDraftFights as any)._handler(ctx, {
+      shortId: "pvpmauler",
+      submittedBy: "admin_1",
+      fights: [
+        {
+          winnerTeam: 1,
+          classesByPlayer: [
+            { playerId: "p1", className: "Mauler" },
+            { playerId: "p2", className: "Cleric" },
+          ],
+        },
+      ],
+    }),
+    /Invalid class/
+  );
+
+  await (draftFns.adminReplaceDraftFights as any)._handler(ctx, {
+    shortId: "pvpmauler",
+    submittedBy: "admin_1",
+    fights: [1, 2, 3].map(() => ({
+      winnerTeam: 1,
+      classesByPlayer: [
+        { playerId: "p1", className: "Mauler (Alb)" },
+        { playerId: "p2", className: "Cleric" },
+      ],
+    })),
+  });
+
+  const fights = await ctx.db.query("draftFights").collect();
+  assert.equal(fights.length, 3);
+  const p1Class = fights[0].classesByPlayer.find((entry: any) => entry.playerId === "p1");
+  assert.equal(p1Class.className, "Mauler (Alb)");
 });
 
 test("adminReplaceDraftFights rejects manual substitute with discord user id", async () => {

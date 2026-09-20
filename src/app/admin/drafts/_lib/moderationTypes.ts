@@ -27,6 +27,7 @@ export type ModerationFight = {
 export type ModerationDraft = {
   _id: string;
   shortId: string;
+  type: "traditional" | "pvp";
   discordGuildId: string;
   discordGuildName?: string;
   winnerTeam?: 1 | 2;

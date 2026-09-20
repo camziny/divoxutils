@@ -230,7 +230,7 @@ function isValidDraftClassForType(
   if (baseName === "Mauler") {
     return !!realmTagMatch;
   }
-  return true;
+  return !realmTagMatch;
 }
 
 function isSetFinalized(draft: {
@@ -1872,11 +1872,12 @@ export const adminReplaceDraftFights = mutation({
       for (const draftedPlayer of draftedPlayers) {
         const className = classByPlayerId.get(draftedPlayer._id);
         if (!className) throw new Error("Missing player class assignment");
-        if (!allClasses.includes(className)) throw new Error(`Invalid class: ${className}`);
+        const normalizedClassName = normalizeDraftClassForType(draft.type, className);
+        if (!isValidDraftClassForType(draft.type, normalizedClassName)) {
+          throw new Error(`Invalid class: ${className}`);
+        }
         const classEntry = entryByPlayerId.get(draftedPlayer._id);
         if (!classEntry) throw new Error("Missing player class assignment");
-
-        const normalizedClassName = className.trim();
         if (!normalizedClassName) throw new Error("Player class cannot be empty");
 
         const substituteMode = classEntry.substituteMode;
@@ -2019,6 +2020,7 @@ export const getDraftsForModeration = query({
       results.push({
         _id: draft._id,
         shortId: draft.shortId,
+        type: draft.type,
         discordGuildId: draft.discordGuildId,
         discordGuildName: draft.discordGuildName,
         winnerTeam: draft.winnerTeam,
@@ -2092,6 +2094,7 @@ export const getReviewedDraftsForModeration = query({
       results.push({
         _id: draft._id,
         shortId: draft.shortId,
+        type: draft.type,
         discordGuildId: draft.discordGuildId,
         discordGuildName: draft.discordGuildName,
         winnerTeam: draft.winnerTeam,
@@ -3043,7 +3046,7 @@ export const seedVerifiedDraft = mutation({
     };
     const winnerPattern = winnerPatternByCount[fightCount];
 
-    function randomFrom<T>(items: T[]) {
+    function randomFrom<T>(items: readonly T[]) {
       return items[Math.floor(Math.random() * items.length)];
     }
 
@@ -3075,7 +3078,11 @@ export const seedVerifiedDraft = mutation({
           (className) => !bannedClassNames.has(className)
         );
         const fallbackPool = classPool.length > 0 ? classPool : classPoolForPlayer(player);
-        const className = randomFrom(fallbackPool);
+        const rawClassName = randomFrom(fallbackPool);
+        const className =
+          draftType === "pvp" && rawClassName === "Mauler"
+            ? `Mauler (${randomFrom(PVP_MAULER_REALM_TAGS)})`
+            : rawClassName;
         return {
           playerId: player._id,
           discordUserId: player.discordUserId,

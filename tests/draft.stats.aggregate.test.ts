@@ -726,6 +726,78 @@ test("aggregateClassRows is fight-based when player swaps classes mid-set", () =
   assert.equal(paladinRows[0].games, 1);
 });
 
+test("aggregateClassRows merges realm-tagged pvp Mauler entries into the plain Mauler query", () => {
+  const pvpMaulerDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "pvp-mauler",
+      type: "pvp",
+      discordGuildId: "g1",
+      _creationTime: 2_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        {
+          _id: "p1",
+          discordUserId: "d1",
+          displayName: "Alice",
+          team: 1,
+          isCaptain: false,
+        },
+        {
+          _id: "p2",
+          discordUserId: "d2",
+          displayName: "Bob",
+          team: 2,
+          isCaptain: false,
+        },
+      ],
+      fights: [
+        {
+          fightNumber: 1,
+          winnerTeam: 1,
+          classesByPlayer: [
+            { playerId: "p1", discordUserId: "d1", className: "Mauler (Alb)" },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+        {
+          fightNumber: 2,
+          winnerTeam: 2,
+          classesByPlayer: [
+            { playerId: "p1", discordUserId: "d1", className: "Mauler (Hib)" },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+      ],
+    },
+  ];
+
+  const maulerRows = aggregateClassRows(
+    pvpMaulerDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "Mauler",
+    {}
+  );
+  assert.equal(maulerRows.length, 1);
+  assert.equal(maulerRows[0].clerkUserId, "clerk_1");
+  assert.equal(maulerRows[0].wins, 1);
+  assert.equal(maulerRows[0].losses, 1);
+  assert.equal(maulerRows[0].games, 2);
+
+  const albMaulerRows = aggregateClassRows(
+    pvpMaulerDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "Mauler (Alb)",
+    {}
+  );
+  assert.equal(albMaulerRows.length, 1);
+  assert.equal(albMaulerRows[0].wins, 1);
+  assert.equal(albMaulerRows[0].losses, 1);
+  assert.equal(albMaulerRows[0].games, 2);
+});
+
 test("aggregateClassRows credits known substitutes and skips manual substitutes", () => {
   const substituteClerkMap = new Map<string, string>([
     ...Array.from(clerkByDiscord.entries()),
@@ -898,4 +970,52 @@ test("aggregatePlayerDrilldown class stats are fight-based for class swaps", () 
   assert.equal(drilldown.byClass.Paladin?.wins, 0);
   assert.equal(drilldown.byClass.Paladin?.losses, 1);
   assert.equal(drilldown.byClass.Paladin?.games, 1);
+});
+
+test("aggregatePlayerDrilldown merges realm-tagged pvp Mauler into one byClass entry", () => {
+  const pvpMaulerDrafts: DraftLeaderboardDraft[] = [
+    {
+      shortId: "pvp-mauler-drilldown",
+      type: "pvp",
+      discordGuildId: "g1",
+      _creationTime: 3_000,
+      winnerTeam: 1,
+      resultStatus: "verified",
+      players: [
+        { _id: "p1", discordUserId: "d1", displayName: "Alice", team: 1, isCaptain: false },
+        { _id: "p2", discordUserId: "d2", displayName: "Bob", team: 2, isCaptain: false },
+      ],
+      fights: [
+        {
+          fightNumber: 1,
+          winnerTeam: 1,
+          classesByPlayer: [
+            { playerId: "p1", discordUserId: "d1", className: "Mauler (Alb)" },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+        {
+          fightNumber: 2,
+          winnerTeam: 2,
+          classesByPlayer: [
+            { playerId: "p1", discordUserId: "d1", className: "Mauler (Hib)" },
+            { playerId: "p2", discordUserId: "d2", className: "Bard" },
+          ],
+        },
+      ],
+    },
+  ];
+
+  const drilldown = aggregatePlayerDrilldown(
+    pvpMaulerDrafts,
+    clerkByDiscord,
+    namesByClerk,
+    "clerk_1",
+    {}
+  );
+  assert.ok(drilldown);
+  assert.equal(Object.keys(drilldown.byClass).length, 1);
+  assert.equal(drilldown.byClass.Mauler?.wins, 1);
+  assert.equal(drilldown.byClass.Mauler?.losses, 1);
+  assert.equal(drilldown.byClass.Mauler?.games, 2);
 });

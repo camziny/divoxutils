@@ -65,7 +65,7 @@ test("toFightEditorRows maps sorted fights and class snapshots", () => {
 
 test("analyzeFightEditor reports first missing winner", () => {
   const rows = [createEmptyFightRow(draftedPlayers)];
-  const analysis = analyzeFightEditor(rows, draftedPlayers);
+  const analysis = analyzeFightEditor(rows, draftedPlayers, false);
   assert.equal(analysis.isComplete, false);
   assert.equal(analysis.firstIssue?.fightIndex, 0);
   assert.match(analysis.firstIssue?.message ?? "", /set winner/i);
@@ -84,9 +84,44 @@ test("analyzeFightEditor reports first missing class with player name", () => {
       substitutesByPlayer: {},
     },
   ];
-  const analysis = analyzeFightEditor(rows, draftedPlayers);
+  const analysis = analyzeFightEditor(rows, draftedPlayers, false);
   assert.equal(analysis.isComplete, false);
   assert.match(analysis.firstIssue?.message ?? "", /Bob class not set/);
+});
+
+test("analyzeFightEditor accepts a realm-tagged pvp Mauler class", () => {
+  const rows = [
+    {
+      winnerTeam: 1 as const,
+      classesByPlayer: {
+        p1: "Mauler (Alb)",
+        p2: "Cleric",
+        p3: "Mauler (Hib)",
+        p4: "Healer",
+      },
+      substitutesByPlayer: {},
+    },
+  ];
+  const analysis = analyzeFightEditor(rows, draftedPlayers, true);
+  assert.equal(analysis.rowCompleteness[0], true);
+});
+
+test("analyzeFightEditor rejects a bare Mauler class for pvp drafts", () => {
+  const rows = [
+    {
+      winnerTeam: 1 as const,
+      classesByPlayer: {
+        p1: "Mauler",
+        p2: "Cleric",
+        p3: "Bard",
+        p4: "Healer",
+      },
+      substitutesByPlayer: {},
+    },
+  ];
+  const analysis = analyzeFightEditor(rows, draftedPlayers, true);
+  assert.equal(analysis.rowCompleteness[0], false);
+  assert.match(analysis.firstIssue?.message ?? "", /Alice class not set/);
 });
 
 test("analyzeFightEditor rejects fights after clinch", () => {
@@ -106,7 +141,7 @@ test("analyzeFightEditor rejects fights after clinch", () => {
     fullClassRow(1),
     fullClassRow(2),
   ];
-  const analysis = analyzeFightEditor(rows, draftedPlayers);
+  const analysis = analyzeFightEditor(rows, draftedPlayers, false);
   assert.equal(analysis.scoreReached, true);
   assert.equal(analysis.clinchFightNumber, 3);
   assert.equal(analysis.hasFightsAfterClinch, true);
@@ -157,7 +192,7 @@ test("analyzeFightEditor marks valid first-to-3 set complete", () => {
       substitutesByPlayer: {},
     },
   ];
-  const analysis = analyzeFightEditor(rows, draftedPlayers);
+  const analysis = analyzeFightEditor(rows, draftedPlayers, false);
   assert.equal(analysis.team1Wins, 3);
   assert.equal(analysis.team2Wins, 1);
   assert.equal(analysis.scoreReached, true);

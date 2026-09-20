@@ -12,6 +12,7 @@ import {
   resolvePlayerRealm,
   type WinLossRecord,
 } from "./draftStatsCore";
+import { stripDraftClassRealmTag } from "@/app/draft/_lib/constants";
 
 export type { WinLossRecord } from "./draftStatsCore";
 
@@ -274,6 +275,7 @@ export function aggregateClassRows(
   filters: DraftStatsFilters
 ): DraftClassLeaderboardRow[] {
   const filteredDrafts = applyDraftStatsFilters(drafts, filters);
+  const normalizedQueryClassName = stripDraftClassRealmTag(className);
   const stats = new Map<
     string,
     {
@@ -293,7 +295,9 @@ export function aggregateClassRows(
     );
     for (const fight of draft.fights ?? []) {
       for (const classEntry of fight.classesByPlayer) {
-        if (classEntry.className !== className) continue;
+        if (stripDraftClassRealmTag(classEntry.className) !== normalizedQueryClassName) {
+          continue;
+        }
         const draftedPlayer = draftedPlayersById.get(classEntry.playerId);
         if (!draftedPlayer || draftedPlayer.team === undefined) continue;
 

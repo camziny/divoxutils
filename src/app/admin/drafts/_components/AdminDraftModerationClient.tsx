@@ -8,6 +8,7 @@ import {
   CLASS_CATEGORIES,
   classesByRealm,
   REALMS,
+  resolvePvpClassKey,
   type ClassCategory,
 } from "@/app/draft/_lib/constants";
 import {
@@ -207,7 +208,7 @@ export default function AdminDraftModerationClient() {
     async (draft: ModerationDraft) => {
       const rows = fightEditorByDraft[draft.shortId] ?? [];
       const draftedPlayers = draft.players.filter((player) => player.team !== undefined);
-      const analysis = analyzeFightEditor(rows, draftedPlayers);
+      const analysis = analyzeFightEditor(rows, draftedPlayers, draft.type === "pvp");
       if (!analysis.isComplete) {
         if (analysis.firstIssue) {
           setActiveFightByDraft((current) => ({
@@ -459,7 +460,7 @@ export default function AdminDraftModerationClient() {
     const editorRows = fightEditorByDraft[draft.shortId] ?? [];
     const team1Players = draftedPlayers.filter((player) => player.team === 1);
     const team2Players = draftedPlayers.filter((player) => player.team === 2);
-    const analysis = analyzeFightEditor(editorRows, draftedPlayers);
+    const analysis = analyzeFightEditor(editorRows, draftedPlayers, draft.type === "pvp");
     const editorComplete = analysis.isComplete;
     const { team1Wins, team2Wins } = analysis;
     const activeFightIndex = Math.min(
@@ -1077,9 +1078,14 @@ export default function AdminDraftModerationClient() {
                                       className={`flex items-center gap-0.5 rounded-md px-1.5 py-0.5 ${groupBg}`}
                                     >
                                       {realmClasses.map((className) => {
+                                        const classKey = resolvePvpClassKey(
+                                          draft.type === "pvp",
+                                          className,
+                                          realm
+                                        );
                                         const isSelected =
                                           !!selectedPlayer &&
-                                          activeFight.classesByPlayer[selectedPlayer._id] === className;
+                                          activeFight.classesByPlayer[selectedPlayer._id] === classKey;
                                         return (
                                           <button
                                             key={`${draft.shortId}-${category}-${realm}-${className}`}
@@ -1095,7 +1101,7 @@ export default function AdminDraftModerationClient() {
                                                     ...row,
                                                     classesByPlayer: {
                                                       ...row.classesByPlayer,
-                                                      [selectedPlayer._id]: className,
+                                                      [selectedPlayer._id]: classKey,
                                                     },
                                                   };
                                                 }),
