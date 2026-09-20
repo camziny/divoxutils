@@ -1,4 +1,4 @@
-import { allClasses } from "@/app/draft/_lib/constants";
+import { isValidDraftClassName } from "@/app/draft/_lib/constants";
 
 export type FightEditorPlayer = {
   _id: string;
@@ -91,7 +91,8 @@ export function toFightEditorRows(draft: FightEditorDraft): FightEditorRow[] {
 
 export function analyzeFightEditor(
   rows: FightEditorRow[],
-  draftedPlayers: FightEditorPlayer[]
+  draftedPlayers: FightEditorPlayer[],
+  isPvp: boolean
 ): {
   team1Wins: number;
   team2Wins: number;
@@ -135,7 +136,7 @@ export function analyzeFightEditor(
 
     for (const player of draftedPlayers) {
       const className = row.classesByPlayer[player._id];
-      if (!className || !allClasses.includes(className)) {
+      if (!className || !isValidDraftClassName(isPvp, className)) {
         if (!firstIssue) {
           firstIssue = {
             fightIndex,

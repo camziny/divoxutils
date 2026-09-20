@@ -1,4 +1,5 @@
 import { DraftLeaderboardDraft } from "./draftLeaderboard";
+import { stripDraftClassRealmTag } from "@/app/draft/_lib/constants";
 
 export type WinLossRecord = {
   wins: number;
@@ -52,7 +53,7 @@ export function resolvePlayerClassFightOutcomes(
     });
     if (classEntry?.className) {
       outcomes.push({
-        className: classEntry.className,
+        className: stripDraftClassRealmTag(classEntry.className),
         didWin: playerTeam === fight.winnerTeam,
       });
     }

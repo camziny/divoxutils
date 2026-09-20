@@ -69,6 +69,40 @@ export function toCanonicalDraftClassName(className: string): string {
   return alias ?? trimmed;
 }
 
+const REALM_TAGS: Record<(typeof REALMS)[number], "Alb" | "Mid" | "Hib"> = {
+  Albion: "Alb",
+  Midgard: "Mid",
+  Hibernia: "Hib",
+};
+
+export function resolvePvpClassKey(
+  isPvp: boolean,
+  className: string,
+  realm: (typeof REALMS)[number]
+): string {
+  if (!isPvp || className !== "Mauler") return className;
+  return `Mauler (${REALM_TAGS[realm]})`;
+}
+
+const DRAFT_CLASS_REALM_TAG_PATTERN = /\s*\((Alb|Mid|Hib)\)$/;
+
+export function stripDraftClassRealmTag(className: string): string {
+  return className.replace(DRAFT_CLASS_REALM_TAG_PATTERN, "");
+}
+
+export function isValidDraftClassName(isPvp: boolean, className: string): boolean {
+  const realmTagMatch = className.match(DRAFT_CLASS_REALM_TAG_PATTERN);
+  const baseName = stripDraftClassRealmTag(className);
+  if (!allClasses.includes(baseName)) return false;
+  if (!isPvp) return !realmTagMatch;
+  if (baseName === "Mauler") return !!realmTagMatch;
+  return !realmTagMatch;
+}
+
+export function isKnownDraftClassName(className: string): boolean {
+  return isValidDraftClassName(true, className) || isValidDraftClassName(false, className);
+}
+
 export const REALM_COLORS: Record<
   string,
   { bg: string; border: string; text: string; hover: string }

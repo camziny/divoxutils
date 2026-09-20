@@ -41,7 +41,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { allClasses } from "@/app/draft/_lib/constants";
+import { allClasses, isKnownDraftClassName } from "@/app/draft/_lib/constants";
 import {
   DEFAULT_CLASS_SORT,
   DEFAULT_CLASS_VIEW,
@@ -197,7 +197,7 @@ export default function PlayerDrilldownClient({
     const fallbackClass = allClasses[0];
     const nextDefault = firstPlayedClass ?? fallbackClass ?? "";
     if (!nextDefault) return;
-    if (!selectedClass || !allClasses.includes(selectedClass)) {
+    if (!selectedClass || !isKnownDraftClassName(selectedClass)) {
       setSelectedClass(nextDefault);
     }
   }, [selectedClass, alphabeticalPlayedClasses]);
