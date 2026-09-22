@@ -145,4 +145,17 @@ export default defineSchema({
     team1ChannelId: v.string(),
     team2ChannelId: v.string(),
   }).index("by_guild", ["discordGuildId"]),
+
+  knownPlayers: defineTable({
+    discordGuildId: v.string(),
+    discordUserId: v.string(),
+    displayName: v.string(),
+    avatarUrl: v.optional(v.string()),
+    lastSeenAt: v.number(),
+  })
+    .index("by_guild_and_user", ["discordGuildId", "discordUserId"])
+    .searchIndex("search_displayName", {
+      searchField: "displayName",
+      filterFields: ["discordGuildId"],
+    }),
 });
