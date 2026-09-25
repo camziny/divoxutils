@@ -551,7 +551,7 @@ test("updateSettings applies pvp with valid adjusted team size", async () => {
   assert.equal(updated.pickOrderMode, "alternating");
 });
 
-test("updateSettings clears auto-bans seeded for the previous type when the type changes", async () => {
+test("updateSettings keeps an auto-ban that's still valid for the new type and drops one that isn't", async () => {
   const ctx = makeCtx({
     drafts: [
       {
@@ -574,7 +574,8 @@ test("updateSettings clears auto-bans seeded for the previous type when the type
     ],
     draftBans: [
       { _id: "b1", draftId: "d1", team: 1, className: "Theurgist", source: "auto" },
-      { _id: "b2", draftId: "d1", team: 1, className: "Friar", source: "captain" },
+      { _id: "b2", draftId: "d1", team: 1, className: "Mauler", source: "auto" },
+      { _id: "b3", draftId: "d1", team: 1, className: "Friar", source: "captain" },
     ],
   });
 
@@ -587,8 +588,8 @@ test("updateSettings clears auto-bans seeded for the previous type when the type
 
   const bans = await ctx.db.query("draftBans").collect();
   assert.deepEqual(
-    bans.map((b: any) => b.className),
-    ["Friar"]
+    bans.map((b: any) => b.className).sort(),
+    ["Friar", "Theurgist"]
   );
 });
 

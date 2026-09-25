@@ -663,7 +663,13 @@ export const updateSettings = mutation({
         .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
         .collect();
       for (const ban of existingBans) {
-        if (ban.source === "auto") await ctx.db.delete(ban._id);
+        if (ban.source !== "auto") continue;
+        const normalizedForNewType = normalizeDraftClassForType(args.type, ban.className);
+        if (!isValidDraftClassForType(args.type, normalizedForNewType)) {
+          await ctx.db.delete(ban._id);
+        } else if (normalizedForNewType !== ban.className) {
+          await ctx.db.patch(ban._id, { className: normalizedForNewType });
+        }
       }
     }
   },
