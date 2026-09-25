@@ -219,7 +219,7 @@ function normalizeDraftClassForType(
   const trimmed = className.trim();
   if (!trimmed) return "";
   if (draftType === "traditional") {
-    return toCanonicalDraftClassName(trimmed);
+    return toCanonicalDraftClassName(trimmed.replace(PVP_REALM_TAG_PATTERN, ""));
   }
   const realmTagMatch = trimmed.match(PVP_REALM_TAG_PATTERN);
   const baseName = toCanonicalDraftClassName(
@@ -663,7 +663,33 @@ export const updateSettings = mutation({
         .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
         .collect();
       for (const ban of existingBans) {
-        if (ban.source === "auto") await ctx.db.delete(ban._id);
+        if (ban.source !== "auto") continue;
+
+        if (args.type === "pvp") {
+          const realmTagMatch = ban.className.match(PVP_REALM_TAG_PATTERN);
+          const baseName = toCanonicalDraftClassName(
+            ban.className.replace(PVP_REALM_TAG_PATTERN, "")
+          );
+          if (baseName === "Mauler" && !realmTagMatch) {
+            await ctx.db.delete(ban._id);
+            for (const realmTag of PVP_MAULER_REALM_TAGS) {
+              await ctx.db.insert("draftBans", {
+                draftId: args.draftId,
+                team: ban.team,
+                className: `Mauler (${realmTag})`,
+                source: "auto",
+              });
+            }
+            continue;
+          }
+        }
+
+        const normalizedForNewType = normalizeDraftClassForType(args.type, ban.className);
+        if (!isValidDraftClassForType(args.type, normalizedForNewType)) {
+          await ctx.db.delete(ban._id);
+        } else if (normalizedForNewType !== ban.className) {
+          await ctx.db.patch(ban._id, { className: normalizedForNewType });
+        }
       }
     }
   },
