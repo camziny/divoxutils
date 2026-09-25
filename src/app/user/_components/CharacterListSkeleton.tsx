@@ -42,59 +42,59 @@ const CharacterListSkeleton = () => {
               <TableRow>
                 <TableCell
                   sx={{ width: "5%", padding: "4px 6px", minWidth: "30px", maxWidth: "50px", borderBottom: "none", height: "24px" }}
-                  className="!bg-gray-800/50"
+                  className="!bg-gray-800"
                 />
                 <TableCell
                   sx={{ width: "20%", padding: "4px 6px", minWidth: "100px", borderBottom: "none", height: "24px" }}
-                  className="!bg-gray-800/50"
+                  className="!bg-gray-800"
                 >
                   <div className="animate-pulse bg-gray-600/40 rounded h-3 w-8"></div>
                 </TableCell>
                 <TableCell
                   sx={{ width: "12%", padding: "4px 6px", minWidth: "80px", borderBottom: "none", height: "24px" }}
-                  className="!bg-gray-800/50"
+                  className="!bg-gray-800"
                 >
                   <div className="animate-pulse bg-gray-600/40 rounded h-3 w-10"></div>
                 </TableCell>
                 <TableCell
                   sx={{ width: "12%", padding: "4px 6px", minWidth: "80px", borderBottom: "none", height: "24px" }}
-                  className="!bg-gray-800/50"
+                  className="!bg-gray-800"
                 >
                   <div className="animate-pulse bg-gray-600/40 rounded h-3 w-16"></div>
                 </TableCell>
                 <TableCell
                   sx={{ width: "18%", padding: "4px 6px", minWidth: "100px", borderBottom: "none", height: "24px" }}
-                  className="!bg-gray-800/50"
+                  className="!bg-gray-800"
                 >
                   <div className="animate-pulse bg-gray-600/40 rounded h-3 w-10"></div>
                 </TableCell>
                 <TableCell
                   sx={{ width: "8%", padding: "4px 6px", minWidth: "60px", borderBottom: "none", height: "24px" }}
-                  className="!bg-gray-800/50"
+                  className="!bg-gray-800"
                 >
                   <div className="animate-pulse bg-gray-600/40 rounded h-3 w-8"></div>
                 </TableCell>
                 <TableCell
                   sx={{ width: "10%", padding: "4px 6px", minWidth: "80px", borderBottom: "none", height: "24px" }}
-                  className="hidden lg:table-cell !bg-gray-800/50"
+                  className="hidden lg:table-cell !bg-gray-800"
                 >
                   <div className="animate-pulse bg-gray-600/40 rounded h-3 w-8"></div>
                 </TableCell>
                 <TableCell
                   sx={{ width: "10%", padding: "4px 6px", minWidth: "80px", borderBottom: "none", height: "24px" }}
-                  className="!bg-gray-800/50"
+                  className="!bg-gray-800"
                 >
                   <div className="animate-pulse bg-gray-600/40 rounded h-3 w-10"></div>
                 </TableCell>
                 <TableCell
                   sx={{ width: "10%", padding: "4px 6px", minWidth: "80px", borderBottom: "none", height: "24px" }}
-                  className="!bg-gray-800/50"
+                  className="!bg-gray-800"
                 >
                   <div className="animate-pulse bg-gray-600/40 rounded h-3 w-12"></div>
                 </TableCell>
                 <TableCell
                   sx={{ width: "5%", padding: "4px 6px", minWidth: "30px", maxWidth: "50px", borderBottom: "none", height: "24px" }}
-                  className="!bg-gray-800/50"
+                  className="!bg-gray-800"
                 />
               </TableRow>
             </TableHead>
