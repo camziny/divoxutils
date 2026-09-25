@@ -219,7 +219,7 @@ function normalizeDraftClassForType(
   const trimmed = className.trim();
   if (!trimmed) return "";
   if (draftType === "traditional") {
-    return toCanonicalDraftClassName(trimmed);
+    return toCanonicalDraftClassName(trimmed.replace(PVP_REALM_TAG_PATTERN, ""));
   }
   const realmTagMatch = trimmed.match(PVP_REALM_TAG_PATTERN);
   const baseName = toCanonicalDraftClassName(

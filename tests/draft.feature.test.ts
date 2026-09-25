@@ -593,6 +593,45 @@ test("updateSettings keeps an auto-ban that's still valid for the new type and d
   );
 });
 
+test("updateSettings normalizes a realm-tagged auto-ban back to its base class when switching from pvp to traditional", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "setup",
+        teamSize: 3,
+        type: "pvp",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "x1", discordUserId: "u1" },
+      { _id: "p3", draftId: "d1", token: "x2", discordUserId: "u2" },
+      { _id: "p4", draftId: "d1", token: "x3", discordUserId: "u3" },
+      { _id: "p5", draftId: "d1", token: "x4", discordUserId: "u4" },
+      { _id: "p6", draftId: "d1", token: "x5", discordUserId: "u5" },
+    ],
+    draftBans: [
+      { _id: "b1", draftId: "d1", team: 1, className: "Mauler (Alb)", source: "auto" },
+    ],
+  });
+
+  await (draftFns.updateSettings as any)._handler(ctx, {
+    draftId: "d1",
+    type: "traditional",
+    teamSize: 3,
+    token: "creator-token",
+  });
+
+  const bans = await ctx.db.query("draftBans").collect();
+  assert.deepEqual(
+    bans.map((b: any) => b.className),
+    ["Mauler"]
+  );
+});
+
 test("updateSettings expands legacy untagged Mauler safe class when switching to pvp", async () => {
   const ctx = makeCtx({
     drafts: [
