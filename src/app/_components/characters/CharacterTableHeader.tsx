@@ -8,7 +8,7 @@ interface CharacterTableHeaderProps {
   onColumnSort?: (column: string) => void;
 }
 
-const baseCellClass = "!bg-gray-800/50 !text-gray-400 font-medium text-xs tracking-wider whitespace-nowrap";
+const baseCellClass = "!bg-gray-800 !text-gray-400 font-medium text-xs tracking-wider whitespace-nowrap";
 const clickableClass = `${baseCellClass} cursor-pointer select-none hover:!text-gray-200 transition-colors duration-150 group/header`;
 
 const SortIndicator: React.FC<{ column: string; active: string | null | undefined; dir: "asc" | "desc" | undefined }> = ({ column, active, dir }) => {
