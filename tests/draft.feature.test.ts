@@ -551,7 +551,7 @@ test("updateSettings applies pvp with valid adjusted team size", async () => {
   assert.equal(updated.pickOrderMode, "alternating");
 });
 
-test("updateSettings keeps an auto-ban that's still valid for the new type and drops one that isn't", async () => {
+test("updateSettings keeps a valid auto-ban and expands an untagged Mauler auto-ban into all three realms when switching to pvp", async () => {
   const ctx = makeCtx({
     drafts: [
       {
@@ -574,7 +574,7 @@ test("updateSettings keeps an auto-ban that's still valid for the new type and d
     ],
     draftBans: [
       { _id: "b1", draftId: "d1", team: 1, className: "Theurgist", source: "auto" },
-      { _id: "b2", draftId: "d1", team: 1, className: "Mauler", source: "auto" },
+      { _id: "b2", draftId: "d1", team: 2, className: "Mauler", source: "auto" },
       { _id: "b3", draftId: "d1", team: 1, className: "Friar", source: "captain" },
     ],
   });
@@ -588,9 +588,54 @@ test("updateSettings keeps an auto-ban that's still valid for the new type and d
 
   const bans = await ctx.db.query("draftBans").collect();
   assert.deepEqual(
-    bans.map((b: any) => b.className).sort(),
-    ["Friar", "Theurgist"]
+    bans.map((b: any) => ({ className: b.className, team: b.team, source: b.source })).sort((a: any, b: any) =>
+      a.className.localeCompare(b.className)
+    ),
+    [
+      { className: "Friar", team: 1, source: "captain" },
+      { className: "Mauler (Alb)", team: 2, source: "auto" },
+      { className: "Mauler (Hib)", team: 2, source: "auto" },
+      { className: "Mauler (Mid)", team: 2, source: "auto" },
+      { className: "Theurgist", team: 1, source: "auto" },
+    ]
   );
+});
+
+test("updateSettings drops an auto-ban that isn't a real class for either type", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "setup",
+        teamSize: 8,
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "x1", discordUserId: "u1" },
+      { _id: "p3", draftId: "d1", token: "x2", discordUserId: "u2" },
+      { _id: "p4", draftId: "d1", token: "x3", discordUserId: "u3" },
+      { _id: "p5", draftId: "d1", token: "x4", discordUserId: "u4" },
+      { _id: "p6", draftId: "d1", token: "x5", discordUserId: "u5" },
+      { _id: "p7", draftId: "d1", token: "x6", discordUserId: "u6" },
+    ],
+    draftBans: [
+      { _id: "b1", draftId: "d1", team: 1, className: "NotARealClass", source: "auto" },
+    ],
+  });
+
+  await (draftFns.updateSettings as any)._handler(ctx, {
+    draftId: "d1",
+    type: "pvp",
+    teamSize: 3,
+    token: "creator-token",
+  });
+
+  const bans = await ctx.db.query("draftBans").collect();
+  assert.deepEqual(bans, []);
 });
 
 test("updateSettings normalizes a realm-tagged auto-ban back to its base class when switching from pvp to traditional", async () => {
