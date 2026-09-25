@@ -8,7 +8,8 @@ type TableName =
   | "draftPlayers"
   | "draftBans"
   | "draftFights"
-  | "draftGuildSettings";
+  | "draftGuildSettings"
+  | "knownPlayers";
 
 class MockDb {
   private tables: Record<TableName, any[]>;
@@ -21,12 +22,51 @@ class MockDb {
       draftBans: seed?.draftBans ? [...seed.draftBans] : [],
       draftFights: seed?.draftFights ? [...seed.draftFights] : [],
       draftGuildSettings: seed?.draftGuildSettings ? [...seed.draftGuildSettings] : [],
+      knownPlayers: seed?.knownPlayers ? [...seed.knownPlayers] : [],
     };
   }
 
   query(table: TableName) {
     const rows = this.tables[table];
     return {
+      withSearchIndex: (
+        _index: string,
+        builder: (q: {
+          search: (field: string, term: string) => any;
+          eq: (field: string, value: any) => any;
+        }) => any
+      ) => {
+        let searchField = "";
+        let searchTerm = "";
+        const eqConditions: Array<{ field: string; value: any }> = [];
+        const chain = {
+          search(field: string, term: string) {
+            searchField = field;
+            searchTerm = term;
+            return chain;
+          },
+          eq(field: string, value: any) {
+            eqConditions.push({ field, value });
+            return chain;
+          },
+        };
+        builder(chain);
+        const lowerTerm = searchTerm.trim().toLowerCase();
+        const filtered = rows.filter((row) => {
+          const matchesEq = eqConditions.every(
+            (condition) => row[condition.field] === condition.value
+          );
+          if (!matchesEq) return false;
+          if (!lowerTerm) return true;
+          return String(row[searchField] ?? "")
+            .toLowerCase()
+            .includes(lowerTerm);
+        });
+        return {
+          take: async (n: number) => filtered.slice(0, n),
+          collect: async () => [...filtered],
+        };
+      },
       withIndex: (
         _index: string,
         builder: (q: {
@@ -509,6 +549,47 @@ test("updateSettings applies pvp with valid adjusted team size", async () => {
   assert.equal(updated.type, "pvp");
   assert.equal(updated.teamSize, 3);
   assert.equal(updated.pickOrderMode, "alternating");
+});
+
+test("updateSettings clears auto-bans seeded for the previous type when the type changes", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "aaa",
+        status: "setup",
+        teamSize: 8,
+        type: "traditional",
+        createdBy: "creator",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "x1", discordUserId: "u1" },
+      { _id: "p3", draftId: "d1", token: "x2", discordUserId: "u2" },
+      { _id: "p4", draftId: "d1", token: "x3", discordUserId: "u3" },
+      { _id: "p5", draftId: "d1", token: "x4", discordUserId: "u4" },
+      { _id: "p6", draftId: "d1", token: "x5", discordUserId: "u5" },
+      { _id: "p7", draftId: "d1", token: "x6", discordUserId: "u6" },
+    ],
+    draftBans: [
+      { _id: "b1", draftId: "d1", team: 1, className: "Theurgist", source: "auto" },
+      { _id: "b2", draftId: "d1", team: 1, className: "Friar", source: "captain" },
+    ],
+  });
+
+  await (draftFns.updateSettings as any)._handler(ctx, {
+    draftId: "d1",
+    type: "pvp",
+    teamSize: 3,
+    token: "creator-token",
+  });
+
+  const bans = await ctx.db.query("draftBans").collect();
+  assert.deepEqual(
+    bans.map((b: any) => b.className),
+    ["Friar"]
+  );
 });
 
 test("updateSettings expands legacy untagged Mauler safe class when switching to pvp", async () => {
@@ -1298,6 +1379,299 @@ test("traditional realm pick skips banning when bansPerCaptain is 0", async () =
   assert.equal(updated.currentBanIndex, undefined);
   assert.equal(updated.currentPickIndex, 0);
   assert.deepEqual(updated.pickSequence, [2, 1, 2, 1, 2, 1]);
+});
+
+test("createDraft seeds a default auto-ban on Theurgist", async () => {
+  const ctx = makeCtx();
+
+  const { draftId } = await (draftFns.createDraft as any)._handler(ctx, {
+    discordGuildId: "guild1",
+    discordChannelId: "channel1",
+    createdBy: "creator",
+    players: [
+      { discordUserId: "creator", displayName: "Creator" },
+      { discordUserId: "p2", displayName: "Player Two" },
+    ],
+  });
+
+  const bans = await ctx.db.query("draftBans").collect();
+  assert.equal(bans.length, 1);
+  assert.equal(bans[0].draftId, draftId);
+  assert.equal(bans[0].className, "Theurgist");
+  assert.equal(bans[0].source, "auto");
+  assert.equal(bans[0].team, 1);
+});
+
+test("createDraft records each player into knownPlayers for future search", async () => {
+  const ctx = makeCtx();
+
+  await (draftFns.createDraft as any)._handler(ctx, {
+    discordGuildId: "guild1",
+    discordChannelId: "channel1",
+    createdBy: "creator",
+    players: [
+      { discordUserId: "creator", displayName: "Creator" },
+      { discordUserId: "p2", displayName: "Player Two" },
+    ],
+  });
+
+  const known = await ctx.db.query("knownPlayers").collect();
+  assert.equal(known.length, 2);
+  assert.ok(known.some((k: any) => k.discordUserId === "creator" && k.discordGuildId === "guild1"));
+  assert.ok(known.some((k: any) => k.discordUserId === "p2" && k.displayName === "Player Two"));
+});
+
+test("addDraftPlayer inserts a known-ID player and records them for search", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "add1", status: "setup", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [{ _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" }],
+  });
+
+  const result = await (draftFns.addDraftPlayer as any)._handler(ctx, {
+    draftId: "d1",
+    callerToken: "creator-token",
+    discordUserId: "steve",
+    displayName: "Steve",
+  });
+
+  assert.ok(result.playerId);
+  assert.ok(result.token);
+
+  const players = await ctx.db.query("draftPlayers").collect();
+  assert.equal(players.length, 2);
+  const steve = players.find((p: any) => p.discordUserId === "steve");
+  assert.equal(steve.displayName, "Steve");
+  assert.equal(steve.token, result.token);
+
+  const known = await ctx.db.query("knownPlayers").collect();
+  assert.ok(known.some((k: any) => k.discordUserId === "steve" && k.discordGuildId === "guild1"));
+});
+
+test("addDraftPlayer rejects a non-creator caller", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "add2", status: "setup", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "other-token", discordUserId: "other" },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.addDraftPlayer as any)._handler(ctx, {
+      draftId: "d1",
+      callerToken: "other-token",
+      discordUserId: "steve",
+      displayName: "Steve",
+    })
+  );
+});
+
+test("addDraftPlayer rejects a duplicate discordUserId already in the pool", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "add3", status: "setup", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "steve-token", discordUserId: "steve" },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.addDraftPlayer as any)._handler(ctx, {
+      draftId: "d1",
+      callerToken: "creator-token",
+      discordUserId: "steve",
+      displayName: "Steve Again",
+    })
+  );
+});
+
+test("addDraftPlayer rejects once the draft has left setup", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "add4", status: "banning", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [{ _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" }],
+  });
+
+  await assert.rejects(
+    (draftFns.addDraftPlayer as any)._handler(ctx, {
+      draftId: "d1",
+      callerToken: "creator-token",
+      discordUserId: "steve",
+      displayName: "Steve",
+    })
+  );
+});
+
+test("removeDraftPlayer deletes the row and clears a captain field if targeted", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      {
+        _id: "d1",
+        shortId: "rm1",
+        status: "setup",
+        type: "traditional",
+        createdBy: "creator",
+        discordGuildId: "guild1",
+        team1CaptainId: "steve",
+      },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "steve-token", discordUserId: "steve" },
+    ],
+  });
+
+  await (draftFns.removeDraftPlayer as any)._handler(ctx, {
+    draftId: "d1",
+    callerToken: "creator-token",
+    draftPlayerId: "p2",
+  });
+
+  const players = await ctx.db.query("draftPlayers").collect();
+  assert.equal(players.length, 1);
+  assert.equal(players[0]._id, "p1");
+
+  const draft = await ctx.db.get("d1");
+  assert.equal(draft.team1CaptainId, undefined);
+});
+
+test("removeDraftPlayer rejects a non-creator caller", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "rm2", status: "setup", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "steve-token", discordUserId: "steve" },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.removeDraftPlayer as any)._handler(ctx, {
+      draftId: "d1",
+      callerToken: "steve-token",
+      draftPlayerId: "p1",
+    })
+  );
+});
+
+test("removeDraftPlayer rejects once the draft has left setup", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "rm3", status: "banning", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "steve-token", discordUserId: "steve" },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.removeDraftPlayer as any)._handler(ctx, {
+      draftId: "d1",
+      callerToken: "creator-token",
+      draftPlayerId: "p2",
+    })
+  );
+});
+
+test("removeDraftPlayer rejects the creator removing their own row", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "rm4", status: "setup", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.removeDraftPlayer as any)._handler(ctx, {
+      draftId: "d1",
+      callerToken: "creator-token",
+      draftPlayerId: "p1",
+    })
+  );
+
+  const players = await ctx.db.query("draftPlayers").collect();
+  assert.equal(players.length, 1);
+});
+
+test("searchKnownPlayers returns guild-scoped matches and excludes current pool members", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "search1", status: "setup", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "steve-token", discordUserId: "steve" },
+    ],
+    knownPlayers: [
+      { _id: "k1", discordGuildId: "guild1", discordUserId: "steve", displayName: "Steve", lastSeenAt: 1 },
+      { _id: "k2", discordGuildId: "guild1", discordUserId: "stevie", displayName: "Stevie", lastSeenAt: 2 },
+      { _id: "k3", discordGuildId: "guild2", discordUserId: "steve-other-guild", displayName: "Steve", lastSeenAt: 3 },
+    ],
+  });
+
+  const results = await (draftFns.searchKnownPlayers as any)._handler(ctx, {
+    draftId: "d1",
+    callerToken: "creator-token",
+    queryText: "Stev",
+  });
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].discordUserId, "stevie");
+});
+
+test("searchKnownPlayers rejects a non-creator caller", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "search2", status: "setup", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "steve-token", discordUserId: "steve" },
+    ],
+  });
+
+  await assert.rejects(
+    (draftFns.searchKnownPlayers as any)._handler(ctx, {
+      draftId: "d1",
+      callerToken: "steve-token",
+      queryText: "anything",
+    })
+  );
+});
+
+test("backfillKnownPlayers records every historical player, keeping the latest displayName", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", discordGuildId: "guild1" },
+      { _id: "d2", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", discordUserId: "steve", displayName: "Steve Old Name", _creationTime: 1 },
+      { _id: "p2", draftId: "d2", discordUserId: "steve", displayName: "Steve New Name", _creationTime: 2 },
+    ],
+  });
+
+  const result = await (draftFns.backfillKnownPlayers as any)._handler(ctx, {});
+
+  assert.equal(result.scanned, 2);
+  assert.equal(result.recorded, 2);
+
+  const known = await ctx.db.query("knownPlayers").collect();
+  assert.equal(known.length, 1);
+  assert.equal(known[0].discordUserId, "steve");
+  assert.equal(known[0].displayName, "Steve New Name");
+  assert.equal(known[0].discordGuildId, "guild1");
 });
 
 test("toggleAutoBanClass toggles creator setup auto-bans", async () => {
@@ -2989,4 +3363,132 @@ test("purgeExpiredCancelledDrafts deletes cancelled draft and related rows beyon
   );
   assert.equal(remainingBans.length, 0);
   assert.equal(remainingFights.length, 0);
+});
+
+test("searchDiscordGuildMembers searches the draft's own guild and excludes current pool members", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "dsearch1", status: "setup", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "steve-token", discordUserId: "steve-id" },
+    ],
+  });
+
+  const originalFetch = global.fetch;
+  const originalToken = process.env.DISCORD_BOT_TOKEN;
+  process.env.DISCORD_BOT_TOKEN = "test-bot-token";
+  const requestedUrls: string[] = [];
+  const requestedHeaders: Array<Record<string, string>> = [];
+  (global as any).fetch = async (url: string, init: any) => {
+    requestedUrls.push(url);
+    requestedHeaders.push(init.headers);
+    return {
+      ok: true,
+      json: async () => [
+        { user: { id: "steve-id", username: "steve", avatar: null }, nick: "Steve Nick" },
+        { user: { id: "bob-id", username: "bobby", global_name: "Bob", avatar: "abc123" } },
+      ],
+    };
+  };
+
+  try {
+    const actionCtx = {
+      runQuery: (_fn: unknown, args: any) =>
+        (draftFns.getDiscordSearchContextForCreatorCaller as any)._handler(ctx, args),
+    };
+
+    const results = await (draftFns.searchDiscordGuildMembers as any)._handler(actionCtx, {
+      draftId: "d1",
+      callerToken: "creator-token",
+      queryText: "b",
+    });
+
+    assert.equal(requestedUrls.length, 1);
+    assert.ok(requestedUrls[0].includes("/guilds/guild1/members/search"));
+    assert.equal(requestedHeaders[0].Authorization, "Bot test-bot-token");
+
+    assert.equal(results.length, 1);
+    assert.equal(results[0].discordUserId, "bob-id");
+    assert.equal(results[0].username, "bobby");
+    assert.equal(results[0].displayName, "Bob");
+    assert.equal(results[0].avatarUrl, "https://cdn.discordapp.com/avatars/bob-id/abc123.png");
+  } finally {
+    global.fetch = originalFetch;
+    if (originalToken === undefined) delete process.env.DISCORD_BOT_TOKEN;
+    else process.env.DISCORD_BOT_TOKEN = originalToken;
+  }
+});
+
+test("searchDiscordGuildMembers returns empty for a blank query without calling Discord", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "dsearch2", status: "setup", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [{ _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" }],
+  });
+
+  const originalFetch = global.fetch;
+  let fetchCalled = false;
+  (global as any).fetch = async () => {
+    fetchCalled = true;
+    return { ok: true, json: async () => [] };
+  };
+
+  try {
+    const actionCtx = {
+      runQuery: (_fn: unknown, args: any) =>
+        (draftFns.getDiscordSearchContextForCreatorCaller as any)._handler(ctx, args),
+    };
+    const results = await (draftFns.searchDiscordGuildMembers as any)._handler(actionCtx, {
+      draftId: "d1",
+      callerToken: "creator-token",
+      queryText: "   ",
+    });
+    assert.deepEqual(results, []);
+    assert.equal(fetchCalled, false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("searchDiscordGuildMembers rejects a non-creator caller before calling Discord", async () => {
+  const ctx = makeCtx({
+    drafts: [
+      { _id: "d1", shortId: "dsearch3", status: "setup", type: "traditional", createdBy: "creator", discordGuildId: "guild1" },
+    ],
+    draftPlayers: [
+      { _id: "p1", draftId: "d1", token: "creator-token", discordUserId: "creator" },
+      { _id: "p2", draftId: "d1", token: "steve-token", discordUserId: "steve-id" },
+    ],
+  });
+
+  const originalFetch = global.fetch;
+  const originalToken = process.env.DISCORD_BOT_TOKEN;
+  process.env.DISCORD_BOT_TOKEN = "test-bot-token";
+  let fetchCalled = false;
+  (global as any).fetch = async () => {
+    fetchCalled = true;
+    return { ok: true, json: async () => [] };
+  };
+
+  try {
+    const actionCtx = {
+      runQuery: (_fn: unknown, args: any) =>
+        (draftFns.getDiscordSearchContextForCreatorCaller as any)._handler(ctx, args),
+    };
+    await assert.rejects(
+      (draftFns.searchDiscordGuildMembers as any)._handler(actionCtx, {
+        draftId: "d1",
+        callerToken: "steve-token",
+        queryText: "b",
+      })
+    );
+    assert.equal(fetchCalled, false);
+  } finally {
+    global.fetch = originalFetch;
+    if (originalToken === undefined) delete process.env.DISCORD_BOT_TOKEN;
+    else process.env.DISCORD_BOT_TOKEN = originalToken;
+  }
 });

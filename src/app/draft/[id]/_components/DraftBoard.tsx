@@ -32,6 +32,11 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import DiscordIdentityLinkCard from "@/app/draft-history/_components/DiscordIdentityLinkCard";
+import {
+  useManagePlayers,
+  ManagePlayersTrigger,
+  ManagePlayersBody,
+} from "./ManagePlayersPanel";
 import { getPlayerPoolEmptyState } from "./playerPoolState";
 import {
   getFightSetupMaxViewFightIndex,
@@ -92,7 +97,10 @@ export default function DraftBoard({
   const undoLastAction = useMutation(api.drafts.undoLastAction);
   const cancelDraftByCreator = useMutation(api.drafts.cancelDraftByCreator);
 
+  const managePlayers = useManagePlayers(draft, token ?? "");
   const [busy, setBusy] = useState(false);
+  const [classRulesOpen, setClassRulesOpen] = useState(false);
+  const [classRulesMode, setClassRulesMode] = useState<ClassRulesMode>("ban");
   const [settingsFeedback, setSettingsFeedback] = useState<{
     type: "error" | "info";
     text: string;
@@ -589,31 +597,49 @@ export default function DraftBoard({
       )}
 
       {isSetup && isCreator && (
-        <ClassRulesPanel
-          draft={draft}
-          bannedClassNames={bannedClassNames}
-          safeClassNames={safeClassNames}
-          creatorAutoBans={creatorAutoBans}
-          busy={busy}
-          onToggleAutoBan={(className) =>
-            act(() =>
-              toggleAutoBanClass({
-                draftId: draft._id,
-                className,
-                token: token!,
-              })
-            )
-          }
-          onToggleSafeClass={(className) =>
-            act(() =>
-              toggleSafeClass({
-                draftId: draft._id,
-                className,
-                token: token!,
-              })
-            )
-          }
-        />
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <ManagePlayersTrigger {...managePlayers} />
+            <ClassRulesTrigger
+              open={classRulesOpen}
+              setOpen={setClassRulesOpen}
+              busy={busy}
+              ruleCount={creatorAutoBans.length + safeClassNames.length}
+            />
+          </div>
+
+          {managePlayers.open && <ManagePlayersBody {...managePlayers} />}
+
+          {classRulesOpen && (
+            <ClassRulesBody
+              draft={draft}
+              bannedClassNames={bannedClassNames}
+              safeClassNames={safeClassNames}
+              creatorAutoBans={creatorAutoBans}
+              busy={busy}
+              mode={classRulesMode}
+              setMode={setClassRulesMode}
+              onToggleAutoBan={(className) =>
+                act(() =>
+                  toggleAutoBanClass({
+                    draftId: draft._id,
+                    className,
+                    token: token!,
+                  })
+                )
+              }
+              onToggleSafeClass={(className) =>
+                act(() =>
+                  toggleSafeClass({
+                    draftId: draft._id,
+                    className,
+                    token: token!,
+                  })
+                )
+              }
+            />
+          )}
+        </div>
       )}
 
       {isSetup && !isCreator && (
@@ -1596,12 +1622,46 @@ function RealmPickSection({
 
 type ClassRulesMode = "ban" | "safe";
 
-function ClassRulesPanel({
+function ClassRulesTrigger({
+  open,
+  setOpen,
+  busy,
+  ruleCount,
+}: {
+  open: boolean;
+  setOpen: (updater: (current: boolean) => boolean) => void;
+  busy: boolean;
+  ruleCount: number;
+}) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={busy}
+      onClick={() => setOpen((c) => !c)}
+      className={cn(
+        "gap-1.5",
+        open && "border-gray-500 bg-gray-800"
+      )}
+    >
+      {open ? "Hide class rules" : "Class rules"}
+      {!open && ruleCount > 0 && (
+        <span className="rounded-full bg-gray-600/40 px-1.5 py-0.5 text-[9px] text-gray-300">
+          {ruleCount}
+        </span>
+      )}
+    </Button>
+  );
+}
+
+function ClassRulesBody({
   draft,
   bannedClassNames,
   safeClassNames,
   creatorAutoBans,
   busy,
+  mode,
+  setMode,
   onToggleAutoBan,
   onToggleSafeClass,
 }: {
@@ -1610,11 +1670,11 @@ function ClassRulesPanel({
   safeClassNames: string[];
   creatorAutoBans: { _id: string; className: string }[];
   busy: boolean;
+  mode: ClassRulesMode;
+  setMode: (mode: ClassRulesMode) => void;
   onToggleAutoBan: (className: string) => void;
   onToggleSafeClass: (className: string) => void;
 }) {
-  const [mode, setMode] = useState<ClassRulesMode>("ban");
-  const [open, setOpen] = useState(false);
   const bannedSet = new Set(bannedClassNames);
   const safeClassSet = new Set(safeClassNames);
   const canEdit = !busy;
@@ -1623,126 +1683,61 @@ function ClassRulesPanel({
   const hasSafe = safeClassNames.length > 0;
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          onClick={() => setOpen((c) => !c)}
-          className={cn(
-            "gap-1.5",
-            open && "border-gray-500 bg-gray-800"
-          )}
-        >
-          {open ? "Hide class rules" : "Class rules"}
-        </Button>
-
-        {(hasBans || hasSafe) && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-gray-900/40 px-2.5 py-1.5">
+    <div className="rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center rounded-md bg-gray-900/60 p-0.5">
+          <button
+            type="button"
+            onClick={() => setMode("ban")}
+            className={cn(
+              "flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all",
+              mode === "ban"
+                ? "bg-gray-700 text-white shadow-sm"
+                : "text-gray-400 hover:text-gray-200"
+            )}
+          >
+            <Ban size={12} />
+            Auto-ban
             {hasBans && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
-                  <Ban size={9} />
-                  Banned
-                </span>
-                {creatorAutoBans.map((ban) => (
-                  <span
-                    key={ban._id}
-                    className={cn(
-                      "rounded px-1.5 py-0.5 text-[10px] font-medium",
-                      getRealmChipBackground(ban.className),
-                      safeClassSet.has(ban.className)
-                        ? "text-gray-300"
-                        : "text-gray-500 line-through"
-                    )}
-                  >
-                    {ban.className}
-                  </span>
-                ))}
-              </div>
+              <span className="ml-0.5 rounded-full bg-gray-600/40 px-1.5 py-0.5 text-[9px] text-gray-300">
+                {creatorAutoBans.length}
+              </span>
             )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("safe")}
+            className={cn(
+              "flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all",
+              mode === "safe"
+                ? "bg-gray-700 text-white shadow-sm"
+                : "text-gray-400 hover:text-gray-200"
+            )}
+          >
+            <ShieldCheck size={12} />
+            Safe
             {hasSafe && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
-                  <ShieldCheck size={9} />
-                  Safe
-                </span>
-                {safeClassNames.map((className) => (
-                  <span
-                    key={className}
-                    className={cn(
-                      "rounded px-1.5 py-0.5 text-[10px] font-medium text-gray-300",
-                      getRealmChipBackground(className)
-                    )}
-                  >
-                    {className}
-                  </span>
-                ))}
-              </div>
+              <span className="ml-0.5 rounded-full bg-gray-600/40 px-1.5 py-0.5 text-[9px] text-gray-300">
+                {safeClassNames.length}
+              </span>
             )}
-          </div>
-        )}
+          </button>
+        </div>
+        <span className="text-[10px] text-gray-500">
+          {mode === "ban"
+            ? "Select classes to auto-ban before the draft starts"
+            : "Select classes that captains cannot ban"}
+        </span>
       </div>
 
-      {open && (
-        <div className="rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center rounded-md bg-gray-900/60 p-0.5">
-              <button
-                type="button"
-                onClick={() => setMode("ban")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all",
-                  mode === "ban"
-                    ? "bg-gray-700 text-white shadow-sm"
-                    : "text-gray-400 hover:text-gray-200"
-                )}
-              >
-                <Ban size={12} />
-                Auto-ban
-                {hasBans && (
-                  <span className="ml-0.5 rounded-full bg-gray-600/40 px-1.5 py-0.5 text-[9px] text-gray-300">
-                    {creatorAutoBans.length}
-                  </span>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("safe")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-all",
-                  mode === "safe"
-                    ? "bg-gray-700 text-white shadow-sm"
-                    : "text-gray-400 hover:text-gray-200"
-                )}
-              >
-                <ShieldCheck size={12} />
-                Safe
-                {hasSafe && (
-                  <span className="ml-0.5 rounded-full bg-gray-600/40 px-1.5 py-0.5 text-[9px] text-gray-300">
-                    {safeClassNames.length}
-                  </span>
-                )}
-              </button>
-            </div>
-            <span className="text-[10px] text-gray-500">
-              {mode === "ban"
-                ? "Select classes to auto-ban before the draft starts"
-                : "Select classes that captains cannot ban"}
-            </span>
-          </div>
-
-          <ClassRulesGrid
-            draft={draft}
-            bannedSet={bannedSet}
-            safeClassSet={safeClassSet}
-            mode={mode}
-            canEdit={canEdit}
-            onToggle={mode === "ban" ? onToggleAutoBan : onToggleSafeClass}
-          />
-        </div>
-      )}
+      <ClassRulesGrid
+        draft={draft}
+        bannedSet={bannedSet}
+        safeClassSet={safeClassSet}
+        mode={mode}
+        canEdit={canEdit}
+        onToggle={mode === "ban" ? onToggleAutoBan : onToggleSafeClass}
+      />
     </div>
   );
 }

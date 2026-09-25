@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as avatarHosts from "../avatarHosts.js";
 import type * as constants from "../constants.js";
 import type * as drafts from "../drafts.js";
 import type * as http from "../http.js";
@@ -21,6 +22,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  avatarHosts: typeof avatarHosts;
   constants: typeof constants;
   drafts: typeof drafts;
   http: typeof http;

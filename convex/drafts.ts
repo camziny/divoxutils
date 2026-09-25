@@ -1,4 +1,12 @@
-import { query, mutation, internalQuery } from "./_generated/server";
+import {
+  query,
+  mutation,
+  action,
+  internalQuery,
+  internalMutation,
+  MutationCtx,
+  QueryCtx,
+} from "./_generated/server";
 import { v } from "convex/values";
 import {
   classesByRealm,
@@ -19,6 +27,41 @@ function generateShortId(): string {
 
 function generateToken(): string {
   return crypto.randomUUID() + crypto.randomUUID().slice(0, 12);
+}
+
+async function recordKnownPlayer(
+  ctx: MutationCtx,
+  args: {
+    discordGuildId: string;
+    discordUserId: string;
+    displayName: string;
+    avatarUrl?: string;
+  }
+): Promise<void> {
+  const existing = await ctx.db
+    .query("knownPlayers")
+    .withIndex("by_guild_and_user", (q) =>
+      q
+        .eq("discordGuildId", args.discordGuildId)
+        .eq("discordUserId", args.discordUserId)
+    )
+    .unique();
+
+  if (existing) {
+    await ctx.db.patch(existing._id, {
+      displayName: args.displayName,
+      ...(args.avatarUrl !== undefined ? { avatarUrl: args.avatarUrl } : {}),
+      lastSeenAt: Date.now(),
+    });
+  } else {
+    await ctx.db.insert("knownPlayers", {
+      discordGuildId: args.discordGuildId,
+      discordUserId: args.discordUserId,
+      displayName: args.displayName,
+      avatarUrl: args.avatarUrl,
+      lastSeenAt: Date.now(),
+    });
+  }
 }
 
 function generatePickSequence(
@@ -437,15 +480,32 @@ export const createDraft = mutation({
 
     for (const player of args.players) {
       const token = generateToken();
+      const avatarUrl = sanitizeAvatarUrl(player.avatarUrl);
       await ctx.db.insert("draftPlayers", {
         draftId,
         discordUserId: player.discordUserId,
         displayName: player.displayName,
-        avatarUrl: sanitizeAvatarUrl(player.avatarUrl),
+        avatarUrl,
         isCaptain: false,
         token,
       });
       playerTokens.push({ discordUserId: player.discordUserId, token });
+      await recordKnownPlayer(ctx, {
+        discordGuildId: args.discordGuildId,
+        discordUserId: player.discordUserId,
+        displayName: player.displayName,
+        avatarUrl,
+      });
+    }
+
+    const normalizedTheurgist = normalizeDraftClassForType("traditional", "Theurgist");
+    if (isValidDraftClassForType("traditional", normalizedTheurgist)) {
+      await ctx.db.insert("draftBans", {
+        draftId,
+        team: 1,
+        className: normalizedTheurgist,
+        source: "auto",
+      });
     }
 
     return { draftId, shortId, playerTokens };
@@ -596,6 +656,16 @@ export const updateSettings = mutation({
       banTimingMode: args.banTimingMode ?? getBanTimingMode(draft),
       safeClassNames,
     });
+
+    if (args.type !== draft.type) {
+      const existingBans = await ctx.db
+        .query("draftBans")
+        .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+        .collect();
+      for (const ban of existingBans) {
+        if (ban.source === "auto") await ctx.db.delete(ban._id);
+      }
+    }
   },
 });
 
@@ -985,6 +1055,282 @@ export const toggleAutoBanClass = mutation({
       className: normalizedClassName,
       source: "auto",
     });
+  },
+});
+
+const MAX_DRAFT_POOL_SIZE = 64;
+
+async function requireCreatorCaller(
+  ctx: QueryCtx,
+  draft: { _id: Id<"drafts">; createdBy: string },
+  callerToken: string
+) {
+  const callerPlayer = await ctx.db
+    .query("draftPlayers")
+    .withIndex("by_token", (q) => q.eq("token", callerToken))
+    .unique();
+  if (
+    !callerPlayer ||
+    callerPlayer.draftId !== draft._id ||
+    callerPlayer.discordUserId !== draft.createdBy
+  ) {
+    throw new Error("Only the draft creator can do this");
+  }
+}
+
+export const searchKnownPlayers = query({
+  args: {
+    draftId: v.id("drafts"),
+    callerToken: v.string(),
+    queryText: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found");
+
+    await requireCreatorCaller(ctx, draft, args.callerToken);
+
+    const trimmedQuery = args.queryText.trim();
+    if (!trimmedQuery) return [];
+
+    const matches = await ctx.db
+      .query("knownPlayers")
+      .withSearchIndex("search_displayName", (q) =>
+        q.search("displayName", trimmedQuery).eq("discordGuildId", draft.discordGuildId)
+      )
+      .take(40);
+
+    const currentPool = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .collect();
+    const currentPoolIds = new Set(currentPool.map((p) => p.discordUserId));
+
+    return matches
+      .filter((m) => !currentPoolIds.has(m.discordUserId))
+      .slice(0, 20)
+      .map((m) => ({
+        discordUserId: m.discordUserId,
+        displayName: m.displayName,
+        avatarUrl: m.avatarUrl,
+      }));
+  },
+});
+
+export const getDiscordSearchContextForCreatorCaller = internalQuery({
+  args: { draftId: v.id("drafts"), callerToken: v.string() },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ discordGuildId: string; currentPoolIds: string[] }> => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found");
+
+    await requireCreatorCaller(ctx, draft, args.callerToken);
+
+    const players = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .collect();
+
+    return {
+      discordGuildId: draft.discordGuildId,
+      currentPoolIds: players.map((p) => p.discordUserId),
+    };
+  },
+});
+
+type DiscordGuildMemberSearchResult = {
+  discordUserId: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+};
+
+type DiscordGuildMember = {
+  user: { id: string; username: string; global_name?: string | null; avatar?: string | null };
+  nick?: string | null;
+};
+
+function isDiscordGuildMember(item: unknown): item is DiscordGuildMember {
+  if (typeof item !== "object" || item === null || !("user" in item)) return false;
+  const { user } = item;
+  return (
+    typeof user === "object" &&
+    user !== null &&
+    "id" in user &&
+    "username" in user &&
+    typeof user.id === "string" &&
+    typeof user.username === "string"
+  );
+}
+
+function isDiscordGuildMemberSearchResponse(value: unknown): value is DiscordGuildMember[] {
+  return Array.isArray(value) && value.every(isDiscordGuildMember);
+}
+
+export const searchDiscordGuildMembers = action({
+  args: { draftId: v.id("drafts"), callerToken: v.string(), queryText: v.string() },
+  handler: async (ctx, args): Promise<DiscordGuildMemberSearchResult[]> => {
+    const trimmedQuery = args.queryText.trim();
+    if (!trimmedQuery) return [];
+
+    const { discordGuildId, currentPoolIds } = await ctx.runQuery(
+      internal.drafts.getDiscordSearchContextForCreatorCaller,
+      { draftId: args.draftId, callerToken: args.callerToken }
+    );
+
+    const token = process.env.DISCORD_BOT_TOKEN;
+    if (!token) throw new Error("Discord search is not configured");
+
+    const response = await fetch(
+      `https://discord.com/api/v10/guilds/${discordGuildId}/members/search?query=${encodeURIComponent(trimmedQuery)}&limit=40`,
+      { headers: { Authorization: `Bot ${token}` } }
+    );
+    if (!response.ok) {
+      throw new Error(`Discord search failed (${response.status})`);
+    }
+
+    const body: unknown = await response.json();
+    if (!isDiscordGuildMemberSearchResponse(body)) {
+      throw new Error("Discord search returned an unexpected response shape");
+    }
+    const members = body;
+
+    const currentPoolIdSet = new Set(currentPoolIds);
+    return members
+      .filter((member) => !currentPoolIdSet.has(member.user.id))
+      .slice(0, 20)
+      .map((member) => ({
+        discordUserId: member.user.id,
+        username: member.user.username,
+        displayName: member.nick || member.user.global_name || member.user.username,
+        avatarUrl: member.user.avatar
+          ? `https://cdn.discordapp.com/avatars/${member.user.id}/${member.user.avatar}.png`
+          : null,
+      }));
+  },
+});
+
+export const addDraftPlayer = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    callerToken: v.string(),
+    discordUserId: v.string(),
+    displayName: v.string(),
+    avatarUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found");
+    if (draft.status !== "setup") {
+      throw new Error("Players can only be added during setup");
+    }
+
+    await requireCreatorCaller(ctx, draft, args.callerToken);
+
+    const existingPlayers = await ctx.db
+      .query("draftPlayers")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .collect();
+
+    if (existingPlayers.some((p) => p.discordUserId === args.discordUserId)) {
+      throw new Error("This player is already in the draft pool");
+    }
+    if (existingPlayers.length >= MAX_DRAFT_POOL_SIZE) {
+      throw new Error("Draft pool is full");
+    }
+
+    const token = generateToken();
+    const avatarUrl = sanitizeAvatarUrl(args.avatarUrl);
+    const playerId = await ctx.db.insert("draftPlayers", {
+      draftId: args.draftId,
+      discordUserId: args.discordUserId,
+      displayName: args.displayName,
+      avatarUrl,
+      isCaptain: false,
+      token,
+    });
+
+    await recordKnownPlayer(ctx, {
+      discordGuildId: draft.discordGuildId,
+      discordUserId: args.discordUserId,
+      displayName: args.displayName,
+      avatarUrl,
+    });
+
+    return { playerId, token };
+  },
+});
+
+export const removeDraftPlayer = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    callerToken: v.string(),
+    draftPlayerId: v.id("draftPlayers"),
+  },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found");
+    if (draft.status !== "setup") {
+      throw new Error("Players can only be removed during setup");
+    }
+
+    await requireCreatorCaller(ctx, draft, args.callerToken);
+
+    const targetPlayer = await ctx.db.get(args.draftPlayerId);
+    if (!targetPlayer || targetPlayer.draftId !== args.draftId) {
+      throw new Error("Player not found in this draft");
+    }
+    if (targetPlayer.discordUserId === draft.createdBy) {
+      throw new Error("The draft creator cannot remove themselves");
+    }
+
+    if (
+      draft.team1CaptainId === targetPlayer.discordUserId ||
+      draft.team2CaptainId === targetPlayer.discordUserId
+    ) {
+      await ctx.db.patch(args.draftId, {
+        team1CaptainId:
+          draft.team1CaptainId === targetPlayer.discordUserId
+            ? undefined
+            : draft.team1CaptainId,
+        team2CaptainId:
+          draft.team2CaptainId === targetPlayer.discordUserId
+            ? undefined
+            : draft.team2CaptainId,
+      });
+    }
+
+    await ctx.db.delete(args.draftPlayerId);
+  },
+});
+
+export const backfillKnownPlayers = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const drafts = await ctx.db.query("drafts").collect();
+    const guildIdByDraft = new Map(drafts.map((d) => [d._id, d.discordGuildId]));
+
+    const players = await ctx.db
+      .query("draftPlayers")
+      .collect();
+    const sortedPlayers = [...players].sort((a, b) => a._creationTime - b._creationTime);
+
+    let recorded = 0;
+    for (const player of sortedPlayers) {
+      const discordGuildId = guildIdByDraft.get(player.draftId);
+      if (!discordGuildId) continue;
+      await recordKnownPlayer(ctx, {
+        discordGuildId,
+        discordUserId: player.discordUserId,
+        displayName: player.displayName,
+        avatarUrl: player.avatarUrl,
+      });
+      recorded++;
+    }
+
+    return { scanned: players.length, recorded };
   },
 });
 
